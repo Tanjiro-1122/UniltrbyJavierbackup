@@ -191,6 +191,7 @@ export default function HomePage() {
                   display: "block",
                   userSelect: "none",
                   pointerEvents: "none",
+                  mixBlendMode: "multiply",
                 }}
                 draggable={false}
               />
