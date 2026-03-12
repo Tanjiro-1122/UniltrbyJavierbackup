@@ -179,11 +179,13 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
         style={{
           width: avatarW, height: avatarH,
           borderRadius: 0,
-          objectFit: "cover",
+          objectFit: "contain",
           objectPosition: "center center",
           display: "block",
           userSelect: "none",
-          filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.4)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
+          background: "transparent",
+          mixBlendMode: "luminosity",
+          filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
           transition: "filter 0.2s",
           clipPath: "polygon(20% 0%, 80% 0%, 100% 30%, 100% 95%, 50% 100%, 0% 95%, 0% 30%)",
         }}
