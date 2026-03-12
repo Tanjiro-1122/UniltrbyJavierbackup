@@ -3,30 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-
-const COMPANIONS = [
-  { id: "luna", name: "Luna", url: "https://via.placeholder.com/120?text=Luna" },
-  { id: "kai", name: "Kai", url: "https://via.placeholder.com/120?text=Kai" },
-  { id: "nova", name: "Nova", url: "https://via.placeholder.com/120?text=Nova" },
-  { id: "ash", name: "Ash", url: "https://via.placeholder.com/120?text=Ash" },
-  { id: "sakura", name: "Sakura", url: "https://via.placeholder.com/120?text=Sakura" },
-  { id: "ryuu", name: "Ryuu", url: "https://via.placeholder.com/120?text=Ryuu" },
-  { id: "zara", name: "Zara", url: "https://via.placeholder.com/120?text=Zara" },
-  { id: "sage", name: "Sage", url: "https://via.placeholder.com/120?text=Sage" },
-];
-
-const BACKGROUNDS = [
-  { id: "living_room", label: "Living Room", emoji: "🛋️" },
-  { id: "park", label: "Sunny Park", emoji: "🌳" },
-  { id: "beach", label: "Sunset Beach", emoji: "🌅" },
-  { id: "space", label: "Outer Space", emoji: "🚀" },
-  { id: "forest", label: "Enchanted Forest", emoji: "🍄" },
-  { id: "cafe", label: "Rainy Café", emoji: "☕" },
-  { id: "rooftop", label: "Anime Rooftop", emoji: "🌇" },
-  { id: "ocean", label: "Deep Ocean", emoji: "🐠" },
-  { id: "cabin", label: "Winter Cabin", emoji: "🏔️" },
-  { id: "cyberpunk", label: "Cyberpunk City", emoji: "🌆" },
-];
+import { COMPANIONS, BACKGROUNDS } from "@/lib/companionData";
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -39,13 +16,17 @@ export default function Onboarding() {
   const handleNext = async () => {
     if (step === 0 && !displayName.trim()) return;
     if (step === 1 && !selectedCompanion) return;
-    if (step === 2 && !selectedBackground) {
+    if (step === 2 && !selectedBackground) return;
+    
+    if (step === 2) {
       setLoading(true);
       try {
+        const companionData = COMPANIONS.find((c) => c.id === selectedCompanion);
         const companion = await base44.entities.Companion.create({
-          name: selectedCompanion,
-          avatar_url: COMPANIONS.find((c) => c.id === selectedCompanion)?.url,
+          name: companionData.name,
+          avatar_url: companionData.avatar,
           mood_mode: "neutral",
+          personality: companionData.tagline,
         });
 
         const userProfile = await base44.entities.UserProfile.create({
@@ -119,15 +100,18 @@ export default function Onboarding() {
                 <motion.button
                   key={c.id}
                   onClick={() => setSelectedCompanion(c.id)}
-                  className={`flex-shrink-0 w-28 h-32 rounded-2xl border-2 transition-all ${
+                  className={`flex-shrink-0 w-28 h-36 rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
                     selectedCompanion === c.id
-                      ? "border-purple-500 bg-purple-500/20 scale-105"
+                      ? "border-purple-500 bg-purple-500/20 scale-105 shadow-lg shadow-purple-500/30"
                       : "border-white/20 bg-white/5"
                   }`}
                   whileHover={{ scale: 1.05 }}
                 >
-                  <img src={c.url} alt={c.name} className="w-full h-full object-cover rounded-xl" />
-                  <p className="text-white text-xs font-semibold mt-1 text-center">{c.name}</p>
+                  <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover" />
+                  <div className="flex-1 flex flex-col items-center justify-center px-2">
+                    <p className="text-white text-xs font-bold text-center">{c.emoji} {c.name}</p>
+                    <p className="text-white/60 text-[10px] text-center leading-tight">{c.tagline}</p>
+                  </div>
                 </motion.button>
               ))}
             </div>
@@ -148,15 +132,19 @@ export default function Onboarding() {
                 <motion.button
                   key={bg.id}
                   onClick={() => setSelectedBackground(bg.id)}
-                  className={`p-4 rounded-2xl border-2 transition-all text-center ${
+                  className={`h-32 rounded-2xl border-2 overflow-hidden transition-all ${
                     selectedBackground === bg.id
-                      ? "border-purple-500 bg-purple-500/20"
-                      : "border-white/20 bg-white/5"
+                      ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
+                      : "border-white/20"
                   }`}
                   whileHover={{ scale: 1.05 }}
                 >
-                  <p className="text-2xl mb-1">{bg.emoji}</p>
-                  <p className="text-white text-xs font-semibold">{bg.label}</p>
+                  <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2">
+                    <div className="text-center w-full">
+                      <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+                    </div>
+                  </div>
                 </motion.button>
               ))}
             </div>
