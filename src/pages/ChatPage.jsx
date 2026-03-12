@@ -209,29 +209,34 @@ export default function ChatPage() {
         </div>
 
         {/* Avatar zone */}
-        <div className="flex items-end justify-center" style={{ height: "360px" }}>
+        <div className="flex items-end justify-center flex-1">
           <div className="relative flex flex-col items-center">
+            {/* White background for hyperrealistic standing effect */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-80 h-96 bg-white rounded-b-3xl shadow-2xl" style={{ zIndex: 0 }} />
+            
             {/* Speaking glow ring */}
             {isSpeaking && (
-              <div className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 40px 20px rgba(168,85,247,0.4)", borderRadius: "50%" }} />
+              <div className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 40px 20px rgba(168,85,247,0.4)", borderRadius: "50%", zIndex: 2 }} />
             )}
             {/* Particles */}
             {particles.map((p) => (
               <div
                 key={p.id}
                 className="particle absolute text-base pointer-events-none"
-                style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "55%", left: "50%", transform: "translate(-50%,0)" }}
+                style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "55%", left: "50%", transform: "translate(-50%,0)", zIndex: 3 }}
               >
                 {p.emoji}
               </div>
             ))}
-            <LiveAvatar
-              companionId={companion.id}
-              state={avatarState}
-              isSpeaking={isSpeaking}
-              audioRef={audioRef}
-              onClick={() => { triggerAnimation("jump", 800); spawnParticles(); }}
-            />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <LiveAvatar
+                companionId={companion.id}
+                state="idle"
+                isSpeaking={isSpeaking}
+                audioRef={audioRef}
+                onClick={() => { triggerAnimation("jump", 800); spawnParticles(); }}
+              />
+            </div>
           </div>
         </div>
 
