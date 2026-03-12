@@ -146,34 +146,35 @@ export default function CompanionsPage() {
             key={c.id}
             whileTap={{ scale: 0.97 }}
             onClick={() => setSelected(c.id)}
-            className={`relative rounded-2xl border p-4 flex gap-4 items-center cursor-pointer transition-all ${c.bg} ${c.border} ${
+            className={`relative rounded-3xl border overflow-hidden cursor-pointer transition-all h-64 ${c.border} ${
               selected === c.id ? "ring-2 ring-white/50 scale-[1.01]" : ""
             }`}
           >
-            {/* Avatar */}
-            <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 bg-white/10 ring-2 ring-white/20">
-              <img
-                src={c.avatar}
-                alt={c.name}
-                className="w-full h-full object-cover object-top"
-              />
-            </div>
+            {/* Full-body image background */}
+            <img
+              src={c.fullBody}
+              alt={c.name}
+              className="w-full h-full object-cover object-top"
+            />
+            
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
+            {/* Info overlay */}
+            <div className="absolute inset-x-0 bottom-0 p-4">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="text-white font-bold text-lg">{c.name}</span>
-                <span className="text-xs text-white/50 font-medium">{c.tag}</span>
+                <span className="text-xs text-white/60 font-medium">{c.tag}</span>
               </div>
               <span className={`text-xs font-semibold bg-gradient-to-r ${c.color} bg-clip-text text-transparent`}>
                 {c.vibe}
               </span>
-              <p className="text-white/60 text-xs mt-1 leading-relaxed line-clamp-2">{c.personality}</p>
+              <p className="text-white/70 text-xs mt-1 leading-relaxed">{c.personality}</p>
             </div>
 
             {/* Check */}
             {selected === c.id && (
-              <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white flex items-center justify-center">
+              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-white flex items-center justify-center">
                 <Check className="w-4 h-4 text-purple-700" />
               </div>
             )}
