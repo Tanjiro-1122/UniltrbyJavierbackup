@@ -209,7 +209,7 @@ export default function ChatPage() {
         </div>
 
         {/* Avatar zone */}
-        <div className="flex items-end justify-center" style={{ height: "260px" }}>
+        <div className="flex items-end justify-center" style={{ height: "360px" }}>
           <div className="relative flex flex-col items-center">
             {/* Speaking glow ring */}
             {isSpeaking && (
