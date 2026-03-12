@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, MicOff, Settings, ChevronDown, Loader2, Volume2, VolumeX } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import CompanionAvatar from "@/components/CompanionAvatar";
+import LiveAvatar from "@/components/LiveAvatar";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
