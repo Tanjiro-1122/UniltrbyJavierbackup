@@ -27,7 +27,7 @@ export default function HomePage() {
       {/* Content */}
       <div className="relative flex flex-col h-full">
         {/* Luna standing in the room — anchored to the floor */}
-        <div className="flex-1 flex flex-col items-center justify-end pb-4">
+        <div className="flex-1 flex flex-col items-center justify-end pb-0">
           {/* Name above character */}
           <h1 className="text-white text-2xl font-bold tracking-wide mb-3 drop-shadow-[0_0_12px_rgba(200,150,255,0.8)]">
             Luna
