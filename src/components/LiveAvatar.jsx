@@ -178,13 +178,15 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
         onLoad={() => setImgLoaded(true)}
         style={{
           width: avatarW, height: avatarH,
-          borderRadius: 24,
+          borderRadius: 0,
           objectFit: "cover",
           objectPosition: "top center",
           display: "block",
           userSelect: "none",
-          filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
+          filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.4)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
           transition: "filter 0.2s",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
         }}
         draggable={false}
       />
