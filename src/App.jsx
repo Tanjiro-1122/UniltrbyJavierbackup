@@ -6,6 +6,10 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import HomePage from './pages/HomePage';
+import CompanionsPage from './pages/CompanionsPage';
+import VibePage from './pages/VibePage';
+import EnvironmentPage from './pages/EnvironmentPage';
+import ChatPage from './pages/ChatPage';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -36,6 +40,10 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/HomePage" element={<HomePage />} />
+      <Route path="/companions" element={<CompanionsPage />} />
+      <Route path="/vibe" element={<VibePage />} />
+      <Route path="/environment" element={<EnvironmentPage />} />
+      <Route path="/chat" element={<ChatPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
