@@ -23,28 +23,28 @@ const FULL_BODY = {
   sage:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/58a7f7877_generated_image.png",
 };
 
-// Per-companion mouth position (as % of image width/height for the oval overlay)
+// Per-companion mouth position — face is in top ~22% of full-body image (viewBox 0 0 100 100)
 const MOUTH_CONFIG = {
-  luna:   { cx: 50, cy: 73, rx: 7,  ry: 3.5 },
-  kai:    { cx: 50, cy: 73, rx: 6,  ry: 3 },
-  nova:   { cx: 50, cy: 72, rx: 8,  ry: 3.5 },
-  ash:    { cx: 50, cy: 73, rx: 6,  ry: 3 },
-  sakura: { cx: 50, cy: 74, rx: 7,  ry: 3.5 },
-  ryuu:   { cx: 50, cy: 72, rx: 6,  ry: 3 },
-  zara:   { cx: 50, cy: 73, rx: 8,  ry: 3.5 },
-  sage:   { cx: 50, cy: 73, rx: 6,  ry: 3 },
+  luna:   { cx: 50, cy: 19, rx: 3.5, ry: 1.5 },
+  kai:    { cx: 50, cy: 19, rx: 3,   ry: 1.5 },
+  nova:   { cx: 50, cy: 19, rx: 3.5, ry: 1.5 },
+  ash:    { cx: 50, cy: 19, rx: 3,   ry: 1.5 },
+  sakura: { cx: 50, cy: 19, rx: 3.5, ry: 1.5 },
+  ryuu:   { cx: 50, cy: 18, rx: 3,   ry: 1.5 },
+  zara:   { cx: 50, cy: 19, rx: 3.5, ry: 1.5 },
+  sage:   { cx: 50, cy: 19, rx: 3,   ry: 1.5 },
 };
 
-// Per-companion eye positions for blink overlay
+// Per-companion eye positions for blink overlay — full body
 const EYE_CONFIG = {
-  luna:   [{ cx: 38, cy: 55 }, { cx: 62, cy: 55 }],
-  kai:    [{ cx: 37, cy: 54 }, { cx: 63, cy: 54 }],
-  nova:   [{ cx: 37, cy: 55 }, { cx: 63, cy: 55 }],
-  ash:    [{ cx: 38, cy: 54 }, { cx: 62, cy: 54 }],
-  sakura: [{ cx: 38, cy: 55 }, { cx: 62, cy: 55 }],
-  ryuu:   [{ cx: 37, cy: 53 }, { cx: 63, cy: 53 }],
-  zara:   [{ cx: 38, cy: 55 }, { cx: 62, cy: 55 }],
-  sage:   [{ cx: 38, cy: 54 }, { cx: 62, cy: 54 }],
+  luna:   [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
+  kai:    [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
+  nova:   [{ cx: 43, cy: 14 }, { cx: 57, cy: 14 }],
+  ash:    [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
+  sakura: [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
+  ryuu:   [{ cx: 43, cy: 13 }, { cx: 57, cy: 13 }],
+  zara:   [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
+  sage:   [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
 };
 
 export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, onClick }) {
