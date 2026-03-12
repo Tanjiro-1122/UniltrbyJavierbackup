@@ -59,8 +59,8 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
         setTimeout(() => {
           setBlinking(false);
           scheduleBlink();
-        }, 130);
-      }, 2500 + Math.random() * 2500);
+        }, 160);
+      }, 2000 + Math.random() * 2000);
     };
     scheduleBlink();
     return () => clearTimeout(timeout);
