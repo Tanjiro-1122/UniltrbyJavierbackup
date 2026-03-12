@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
 const BG_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/61d996564_generated_image.png";
-const LUNA_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/5ec326653_generated_image.png";
+const LUNA_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/c208945aa_generated_image.png";
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀"];
 const PHRASES = ["Hi there!", "You called?", "Hehe~", "What's up?", "👋", "Yay!"];
