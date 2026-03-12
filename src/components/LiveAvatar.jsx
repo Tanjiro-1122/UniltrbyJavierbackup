@@ -216,13 +216,7 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
               fill="rgba(255,255,255,0.85)"
             />
           )}
-          {/* Blink overlays — closed eyelid shape */}
-          {blinking && eyes.map((eye, i) => (
-            <g key={i}>
-              <ellipse cx={eye.cx} cy={eye.cy} rx={4} ry={2.5} fill="rgba(210,170,130,0.98)" />
-              <ellipse cx={eye.cx} cy={eye.cy - 0.8} rx={3.8} ry={1} fill="rgba(40,20,10,0.55)" />
-            </g>
-          ))}
+
         </svg>
       )}
     </motion.div>
