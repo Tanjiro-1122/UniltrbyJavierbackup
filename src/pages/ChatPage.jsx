@@ -129,15 +129,45 @@ export default function ChatPage() {
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setLoading(true);
+    triggerAnimation("talk", 3000);
 
     try {
       const systemPrompt = `${companion.systemPrompt}\n\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1-3 sentences max.`;
       const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
-      const response = await base44.functions.invoke("chat", { messages: history, systemPrompt });
-      const replyText = response.data?.reply || "...";
-      const reply = { role: "assistant", content: replyText };
-      setMessages((m) => [...m, reply]);
-      spawnParticles();
+      
+      let replyText = "";
+      const response = await fetch(`${window.location.origin}/api/functions/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history, systemPrompt, stream: true }),
+      });
+
+      if (!response.ok) throw new Error("Stream failed");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let isFirstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        replyText += chunk;
+
+        if (isFirstChunk) {
+          setMessages((m) => [...m, { role: "assistant", content: replyText }]);
+          spawnParticles();
+          isFirstChunk = false;
+        } else {
+          setMessages((m) => {
+            const updated = [...m];
+            updated[updated.length - 1].content = replyText;
+            return updated;
+          });
+        }
+      }
+
       await speakText(replyText, companion.id);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
