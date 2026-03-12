@@ -45,6 +45,7 @@ export default function HomePage() {
                 width: "auto",
                 objectFit: "contain",
                 filter: "drop-shadow(0 0 18px rgba(180, 100, 255, 0.7))",
+                mixBlendMode: "screen",
               }}
             />
           </div>
