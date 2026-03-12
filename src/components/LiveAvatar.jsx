@@ -115,27 +115,25 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
   useEffect(() => {
     if (state === "idle") {
       controls.start({
-        y: [0, -6, 0],
-        rotate: [0, 0.5, 0, -0.5, 0],
-        transition: { duration: 3.5, repeat: Infinity, ease: "easeInOut" },
+        rotate: [0, 0.8, 0, -0.8, 0],
+        scale: [1, 1.005, 1, 1.005, 1],
+        transition: { duration: 4, repeat: Infinity, ease: "easeInOut" },
       });
     } else if (state === "wave") {
       controls.start({
-        rotate: [0, -8, 8, -5, 3, 0],
-        y: [0, -12, -10, -6, -2, 0],
+        rotate: [0, -6, 6, -4, 2, 0],
         transition: { duration: 1.2, ease: "easeInOut" },
       });
     } else if (state === "jump") {
       controls.start({
-        y: [0, -28, -18, -5, 0],
-        scale: [1, 1.07, 1.04, 1.01, 1],
+        scale: [1, 1.08, 1.04, 1.01, 1],
+        rotate: [0, -2, 2, -1, 0],
         transition: { duration: 0.65, ease: "easeOut" },
       });
     } else if (state === "talk") {
       controls.start({
-        y: [0, -4, 0],
         rotate: [0, 1, 0, -1, 0],
-        transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" },
+        transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" },
       });
     }
   }, [state]);
