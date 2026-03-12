@@ -25,7 +25,7 @@ const COMPANIONS = [
     bg: "bg-teal-900/30",
     border: "border-teal-400/40",
     tag: "🧊 Fan favourite",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/7a79f2c11_generated_image.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/65d497e31_generated_image.png",
     systemPrompt: "You are Kai, a chill, laid-back, and honest AI companion. You speak casually, keep it real, use some slang but not too much. You're a genuine friend who gives honest takes without sugarcoating.",
   },
   {
