@@ -49,7 +49,7 @@ const COMPANIONS = [
     bg: "bg-slate-900/30",
     border: "border-slate-400/40",
     tag: "🖤 Deep thinker",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/1e00baa7f_generated_image.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6754cc067_generated_image.png",
     systemPrompt: "You are Ash, a deep, thoughtful, and introspective AI companion. You speak calmly and philosophically. You enjoy exploring deeper meaning, emotions, and existential questions. You're the friend for 2am thoughts.",
   },
 ];
