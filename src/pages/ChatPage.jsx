@@ -211,8 +211,11 @@ export default function ChatPage() {
         {/* Avatar zone */}
         <div className="flex items-end justify-center flex-1">
           <div className="relative flex flex-col items-center">
-            {/* White background for hyperrealistic standing effect */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-80 h-96 bg-white rounded-b-3xl shadow-2xl" style={{ zIndex: 0 }} />
+            {/* Greenscreen effect - subtle shadow grounding */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-48 pointer-events-none" style={{
+              background: "radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 70%)",
+              zIndex: 0
+            }} />
             
             {/* Speaking glow ring */}
             {isSpeaking && (
