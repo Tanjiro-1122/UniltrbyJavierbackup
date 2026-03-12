@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 
 // 2D flat cartoon SVG characters per companion
