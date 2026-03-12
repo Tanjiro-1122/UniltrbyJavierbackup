@@ -171,7 +171,7 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
         />
       )}
 
-      {/* Full-body image */}
+      {/* Full-body image - cropped avatar only */}
       <img
         src={portrait}
         alt={companionId}
@@ -180,13 +180,12 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
           width: avatarW, height: avatarH,
           borderRadius: 0,
           objectFit: "cover",
-          objectPosition: "top center",
+          objectPosition: "center center",
           display: "block",
           userSelect: "none",
           filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.4)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
           transition: "filter 0.2s",
-          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
-          maskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
+          clipPath: "polygon(20% 0%, 80% 0%, 100% 30%, 100% 95%, 50% 100%, 0% 95%, 0% 30%)",
         }}
         draggable={false}
       />
