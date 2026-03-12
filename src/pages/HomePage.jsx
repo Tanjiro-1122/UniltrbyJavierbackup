@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Send } from "lucide-react";
 
 const BG_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9f432ab5c_generated_image.png";
-const LUNA_URL = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/c2cd0df0f_generated_image.png";
+const LUNA_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/37290def1_generated_image.png";
 
 export default function HomePage() {
   const [message, setMessage] = useState("");
