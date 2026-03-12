@@ -185,8 +185,8 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
           userSelect: "none",
           filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.4)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
           transition: "filter 0.2s",
-          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 0%, black 85%, transparent 100%)",
         }}
         draggable={false}
       />
