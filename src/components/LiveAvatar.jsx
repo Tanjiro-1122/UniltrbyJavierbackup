@@ -149,50 +149,51 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
     }
   }, [state]);
 
-  const avatarSize = 240;
+  const avatarW = 200;
+  const avatarH = 340;
 
   return (
     <motion.div
       animate={controls}
       onClick={onClick}
-      style={{ cursor: "pointer", transformOrigin: "bottom center", position: "relative", width: avatarSize, height: avatarSize }}
+      style={{ cursor: "pointer", transformOrigin: "bottom center", position: "relative", width: avatarW, height: avatarH }}
     >
-      {/* Glow ring when speaking */}
+      {/* Glow when speaking */}
       {isSpeaking && (
         <motion.div
-          animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.05, 0.95] }}
+          animate={{ opacity: [0.3, 0.7, 0.3], scale: [0.95, 1.05, 0.95] }}
           transition={{ duration: 1.2, repeat: Infinity }}
           style={{
-            position: "absolute", inset: -12, borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+            position: "absolute", inset: -16, borderRadius: 32,
+            background: "radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
       )}
 
-      {/* Portrait image */}
+      {/* Full-body image */}
       <img
         src={portrait}
         alt={companionId}
         onLoad={() => setImgLoaded(true)}
         style={{
-          width: avatarSize, height: avatarSize,
-          borderRadius: "50%",
+          width: avatarW, height: avatarH,
+          borderRadius: 24,
           objectFit: "cover",
           objectPosition: "top center",
           display: "block",
           userSelect: "none",
-          filter: `drop-shadow(0 8px 24px rgba(0,0,0,0.5)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
+          filter: `drop-shadow(0 12px 32px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
           transition: "filter 0.2s",
         }}
         draggable={false}
       />
 
-      {/* SVG overlay for mouth + blink — positioned over the image */}
+      {/* SVG overlay for mouth + blink */}
       {imgLoaded && (
         <svg
           viewBox="0 0 100 100"
-          style={{ position: "absolute", top: 0, left: 0, width: avatarSize, height: avatarSize, pointerEvents: "none" }}
+          style={{ position: "absolute", top: 0, left: 0, width: avatarW, height: avatarH, pointerEvents: "none" }}
         >
           {/* Mouth overlay */}
           <ellipse
