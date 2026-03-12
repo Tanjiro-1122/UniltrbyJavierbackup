@@ -10,6 +10,10 @@ import CompanionsPage from './pages/CompanionsPage';
 import VibePage from './pages/VibePage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import ChatPage from './pages/ChatPage';
+import Splash from './pages/Splash';
+import Onboarding from './pages/Onboarding';
+import Chat from './pages/Chat';
+import Settings from './pages/Settings';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -38,12 +42,14 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<Splash />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/chat" element={<Chat />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="/HomePage" element={<HomePage />} />
       <Route path="/companions" element={<CompanionsPage />} />
       <Route path="/vibe" element={<VibePage />} />
       <Route path="/environment" element={<EnvironmentPage />} />
-      <Route path="/chat" element={<ChatPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

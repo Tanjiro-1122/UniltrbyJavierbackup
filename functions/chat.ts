@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
         ...messages,
       ],
       max_tokens: 200,
-      temperature: 0.9,
+      temperature: 0.85,
     });
 
     const reply = completion.choices[0].message.content;
