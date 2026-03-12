@@ -225,10 +225,11 @@ export default function ChatPage() {
                 {p.emoji}
               </div>
             ))}
-            <CompanionAvatar
+            <LiveAvatar
               companionId={companion.id}
               state={avatarState}
               isSpeaking={isSpeaking}
+              audioRef={audioRef}
               onClick={() => { triggerAnimation("jump", 800); spawnParticles(); }}
             />
           </div>
