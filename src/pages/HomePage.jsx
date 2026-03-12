@@ -36,16 +36,16 @@ export default function HomePage() {
           {/* Full-body Luna with glow */}
           <div className="relative">
             <div className="absolute -inset-4 rounded-full bg-purple-500/30 blur-2xl animate-pulse" />
-            <img
-              src={LUNA_URL}
-              alt="Luna"
-              className="relative"
+            <div
               style={{
-                height: "200px",
-                width: "auto",
-                objectFit: "contain",
+                width: "180px",
+                height: "280px",
+                backgroundImage: `url(${LUNA_URL})`,
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "bottom center",
+                backgroundColor: "transparent",
                 filter: "drop-shadow(0 0 18px rgba(180, 100, 255, 0.7))",
-                mixBlendMode: "screen",
               }}
             />
           </div>
