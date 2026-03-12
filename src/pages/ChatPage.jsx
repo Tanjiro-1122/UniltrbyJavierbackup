@@ -98,32 +98,23 @@ export default function ChatPage() {
       setIsSpeaking(true);
       setAvatarState("talk");
       const response = await base44.functions.invoke("tts", { text, companionId });
-      // response.data is the audio buffer info; we need to get it as blob
-      // Since invoke returns axios response, we need to fetch directly
-      const token = await base44.auth.getToken?.() || "";
-      const res = await fetch(`/api/functions/tts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ text, companionId }),
-      });
-      if (!res.ok) throw new Error("TTS failed");
-      const blob = await res.blob();
+      const base64 = response.data?.audio;
+      if (!base64) throw new Error("No audio");
+
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
+
       if (audioRef.current) {
         audioRef.current.pause();
         URL.revokeObjectURL(audioRef.current.src);
       }
       const audio = new Audio(url);
       audioRef.current = audio;
-      audio.onended = () => {
-        setIsSpeaking(false);
-        setAvatarState("idle");
-        URL.revokeObjectURL(url);
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        setAvatarState("idle");
-      };
+      audio.onended = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); };
       await audio.play();
     } catch {
       setIsSpeaking(false);
