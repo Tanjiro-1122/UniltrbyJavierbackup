@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { COMPANIONS } from "@/lib/companionData";
+import { COMPANIONS } from "@/components/companionData";
 
 export default function CompanionAvatar({ companionId, mood }) {
   const companion = COMPANIONS.find((c) => c.id === companionId);

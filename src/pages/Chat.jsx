@@ -6,7 +6,7 @@ import { base44 } from "@/api/base44Client";
 import CompanionAvatar from "@/components/CompanionAvatar";
 import ChatBubble from "@/components/ChatBubble";
 import SettingsDrawer from "@/components/SettingsDrawer";
-import { COMPANIONS, BACKGROUNDS } from "@/lib/companionData";
+import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
 const CRISIS_KEYWORDS = ["suicide", "self-harm", "kill myself", "end it", "cut myself", "hurt myself"];
 

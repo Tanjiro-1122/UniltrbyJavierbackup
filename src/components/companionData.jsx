@@ -1,0 +1,161 @@
+export const COMPANIONS = [
+  {
+    id: "luna",
+    name: "Luna",
+    emoji: "🌙",
+    tagline: "Your cozy companion",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/d5719238b_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/d5719238b_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/8a2c4aea1_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/0c717da21_generated_image.png",
+    },
+  },
+  {
+    id: "kai",
+    name: "Kai",
+    emoji: "🌊",
+    tagline: "Your chill bestie",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/bb5483e56_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/bb5483e56_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a18437ba9_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/35096cd7c_generated_image.png",
+    },
+  },
+  {
+    id: "nova",
+    name: "Nova",
+    emoji: "⚡",
+    tagline: "Your hype companion",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a6684e04f_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a6684e04f_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a7ea5ca74_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/c19e77c24_generated_image.png",
+    },
+  },
+  {
+    id: "ash",
+    name: "Ash",
+    emoji: "🌫️",
+    tagline: "Your calm confidant",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/9e556a92c_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/9e556a92c_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/2f086c04e_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/efb033d42_generated_image.png",
+    },
+  },
+  {
+    id: "sakura",
+    name: "Sakura",
+    emoji: "🌸",
+    tagline: "Your gentle spirit",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/668d03dd5_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/668d03dd5_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/b7e9df207_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/295ff8151_generated_image.png",
+    },
+  },
+  {
+    id: "ryuu",
+    name: "Ryuu",
+    emoji: "🐉",
+    tagline: "Your fierce protector",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/fd22415bf_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/fd22415bf_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/d7dfae5cb_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/c6a06945a_generated_image.png",
+    },
+  },
+  {
+    id: "zara",
+    name: "Zara",
+    emoji: "✨",
+    tagline: "Your bold bestie",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/f11417e37_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/f11417e37_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/f64b7ac5e_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/25fc4ce76_generated_image.png",
+    },
+  },
+  {
+    id: "sage",
+    name: "Sage",
+    emoji: "🍃",
+    tagline: "Your wise guide",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/6edc10779_generated_image.png",
+    poses: {
+      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/6edc10779_generated_image.png",
+      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/0fec50e56_generated_image.png",
+      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/0adab81b2_generated_image.png",
+    },
+  },
+];
+
+export const BACKGROUNDS = [
+  {
+    id: "living_room",
+    label: "Cozy Living Room",
+    emoji: "🛋️",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e94aaa131_generated_image.png",
+  },
+  {
+    id: "park",
+    label: "Sunny Park",
+    emoji: "🌳",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e704bd982_generated_image.png",
+  },
+  {
+    id: "beach",
+    label: "Sunset Beach",
+    emoji: "🌅",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ae1b4b563_generated_image.png",
+  },
+  {
+    id: "space",
+    label: "Outer Space",
+    emoji: "🚀",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ba89824d4_generated_image.png",
+  },
+  {
+    id: "forest",
+    label: "Enchanted Forest",
+    emoji: "🍄",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/62d47bde9_generated_image.png",
+  },
+  {
+    id: "cafe",
+    label: "Rainy Café",
+    emoji: "☕",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/16d69f80d_generated_image.png",
+  },
+  {
+    id: "rooftop",
+    label: "Anime Rooftop",
+    emoji: "🌇",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/0bc454f5e_generated_image.png",
+  },
+  {
+    id: "ocean",
+    label: "Deep Ocean",
+    emoji: "🐠",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/03957184c_generated_image.png",
+  },
+  {
+    id: "cabin",
+    label: "Winter Cabin",
+    emoji: "🏔️",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/41331fe43_generated_image.png",
+  },
+  {
+    id: "cyberpunk",
+    label: "Cyberpunk City",
+    emoji: "🌆",
+    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/a47cfaf4e_generated_image.png",
+  },
+];

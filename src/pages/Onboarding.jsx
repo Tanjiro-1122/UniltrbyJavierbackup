@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { COMPANIONS, BACKGROUNDS } from "@/lib/companionData";
+import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
 export default function Onboarding() {
   const navigate = useNavigate();
