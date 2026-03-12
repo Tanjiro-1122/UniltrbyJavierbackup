@@ -96,12 +96,10 @@ export default function ChatPage() {
 
     try {
       const systemPrompt = `${companion.systemPrompt}\n\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise and conversational — 1-3 sentences max unless asked for more.`;
-      const history = [...messages, userMsg].slice(-10);
+      const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
-      const prompt = `${systemPrompt}\n\nConversation:\n${history.map((m) => `${m.role === "user" ? "User" : companion.name}: ${m.content}`).join("\n")}\n${companion.name}:`;
-
-      const response = await base44.integrations.Core.InvokeLLM({ prompt });
-      const reply = { role: "assistant", content: typeof response === "string" ? response : response?.text || "..." };
+      const response = await base44.functions.invoke("chat", { messages: history, systemPrompt });
+      const reply = { role: "assistant", content: response.data?.reply || "..." };
       setMessages((m) => [...m, reply]);
       triggerAnimation("wave", 1500);
       spawnParticles();
