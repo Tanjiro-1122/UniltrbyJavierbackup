@@ -32,6 +32,48 @@ const ENVIRONMENTS = [
     desc: "Just you, the stars, and big thoughts.",
     bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ba89824d4_generated_image.png",
   },
+  {
+    id: "enchanted_forest",
+    label: "Enchanted Forest",
+    emoji: "🍄",
+    desc: "Glowing mushrooms, magic in the air.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/62d47bde9_generated_image.png",
+  },
+  {
+    id: "rainy_cafe",
+    label: "Rainy Café",
+    emoji: "☕",
+    desc: "Rain on the window, coffee in hand.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/16d69f80d_generated_image.png",
+  },
+  {
+    id: "rooftop",
+    label: "Anime Rooftop",
+    emoji: "🌇",
+    desc: "Golden hour above the city.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/0bc454f5e_generated_image.png",
+  },
+  {
+    id: "ocean",
+    label: "Deep Ocean",
+    emoji: "🐠",
+    desc: "Calm, blue, endlessly deep.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/03957184c_generated_image.png",
+  },
+  {
+    id: "cabin",
+    label: "Winter Cabin",
+    emoji: "🏔️",
+    desc: "Snow outside, fireplace inside.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/41331fe43_generated_image.png",
+  },
+  {
+    id: "cyberpunk",
+    label: "Cyberpunk City",
+    emoji: "🌆",
+    desc: "Neon lights, rain, the future.",
+    bg: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/a47cfaf4e_generated_image.png",
+  },
 ];
 
 export default function EnvironmentPage() {
