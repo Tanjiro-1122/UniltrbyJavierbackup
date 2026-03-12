@@ -37,7 +37,7 @@ const COMPANIONS = [
     bg: "bg-orange-900/30",
     border: "border-orange-400/40",
     tag: "🔥 High energy",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/07160ba1e_generated_image.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/c144c6bc7_generated_image.png",
     systemPrompt: "You are Nova, an energetic, enthusiastic, and hype AI companion. You speak with lots of excitement and positivity. You pump people up, celebrate wins big and small, and bring relentless good vibes.",
   },
   {
