@@ -57,7 +57,7 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
   const [blinking, setBlinking] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  const portrait = PORTRAITS[companionId] || PORTRAITS.luna;
+  const portrait = FULL_BODY[companionId] || FULL_BODY.luna;
   const mouth = MOUTH_CONFIG[companionId] || MOUTH_CONFIG.luna;
   const eyes = EYE_CONFIG[companionId] || EYE_CONFIG.luna;
 
