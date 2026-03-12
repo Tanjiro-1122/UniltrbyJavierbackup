@@ -13,14 +13,14 @@ const PORTRAITS = {
 };
 
 const FULL_BODY = {
-  luna:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/231bb2202_generated_image.png",
-  kai:    "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/17a0d2e29_generated_image.png",
-  nova:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e70157dd1_generated_image.png",
-  ash:    "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9723bfa90_generated_image.png",
-  sakura: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/2c171ca02_generated_image.png",
-  ryuu:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/940208747_generated_image.png",
-  zara:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e15438d64_generated_image.png",
-  sage:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/58a7f7877_generated_image.png",
+  luna:   "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/cc971194f_luna_nobg.png",
+  kai:    "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/cac8aee41_kai_nobg.png",
+  nova:   "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/e3c785bb9_nova_nobg.png",
+  ash:    "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/982d2b860_ash_nobg.png",
+  sakura: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/cfa695e8e_sakura_nobg.png",
+  ryuu:   "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/b55aa0a0f_ryuu_nobg.png",
+  zara:   "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3d07d107b_zara_nobg.png",
+  sage:   "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/ca31a5152_sage_nobg.png",
 };
 
 // Per-companion mouth position — face is in top ~22% of full-body image (viewBox 0 0 100 100)
