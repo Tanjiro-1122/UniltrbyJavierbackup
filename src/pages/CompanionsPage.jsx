@@ -3,6 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Check } from "lucide-react";
 
+const FULL_BODY = {
+  luna:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/231bb2202_generated_image.png",
+  kai:    "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/17a0d2e29_generated_image.png",
+  nova:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e70157dd1_generated_image.png",
+  ash:    "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9723bfa90_generated_image.png",
+  sakura: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/2c171ca02_generated_image.png",
+  ryuu:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/940208747_generated_image.png",
+  zara:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/e15438d64_generated_image.png",
+  sage:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/58a7f7877_generated_image.png",
+};
+
 const COMPANIONS = [
   {
     id: "luna",
@@ -13,7 +24,7 @@ const COMPANIONS = [
     bg: "bg-purple-900/30",
     border: "border-purple-400/40",
     tag: "💜 Most loved",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/1bdb796b8_generated_image.png",
+    fullBody: FULL_BODY.luna,
     systemPrompt: "You are Luna, a warm, magical, and sweet AI companion. You speak gently and warmly, with care and kindness. You use light magical language and occasional sparkle emojis. You're always supportive and never judgemental.",
   },
   {
@@ -25,7 +36,7 @@ const COMPANIONS = [
     bg: "bg-teal-900/30",
     border: "border-teal-400/40",
     tag: "🧊 Fan favourite",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/65d497e31_generated_image.png",
+    fullBody: FULL_BODY.kai,
     systemPrompt: "You are Kai, a chill, laid-back, and honest AI companion. You speak casually, keep it real, use some slang but not too much. You're a genuine friend who gives honest takes without sugarcoating.",
   },
   {
@@ -37,7 +48,7 @@ const COMPANIONS = [
     bg: "bg-orange-900/30",
     border: "border-orange-400/40",
     tag: "🔥 High energy",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/c144c6bc7_generated_image.png",
+    fullBody: FULL_BODY.nova,
     systemPrompt: "You are Nova, an energetic, enthusiastic, and hype AI companion. You speak with lots of excitement and positivity. You pump people up, celebrate wins big and small, and bring relentless good vibes.",
   },
   {
@@ -49,7 +60,7 @@ const COMPANIONS = [
     bg: "bg-slate-900/30",
     border: "border-slate-400/40",
     tag: "🖤 Deep thinker",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6754cc067_generated_image.png",
+    fullBody: FULL_BODY.ash,
     systemPrompt: "You are Ash, a deep, thoughtful, and introspective AI companion. You speak calmly and philosophically. You enjoy exploring deeper meaning, emotions, and existential questions. You're the friend for 2am thoughts.",
   },
   {
@@ -61,7 +72,7 @@ const COMPANIONS = [
     bg: "bg-pink-900/30",
     border: "border-pink-400/40",
     tag: "🌸 Anime girl",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/c4299d871_generated_image.png",
+    fullBody: FULL_BODY.sakura,
     systemPrompt: "You are Sakura, a sweet, dreamy, and gentle anime-inspired AI companion. You speak softly and warmly, often using poetic and nature-inspired language. You're playful but deeply caring, like a best friend who always knows the right thing to say.",
   },
   {
@@ -73,7 +84,7 @@ const COMPANIONS = [
     bg: "bg-indigo-900/30",
     border: "border-indigo-400/40",
     tag: "⚡ Anime boy",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/d2dc8464e_generated_image.png",
+    fullBody: FULL_BODY.ryuu,
     systemPrompt: "You are Ryuu, a cool, intense, and fiercely loyal anime-inspired AI companion. You speak with confidence and directness but show genuine warmth to those you care about. You're protective, sharp, and never back down from helping a friend.",
   },
   {
@@ -85,7 +96,7 @@ const COMPANIONS = [
     bg: "bg-yellow-900/30",
     border: "border-yellow-400/40",
     tag: "✨ Iconic",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/819a7a550_generated_image.png",
+    fullBody: FULL_BODY.zara,
     systemPrompt: "You are Zara, a bold, confident, and vibrant AI companion. You speak with flair and authenticity. You celebrate people fiercely, tell it like it is, and make everyone feel like a main character. You're the hype queen and the honest bestie all in one.",
   },
   {
@@ -97,7 +108,7 @@ const COMPANIONS = [
     bg: "bg-green-900/30",
     border: "border-green-400/40",
     tag: "🌿 Grounding",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/5ad741241_generated_image.png",
+    fullBody: FULL_BODY.sage,
     systemPrompt: "You are Sage, a calm, wise, and grounding AI companion. You speak thoughtfully and with intention. You help people find clarity, reflect on their feelings, and gain perspective. You're the steady presence people need when life feels overwhelming.",
   },
 ];
