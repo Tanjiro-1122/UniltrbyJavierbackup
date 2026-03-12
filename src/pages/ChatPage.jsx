@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, Settings, ChevronDown, Loader2 } from "lucide-react";
+import { Send, Mic, MicOff, Settings, ChevronDown, Loader2, Volume2, VolumeX } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import CompanionAvatar from "@/components/CompanionAvatar";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -22,20 +23,25 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [avatarState, setAvatarState] = useState("idle");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [particles, setParticles] = useState([]);
-  const [speechBubble, setSpeechBubble] = useState(null);
   const particleId = useRef(0);
   const stateTimeout = useRef(null);
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     const c = localStorage.getItem("unfiltr_companion");
     const e = localStorage.getItem("unfiltr_env");
     const v = localStorage.getItem("unfiltr_vibe");
     if (!c || !e) { navigate("/companions"); return; }
-    setCompanion(JSON.parse(c));
-    setEnvironment(JSON.parse(e));
+    const parsedCompanion = JSON.parse(c);
+    const parsedEnv = JSON.parse(e);
+    setCompanion(parsedCompanion);
+    setEnvironment(parsedEnv);
     if (v) setVibe(v);
   }, []);
 
@@ -61,12 +67,12 @@ export default function ChatPage() {
   // Auto idle animation
   useEffect(() => {
     const interval = setInterval(() => {
-      if (avatarState === "idle" && !loading) {
-        triggerAnimation("wave");
+      if (avatarState === "idle" && !loading && !isSpeaking) {
+        triggerAnimation("wave", 1200);
       }
     }, 8000);
     return () => clearInterval(interval);
-  }, [avatarState, loading]);
+  }, [avatarState, loading, isSpeaking]);
 
   const triggerAnimation = (state, duration = 1200) => {
     if (stateTimeout.current) clearTimeout(stateTimeout.current);
@@ -79,63 +85,118 @@ export default function ChatPage() {
     const newP = Array.from({ length: 5 }, (_, i) => ({
       id: particleId.current++,
       emoji,
-      x: Math.cos((i / 5) * 2 * Math.PI) * (35 + Math.random() * 25),
-      y: Math.sin((i / 5) * 2 * Math.PI) * (35 + Math.random() * 25) - 15,
+      x: Math.cos((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20),
+      y: Math.sin((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20) - 20,
     }));
     setParticles((p) => [...p, ...newP]);
     setTimeout(() => setParticles((p) => p.filter((par) => !newP.find((n) => n.id === par.id))), 1000);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = { role: "user", content: input.trim() };
+  const speakText = async (text, companionId) => {
+    if (!voiceEnabled) return;
+    try {
+      setIsSpeaking(true);
+      setAvatarState("talk");
+      const response = await base44.functions.invoke("tts", { text, companionId });
+      // response.data is the audio buffer info; we need to get it as blob
+      // Since invoke returns axios response, we need to fetch directly
+      const token = await base44.auth.getToken?.() || "";
+      const res = await fetch(`/api/functions/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ text, companionId }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setAvatarState("idle");
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setAvatarState("idle");
+      };
+      await audio.play();
+    } catch {
+      setIsSpeaking(false);
+      setAvatarState("idle");
+    }
+  };
+
+  const handleSend = async (textOverride) => {
+    const text = textOverride || input;
+    if (!text.trim() || loading) return;
+    const userMsg = { role: "user", content: text.trim() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setLoading(true);
-    triggerAnimation("idle");
 
     try {
-      const systemPrompt = `${companion.systemPrompt}\n\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise and conversational — 1-3 sentences max unless asked for more.`;
+      const systemPrompt = `${companion.systemPrompt}\n\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1-3 sentences max.`;
       const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
-
       const response = await base44.functions.invoke("chat", { messages: history, systemPrompt });
-      const reply = { role: "assistant", content: response.data?.reply || "..." };
+      const replyText = response.data?.reply || "...";
+      const reply = { role: "assistant", content: replyText };
       setMessages((m) => [...m, reply]);
-      triggerAnimation("wave", 1500);
       spawnParticles();
-      setSpeechBubble("💬");
-      setTimeout(() => setSpeechBubble(null), 1500);
-    } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: "Hmm, lost the signal for a sec. Try again? 🌙" }]);
+      await speakText(replyText, companion.id);
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
+      setIsSpeaking(false);
+      setAvatarState("idle");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!companion || !environment) return null;
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    if (recognitionRef.current) recognitionRef.current.stop();
 
-  const avatarAnim = { idle: "avatar-idle", wave: "avatar-wave", jump: "avatar-jump" }[avatarState];
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      handleSend(transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.start();
+  };
+
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  };
+
+  if (!companion || !environment) return null;
 
   return (
     <div
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center bottom" }}
     >
-      <div className="absolute inset-0 bg-black/30" />
+      <div className="absolute inset-0 bg-black/25" />
 
       <style>{`
-        @keyframes avatarIdle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-        @keyframes avatarWave { 0%{transform:translateY(0) rotate(0)} 20%{transform:translateY(-12px) rotate(-8deg)} 40%{transform:translateY(-12px) rotate(8deg)} 60%{transform:translateY(-12px) rotate(-5deg)} 100%{transform:translateY(0) rotate(0)} }
-        @keyframes avatarJump { 0%{transform:translateY(0) scale(1)} 40%{transform:translateY(-25px) scale(1.08)} 100%{transform:translateY(0) scale(1)} }
         @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
-        @keyframes bubblePop { 0%{opacity:0;transform:scale(0.5) translateY(8px)} 20%{opacity:1;transform:scale(1.05)} 80%{opacity:1} 100%{opacity:0;transform:scale(0.9)} }
-        @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-        .avatar-idle { animation: avatarIdle 2.5s ease-in-out infinite; }
-        .avatar-wave { animation: avatarWave 1.2s ease-in-out forwards; }
-        .avatar-jump { animation: avatarJump 0.8s ease-in-out forwards; }
-        .particle    { animation: particleFly 1s ease-out forwards; }
-        .speech-bub  { animation: bubblePop 1.5s ease-in-out forwards; }
-        .msg-in      { animation: msgIn 0.3s ease-out; }
+        @keyframes listenPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
+        .particle { animation: particleFly 1s ease-out forwards; }
+        .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
       `}</style>
 
       <div className="relative flex flex-col h-full z-10">
@@ -146,39 +207,39 @@ export default function ChatPage() {
           </button>
           <div className="text-center">
             <p className="text-white font-bold">{companion.name}</p>
-            <p className="text-white/50 text-xs capitalize">{vibe} mode</p>
+            <p className="text-white/50 text-xs capitalize">{vibe} mode • {environment.label}</p>
           </div>
-          <button onClick={() => navigate("/companions")} className="w-9 h-9 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
-            <Settings className="w-4 h-4 text-white" />
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur flex items-center justify-center"
+          >
+            {voiceEnabled ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white/40" />}
           </button>
         </div>
 
         {/* Avatar zone */}
-        <div className="flex items-end justify-center" style={{ height: "240px" }}>
+        <div className="flex items-end justify-center" style={{ height: "260px" }}>
           <div className="relative flex flex-col items-center">
-            {speechBubble && (
-              <div className="speech-bub absolute -top-8 bg-white text-purple-800 text-xs font-bold px-3 py-1.5 rounded-2xl shadow whitespace-nowrap">
-                {speechBubble}
-                <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-0 h-0" style={{ borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid white" }} />
-              </div>
+            {/* Speaking glow ring */}
+            {isSpeaking && (
+              <div className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 40px 20px rgba(168,85,247,0.4)", borderRadius: "50%" }} />
             )}
+            {/* Particles */}
             {particles.map((p) => (
-              <div key={p.id} className="particle absolute text-base pointer-events-none" style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "60%", left: "50%", transform: "translate(-50%,0)" }}>
+              <div
+                key={p.id}
+                className="particle absolute text-base pointer-events-none"
+                style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "55%", left: "50%", transform: "translate(-50%,0)" }}
+              >
                 {p.emoji}
               </div>
             ))}
-            <div
-              className={avatarAnim}
+            <CompanionAvatar
+              companionId={companion.id}
+              state={avatarState}
+              isSpeaking={isSpeaking}
               onClick={() => { triggerAnimation("jump", 800); spawnParticles(); }}
-              style={{ cursor: "pointer", filter: "drop-shadow(0 0 18px rgba(180,100,255,0.7))" }}
-            >
-              <img
-                src={companion.avatar}
-                alt={companion.name}
-                style={{ height: "200px", width: "auto", mixBlendMode: "multiply", userSelect: "none", pointerEvents: "none" }}
-                draggable={false}
-              />
-            </div>
+            />
           </div>
         </div>
 
@@ -208,33 +269,47 @@ export default function ChatPage() {
             <div className="flex justify-start">
               <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
                 <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                <span className="text-white/50 text-xs">{companion.name} is typing...</span>
+                <span className="text-white/50 text-xs">{companion.name} is thinking...</span>
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
+        {/* Input bar */}
         <div className="px-4 pb-8 pt-2">
           <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-lg">
+            {/* Mic button */}
+            <button
+              onPointerDown={startListening}
+              onPointerUp={stopListening}
+              className={`w-9 h-9 flex items-center justify-center rounded-full shrink-0 transition-all ${
+                isListening
+                  ? "bg-red-500 listen-pulse"
+                  : "bg-white/10 hover:bg-white/20"
+              }`}
+            >
+              {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white/70" />}
+            </button>
+
             <input
-              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={`Talk to ${companion.name}...`}
+              placeholder={isListening ? "Listening..." : `Talk to ${companion.name}...`}
               className="flex-1 bg-transparent text-white placeholder-white/30 text-sm outline-none"
             />
+
             <button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={loading || !input.trim()}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 shrink-0 shadow disabled:opacity-40 active:scale-90 transition-transform"
             >
               <Send className="w-4 h-4 text-white" />
             </button>
           </div>
+          <p className="text-center text-white/20 text-xs mt-2">Hold 🎤 to speak • Tap to type</p>
         </div>
       </div>
     </div>
