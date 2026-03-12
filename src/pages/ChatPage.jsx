@@ -211,8 +211,6 @@ export default function ChatPage() {
         {/* Avatar zone */}
         <div className="flex items-end justify-center" style={{ height: "360px" }}>
           <div className="relative flex flex-col items-center">
-            {/* Realistic gradient background card */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-black/40 border border-white/10 backdrop-blur-sm" />
             {/* Speaking glow ring */}
             {isSpeaking && (
               <div className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 40px 20px rgba(168,85,247,0.4)", borderRadius: "50%" }} />
