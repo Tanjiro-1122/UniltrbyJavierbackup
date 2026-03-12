@@ -200,7 +200,7 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
             cx={mouth.cx}
             cy={mouth.cy}
             rx={mouth.rx}
-            ry={mouth.ry + mouthOpen * 5}
+            ry={mouth.ry + mouthOpen * 2}
             fill={mouthOpen > 0.1 ? "rgba(40,10,60,0.7)" : "none"}
             style={{ transition: "all 0.05s" }}
           />
@@ -210,7 +210,7 @@ export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, o
               cx={mouth.cx}
               cy={mouth.cy - mouth.ry * 0.3}
               rx={mouth.rx * 0.75}
-              ry={mouth.ry * 0.5}
+              ry={mouth.ry * 0.4}
               fill="rgba(255,255,255,0.85)"
             />
           )}
