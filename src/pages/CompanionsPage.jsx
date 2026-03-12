@@ -13,7 +13,7 @@ const COMPANIONS = [
     bg: "bg-purple-900/30",
     border: "border-purple-400/40",
     tag: "💜 Most loved",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/39640c768_generated_image.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/1bdb796b8_generated_image.png",
     systemPrompt: "You are Luna, a warm, magical, and sweet AI companion. You speak gently and warmly, with care and kindness. You use light magical language and occasional sparkle emojis. You're always supportive and never judgemental.",
   },
   {
