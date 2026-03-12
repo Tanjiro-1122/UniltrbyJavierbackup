@@ -26,13 +26,15 @@ Deno.serve(async (req) => {
     });
 
     const buffer = await mp3.arrayBuffer();
-    return new Response(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": buffer.byteLength.toString(),
-      },
-    });
+    // Return base64 encoded audio so it can be decoded on the frontend
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+
+    return Response.json({ audio: base64 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
