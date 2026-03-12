@@ -92,12 +92,11 @@ export default function CompanionsPage() {
             }`}
           >
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-white/10">
+            <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 bg-white/10 ring-2 ring-white/20">
               <img
                 src={c.avatar}
                 alt={c.name}
-                className="w-full h-full object-contain"
-                style={{ mixBlendMode: "multiply" }}
+                className="w-full h-full object-cover object-top"
               />
             </div>
 
