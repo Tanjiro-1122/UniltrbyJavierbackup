@@ -132,7 +132,7 @@ export default function Onboarding() {
                 <motion.button
                   key={bg.id}
                   onClick={() => setSelectedBackground(bg.id)}
-                  className={`h-32 rounded-2xl border-2 overflow-hidden transition-all ${
+                  className={`relative h-32 rounded-2xl border-2 overflow-hidden transition-all ${
                     selectedBackground === bg.id
                       ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
                       : "border-white/20"
@@ -140,7 +140,7 @@ export default function Onboarding() {
                   whileHover={{ scale: 1.05 }}
                 >
                   <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2 pointer-events-none">
                     <div className="text-center w-full">
                       <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
                     </div>
