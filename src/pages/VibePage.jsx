@@ -53,7 +53,7 @@ export default function VibePage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden pb-20">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pb-3" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">

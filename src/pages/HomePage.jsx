@@ -14,7 +14,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] via-[#1a0a35] to-[#0d0520] flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] via-[#1a0a35] to-[#0d0520] flex flex-col items-center justify-center overflow-hidden pb-20">
       {/* Stars background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {Array.from({ length: 60 }).map((_, i) => (

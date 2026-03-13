@@ -63,7 +63,7 @@ export default function Onboarding() {
   const STEP_TITLES = ["What's your name?", "Pick your companion", "Pick your space"];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto" style={{ height: "100dvh" }}>
+    <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto pb-20" style={{ height: "100dvh" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 pb-2 shrink-0" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button
