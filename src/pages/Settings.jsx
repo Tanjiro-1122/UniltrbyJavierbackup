@@ -8,6 +8,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
   const [companion, setCompanion] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -22,6 +24,16 @@ export default function Settings() {
   }, []);
 
   const handleSignOut = async () => {
+    localStorage.clear();
+    await base44.auth.logout();
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    const profileId = localStorage.getItem("userProfileId");
+    const companionId = localStorage.getItem("companionId");
+    if (profileId) await base44.entities.UserProfile.delete(profileId);
+    if (companionId) await base44.entities.Companion.delete(companionId);
     localStorage.clear();
     await base44.auth.logout();
   };
