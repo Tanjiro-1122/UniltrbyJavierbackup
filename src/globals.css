@@ -1,0 +1,22 @@
+/* iOS Mobile Readiness */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in message content and inputs */
+p, span, input, textarea, [data-selectable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+body, html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}

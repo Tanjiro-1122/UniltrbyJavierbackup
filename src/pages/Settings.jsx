@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronLeft, LogOut } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, LogOut, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function Settings() {
