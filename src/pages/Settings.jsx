@@ -5,7 +5,7 @@ import { ChevronLeft, LogOut, Trash2, Sparkles, Check } from "lucide-react";
 import AppFooter from "@/components/AppFooter";
 import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
-import { COMPANIONS } from "@/components/companionData";
+import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
 export default function Settings() {
   const navigate = useNavigate();
