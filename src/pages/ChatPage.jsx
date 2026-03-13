@@ -332,27 +332,23 @@ export default function ChatPage() {
 
         {/* Messages with Pull-to-Refresh */}
         <PullToRefresh onRefresh={handleRefresh}>
-          <div className="px-4 py-3 space-y-3 overflow-y-auto">
-            <AnimatePresence>
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-purple-600 text-white rounded-br-md"
+                      : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
+                  }`}
                 >
-                  <div
-                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-purple-600 text-white rounded-br-md"
-                        : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
