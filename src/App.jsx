@@ -50,8 +50,8 @@ const AuthenticatedApp = () => {
           <Route path="/vibe" element={<VibePage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/admin/avatar-processor" element={<AdminAvatarProcessor />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
+          <Route path="/AdminDashboard" element={<AdminDashboard />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </div>
