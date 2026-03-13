@@ -18,9 +18,9 @@ export const COMPANIONS = [
     tagline: "Your chill bestie",
     avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/8f352d4ec_generated_image.png",
     poses: {
-      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/79180404a_generated_image.png",
-      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/8f352d4ec_generated_image.png",
-      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a4b4d7cf1_generated_image.png",
+      happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/81fd009ac_kai_happy.png",
+      neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a70d2a1ad_kai_neutral.png",
+      sad: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/ed80c838c_kai_sad.png",
     },
   },
   {
