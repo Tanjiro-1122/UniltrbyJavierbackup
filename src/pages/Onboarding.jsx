@@ -124,29 +124,31 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col justify-center px-4"
+            className="flex-1 flex flex-col min-h-0 px-4"
           >
-            <h2 className="text-3xl font-bold text-white mb-6">Pick your space</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {BACKGROUNDS.map((bg) => (
-                <motion.button
-                  key={bg.id}
-                  onClick={() => setSelectedBackground(bg.id)}
-                  className={`relative h-32 rounded-2xl border-2 overflow-hidden transition-all ${
-                    selectedBackground === bg.id
-                      ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
-                      : "border-white/20"
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2 pointer-events-none">
-                    <div className="text-center w-full">
-                      <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+            <h2 className="text-3xl font-bold text-white mb-6 pt-4">Pick your space</h2>
+            <div className="flex-1 overflow-y-auto pb-2">
+              <div className="grid grid-cols-2 gap-3">
+                {BACKGROUNDS.map((bg) => (
+                  <motion.button
+                    key={bg.id}
+                    onClick={() => setSelectedBackground(bg.id)}
+                    className={`relative h-32 rounded-2xl border-2 overflow-hidden transition-all ${
+                      selectedBackground === bg.id
+                        ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
+                        : "border-white/20"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2 pointer-events-none">
+                      <div className="text-center w-full">
+                        <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.button>
-              ))}
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
