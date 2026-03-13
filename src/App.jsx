@@ -14,6 +14,7 @@ import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 // Add page imports here
 
 const AuthenticatedApp = () => {
