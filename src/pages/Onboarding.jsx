@@ -13,11 +13,15 @@ export default function Onboarding() {
   const [selectedBackground, setSelectedBackground] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const canAdvance = [
+    displayName.trim().length > 0,
+    !!selectedCompanion,
+    !!selectedBackground,
+  ];
+
   const handleNext = async () => {
-    if (step === 0 && !displayName.trim()) return;
-    if (step === 1 && !selectedCompanion) return;
-    if (step === 2 && !selectedBackground) return;
-    
+    if (!canAdvance[step]) return;
+
     if (step === 2) {
       setLoading(true);
       try {
@@ -36,9 +40,18 @@ export default function Onboarding() {
           premium: false,
         });
 
+        // Store companion data for ChatPage
         localStorage.setItem("userProfileId", userProfile.id);
         localStorage.setItem("companionId", companion.id);
-        navigate("/chat");
+        localStorage.setItem("unfiltr_companion", JSON.stringify({
+          id: companionData.id,
+          name: companionData.name,
+          systemPrompt: `You are ${companionData.name}, a supportive AI companion. ${companionData.tagline}`,
+        }));
+        const bg = BACKGROUNDS.find((b) => b.id === selectedBackground);
+        localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
+
+        navigate("/vibe");
       } finally {
         setLoading(false);
       }
@@ -47,10 +60,12 @@ export default function Onboarding() {
     setStep((s) => s + 1);
   };
 
+  const STEP_TITLES = ["What's your name?", "Pick your companion", "Pick your space"];
+
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-6">
+      <div className="flex items-center justify-between px-4 pt-6 pb-2 shrink-0">
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
           disabled={step === 0}
@@ -58,10 +73,18 @@ export default function Onboarding() {
         >
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
-        <div className="text-center">
-          <p className="text-white/50 text-sm">Step {step + 1} of 3</p>
-        </div>
+        <p className="text-white/50 text-sm">Step {step + 1} of 3</p>
         <div className="w-10" />
+      </div>
+
+      {/* Progress bar */}
+      <div className="px-4 pb-4 shrink-0">
+        <div className="h-1 bg-white/10 rounded-full">
+          <div
+            className="h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300"
+            style={{ width: `${((step + 1) / 3) * 100}%` }}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -69,16 +92,18 @@ export default function Onboarding() {
         {step === 0 && (
           <motion.div
             key="step0"
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
+            exit={{ opacity: 0, x: -60 }}
             className="flex-1 flex flex-col justify-center px-4"
           >
-            <h2 className="text-3xl font-bold text-white mb-4">What's your name?</h2>
+            <h2 className="text-3xl font-bold text-white mb-2">{STEP_TITLES[0]}</h2>
+            <p className="text-white/40 text-sm mb-6">This is what your companion will call you.</p>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleNext()}
               placeholder="Enter display name"
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-500"
               autoFocus
@@ -89,12 +114,13 @@ export default function Onboarding() {
         {step === 1 && (
           <motion.div
             key="step1"
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col justify-center px-4"
+            exit={{ opacity: 0, x: -60 }}
+            className="flex-1 flex flex-col min-h-0 px-4"
           >
-            <h2 className="text-3xl font-bold text-white mb-6">Pick your companion</h2>
+            <h2 className="text-3xl font-bold text-white mb-2 shrink-0">{STEP_TITLES[1]}</h2>
+            <p className="text-white/40 text-sm mb-4 shrink-0">Choose who you want to hang with.</p>
             <div className="flex gap-3 overflow-x-auto pb-4">
               {COMPANIONS.map((c) => (
                 <motion.button
@@ -105,7 +131,7 @@ export default function Onboarding() {
                       ? "border-purple-500 bg-purple-500/20 scale-105 shadow-lg shadow-purple-500/30"
                       : "border-white/20 bg-white/5"
                   }`}
-                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover" />
                   <div className="flex-1 flex flex-col items-center justify-center px-2">
@@ -121,31 +147,36 @@ export default function Onboarding() {
         {step === 2 && (
           <motion.div
             key="step2"
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
+            exit={{ opacity: 0, x: -60 }}
             className="flex-1 flex flex-col min-h-0 px-4"
           >
-            <h2 className="text-3xl font-bold text-white mb-6 pt-4">Pick your space</h2>
-            <div className="flex-1 overflow-y-auto pb-2">
-              <div className="grid grid-cols-2 gap-3">
+            <h2 className="text-3xl font-bold text-white mb-2 shrink-0">{STEP_TITLES[2]}</h2>
+            <p className="text-white/40 text-sm mb-4 shrink-0">Where do you want to hang out?</p>
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3 pb-2">
                 {BACKGROUNDS.map((bg) => (
                   <motion.button
                     key={bg.id}
                     onClick={() => setSelectedBackground(bg.id)}
                     className={`relative h-32 rounded-2xl border-2 overflow-hidden transition-all ${
                       selectedBackground === bg.id
-                        ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
+                        ? "border-purple-500 shadow-lg shadow-purple-500/30"
                         : "border-white/20"
                     }`}
-                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
                   >
                     <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-2 pointer-events-none">
-                      <div className="text-center w-full">
-                        <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
-                      </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-0 inset-x-0 p-2 text-center pointer-events-none">
+                      <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
                     </div>
+                    {selectedBackground === bg.id && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                      </div>
+                    )}
                   </motion.button>
                 ))}
               </div>
@@ -154,21 +185,18 @@ export default function Onboarding() {
         )}
       </AnimatePresence>
 
-      {/* Footer */}
-      <motion.div className="px-4 pb-6 pt-4">
+      {/* Footer — always pinned */}
+      <div className="px-4 pb-8 pt-3 shrink-0">
         <button
           onClick={handleNext}
-          disabled={
-            (step === 0 && !displayName.trim()) ||
-            (step === 1 && !selectedCompanion) ||
-            (step === 2 && !selectedBackground) ||
-            loading
-          }
-          className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl disabled:opacity-50 active:scale-95 transition-all"
+          disabled={!canAdvance[step] || loading}
+          className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl disabled:opacity-40 active:scale-95 transition-all shadow-xl shadow-purple-500/20"
         >
-          {step === 2 ? (loading ? "Setting up..." : "Complete") : "Next"} <ChevronRight className="inline w-4 h-4" />
+          {step === 2
+            ? loading ? "Setting up..." : "Enter this world →"
+            : <>Next <ChevronRight className="inline w-4 h-4" /></>}
         </button>
-      </motion.div>
+      </div>
     </div>
   );
 }
