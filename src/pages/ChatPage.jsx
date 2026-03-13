@@ -355,5 +355,12 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+
+    <PaywallModal
+      visible={showPaywall}
+      onClose={() => setShowPaywall(false)}
+      onSubscribe={handleSubscribe}
+      onRestore={handleRestore}
+    />
   );
 }
