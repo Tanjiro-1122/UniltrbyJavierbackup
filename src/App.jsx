@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import NavHeader from '@/components/NavHeader';
+import BottomTabs from '@/components/BottomTabs';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
@@ -39,16 +41,22 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/vibe" element={<VibePage />} />
-      <Route path="/chat" element={<ChatPage />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/admin/avatar-processor" element={<AdminAvatarProcessor />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <div className="flex flex-col h-screen bg-gray-950">
+      <NavHeader />
+      <div className="flex-1 overflow-hidden">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/vibe" element={<VibePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/admin/avatar-processor" element={<AdminAvatarProcessor />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </div>
+      <BottomTabs />
+    </div>
   );
 };
 
