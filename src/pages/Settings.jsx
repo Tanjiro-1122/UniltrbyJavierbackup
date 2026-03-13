@@ -82,10 +82,38 @@ export default function Settings() {
           <p className="text-white font-semibold text-lg">{userProfile.display_name}</p>
         </motion.div>
 
-        {/* Companion */}
+        {/* Companion Picker */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion</p>
-          <p className="text-white font-semibold text-lg">{companion.name}</p>
+          <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Your Companion</p>
+          <div className="grid grid-cols-4 gap-3">
+            {COMPANIONS.map((c) => {
+              const isSelected = companion.name === c.name;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => handleChangeCompanion(c)}
+                  className="flex flex-col items-center gap-1.5 relative"
+                >
+                  <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-500 scale-105" : "border-white/10"}`}
+                    style={{ background: "transparent" }}>
+                    <img
+                      src={c.poses.neutral}
+                      alt={c.name}
+                      className="w-full h-full object-cover object-top"
+                      style={{ background: "transparent" }}
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium ${isSelected ? "text-purple-300" : "text-white/50"}`}>{c.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          {savingCompanion && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
         </motion.div>
 
         {/* Background */}
