@@ -20,9 +20,13 @@ export default function NavHeader() {
         )}
         
         {isRoot && (
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-purple-400" />
-            <span className="font-bold text-lg text-white">Unfiltr</span>
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/a635389cb_image.png" 
+              alt="Unfiltr By Javier" 
+              className="h-8 object-contain"
+            />
+            <span className="font-bold text-white">Unfiltr</span>
           </div>
         )}
 
