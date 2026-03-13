@@ -51,11 +51,16 @@ export default function ChatPage() {
     setCompanion(parsedCompanion);
     setEnvironment(parsedEnv);
     if (v) setVibe(v);
-    // Load premium status
+    // Load premium status and companion DB record
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
       const profile = await base44.entities.UserProfile.get(profileId);
       setIsPremium(!!profile?.premium);
+      if (profile?.companion_id) {
+        setCompanionDbId(profile.companion_id);
+        const dbCompanion = await base44.entities.Companion.get(profile.companion_id);
+        if (dbCompanion?.mood_mode) setCompanionMood(dbCompanion.mood_mode);
+      }
     }
     };
     init();
