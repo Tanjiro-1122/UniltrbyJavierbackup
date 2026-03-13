@@ -78,9 +78,20 @@ export default function Settings() {
         {/* Premium Status */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Status</p>
-          <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${userProfile.premium ? "bg-purple-500" : "bg-white/30"}`} />
-            <p className="text-white font-semibold">{userProfile.premium ? "Premium" : "Free"}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${userProfile.premium ? "bg-purple-500" : "bg-white/30"}`} />
+              <p className="text-white font-semibold">{userProfile.premium ? "✨ Premium" : "Free (20 msgs/day)"}</p>
+            </div>
+            {!userProfile.premium && (
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full"
+              >
+                <Sparkles className="w-3 h-3" />
+                Upgrade
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
