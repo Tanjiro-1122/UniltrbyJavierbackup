@@ -11,6 +11,9 @@ Deno.serve(async (req) => {
 
     const { messages, systemPrompt } = await req.json();
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -19,11 +22,15 @@ Deno.serve(async (req) => {
       ],
       max_tokens: 200,
       temperature: 0.85,
+    }, {
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
     const reply = completion.choices[0].message.content;
     return Response.json({ reply });
   } catch (error) {
+    console.error('Chat error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
