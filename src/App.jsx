@@ -46,7 +46,6 @@ const AuthenticatedApp = () => {
       <Route path="/chat" element={<Chat />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/HomePage" element={<HomePage />} />
-      <Route path="/companions" element={<CompanionsPage />} />
       <Route path="/vibe" element={<VibePage />} />
       <Route path="/environment" element={<EnvironmentPage />} />
       <Route path="*" element={<PageNotFound />} />
