@@ -26,7 +26,9 @@ const EYE_CONFIG = {
   sage:   [{ cx: 44, cy: 14 }, { cx: 56, cy: 14 }],
 };
 
-export default function LiveAvatar({ companionId, state, audioRef, isSpeaking, onClick }) {
+export default function LiveAvatar({ companionId, mood = "neutral", state, audioRef, isSpeaking, onClick }) {
+  const companionData = COMPANIONS.find(c => c.id === companionId);
+  const moodImage = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
   const controls = useAnimationControls();
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
