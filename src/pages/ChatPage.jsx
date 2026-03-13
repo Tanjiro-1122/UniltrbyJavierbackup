@@ -163,10 +163,22 @@ export default function ChatPage() {
       // Detect mood from reply and update DB
       const lowerReply = replyText.toLowerCase();
       let newMood = "neutral";
-      if (vibe === "hype" || /😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah|YES|amazing|incredible|awesome|perfect/.test(lowerReply)) {
+      if (/😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah|YES|incredible|perfect|wonderful|fantastic|love|adore|beautiful/.test(lowerReply)) {
         newMood = "happy";
-      } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult|rough|struggling|down/.test(lowerReply)) {
+      } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult|rough|struggling|down|heartbreak|broken|depressed|miserable/.test(lowerReply)) {
         newMood = "sad";
+      } else if (/scared|afraid|terrified|fear|worried|anxious|nervous|panic|frightened|horror/.test(lowerReply)) {
+        newMood = "fear";
+      } else if (/disgusting|disgusted|yuck|gross|ew|ugh|nasty|revolting|repulsive|awful|despise|hate/.test(lowerReply)) {
+        newMood = "disgust";
+      } else if (/wow|whoa|shocked|surprised|amazed|astonished|unexpected|unbelievable|incredible/.test(lowerReply)) {
+        newMood = "surprise";
+      } else if (/angry|furious|mad|rage|enraged|livid|furious|hate|despise/.test(lowerReply)) {
+        newMood = "anger";
+      } else if (/peaceful|content|calm|blissful|serene|grateful|thankful|blessed|satisfied/.test(lowerReply)) {
+        newMood = "contentment";
+      } else if (/tired|exhausted|fatigue|sleepy|worn|drained|weary|exhaustion/.test(lowerReply)) {
+        newMood = "fatigue";
       } else {
         newMood = "neutral";
       }
