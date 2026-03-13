@@ -11,6 +11,7 @@ import ChatPage from './pages/ChatPage';
 import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
+import AdminDashboard from './pages/AdminDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/admin/avatar-processor" element={<AdminAvatarProcessor />} />
+      <Route path="/admin" element={<AdminDashboard />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
