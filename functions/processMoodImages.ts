@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
     // Remove background using remove.bg API
     const formData = new FormData();
-    formData.append('image_file', new Blob([imageBuffer]));
+    formData.append('image_file', new Blob([imageBuffer], { type: 'image/png' }));
     formData.append('format', 'png');
 
     const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
@@ -39,12 +39,13 @@ Deno.serve(async (req) => {
     }
 
     const processedBuffer = await removeBgResponse.arrayBuffer();
-    const processedBlob = new Blob([processedBuffer], { type: 'image/png' });
-
-    // Upload to base44
     const base44 = createClientFromRequest(req);
+    
+    // Convert to base64 for upload
+    const binary = String.fromCharCode(...new Uint8Array(processedBuffer));
+    const base64 = btoa(binary);
     const uploadResponse = await base44.integrations.Core.UploadFile({
-      file: processedBlob,
+      file: base64,
     });
 
     return Response.json({
