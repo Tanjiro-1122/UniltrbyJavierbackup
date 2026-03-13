@@ -95,7 +95,7 @@ export default function Settings() {
                   className="flex flex-col items-center gap-1.5 relative"
                 >
                   <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-500 scale-105" : "border-white/10"}`}
-                    style={{ background: "transparent" }}>
+                    style={{ background: isSelected ? "#2d1a4e" : "#1a1a2e" }}>
                     <img
                       src={c.poses.neutral}
                       alt={c.name}
