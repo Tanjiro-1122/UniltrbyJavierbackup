@@ -152,6 +152,7 @@ export default function ChatPage() {
       const replyText = response.data?.reply || "...";
       const reply = { role: "assistant", content: replyText };
       setMessages((m) => [...m, reply]);
+      incrementCount();
       spawnParticles();
       await speakText(replyText, companion.id);
     } catch {
