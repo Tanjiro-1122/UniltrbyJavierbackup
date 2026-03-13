@@ -5,7 +5,7 @@ import { ChevronLeft, LogOut, Trash2, Sparkles, Check } from "lucide-react";
 import AppFooter from "@/components/AppFooter";
 import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
-import { COMPANIONS } from "@/components/companionData";
+import { COMPANIONS, COMPANION_COLORS } from "@/components/companionData";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -37,13 +37,11 @@ export default function Settings() {
     if (savingCompanion || newCompanion.name === companion.name) return;
     setSavingCompanion(true);
     const profileId = localStorage.getItem("userProfileId");
-    // Update the existing Companion record with the new companion's data
     await base44.entities.Companion.update(userProfile.companion_id, {
       name: newCompanion.name,
       avatar_url: newCompanion.avatar,
       personality: newCompanion.tagline,
     });
-    // Update localStorage so ChatPage loads the right companion
     const updatedComp = { ...newCompanion, systemPrompt: companion.systemPrompt };
     localStorage.setItem("unfiltr_companion", JSON.stringify(updatedComp));
     setCompanion((prev) => ({ ...prev, name: newCompanion.name, avatar_url: newCompanion.avatar }));
@@ -89,22 +87,24 @@ export default function Settings() {
           <div className="grid grid-cols-4 gap-3">
             {COMPANIONS.map((c) => {
               const isSelected = companion.name === c.name;
+              const bg = COMPANION_COLORS[c.id] || "linear-gradient(135deg, #2d1a4e, #4a1a6e)";
               return (
                 <button
                   key={c.id}
                   onClick={() => handleChangeCompanion(c)}
                   className="flex flex-col items-center gap-1.5 relative"
                 >
-                  <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-500 scale-105" : "border-white/10"}`}
-                    style={{ background: isSelected ? "#2d1a4e" : "#1a1a2e" }}>
+                  <div
+                    className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-400 scale-105" : "border-white/10"}`}
+                    style={{ background: bg }}
+                  >
                     <img
                       src={c.poses.neutral}
                       alt={c.name}
                       className="w-full h-full object-cover object-top"
-                      style={{ background: "none", backgroundColor: "transparent", border: "none", mixBlendMode: "normal" }}
                     />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-white/10 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
                     )}
