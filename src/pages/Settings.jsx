@@ -128,10 +128,35 @@ export default function Settings() {
           {savingCompanion && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
         </motion.div>
 
-        {/* Background */}
+        {/* Background Picker */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Background</p>
-          <p className="text-white font-semibold text-lg capitalize">{userProfile.background_id}</p>
+          <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Background</p>
+          <div className="grid grid-cols-2 gap-3">
+            {BACKGROUNDS.map((bg) => {
+              const isSelected = userProfile.background_id === bg.id;
+              return (
+                <button
+                  key={bg.id}
+                  onClick={() => handleChangeBackground(bg.id)}
+                  className={`relative h-24 rounded-2xl border-2 overflow-hidden transition-all ${
+                    isSelected ? "border-purple-500" : "border-white/10"
+                  }`}
+                >
+                  <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-0 inset-x-0 p-2 text-center pointer-events-none">
+                    <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+                  </div>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                      <Check className="w-3 h-3 text-purple-600" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {savingBackground && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
         </motion.div>
 
         {/* Premium Status */}
