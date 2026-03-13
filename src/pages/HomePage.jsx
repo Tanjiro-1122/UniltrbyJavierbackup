@@ -74,16 +74,16 @@ export default function HomePage() {
 
         {/* CTA */}
         <button
-          onClick={() => navigate("/companions")}
+          onClick={() => navigate("/onboarding")}
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg shadow-xl shadow-purple-500/30 active:scale-95 transition-transform"
         >
           Meet your companion ✨
         </button>
         <button
-          onClick={() => navigate("/companions")}
+          onClick={() => navigate("/chat")}
           className="mt-3 w-full py-3 rounded-2xl border border-white/20 text-white/60 font-medium text-sm"
         >
-          I already have one → Log in
+          I already have one → Continue
         </button>
       </motion.div>
     </div>
