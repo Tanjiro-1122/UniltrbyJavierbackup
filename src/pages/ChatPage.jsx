@@ -333,7 +333,7 @@ export default function ChatPage() {
                 {p.emoji}
               </div>
             ))}
-            <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ position: "relative", zIndex: 1, background: "radial-gradient(ellipse at center bottom, rgba(0,0,0,0.2) 0%, transparent 60%)", borderRadius: "50%", width: "280px", height: "280px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <LiveAvatar
                 companionId={companion.id}
                 mood={companionMood}
@@ -353,7 +353,7 @@ export default function ChatPage() {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
                     msg.role === "user"
                       ? "bg-purple-600 text-white rounded-br-md"
                       : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
