@@ -192,7 +192,7 @@ export default function ChatPage() {
 
       <div className="relative flex flex-col h-full z-10">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-4 pt-12 pb-2">
+        <div className="flex items-center justify-between px-4 pb-2" style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}>
           <button onClick={() => navigate("/companions")} className="w-9 h-9 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
             <ChevronDown className="w-5 h-5 text-white" />
           </button>
@@ -277,7 +277,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input bar */}
-        <div className="px-4 pb-8 pt-2">
+        <div className="px-4 pt-2" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
           <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-lg">
             {/* Mic button */}
             <button

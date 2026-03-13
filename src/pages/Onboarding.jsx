@@ -65,7 +65,7 @@ export default function Onboarding() {
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto" style={{ height: "100dvh" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-6 pb-2 shrink-0">
+      <div className="flex items-center justify-between px-4 pb-2 shrink-0" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
           disabled={step === 0}
@@ -186,7 +186,7 @@ export default function Onboarding() {
       </AnimatePresence>
 
       {/* Footer — always pinned */}
-      <div className="px-4 pb-8 pt-3 shrink-0">
+      <div className="px-4 pt-3 shrink-0" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
         <button
           onClick={handleNext}
           disabled={!canAdvance[step] || loading}
