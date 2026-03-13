@@ -30,9 +30,9 @@ export const COMPANIONS = [
     tagline: "Your hype companion",
     avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/793287c95_generated_image.png",
     poses: {
-      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/c5c04813e_generated_image.png",
-      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/793287c95_generated_image.png",
-      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/82e2c06df_generated_image.png",
+      happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/8e795ee68_nova_happy.png",
+      neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/2a810905f_nova_neutral.png",
+      sad: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/6541e95c2_nova_sad.png",
     },
   },
   {
