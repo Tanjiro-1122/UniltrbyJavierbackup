@@ -128,9 +128,10 @@ export default function Onboarding() {
                   onClick={() => setSelectedCompanion(c.id)}
                   className={`flex-shrink-0 w-28 h-36 rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
                     selectedCompanion === c.id
-                      ? "border-purple-500 bg-purple-500/20 scale-105 shadow-lg shadow-purple-500/30"
-                      : "border-white/20 bg-white/5"
+                      ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
+                      : "border-white/20"
                   }`}
+                  style={{ background: selectedCompanion === c.id ? "#2d1a4e" : "#1a1a2e" }}
                   whileTap={{ scale: 0.97 }}
                 >
                   <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover" />
