@@ -287,7 +287,8 @@ export default function ChatPage() {
             <div style={{ position: "relative", zIndex: 1 }}>
               <LiveAvatar
                 companionId={companion.id}
-                state="idle"
+                mood={companionMood}
+                state={avatarState}
                 isSpeaking={isSpeaking}
                 audioRef={audioRef}
                 onClick={() => { triggerAnimation("jump", 800); spawnParticles(); }}
