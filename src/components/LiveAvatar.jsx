@@ -46,6 +46,8 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           alignItems: "flex-end",
           justifyContent: "center",
           background: "transparent",
+          border: "none",
+          boxShadow: "none",
         }}
       >
         {/* Speaking glow */}
