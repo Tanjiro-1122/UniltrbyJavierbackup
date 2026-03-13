@@ -32,17 +32,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Remove.bg error: ${err}` }, { status: response.status });
     }
 
-    // Get the PNG as binary and upload it
+    // Get the PNG as base64 data URL
     const imageBuffer = await response.arrayBuffer();
-    const blob = new Blob([imageBuffer], { type: 'image/png' });
+    const bytes = new Uint8Array(imageBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    const data_url = `data:image/png;base64,${base64}`;
 
-    // Upload to base44 storage
-    const uploadForm = new FormData();
-    uploadForm.append('file', blob, 'nobg.png');
-
-    const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
-
-    return Response.json({ file_url });
+    return Response.json({ file_url: data_url });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
