@@ -144,8 +144,11 @@ export default function Settings() {
         </motion.div>
       </div>
 
+      {/* Footer */}
+      <AppFooter dark />
+
       {/* Sign Out + Delete */}
-      <motion.div className="px-4 pt-4 space-y-3" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+      <motion.div className="px-4 pt-2 space-y-3" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         <button
           onClick={handleSignOut}
           className="w-full py-3 bg-red-500/20 border border-red-500/40 text-red-400 font-semibold rounded-xl hover:bg-red-500/30 transition flex items-center justify-center gap-2"
