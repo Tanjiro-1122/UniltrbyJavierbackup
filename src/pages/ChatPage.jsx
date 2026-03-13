@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, MicOff, Settings, ChevronDown, Loader2, Volume2, VolumeX } from "lucide-react";
+import { Send, Mic, MicOff, ChevronDown, Loader2, Volume2, VolumeX } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import LiveAvatar from "@/components/LiveAvatar";
+import PaywallModal from "@/components/PaywallModal";
+import { useMessageLimit } from "@/components/useMessageLimit";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
