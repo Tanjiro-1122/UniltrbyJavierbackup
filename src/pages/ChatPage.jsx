@@ -39,6 +39,7 @@ export default function ChatPage() {
   const audioRef = useRef(null);
 
   useEffect(() => {
+    const init = async () => {
     const c = localStorage.getItem("unfiltr_companion");
     const e = localStorage.getItem("unfiltr_env");
     const v = localStorage.getItem("unfiltr_vibe");
