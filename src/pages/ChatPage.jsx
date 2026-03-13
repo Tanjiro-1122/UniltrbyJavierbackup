@@ -29,6 +29,7 @@ export default function ChatPage() {
   const [isListening, setIsListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
+  const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
