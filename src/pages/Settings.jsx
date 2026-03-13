@@ -114,6 +114,26 @@ export default function Settings() {
         </button>
       </motion.div>
 
+      {/* Paywall */}
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSubscribe={() => {
+          if (window.webkit?.messageHandlers?.storekit) {
+            window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
+          } else {
+            alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)");
+          }
+        }}
+        onRestore={() => {
+          if (window.webkit?.messageHandlers?.storekit) {
+            window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
+          } else {
+            alert("Restore purchases — handled by Apple StoreKit.");
+          }
+        }}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AnimatePresence>
         {showDeleteConfirm && (
