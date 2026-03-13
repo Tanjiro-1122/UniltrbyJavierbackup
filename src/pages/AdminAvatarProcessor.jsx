@@ -85,8 +85,10 @@ export default function AdminAvatarProcessor() {
         const removeBgRes = await base44.functions.invoke('removeBg', { image_url: item.url });
         const dataUrl = removeBgRes.data.file_url;
 
-        // Step 2: Upload via UploadFile integration
-        const uploadRes = await base44.integrations.Core.UploadFile({ file: dataUrl });
+        // Step 2: Convert data URL to blob and upload
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const uploadRes = await base44.integrations.Core.UploadFile({ file: blob });
         const finalUrl = uploadRes.file_url;
 
         const key = `${item.companion}_${item.mood}`;
