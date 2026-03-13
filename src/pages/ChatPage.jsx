@@ -190,6 +190,24 @@ export default function ChatPage() {
     setIsListening(false);
   };
 
+  const handleSubscribe = () => {
+    // StoreKit will be called from the native layer via window.webkit.messageHandlers
+    // For web/testing, we show an alert
+    if (window.webkit?.messageHandlers?.storekit) {
+      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
+    } else {
+      alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)\nThis will be handled by Apple StoreKit in the native app.");
+    }
+  };
+
+  const handleRestore = () => {
+    if (window.webkit?.messageHandlers?.storekit) {
+      window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
+    } else {
+      alert("Restore purchases — handled by Apple StoreKit in the native app.");
+    }
+  };
+
   if (!companion || !environment) return null;
 
   return (
