@@ -55,6 +55,8 @@ export default function ChatPage() {
       const profile = await base44.entities.UserProfile.get(profileId);
       setIsPremium(!!profile?.premium);
     }
+    };
+    init();
   }, []);
 
   useEffect(() => {
