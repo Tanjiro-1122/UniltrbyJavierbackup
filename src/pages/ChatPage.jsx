@@ -362,5 +362,6 @@ export default function ChatPage() {
       onSubscribe={handleSubscribe}
       onRestore={handleRestore}
     />
+    </>
   );
 }
