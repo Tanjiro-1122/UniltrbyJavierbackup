@@ -37,7 +37,6 @@ export default function Settings() {
   const handleChangeCompanion = async (newCompanion) => {
     if (savingCompanion || newCompanion.name === companion.name) return;
     setSavingCompanion(true);
-    const profileId = localStorage.getItem("userProfileId");
     // Update the existing Companion record with the new companion's data
     await base44.entities.Companion.update(userProfile.companion_id, {
       name: newCompanion.name,
@@ -49,6 +48,17 @@ export default function Settings() {
     localStorage.setItem("unfiltr_companion", JSON.stringify(updatedComp));
     setCompanion((prev) => ({ ...prev, name: newCompanion.name, avatar_url: newCompanion.avatar }));
     setSavingCompanion(false);
+  };
+
+  const handleChangeBackground = async (bgId) => {
+    if (savingBackground || bgId === userProfile.background_id) return;
+    setSavingBackground(true);
+    const profileId = localStorage.getItem("userProfileId");
+    await base44.entities.UserProfile.update(profileId, { background_id: bgId });
+    const bg = BACKGROUNDS.find((b) => b.id === bgId);
+    localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
+    setUserProfile((prev) => ({ ...prev, background_id: bgId }));
+    setSavingBackground(false);
   };
 
   const handleDeleteAccount = async () => {
