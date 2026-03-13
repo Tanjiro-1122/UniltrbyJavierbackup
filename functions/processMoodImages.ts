@@ -1,5 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-
 Deno.serve(async (req) => {
   try {
     const { imageUrl, companionId, mood } = await req.json();
@@ -13,7 +11,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'REMOVEBG_API_KEY not set' }, { status: 500 });
     }
 
-    // Fetch image
+    // Fetch original image
     const imageResponse = await fetch(imageUrl);
     if (!imageResponse.ok) {
       return Response.json({ error: 'Failed to fetch image' }, { status: 400 });
@@ -35,24 +33,24 @@ Deno.serve(async (req) => {
 
     if (!removeBgResponse.ok) {
       const errorText = await removeBgResponse.text();
-      return Response.json({ error: `Remove.bg API error: ${errorText}` }, { status: removeBgResponse.status });
+      return Response.json({ error: `Remove.bg failed: ${errorText}` }, { status: removeBgResponse.status });
     }
 
     const processedBuffer = await removeBgResponse.arrayBuffer();
-    const base44 = createClientFromRequest(req);
     
-    // Convert to base64 for upload
-    const binary = String.fromCharCode(...new Uint8Array(processedBuffer));
+    // Return the processed image as base64
+    const uint8View = new Uint8Array(processedBuffer);
+    let binary = '';
+    for (let i = 0; i < uint8View.length; i++) {
+      binary += String.fromCharCode(uint8View[i]);
+    }
     const base64 = btoa(binary);
-    const uploadResponse = await base44.integrations.Core.UploadFile({
-      file: base64,
-    });
 
     return Response.json({
       success: true,
       companionId,
       mood,
-      newUrl: uploadResponse.file_url,
+      processedImage: base64,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
