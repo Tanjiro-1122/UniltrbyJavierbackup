@@ -332,7 +332,7 @@ export default function ChatPage() {
 
         {/* Messages with Pull-to-Refresh */}
         <PullToRefresh onRefresh={handleRefresh}>
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div className="flex-1 overflow-y-auto px-4 pt-6 pb-3 space-y-3">
             {messages.map((msg, i) => (
               <div
                 key={i}
