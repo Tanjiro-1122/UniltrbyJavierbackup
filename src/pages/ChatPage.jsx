@@ -153,6 +153,15 @@ export default function ChatPage() {
       const replyText = response.data?.reply || "...";
       const reply = { role: "assistant", content: replyText };
       setMessages((m) => [...m, reply]);
+      // Detect mood from reply
+      const lowerReply = replyText.toLowerCase();
+      if (vibe === "hype" || /😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah/.test(lowerReply)) {
+        setCompanionMood("happy");
+      } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult/.test(lowerReply)) {
+        setCompanionMood("sad");
+      } else {
+        setCompanionMood("neutral");
+      }
       incrementCount();
       spawnParticles();
       await speakText(replyText, companion.id);
