@@ -297,7 +297,7 @@ export default function ChatPage() {
         </div>
 
         {/* Avatar zone */}
-        <div className="flex items-end justify-center flex-1 pt-6">
+        <div className="flex items-end justify-center pt-4" style={{ height: "280px" }}>
           <div className="relative flex flex-col items-center">
             {/* Greenscreen effect - subtle shadow grounding */}
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-48 pointer-events-none" style={{
