@@ -215,6 +215,14 @@ export default function ChatPage() {
           <div className="text-center">
             <p className="text-white font-bold">{companion.name}</p>
             <p className="text-white/50 text-xs capitalize">{vibe} mode • {environment.label}</p>
+            {!isPremium && (
+              <button onClick={() => setShowPaywall(true)} className="mt-0.5 text-[10px] text-purple-300/70 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                {remaining}/{FREE_LIMIT} msgs left
+              </button>
+            )}
+            {isPremium && (
+              <p className="text-[10px] text-purple-400/80">✨ Premium</p>
+            )}
           </div>
           <button
             onClick={() => setVoiceEnabled((v) => !v)}
