@@ -42,7 +42,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <div className="flex flex-col h-screen bg-gray-950">
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pb-20">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/onboarding" element={<Onboarding />} />
