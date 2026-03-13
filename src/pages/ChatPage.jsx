@@ -48,6 +48,12 @@ export default function ChatPage() {
     setCompanion(parsedCompanion);
     setEnvironment(parsedEnv);
     if (v) setVibe(v);
+    // Load premium status
+    const profileId = localStorage.getItem("userProfileId");
+    if (profileId) {
+      const profile = await base44.entities.UserProfile.get(profileId);
+      setIsPremium(!!profile?.premium);
+    }
   }, []);
 
   useEffect(() => {
