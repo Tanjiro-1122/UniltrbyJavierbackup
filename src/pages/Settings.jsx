@@ -43,7 +43,7 @@ export default function Settings() {
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto relative">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-6 pb-6 border-b border-white/5">
+      <div className="flex items-center gap-3 px-4 pb-6 border-b border-white/5" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button
           onClick={() => navigate("/chat")}
           className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
