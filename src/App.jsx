@@ -7,11 +7,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
-import EnvironmentPage from './pages/EnvironmentPage';
 import ChatPage from './pages/ChatPage';
-import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
-import Chat from './pages/Chat';
 import Settings from './pages/Settings';
 // Add page imports here
 
