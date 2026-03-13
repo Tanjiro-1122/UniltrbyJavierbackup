@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import NavHeader from '@/components/NavHeader';
 import BottomTabs from '@/components/BottomTabs';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
@@ -43,7 +42,6 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <div className="flex flex-col h-screen bg-gray-950">
-      <NavHeader />
       <div className="flex-1 overflow-hidden">
         <Routes>
           <Route path="/" element={<HomePage />} />
