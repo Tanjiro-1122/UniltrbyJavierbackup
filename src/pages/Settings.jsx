@@ -11,6 +11,7 @@ export default function Settings() {
   const [companion, setCompanion] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
