@@ -139,6 +139,7 @@ export default function ChatPage() {
   const handleSend = async (textOverride) => {
     const text = textOverride || input;
     if (!text.trim() || loading) return;
+    if (isAtLimit) { setShowPaywall(true); return; }
     const userMsg = { role: "user", content: text.trim() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
