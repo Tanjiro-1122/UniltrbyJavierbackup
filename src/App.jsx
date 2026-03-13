@@ -53,6 +53,7 @@ const AuthenticatedApp = () => {
           <Route path="/settings" element={<Settings />} />
           <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
           <Route path="/AdminDashboard" element={<AdminDashboard />} />
+          <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </div>
