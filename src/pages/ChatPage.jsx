@@ -163,10 +163,12 @@ export default function ChatPage() {
       // Detect mood from reply and update DB
       const lowerReply = replyText.toLowerCase();
       let newMood = "neutral";
-      if (vibe === "hype" || /😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah/.test(lowerReply)) {
+      if (vibe === "hype" || /😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah|YES|amazing|incredible|awesome|perfect/.test(lowerReply)) {
         newMood = "happy";
-      } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult/.test(lowerReply)) {
+      } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult|rough|struggling|down/.test(lowerReply)) {
         newMood = "sad";
+      } else {
+        newMood = "neutral";
       }
       setCompanionMood(newMood);
       if (companionDbId) {
