@@ -43,12 +43,15 @@ Deno.serve(async (req) => {
     const imageBuffer = await removeBgRes.arrayBuffer();
     const bytes = new Uint8Array(imageBuffer);
 
-    // Step 2: Upload to base44 storage
-    const blob = new Blob([bytes], { type: 'image/png' });
-    const formData = new FormData();
-    formData.append('file', blob, 'avatar.png');
+    // Step 2: Convert to base64 data URL for UploadFile integration
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    const dataUrl = `data:image/png;base64,${base64}`;
 
-    const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
+    const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: dataUrl });
     
     return Response.json({ file_url: uploadRes.file_url });
   } catch (error) {
