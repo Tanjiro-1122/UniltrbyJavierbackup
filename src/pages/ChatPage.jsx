@@ -211,6 +211,7 @@ export default function ChatPage() {
   if (!companion || !environment) return null;
 
   return (
+    <>
     <div
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center bottom" }}
