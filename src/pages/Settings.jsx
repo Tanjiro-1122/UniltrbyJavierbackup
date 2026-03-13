@@ -83,8 +83,8 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      {/* Sign Out Button */}
-      <motion.div className="px-4 pb-8 pt-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+      {/* Sign Out + Delete */}
+      <motion.div className="px-4 pt-4 space-y-3" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         <button
           onClick={handleSignOut}
           className="w-full py-3 bg-red-500/20 border border-red-500/40 text-red-400 font-semibold rounded-xl hover:bg-red-500/30 transition flex items-center justify-center gap-2"
@@ -92,7 +92,53 @@ export default function Settings() {
           <LogOut className="w-4 h-4" />
           Sign Out
         </button>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="w-full py-3 bg-transparent border border-white/10 text-white/30 font-medium rounded-xl hover:border-red-500/30 hover:text-red-400/60 transition flex items-center justify-center gap-2 text-sm"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Account
+        </button>
       </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-end justify-center z-50"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[430px] bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
+              style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}
+            >
+              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-6" />
+              <h3 className="text-white font-bold text-xl mb-2">Delete Account?</h3>
+              <p className="text-white/50 text-sm mb-6">This will permanently delete your profile, companion, and all messages. This cannot be undone.</p>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="w-full py-3 bg-red-600 text-white font-bold rounded-xl mb-3 disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Yes, delete everything"}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="w-full py-3 bg-white/10 text-white/70 font-medium rounded-xl"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
