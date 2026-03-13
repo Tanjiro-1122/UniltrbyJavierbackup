@@ -42,9 +42,9 @@ export const COMPANIONS = [
     tagline: "Your calm confidant",
     avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a702ab8d0_generated_image.png",
     poses: {
-      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/f48f339d3_generated_image.png",
-      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a702ab8d0_generated_image.png",
-      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/208f6f8aa_generated_image.png",
+      happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/1406d022a_ash_happy.png",
+      neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/b548b9ac6_ash_neutral.png",
+      sad: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/32fbe0a53_ash_sad.png",
     },
   },
   {
