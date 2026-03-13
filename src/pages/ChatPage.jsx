@@ -246,10 +246,17 @@ export default function ChatPage() {
 
       <div className="relative flex flex-col h-full z-10">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-4 pb-2" style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}>
-          <button onClick={() => navigate("/companions")} className="w-9 h-9 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
-            <ChevronDown className="w-5 h-5 text-white" />
+        <div
+          className="flex items-center justify-between px-4 pb-3 bg-black/40 backdrop-blur-md border-b border-white/10"
+          style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}
+        >
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+          >
+            {voiceEnabled ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white/40" />}
           </button>
+
           <div className="text-center">
             <p className="text-white font-bold">{companion.name}</p>
             <p className="text-white/50 text-xs capitalize">{vibe} mode • {environment.label}</p>
@@ -262,11 +269,12 @@ export default function ChatPage() {
               <p className="text-[10px] text-purple-400/80">✨ Premium</p>
             )}
           </div>
+
           <button
-            onClick={() => setVoiceEnabled((v) => !v)}
-            className="w-9 h-9 rounded-full bg-black/30 backdrop-blur flex items-center justify-center"
+            onClick={() => navigate("/settings")}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
           >
-            {voiceEnabled ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white/40" />}
+            <Settings className="w-4 h-4 text-white" />
           </button>
         </div>
 
