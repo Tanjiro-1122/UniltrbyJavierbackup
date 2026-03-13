@@ -332,7 +332,7 @@ export default function ChatPage() {
 
         {/* Messages with Pull-to-Refresh */}
         <PullToRefresh onRefresh={handleRefresh}>
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-4 py-3 space-y-3 overflow-y-auto">
             <AnimatePresence>
               {messages.map((msg, i) => (
                 <motion.div
