@@ -95,7 +95,7 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -60 }}
-            className="flex-1 flex flex-col justify-center px-4"
+            className="flex-1 flex flex-col justify-start pt-8 px-4"
           >
             <h2 className="text-3xl font-bold text-white mb-2">{STEP_TITLES[0]}</h2>
             <p className="text-white/40 text-sm mb-6">This is what your companion will call you.</p>
