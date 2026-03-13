@@ -2,24 +2,9 @@ import React from "react";
 import { COMPANIONS } from "@/components/companionData";
 
 const MOOD_ANIMATIONS = {
-  happy: `
-    @keyframes avatarSway {
-      0%, 100% { transform: translateX(-30px); }
-      50% { transform: translateX(30px); }
-    }
-  `,
-  neutral: `
-    @keyframes avatarFloat {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-  `,
-  sad: `
-    @keyframes avatarBreathe {
-      0%, 100% { transform: scaleX(1); }
-      50% { transform: scaleX(1.02); }
-    }
-  `,
+  happy: `@keyframes avatarSway { 0%,100%{transform:translateX(-20px)} 50%{transform:translateX(20px)} }`,
+  neutral: `@keyframes avatarFloat { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }`,
+  sad: `@keyframes avatarBreathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }`,
 };
 
 const MOOD_ANIMATION_STYLE = {
@@ -35,15 +20,24 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
   return (
     <>
       <style>{MOOD_ANIMATIONS[mood]}</style>
-      <div onClick={onClick} style={{ cursor: "pointer", position: "relative", display: "inline-flex" }}>
+      <div
+        onClick={onClick}
+        style={{
+          cursor: "pointer",
+          position: "relative",
+          width: 240,
+          height: 360,
+        }}
+      >
         {isSpeaking && (
           <div style={{
             position: "absolute",
-            inset: -16,
-            borderRadius: 32,
-            background: "radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
+            inset: -20,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
             pointerEvents: "none",
             animation: "pulse 1.2s ease-in-out infinite",
+            zIndex: 0,
           }} />
         )}
         <img
@@ -52,13 +46,17 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           key={`${companionId}-${mood}`}
           draggable={false}
           style={{
-            width: 200,
-            height: 340,
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
             objectFit: "contain",
+            objectPosition: "bottom center",
             animation: MOOD_ANIMATION_STYLE[mood],
             transformOrigin: "bottom center",
-            filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
-            transition: "filter 0.2s",
+            filter: `drop-shadow(0 16px 32px rgba(0,0,0,0.5)) ${isSpeaking ? "brightness(1.1)" : "brightness(1)"}`,
+            transition: "filter 0.3s",
+            zIndex: 1,
           }}
         />
       </div>
