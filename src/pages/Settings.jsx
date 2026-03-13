@@ -180,8 +180,10 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      {/* Footer */}
-      <AppFooter dark />
+      {/* Footer with Extra Padding */}
+      <div className="pb-4">
+        <AppFooter dark />
+      </div>
 
       {/* Sign Out + Delete */}
       <motion.div className="px-4 pt-2 space-y-3" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
