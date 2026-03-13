@@ -56,7 +56,7 @@ export default function VibePage() {
     <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-6">
-        <button onClick={() => navigate("/companions")} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
         <div>
