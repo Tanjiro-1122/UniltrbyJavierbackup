@@ -40,14 +40,14 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
         style={{
           cursor: "pointer",
           position: "relative",
-          width: 200,
-          height: 340,
-          display: "flex",
+          display: "inline-flex",
           alignItems: "flex-end",
           justifyContent: "center",
-          background: "transparent",
+          background: "none",
+          backgroundColor: "transparent",
           border: "none",
           boxShadow: "none",
+          outline: "none",
         }}
       >
         {/* Speaking glow */}
