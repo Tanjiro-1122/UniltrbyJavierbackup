@@ -35,57 +35,31 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
   return (
     <>
       <style>{MOOD_ANIMATIONS[mood]}</style>
-      <div
-        onClick={onClick}
-        style={{
-          cursor: "pointer",
-          position: "relative",
-          display: "inline-flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-          background: "none",
-          backgroundColor: "transparent",
-          border: "none",
-          boxShadow: "none",
-          outline: "none",
-        }}
-      >
-        {/* Speaking glow */}
+      <div onClick={onClick} style={{ cursor: "pointer", position: "relative", display: "inline-flex" }}>
         {isSpeaking && (
-          <div
-            style={{
-              position: "absolute",
-              inset: -16,
-              borderRadius: 32,
-              background: "radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
-              pointerEvents: "none",
-              animation: "pulse 1.2s ease-in-out infinite",
-            }}
-          />
+          <div style={{
+            position: "absolute",
+            inset: -16,
+            borderRadius: 32,
+            background: "radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
+            pointerEvents: "none",
+            animation: "pulse 1.2s ease-in-out infinite",
+          }} />
         )}
-
         <img
           src={imageUrl}
           alt={companionId}
           key={`${companionId}-${mood}`}
+          draggable={false}
           style={{
             width: 200,
             height: 340,
             objectFit: "contain",
-            objectPosition: "center center",
-            display: "block",
-            userSelect: "none",
-            background: "none",
-            backgroundColor: "transparent",
-            border: "none",
-            boxShadow: "none",
-            mixBlendMode: "normal",
-            filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
-            transition: "filter 0.2s, opacity 0.3s",
             animation: MOOD_ANIMATION_STYLE[mood],
             transformOrigin: "bottom center",
+            filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.6)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
+            transition: "filter 0.2s",
           }}
-          draggable={false}
         />
       </div>
     </>
