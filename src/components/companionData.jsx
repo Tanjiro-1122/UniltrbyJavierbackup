@@ -1,21 +1,10 @@
-export const COMPANION_COLORS = {
-  luna:   "linear-gradient(135deg, #4a1a6e, #9b4dca)",
-  kai:    "linear-gradient(135deg, #0d3b5e, #1e90d4)",
-  nova:   "linear-gradient(135deg, #5e1a0d, #e85d1a)",
-  ash:    "linear-gradient(135deg, #2a2a3a, #6e6e8e)",
-  sakura: "linear-gradient(135deg, #6e1a3a, #d45c8f)",
-  ryuu:   "linear-gradient(135deg, #1a3e1a, #2e8b2e)",
-  zara:   "linear-gradient(135deg, #4e1a5e, #c040d0)",
-  sage:   "linear-gradient(135deg, #1a3a1a, #4a8a4a)",
-};
-
 export const COMPANIONS = [
   {
     id: "luna",
     name: "Luna",
     emoji: "🌙",
     tagline: "Your cozy companion",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/56a21ebd9_luna_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/5e29c0c49_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/483481a29_luna_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/56a21ebd9_luna_neutral.png",
@@ -27,7 +16,7 @@ export const COMPANIONS = [
     name: "Kai",
     emoji: "🌊",
     tagline: "Your chill bestie",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a70d2a1ad_kai_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/8f352d4ec_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/81fd009ac_kai_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a70d2a1ad_kai_neutral.png",
@@ -39,7 +28,7 @@ export const COMPANIONS = [
     name: "Nova",
     emoji: "⚡",
     tagline: "Your hype companion",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/2a810905f_nova_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/793287c95_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/8e795ee68_nova_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/2a810905f_nova_neutral.png",
@@ -51,7 +40,7 @@ export const COMPANIONS = [
     name: "Ash",
     emoji: "🌫️",
     tagline: "Your calm confidant",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/b548b9ac6_ash_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/a702ab8d0_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/1406d022a_ash_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/b548b9ac6_ash_neutral.png",
@@ -63,7 +52,7 @@ export const COMPANIONS = [
     name: "Sakura",
     emoji: "🌸",
     tagline: "Your gentle spirit",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/2ba9dd1c0_sakura_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/9f1294768_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/07b0a82f5_sakura_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/2ba9dd1c0_sakura_neutral.png",
@@ -75,7 +64,7 @@ export const COMPANIONS = [
     name: "Ryuu",
     emoji: "🐉",
     tagline: "Your fierce protector",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/ce8a989c5_ryuu_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/c83214ab3_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3ddbf55d6_ryuu_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/ce8a989c5_ryuu_neutral.png",
@@ -87,7 +76,7 @@ export const COMPANIONS = [
     name: "Zara",
     emoji: "✨",
     tagline: "Your bold bestie",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3acae0865_zara_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/e7fcefc0a_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/fe77a3ea5_zara_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3acae0865_zara_neutral.png",
@@ -99,7 +88,7 @@ export const COMPANIONS = [
     name: "Sage",
     emoji: "🍃",
     tagline: "Your wise guide",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3f7fa91b3_sage_neutral.png",
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/adf99613d_generated_image.png",
     poses: {
       happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/e6011b2f0_sage_happy.png",
       neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3f7fa91b3_sage_neutral.png",
