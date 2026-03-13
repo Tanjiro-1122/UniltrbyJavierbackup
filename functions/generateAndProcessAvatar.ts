@@ -43,17 +43,27 @@ Deno.serve(async (req) => {
     const imageBuffer = await removeBgRes.arrayBuffer();
     const bytes = new Uint8Array(imageBuffer);
 
-    // Step 2: Convert to base64 data URL for UploadFile integration
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64 = btoa(binary);
-    const dataUrl = `data:image/png;base64,${base64}`;
+    // Step 2: Upload the PNG bytes to base44 storage via multipart form
+    const appId = Deno.env.get('BASE44_APP_ID');
+    const blob = new Blob([bytes], { type: 'image/png' });
+    const formData = new FormData();
+    formData.append('file', blob, 'avatar.png');
 
-    const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: dataUrl });
-    
-    return Response.json({ file_url: uploadRes.file_url });
+    // Get the user token from the request to upload as user
+    const authHeader = req.headers.get('Authorization') || '';
+    const uploadRes = await fetch(`https://base44.app/api/apps/${appId}/files/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': authHeader },
+      body: formData,
+    });
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text();
+      return Response.json({ error: `upload failed: ${err}` }, { status: 500 });
+    }
+
+    const uploadData = await uploadRes.json();
+    return Response.json({ file_url: uploadData.file_url || uploadData.url });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
