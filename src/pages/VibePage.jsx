@@ -55,7 +55,7 @@ export default function VibePage() {
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pb-6" style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}>
+      <div className="flex items-center gap-3 px-4 pb-3" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
@@ -71,14 +71,14 @@ export default function VibePage() {
             key={v.id}
             whileTap={{ scale: 0.97 }}
             onClick={() => setSelected(v.id)}
-            className={`rounded-2xl border p-5 cursor-pointer transition-all ${v.bg} ${v.border} ${
+            className={`rounded-2xl border p-4 cursor-pointer transition-all ${v.bg} ${v.border} ${
               selected === v.id ? "ring-2 ring-white/50" : ""
             }`}
           >
-            <div className="flex items-center gap-4">
-              <span className="text-4xl">{v.emoji}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{v.emoji}</span>
               <div>
-                <p className={`font-bold text-lg bg-gradient-to-r ${v.color} bg-clip-text text-transparent`}>
+                <p className={`font-bold text-base bg-gradient-to-r ${v.color} bg-clip-text text-transparent`}>
                   {v.label}
                 </p>
                 <p className="text-white/60 text-sm">{v.desc}</p>
