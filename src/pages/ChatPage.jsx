@@ -159,14 +159,17 @@ export default function ChatPage() {
       const replyText = response.data?.reply || "...";
       const reply = { role: "assistant", content: replyText };
       setMessages((m) => [...m, reply]);
-      // Detect mood from reply
+      // Detect mood from reply and update DB
       const lowerReply = replyText.toLowerCase();
+      let newMood = "neutral";
       if (vibe === "hype" || /😄|😁|🔥|yay|awesome|excited|great|amazing|haha|lol|woah/.test(lowerReply)) {
-        setCompanionMood("happy");
+        newMood = "happy";
       } else if (/😢|😞|sad|sorry|hard|tough|hurt|pain|miss|cry|difficult/.test(lowerReply)) {
-        setCompanionMood("sad");
-      } else {
-        setCompanionMood("neutral");
+        newMood = "sad";
+      }
+      setCompanionMood(newMood);
+      if (companionDbId) {
+        base44.entities.Companion.update(companionDbId, { mood_mode: newMood });
       }
       incrementCount();
       spawnParticles();
