@@ -49,9 +49,9 @@ export default function HomePage() {
         {/* Logo */}
         <div className="mb-6">
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ff69cdc46_da0a2eaa1_generated_image.png" 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/44f9e1f42_da0a2eaa1_generated_image.png" 
             alt="Unfiltr By Javier" 
-            className="w-40 h-40 object-contain drop-shadow-2xl"
+            className="w-56 h-56 object-contain drop-shadow-2xl"
           />
         </div>
 
