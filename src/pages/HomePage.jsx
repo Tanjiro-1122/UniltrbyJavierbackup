@@ -87,6 +87,10 @@ export default function HomePage() {
           I already have one → Continue
         </button>
       </motion.div>
+
+      <div className="absolute bottom-0 left-0 right-0 z-10">
+        <AppFooter dark />
+      </div>
     </div>
   );
 }
