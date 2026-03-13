@@ -9,7 +9,21 @@ const PERKS = [
   { icon: Sparkles, label: "All vibes & companions" },
 ];
 
-export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading }) {
+export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading, isAndroid }) {
+  const handleSubscribe = async () => {
+    if (isAndroid && window.webkit?.messageHandlers?.billing) {
+      // Android - use Google Play Billing
+      window.webkit.messageHandlers.billing.postMessage({
+        action: "subscribe",
+        productId: "com.unfiltr.premium.monthly",
+        price: "$9.99/month"
+      });
+    } else {
+      // Fallback to provided handler
+      onSubscribe();
+    }
+  };
+
   return (
     <AnimatePresence>
       {visible && (
@@ -63,7 +77,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
 
             {/* CTA */}
             <button
-              onClick={onSubscribe}
+              onClick={handleSubscribe}
               disabled={isLoading}
               className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-purple-500/30 active:scale-95 transition-all disabled:opacity-50 mb-3"
             >
