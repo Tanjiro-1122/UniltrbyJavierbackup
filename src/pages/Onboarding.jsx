@@ -134,11 +134,11 @@ export default function Onboarding() {
                    style={{ background: "#ffffff" }}
                    whileTap={{ scale: 0.97 }}
                  >
-                   <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover bg-white" />
-                  <div className="flex-1 flex flex-col items-center justify-center px-2">
-                    <p className="text-white text-xs font-bold text-center">{c.emoji} {c.name}</p>
-                    <p className="text-white/60 text-[10px] text-center leading-tight">{c.tagline}</p>
-                  </div>
+                   <div className="flex-1 flex flex-col items-center justify-center px-2 pb-2">
+                     <p className="text-gray-800 text-xs font-bold text-center mb-1">{c.emoji} {c.name}</p>
+                     <img src={c.avatar} alt={c.name} className="w-16 h-16 object-cover bg-white rounded mb-1" />
+                     <p className="text-gray-600 text-[10px] text-center leading-tight">{c.tagline}</p>
+                   </div>
                 </motion.button>
               ))}
             </div>
