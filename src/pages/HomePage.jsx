@@ -47,12 +47,16 @@ export default function HomePage() {
         className="relative z-10 flex flex-col items-center px-6 text-center max-w-sm w-full"
       >
         {/* Logo */}
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-2xl shadow-purple-500/40 overflow-hidden">
-          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/955e00004_generated_image.png" alt="Celtic friendship knot" className="w-14 h-14 object-contain" />
+        <div className="mb-6">
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ff69cdc46_da0a2eaa1_generated_image.png" 
+            alt="Unfiltr By Javier" 
+            className="w-40 h-40 object-contain drop-shadow-2xl"
+          />
         </div>
 
-        <h1 className="text-5xl font-black text-white mb-2" style={{ animation: "glow 3s ease-in-out infinite" }}>
-          Unfiltr
+        <h1 className="text-4xl font-black text-white mb-2" style={{ animation: "glow 3s ease-in-out infinite" }}>
+          Unfiltr By Javier
         </h1>
         <p className="text-purple-300 text-lg mb-2 font-medium">Your AI companion, always here.</p>
         <p className="text-white/50 text-sm mb-10 leading-relaxed">
