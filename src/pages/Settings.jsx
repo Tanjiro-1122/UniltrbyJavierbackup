@@ -100,7 +100,7 @@ export default function Settings() {
                       src={c.poses.neutral}
                       alt={c.name}
                       className="w-full h-full object-cover object-top"
-                      style={{ background: "transparent" }}
+                      style={{ background: "none", backgroundColor: "transparent", border: "none", mixBlendMode: "normal" }}
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
