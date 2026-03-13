@@ -90,9 +90,9 @@ export const COMPANIONS = [
     tagline: "Your wise guide",
     avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/adf99613d_generated_image.png",
     poses: {
-      happy: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/03db951de_generated_image.png",
-      neutral: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/adf99613d_generated_image.png",
-      sad: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/eccae8ebd_generated_image.png",
+      happy: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/e6011b2f0_sage_happy.png",
+      neutral: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/3f7fa91b3_sage_neutral.png",
+      sad: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/994010df0_sage_sad.png",
     },
   },
 ];
