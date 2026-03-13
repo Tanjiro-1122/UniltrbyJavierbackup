@@ -124,17 +124,17 @@ export default function Onboarding() {
             <div className="flex gap-3 overflow-x-auto pb-4">
               {COMPANIONS.map((c) => (
                 <motion.button
-                  key={c.id}
-                  onClick={() => setSelectedCompanion(c.id)}
-                  className={`flex-shrink-0 w-28 h-36 rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
-                    selectedCompanion === c.id
-                      ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
-                      : "border-white/20"
-                  }`}
-                  style={{ background: selectedCompanion === c.id ? "#2d1a4e" : "#1a1a2e" }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover" />
+                   key={c.id}
+                   onClick={() => setSelectedCompanion(c.id)}
+                   className={`flex-shrink-0 w-28 h-36 rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
+                     selectedCompanion === c.id
+                       ? "border-purple-500 scale-105 shadow-lg shadow-purple-500/30"
+                       : "border-white/20"
+                   }`}
+                   style={{ background: "#ffffff" }}
+                   whileTap={{ scale: 0.97 }}
+                 >
+                   <img src={c.avatar} alt={c.name} className="w-full h-24 object-cover bg-white" />
                   <div className="flex-1 flex flex-col items-center justify-center px-2">
                     <p className="text-white text-xs font-bold text-center">{c.emoji} {c.name}</p>
                     <p className="text-white/60 text-[10px] text-center leading-tight">{c.tagline}</p>
