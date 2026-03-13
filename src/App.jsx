@@ -10,6 +10,7 @@ import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
 import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
+import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
       <Route path="/vibe" element={<VibePage />} />
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/admin/avatar-processor" element={<AdminAvatarProcessor />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

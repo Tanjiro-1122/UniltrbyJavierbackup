@@ -2,30 +2,27 @@ import React from "react";
 import { COMPANIONS } from "@/components/companionData";
 
 const MOOD_ANIMATIONS = {
-  happy: `
-    @keyframes avatarSway {
-      0%, 100% { transform: translateX(-30px); }
-      50% { transform: translateX(30px); }
-    }
-  `,
-  neutral: `
-    @keyframes avatarFloat {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-  `,
-  sad: `
-    @keyframes avatarBreathe {
-      0%, 100% { transform: scaleX(1); }
-      50% { transform: scaleX(1.02); }
-    }
-  `,
+  happy:       `@keyframes avatarSway { 0%, 100% { transform: translateX(-30px); } 50% { transform: translateX(30px); } }`,
+  neutral:     `@keyframes avatarFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }`,
+  sad:         `@keyframes avatarBreathe { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.02); } }`,
+  fear:        `@keyframes avatarShiver { 0%, 100% { transform: translateX(-2px) rotate(-1deg); } 25% { transform: translateX(2px) rotate(1deg); } 50% { transform: translateX(-3px) rotate(-2deg); } 75% { transform: translateX(3px) rotate(2deg); } }`,
+  disgust:     `@keyframes avatarRecoil { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-5px) rotate(-3deg); } }`,
+  surprise:    `@keyframes avatarJolt { 0%, 100% { transform: scale(1); } 10% { transform: scale(1.06) translateY(-10px); } 20% { transform: scale(1) translateY(0px); } }`,
+  anger:       `@keyframes avatarRumble { 0%, 100% { transform: translateX(0px); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }`,
+  contentment: `@keyframes avatarGlow { 0%, 100% { transform: scale(1) translateY(0px); } 50% { transform: scale(1.02) translateY(-4px); } }`,
+  fatigue:     `@keyframes avatarDroop { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(6px) rotate(1deg); } }`,
 };
 
 const MOOD_ANIMATION_STYLE = {
-  happy: "avatarSway 3s ease-in-out infinite",
-  neutral: "avatarFloat 3s ease-in-out infinite",
-  sad: "avatarBreathe 4s ease-in-out infinite",
+  happy:       "avatarSway 3s ease-in-out infinite",
+  neutral:     "avatarFloat 3s ease-in-out infinite",
+  sad:         "avatarBreathe 4s ease-in-out infinite",
+  fear:        "avatarShiver 0.3s ease-in-out infinite",
+  disgust:     "avatarRecoil 2s ease-in-out infinite",
+  surprise:    "avatarJolt 2s ease-in-out infinite",
+  anger:       "avatarRumble 0.2s ease-in-out infinite",
+  contentment: "avatarGlow 3s ease-in-out infinite",
+  fatigue:     "avatarDroop 5s ease-in-out infinite",
 };
 
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick }) {
