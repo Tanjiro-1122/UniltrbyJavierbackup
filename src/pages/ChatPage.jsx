@@ -5,6 +5,7 @@ import { Send, Mic, MicOff, ChevronDown, Loader2, Volume2, VolumeX, Settings } f
 import { base44 } from "@/api/base44Client";
 import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
+import PullToRefresh from "@/components/PullToRefresh";
 import { useMessageLimit } from "@/components/useMessageLimit";
 
 const VIBES_SUFFIX = {
@@ -209,6 +210,23 @@ export default function ChatPage() {
     setIsListening(false);
   };
 
+  const handleRefresh = async () => {
+    // Clear messages and reset to greeting
+    if (companion) {
+      const greeting = {
+        role: "assistant",
+        content: `Hey! I'm ${companion.name} 👋 ${
+          vibe === "chill" ? "What's good? Just vibing here 😌" :
+          vibe === "vent" ? "I'm here. Take your time — what's on your mind?" :
+          vibe === "hype" ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
+          "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
+        }`,
+      };
+      setMessages([greeting]);
+    }
+    await new Promise(r => setTimeout(r, 500));
+  };
+
   const handleSubscribe = () => {
     // StoreKit will be called from the native layer via window.webkit.messageHandlers
     // For web/testing, we show an alert
@@ -312,41 +330,43 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-          <AnimatePresence>
-            {messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-purple-600 text-white rounded-br-md"
-                      : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
-                  }`}
+        {/* Messages with Pull-to-Refresh */}
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div className="px-4 py-3 space-y-3">
+            <AnimatePresence>
+              {messages.map((msg, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {msg.content}
+                  <div
+                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-purple-600 text-white rounded-br-md"
+                        : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                  <span className="text-white/50 text-xs">{companion.name} is thinking...</span>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                <span className="text-white/50 text-xs">{companion.name} is thinking...</span>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </PullToRefresh>
 
         {/* Input bar */}
-        <div className="px-4 pt-2" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
+        <div className="px-4 pt-2 pb-20" style={{ paddingBottom: "max(5rem, env(safe-area-inset-bottom, 5rem))" }}>
           <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-lg">
             {/* Mic button */}
             <button
