@@ -32,7 +32,7 @@ export default function Onboarding() {
   const handleNext = async () => {
     if (!canAdvance[step]) return;
 
-    if (step === 2) {
+    if (step === 3) {
       setLoading(true);
       try {
         const companionData = COMPANIONS.find((c) => c.id === selectedCompanion);
