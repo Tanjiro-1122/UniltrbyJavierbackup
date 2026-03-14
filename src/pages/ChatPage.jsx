@@ -661,6 +661,19 @@ export default function ChatPage() {
           onComplete={() => setShowTutorial(false)}
         />
       )}
+
+      <RatingPromptModal
+        visible={showRatingPrompt}
+        onClose={() => setShowRatingPrompt(false)}
+      />
+
+      <ShareCardModal
+        visible={!!shareCard}
+        onClose={() => setShareCard(null)}
+        message={shareCard?.message || ""}
+        companionName={companionDisplayName}
+        mood={shareCard?.mood || "neutral"}
+      />
     </>
   );
 }
