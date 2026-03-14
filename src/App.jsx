@@ -29,6 +29,7 @@ const AuthenticatedApp = () => {
   const location = useLocation();
 
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
+  const showFeedbackBtn = !HIDE_FEEDBACK_BTN_ON.some(p => location.pathname.startsWith(p));
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
