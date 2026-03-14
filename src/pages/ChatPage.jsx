@@ -295,14 +295,20 @@ export default function ChatPage() {
         const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
         const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
         if (profileId && userMsgCount > 0 && userMsgCount % 10 === 0) {
+          const cName = companion.displayName || companion.name;
           base44.functions.invoke("summarizeSession", {
             messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
             profileId,
-            companionName: companion.displayName || companion.name,
+            companionName: cName,
           }).then(res => {
             if (res.data?.ok && !res.data?.skipped) {
               base44.entities.UserProfile.get(profileId).then(profile => {
                 if (profile?.session_memory) setSessionMemory(profile.session_memory);
+                // Also persist condensed memory_summary for all users
+                if (profile?.session_memory?.length > 0) {
+                  const recent = profile.session_memory.slice(-3).map(s => s.summary).join(" ");
+                  base44.entities.UserProfile.update(profileId, { memory_summary: recent }).catch(() => {});
+                }
               }).catch(() => {});
             }
           }).catch(() => {});
