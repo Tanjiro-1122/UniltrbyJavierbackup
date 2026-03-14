@@ -55,13 +55,17 @@ export default function ChatPage() {
     // Load premium status and companion DB record
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
-      const profile = await base44.entities.UserProfile.get(profileId);
-      setIsPremium(!!profile?.premium);
-      if (profile?.companion_id) {
-        setCompanionDbId(profile.companion_id);
-        const dbCompanion = await base44.entities.Companion.get(profile.companion_id);
-        if (dbCompanion?.mood_mode) setCompanionMood(dbCompanion.mood_mode);
-      }
+      try {
+        const profile = await base44.entities.UserProfile.get(profileId);
+        setIsPremium(!!profile?.premium);
+        if (profile?.companion_id) {
+          setCompanionDbId(profile.companion_id);
+          try {
+            const dbCompanion = await base44.entities.Companion.get(profile.companion_id);
+            if (dbCompanion?.mood_mode) setCompanionMood(dbCompanion.mood_mode);
+          } catch { /* use default mood */ }
+        }
+      } catch { /* use free tier defaults */ }
     }
     };
     init();
