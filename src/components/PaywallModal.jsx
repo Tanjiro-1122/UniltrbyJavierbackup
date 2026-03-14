@@ -33,14 +33,16 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
   }, [visible]);
 
   const handleSubscribe = async () => {
+    const productId = planType === "annual"
+      ? "com.unfiltr.premium.annual"
+      : "com.unfiltr.premium.monthly";
+    const price = planType === "annual" ? "$59.99/year" : "$9.99/month";
     if (isAndroid && window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({
-        action: "subscribe",
-        productId: "com.unfiltr.premium.monthly",
-        price: "$9.99/month"
-      });
+      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId, price });
+    } else if (window.webkit?.messageHandlers?.storekit) {
+      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
     } else {
-      onSubscribe();
+      onSubscribe(planType);
     }
   };
 
