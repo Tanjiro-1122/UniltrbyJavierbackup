@@ -49,6 +49,41 @@ export default function ChatPage() {
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
   usePushNotifications(profileId);
+
+  /* ─── NATIVE PURCHASE LISTENER ─── */
+  useEffect(() => {
+    const handleNativeMessage = async (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        
+        if (data.action === 'purchase_success' || data.action === 'restore_success') {
+          const { platform, receiptData, productId, purchaseToken } = data;
+          
+          const res = await fetch('/functions/verifyPurchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform, receiptData, productId, purchaseToken })
+          });
+          const result = await res.json();
+          
+          if (result.valid && profileId) {
+            await base44.entities.UserProfile.update(profileId, { 
+              is_premium: true, 
+              annual_plan: result.plan === 'annual' 
+            });
+            setIsPremium(true);
+            setShowPaywall(false);
+          }
+        }
+      } catch (e) {
+        console.error('Native message error:', e);
+      }
+    };
+
+    window.addEventListener('message', handleNativeMessage);
+    return () => window.removeEventListener('message', handleNativeMessage);
+  }, [profileId]);
+
   const particleId    = useRef(0);
   const stateTimeout  = useRef(null);
   const messagesEndRef = useRef(null);
