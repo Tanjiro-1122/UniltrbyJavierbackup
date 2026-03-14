@@ -328,6 +328,7 @@ export default function Onboarding() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* Footer button */}
       <div className="sticky-bottom relative z-10">
