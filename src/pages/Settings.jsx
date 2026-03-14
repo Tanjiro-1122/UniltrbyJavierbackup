@@ -323,14 +323,23 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      {/* Delete Account */}
-      <motion.div className="sticky-bottom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+      {/* Account Management */}
+      <motion.div className="sticky-bottom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+        style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2, textAlign: "center" }}>Account Management</p>
+        <button
+          onClick={() => { setPauseSuccess(false); setShowPauseModal(true); }}
+          style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, color: "rgba(255,255,255,0.45)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <PauseCircle size={16} />
+          {userProfile.account_paused ? "Account Paused 💙" : "Pause My Account"}
+        </button>
         <button
           onClick={() => setShowDeleteConfirm(true)}
-          className="w-full py-3 bg-transparent border border-white/10 text-white/30 font-medium rounded-xl hover:border-red-500/30 hover:text-red-400/60 transition flex items-center justify-center gap-2 text-sm"
+          style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, color: "rgba(239,68,68,0.45)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
-          <Trash2 className="w-4 h-4" />
-          Delete Account
+          <Trash2 size={16} />
+          Delete My Account
         </button>
       </motion.div>
 
