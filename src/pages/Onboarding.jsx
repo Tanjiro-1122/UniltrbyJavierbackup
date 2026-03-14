@@ -191,7 +191,7 @@ export default function Onboarding() {
                 {COMPANIONS.map((c) => (
                   <motion.button
                     key={c.id}
-                    onClick={() => setSelectedCompanion(c.id)}
+                    onClick={() => { setSelectedCompanion(c.id); setStep(2); }}
                     whileTap={{ scale: 0.94 }}
                     className="flex flex-col items-center rounded-2xl overflow-hidden transition-all"
                     style={{
