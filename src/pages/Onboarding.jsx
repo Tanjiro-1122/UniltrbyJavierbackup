@@ -340,7 +340,7 @@ export default function Onboarding() {
             boxShadow: canAdvance[step] ? "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)" : "none",
           }}
         >
-          {step === 2
+          {step === 3
             ? loading ? "Setting up..." : "Enter this world →"
             : <>Next <ChevronRight className="inline w-4 h-4" /></>}
         </button>
