@@ -7,6 +7,54 @@ import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
+function CompanionNicknameField({ companion, userProfile }) {
+  const [nickname, setNickname] = useState(
+    localStorage.getItem("unfiltr_companion_nickname") || ""
+  );
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    if (!nickname.trim()) return;
+    localStorage.setItem("unfiltr_companion_nickname", nickname.trim());
+    const stored = localStorage.getItem("unfiltr_companion");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      parsed.nickname = nickname.trim();
+      localStorage.setItem("unfiltr_companion", JSON.stringify(parsed));
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <input
+        type="text"
+        value={nickname}
+        onChange={(e) => setNickname(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSave()}
+        placeholder={`e.g. "Max", "Luna babe", "my guy"`}
+        maxLength={20}
+        className="flex-1 px-4 py-3 rounded-xl text-white placeholder-white/25 text-sm focus:outline-none"
+        style={{
+          background: "rgba(139,92,246,0.1)",
+          border: "1px solid rgba(139,92,246,0.25)",
+        }}
+        onFocus={(e) => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
+        onBlur={(e) => e.target.style.borderColor = "rgba(139,92,246,0.25)"}
+      />
+      <button
+        onClick={handleSave}
+        disabled={!nickname.trim()}
+        className="px-4 py-3 rounded-xl text-white text-sm font-bold disabled:opacity-30 active:scale-95 transition-all"
+        style={{ background: saved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg, #7c3aed, #db2777)" }}
+      >
+        {saved ? "✓" : "Save"}
+      </button>
+    </div>
+  );
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState(null);
@@ -92,6 +140,13 @@ export default function Settings() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Display Name</p>
           <p className="text-white font-semibold text-lg">{userProfile.display_name}</p>
+        </motion.div>
+
+        {/* Companion Nickname */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Nickname</p>
+          <p className="text-white/40 text-xs mb-2">Give your companion a personal name only you call them.</p>
+          <CompanionNicknameField companion={companion} userProfile={userProfile} />
         </motion.div>
 
         {/* Companion Picker */}
