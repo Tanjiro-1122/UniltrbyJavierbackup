@@ -619,6 +619,13 @@ export default function ChatPage() {
         onRestore={handleRestore}
         isAndroid={/android/i.test(navigator.userAgent)}
       />
+
+      {showTutorial && (
+        <OnboardingTutorial
+          profileId={localStorage.getItem("userProfileId")}
+          onComplete={() => setShowTutorial(false)}
+        />
+      )}
     </>
   );
 }
