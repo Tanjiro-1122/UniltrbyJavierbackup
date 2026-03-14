@@ -303,6 +303,11 @@ export default function Settings() {
           {savingBackground && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
         </motion.div>
 
+        {/* Referral */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+          <ReferralSection profileId={localStorage.getItem("userProfileId")} />
+        </motion.div>
+
         {/* Premium Status */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Status</p>
