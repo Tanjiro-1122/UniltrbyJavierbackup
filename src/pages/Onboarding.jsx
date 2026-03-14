@@ -144,6 +144,7 @@ export default function Onboarding() {
       </div>
 
       {/* Content */}
+      <div className="flex-1 min-h-0 relative z-10">
       <AnimatePresence mode="wait">
         {step === 0 && (
           <motion.div key="step0"
