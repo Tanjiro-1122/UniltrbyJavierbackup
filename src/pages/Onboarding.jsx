@@ -126,7 +126,7 @@ export default function Onboarding() {
         >
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
-        <p className="text-white/40 text-sm">Step {step + 1} of 3</p>
+        <p className="text-white/40 text-sm">Step {step + 1} of 4</p>
         <div className="w-10" />
       </div>
 
