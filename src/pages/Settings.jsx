@@ -60,6 +60,10 @@ export default function Settings() {
   const [companion, setCompanion]         = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]           = useState(false);
+  const [showPauseModal, setShowPauseModal]       = useState(false);
+  const [pauseDuration, setPauseDuration]         = useState("1week");
+  const [pausing, setPausing]                     = useState(false);
+  const [pauseSuccess, setPauseSuccess]           = useState(false);
   const [showPaywall, setShowPaywall]     = useState(false);
   const [savingCompanion, setSavingCompanion]   = useState(false);
   const [savingBackground, setSavingBackground] = useState(false);
