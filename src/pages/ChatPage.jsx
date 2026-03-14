@@ -305,30 +305,25 @@ export default function ChatPage() {
         }
       }
 
-      // Auto-summarize session every 10 user messages (premium only)
-      if (isPremium) {
-        const profileId = localStorage.getItem("userProfileId");
-        const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
-        const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-        if (profileId && userMsgCount > 0 && userMsgCount % 10 === 0) {
-          const cName = companion.displayName || companion.name;
-          base44.functions.invoke("summarizeSession", {
-            messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
-            profileId,
-            companionName: cName,
-          }).then(res => {
-            if (res.data?.ok && !res.data?.skipped) {
-              base44.entities.UserProfile.get(profileId).then(profile => {
-                if (profile?.session_memory) setSessionMemory(profile.session_memory);
-                // Also persist condensed memory_summary for all users
-                if (profile?.session_memory?.length > 0) {
-                  const recent = profile.session_memory.slice(-3).map(s => s.summary).join(" ");
-                  base44.entities.UserProfile.update(profileId, { memory_summary: recent }).catch(() => {});
-                }
-              }).catch(() => {});
-            }
-          }).catch(() => {});
-        }
+      // Auto-summarize: every 10 msgs for premium, every 5 for free users
+      const profileId = localStorage.getItem("userProfileId");
+      const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
+      const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
+      const summarizeInterval = isPremium ? 10 : 5;
+      if (profileId && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
+        const cName = companion.displayName || companion.name;
+        base44.functions.invoke("summarizeSession", {
+          messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
+          profileId,
+          companionName: cName,
+          isPremium,
+        }).then(res => {
+          if (res.data?.ok && !res.data?.skipped) {
+            base44.entities.UserProfile.get(profileId).then(profile => {
+              if (profile?.session_memory) setSessionMemory(profile.session_memory);
+            }).catch(() => {});
+          }
+        }).catch(() => {});
       }
     } catch {
       setMessages(m => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
