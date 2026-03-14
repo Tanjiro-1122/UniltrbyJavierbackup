@@ -14,6 +14,9 @@ import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import FeedbackPage from './pages/FeedbackPage';
+import FeedbackAdmin from './pages/admin/FeedbackAdmin';
+import FeedbackButton from './components/FeedbackButton';
 
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy"];
