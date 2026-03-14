@@ -58,9 +58,8 @@ export default function VibePage() {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col max-w-[430px] mx-auto"
+      className="screen"
       style={{
-        height: "100dvh",
         background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)",
       }}
     >

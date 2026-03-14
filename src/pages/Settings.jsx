@@ -122,7 +122,7 @@ export default function Settings() {
   if (!userProfile || !companion) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] flex flex-col max-w-[430px] mx-auto relative pb-20">
+    <div className="screen" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pb-6 border-b border-white/5" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
         <button
