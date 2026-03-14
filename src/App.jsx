@@ -59,6 +59,8 @@ const AuthenticatedApp = () => {
         <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard"       element={<AdminDashboard />} />
         <Route path="/PrivacyPolicy"        element={<PrivacyPolicy />} />
+        <Route path="/feedback"             element={<FeedbackPage />} />
+        <Route path="/admin/feedback"       element={<FeedbackAdmin />} />
         <Route path="*"                     element={<PageNotFound />} />
       </Routes>
 
