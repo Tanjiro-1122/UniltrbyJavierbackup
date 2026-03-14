@@ -4,7 +4,14 @@ const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 Deno.serve(async (req) => {
   try {
-    const { messages, systemPrompt } = await req.json();
+    const { messages, systemPrompt, isPremium, sessionMemory } = await req.json();
+
+    // Build memory block (premium only)
+    let memoryBlock = "";
+    if (isPremium && sessionMemory && sessionMemory.length > 0) {
+      const recent = sessionMemory.slice(-5);
+      memoryBlock = `\n\n=== YOUR MEMORY OF THIS USER ===\nYou remember these things about them from past conversations. Reference them naturally — don't dump them all at once, just let them inform how you talk to this person:\n${recent.map(s => `• [${s.date}] ${s.summary}`).join("\n")}\n=== END MEMORY ===\n`;
+    }
 
     const moodInstruction = `
 
@@ -20,23 +27,18 @@ Do not explain the mood. Do not skip it. Always include it as the last line.`;
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt + moodInstruction },
+        { role: "system", content: systemPrompt + memoryBlock + moodInstruction },
         ...messages,
       ],
       max_tokens: 220,
       temperature: 0.85,
-    }, {
-      signal: controller.signal
-    });
+    }, { signal: controller.signal });
 
     clearTimeout(timeoutId);
     const raw = completion.choices[0].message.content;
 
-    // Extract mood tag
     const moodMatch = raw.match(/\[MOOD:(\w+)\]/i);
     const mood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
-
-    // Strip the mood tag from the visible reply
     const reply = raw.replace(/\[MOOD:\w+\]/i, "").trim();
 
     return Response.json({ reply, mood });

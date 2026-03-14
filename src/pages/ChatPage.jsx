@@ -29,7 +29,9 @@ export default function ChatPage() {
   const [companionMood, setCompanionMood] = useState("neutral");
   const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium]       = useState(false);
+  const [sessionMemory, setSessionMemory] = useState([]);
   const [showPaywall, setShowPaywall]   = useState(false);
+  const [showMemoryBanner, setShowMemoryBanner] = useState(false);
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
 
@@ -40,6 +42,7 @@ export default function ChatPage() {
   const recognitionRef = useRef(null);
   const audioRef      = useRef(null);
 
+  /* ─── INIT ─── */
   useEffect(() => {
     const init = async () => {
       const c = localStorage.getItem("unfiltr_companion");
@@ -62,7 +65,14 @@ export default function ChatPage() {
       if (profileId) {
         try {
           const profile = await base44.entities.UserProfile.get(profileId);
-          setIsPremium(!!profile?.premium);
+          const premium = !!(profile?.is_premium || profile?.premium);
+          setIsPremium(premium);
+          if (premium && profile?.session_memory?.length > 0) {
+            setSessionMemory(profile.session_memory);
+            setShowMemoryBanner(false);
+          } else if (!premium) {
+            setShowMemoryBanner(true);
+          }
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
@@ -76,6 +86,7 @@ export default function ChatPage() {
     init();
   }, []);
 
+  /* ─── GREETING ─── */
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
@@ -90,10 +101,12 @@ export default function ChatPage() {
     }]);
   }, [companion]);
 
+  /* ─── AUTO-SCROLL ─── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  /* ─── IDLE ANIMATION LOOP ─── */
   useEffect(() => {
     const iv = setInterval(() => {
       if (avatarState === "idle" && !loading && !isSpeaking) triggerAnim("wave", 1200);
@@ -107,6 +120,7 @@ export default function ChatPage() {
     stateTimeout.current = setTimeout(() => setAvatarState("idle"), ms);
   };
 
+  /* ─── PARTICLES ─── */
   const spawnParticles = () => {
     const emoji = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
     const batch = Array.from({ length: 5 }, (_, i) => ({
@@ -119,6 +133,7 @@ export default function ChatPage() {
     setTimeout(() => setParticles(p => p.filter(x => !batch.find(b => b.id === x.id))), 1000);
   };
 
+  /* ─── TTS ─── */
   const speakText = async (text, companionId) => {
     if (!voiceEnabled) return;
     try {
@@ -136,6 +151,7 @@ export default function ChatPage() {
     } catch { setIsSpeaking(false); setAvatarState("idle"); }
   };
 
+  /* ─── SEND ─── */
   const handleSend = async (textOverride) => {
     const text = (textOverride || input).trim();
     if (!text || loading) return;
@@ -152,6 +168,8 @@ export default function ChatPage() {
       const res          = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt,
+        isPremium,
+        sessionMemory: isPremium ? sessionMemory : [],
       });
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
@@ -164,12 +182,33 @@ export default function ChatPage() {
       incrementCount();
       spawnParticles();
       await speakText(replyText, companion.id);
+
+      // Auto-summarize session every 10 user messages (premium only)
+      if (isPremium) {
+        const profileId = localStorage.getItem("userProfileId");
+        const updatedMsgs = [...messages, { role: "user", content: text }, { role: "assistant", content: replyText }];
+        const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
+        if (profileId && userMsgCount > 0 && userMsgCount % 10 === 0) {
+          base44.functions.invoke("summarizeSession", {
+            messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
+            profileId,
+            companionName: companion.displayName || companion.name,
+          }).then(res => {
+            if (res.data?.ok && !res.data?.skipped) {
+              base44.entities.UserProfile.get(profileId).then(profile => {
+                if (profile?.session_memory) setSessionMemory(profile.session_memory);
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        }
+      }
     } catch {
       setMessages(m => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
   };
 
+  /* ─── VOICE ─── */
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
@@ -185,6 +224,7 @@ export default function ChatPage() {
   };
   const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
+  /* ─── IAP ─── */
   const handleSubscribe = () => {
     if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
       window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
@@ -200,6 +240,7 @@ export default function ChatPage() {
     }
   };
 
+  /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
     <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
@@ -263,6 +304,28 @@ export default function ChatPage() {
               <Settings size={16} color="white" />
             </button>
           </div>
+
+          {/* MEMORY BANNER — free users only */}
+          {showMemoryBanner && !isPremium && (
+            <div
+              onClick={() => setShowPaywall(true)}
+              style={{
+                flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 6, padding: "7px 16px",
+                background: "rgba(139,92,246,0.12)",
+                borderBottom: "1px solid rgba(139,92,246,0.2)",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 13 }}>🔒</span>
+              <span style={{ color: "rgba(196,180,252,0.85)", fontSize: 12, fontWeight: 600 }}>
+                Unlock Memory — she'll remember you forever
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#a855f7", background: "rgba(168,85,247,0.2)", padding: "2px 7px", borderRadius: 999 }}>
+                Premium
+              </span>
+            </div>
+          )}
 
           {/* AVATAR ZONE */}
           <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
