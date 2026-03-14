@@ -5,13 +5,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
-// ── TESTER ACCOUNT CONFIG ──
-// Apple / Google reviewers use this name to get full premium access
 const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester"];
-const TESTER_CODE  = "unfiltr2026demo"; // hidden easter-egg code also works
+const TESTER_CODE  = "unfiltr2026demo";
+const GRADIENT = "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)";
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const [showTutorial, setShowTutorial] = useState(true);
   const [step, setStep]                             = useState(0);
   const [displayName, setDisplayName]               = useState("");
   const [selectedCompanion, setSelectedCompanion]   = useState(null);
@@ -99,9 +99,17 @@ export default function Onboarding() {
   ];
 
   return (
+    <>
+      {showTutorial && (
+        <OnboardingTutorial
+          profileId={null}
+          onComplete={() => setShowTutorial(false)}
+        />
+      )}
+      {!showTutorial && (
     <div
       className="screen no-tabs"
-      style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}
+      style={{ background: GRADIENT }}
     >
       {/* Stars */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -343,5 +351,7 @@ export default function Onboarding() {
         </div>
       )}
     </div>
+      )}
+    </>
   );
 }

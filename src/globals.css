@@ -90,11 +90,18 @@ body {
 .scroll-area::-webkit-scrollbar { display: none; }
 
 /* ── 4. .sticky-bottom ── */
+/* sticky-bottom is ALWAYS dark — never white */
 .sticky-bottom {
-  flex-shrink: 0;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+ flex-shrink: 0;
+ width: 100%;
+ padding: 0.75rem 1rem;
+ padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
+ background: #06020f;
+}
+
+.screen.no-tabs .sticky-bottom {
+ padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
+ background: transparent;
 }
 
 /* ── 5. Text selection ── */

@@ -128,7 +128,7 @@ export default function HomePage() {
 
         {/* Primary CTA */}
         <button
-          onClick={() => navigate("/onboarding")}
+          onClick={() => navigate("/Onboarding")}
           style={{
             width: "100%", padding: "16px 0",
             borderRadius: 18, border: "none",
@@ -147,7 +147,7 @@ export default function HomePage() {
 
         {/* Secondary CTA */}
         <button
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/ChatPage")}
           style={{
             width: "100%", padding: "13px 0",
             borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",

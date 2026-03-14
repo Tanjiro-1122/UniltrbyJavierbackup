@@ -1,11 +1,12 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Settings } from "lucide-react";
+import { Home, MessageSquare, Settings, Star } from "lucide-react";
 
 const TABS = [
-  { path: "/",         label: "Home",     icon: Home },
-  { path: "/chat",     label: "Chat",     icon: MessageSquare },
-  { path: "/settings", label: "Settings", icon: Settings },
+  { path: "/",        label: "Home",    icon: Home },
+  { path: "/ChatPage", label: "Chat",    icon: MessageSquare },
+  { path: "/Pricing",  label: "Premium", icon: Star },
+  { path: "/Settings", label: "Settings",icon: Settings },
 ];
 
 export default function BottomTabs() {
@@ -37,7 +38,7 @@ export default function BottomTabs() {
       {TABS.map(({ path, label, icon: Icon }) => {
         const isActive =
           path === "/"
-            ? location.pathname === "/" || location.pathname === "/Home" || location.pathname.startsWith("/Home")
+            ? location.pathname === "/" || location.pathname === "/HomePage" || location.pathname.startsWith("/HomePage")
             : location.pathname === path || location.pathname.startsWith(path);
 
         return (
