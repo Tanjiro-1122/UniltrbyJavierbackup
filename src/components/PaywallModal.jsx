@@ -122,11 +122,38 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   ))}
                 </div>
 
-                {/* Price */}
-                <div className="rounded-2xl p-4 mb-4 text-center"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <p className="text-white font-bold text-3xl">$9.99<span className="text-white/40 text-base font-normal">/month</span></p>
-                  <p className="text-white/40 text-xs mt-1">Cancel anytime • Auto-renews monthly</p>
+                {/* Plan selector */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                  {/* Annual */}
+                  <button
+                    onClick={() => setPlanType("annual")}
+                    style={{
+                      width: "100%", padding: "14px 16px", borderRadius: 14, textAlign: "left",
+                      background: planType === "annual" ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.04)",
+                      border: `2px solid ${planType === "annual" ? "rgba(124,58,237,0.7)" : "rgba(255,255,255,0.08)"}`,
+                      cursor: "pointer", position: "relative",
+                    }}
+                  >
+                    <div style={{ position: "absolute", top: -10, right: 12, background: "linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius: 999, padding: "2px 10px" }}>
+                      <span style={{ color: "white", fontWeight: 800, fontSize: 10 }}>BEST VALUE 🔥</span>
+                    </div>
+                    <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>$59.99 / year</p>
+                    <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "2px 0 0" }}>Save 50% — only $5/mo · Cancel anytime</p>
+                  </button>
+
+                  {/* Monthly */}
+                  <button
+                    onClick={() => setPlanType("monthly")}
+                    style={{
+                      width: "100%", padding: "14px 16px", borderRadius: 14, textAlign: "left",
+                      background: planType === "monthly" ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.04)",
+                      border: `2px solid ${planType === "monthly" ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.08)"}`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>$9.99 / month</p>
+                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "2px 0 0" }}>Auto-renews monthly</p>
+                  </button>
                 </div>
 
                 <button
