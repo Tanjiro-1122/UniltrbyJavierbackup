@@ -11,11 +11,13 @@ export default function Onboarding() {
   const [displayName, setDisplayName] = useState("");
   const [selectedCompanion, setSelectedCompanion] = useState(null);
   const [selectedBackground, setSelectedBackground] = useState(null);
+  const [companionNickname, setCompanionNickname] = useState("");
   const [loading, setLoading] = useState(false);
 
   const canAdvance = [
     displayName.trim().length > 0,
     !!selectedCompanion,
+    true,
     !!selectedBackground,
   ];
 
