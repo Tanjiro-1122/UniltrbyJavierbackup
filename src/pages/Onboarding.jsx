@@ -186,9 +186,8 @@ export default function Onboarding() {
             </h2>
             <p className="text-purple-300/70 text-sm mb-3 shrink-0">Choose who you want to hang with.</p>
 
-            <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-              <div className="grid grid-cols-3 gap-2 pb-4 no-scrollbar">
+            <div className="scroll-area">
+              <div className="grid grid-cols-3 gap-2 pb-4">
                 {COMPANIONS.map((c) => (
                   <motion.button
                     key={c.id}
@@ -294,7 +293,7 @@ export default function Onboarding() {
               {STEP_TITLES[3]}
             </h2>
             <p className="text-purple-300/70 text-sm mb-4 shrink-0">{STEP_SUBTITLES[3]}</p>
-            <div className="flex-1 overflow-y-auto">
+            <div className="scroll-area">
               <div className="grid grid-cols-2 gap-3 pb-2">
                 {BACKGROUNDS.map((bg) => (
                   <motion.button key={bg.id} onClick={() => setSelectedBackground(bg.id)}
@@ -328,8 +327,7 @@ export default function Onboarding() {
       </AnimatePresence>
 
       {/* Footer button */}
-      <div className="relative z-10 px-4 pt-3 shrink-0"
-        style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
+      <div className="sticky-bottom relative z-10">
         <button
           onClick={handleNext}
           disabled={!canAdvance[step] || loading}
