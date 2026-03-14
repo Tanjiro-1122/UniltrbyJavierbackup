@@ -293,6 +293,17 @@ export default function ChatPage() {
       spawnParticles();
       speakText(replyText, companion.id);
 
+      // Rating prompt after 10th message
+      const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
+      if (totalMsgs === 10) {
+        const pid = localStorage.getItem("userProfileId");
+        if (pid) {
+          base44.functions.invoke("ratingPrompt", { profileId: pid }).then(res => {
+            if (res.data?.should_prompt) setShowRatingPrompt(true);
+          }).catch(() => {});
+        }
+      }
+
       // Auto-summarize session every 10 user messages (premium only)
       if (isPremium) {
         const profileId = localStorage.getItem("userProfileId");
