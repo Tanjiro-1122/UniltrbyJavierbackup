@@ -525,7 +525,7 @@ export default function ChatPage() {
           <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", maxHeight: "52%", background: "linear-gradient(to bottom, rgba(8,3,16,0) 0%, rgba(8,3,16,0.9) 10%, rgba(8,3,16,0.97) 100%)" }}>
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", padding: "8px 16px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
               {messages.map((msg, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
+                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 6 }}>
                   <div style={{
                     maxWidth: "82%", padding: "10px 16px",
                     borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
@@ -540,13 +540,33 @@ export default function ChatPage() {
                     )}
                     {msg.content}
                   </div>
+                  {msg.role === "assistant" && (
+                    <button
+                      onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
+                      style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 2 }}
+                    >
+                      <Share2 size={11} color="rgba(255,255,255,0.35)" />
+                    </button>
+                  )}
                 </div>
               ))}
               {loading && (
                 <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{ padding: "10px 16px", borderRadius: "18px 18px 18px 4px", background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", gap: 8 }}>
-                    <Loader2 size={14} color="#a855f7" style={{ animation: "spin 0.8s linear infinite" }} />
-                    <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>{companionDisplayName} is thinking…</span>
+                  <div style={{ padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <style>{`
+                      @keyframes typingBounce {
+                        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+                        30% { transform: translateY(-5px); opacity: 1; }
+                      }
+                    `}</style>
+                    {[0, 1, 2].map(d => (
+                      <div key={d} style={{
+                        width: 7, height: 7, borderRadius: "50%",
+                        background: "#a855f7",
+                        animation: `typingBounce 1.2s ease-in-out infinite`,
+                        animationDelay: `${d * 0.2}s`,
+                      }} />
+                    ))}
                   </div>
                 </div>
               )}
