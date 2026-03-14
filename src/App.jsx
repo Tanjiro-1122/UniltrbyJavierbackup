@@ -65,6 +65,7 @@ const AuthenticatedApp = () => {
       </Routes>
 
       {showTabs && <BottomTabs />}
+      {showFeedbackBtn && <FeedbackButton />}
     </>
   );
 };
