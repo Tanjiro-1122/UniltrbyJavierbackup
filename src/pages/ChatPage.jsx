@@ -5,6 +5,8 @@ import { base44 } from "@/api/base44Client";
 import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
+import { usePushNotifications } from "@/components/usePushNotifications";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",

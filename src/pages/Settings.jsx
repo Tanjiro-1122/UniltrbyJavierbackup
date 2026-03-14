@@ -130,10 +130,15 @@ export default function Settings() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     const profileId = localStorage.getItem("userProfileId");
-    const companionId = localStorage.getItem("companionId");
-    if (profileId) await base44.entities.UserProfile.delete(profileId);
-    if (companionId) await base44.entities.Companion.delete(companionId);
+    if (profileId) {
+      await base44.entities.UserProfile.update(profileId, {
+        account_delete_requested: true,
+        account_delete_requested_at: new Date().toISOString(),
+      });
+    }
     localStorage.clear();
+    base44.auth.logout();
+    alert("Your account will be deleted within 24 hours.");
   };
 
   if (!userProfile || !companion) return (
