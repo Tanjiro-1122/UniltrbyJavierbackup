@@ -135,7 +135,7 @@ export default function Settings() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+      <div className="scroll-area px-4 py-6 space-y-6">
         {/* Display Name */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Display Name</p>
