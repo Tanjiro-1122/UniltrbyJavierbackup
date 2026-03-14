@@ -288,8 +288,7 @@ export default function Onboarding() {
         {step === 3 && (
           <motion.div key="step3"
             initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
-            className="relative z-10 flex flex-col px-4 overflow-hidden"
-            style={{ flex: 1, minHeight: 0 }}
+            className="absolute inset-0 flex flex-col px-4 pt-2 overflow-hidden"
           >
             <h2 className="text-3xl font-black text-white mb-2 shrink-0"
               style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
