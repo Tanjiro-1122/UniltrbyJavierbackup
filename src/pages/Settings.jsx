@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Trash2, Sparkles, Check } from "lucide-react";
+import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle } from "lucide-react";
 import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
