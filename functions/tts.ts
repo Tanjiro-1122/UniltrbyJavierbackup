@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const voice = VOICE_MAP[companionId] || "nova";
 
     const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
+      model: "tts-1-hd",
       voice,
       input: text.slice(0, 500),
     });
