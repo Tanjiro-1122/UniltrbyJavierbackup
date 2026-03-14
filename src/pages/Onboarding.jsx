@@ -72,10 +72,16 @@ export default function Onboarding() {
     setStep((s) => s + 1);
   };
 
-  const STEP_TITLES = ["What's your name?", "Pick your companion", "Pick your space"];
+  const STEP_TITLES = [
+    "What's your name?",
+    "Pick your companion",
+    "Name your companion",
+    "Pick your space",
+  ];
   const STEP_SUBTITLES = [
     "This is what your companion will call you.",
     "Choose who you want to hang with.",
+    "Give them a nickname — or keep their real name.",
     "Where do you want to hang out?",
   ];
 
