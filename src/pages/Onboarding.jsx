@@ -59,6 +59,9 @@ export default function Onboarding() {
         }));
         const bg = BACKGROUNDS.find((b) => b.id === selectedBackground);
         localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
+        if (companionNickname.trim()) {
+          localStorage.setItem("unfiltr_companion_nickname", companionNickname.trim());
+        }
 
         navigate("/vibe");
       } finally {
