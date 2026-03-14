@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
+import OnboardingTutorial from "@/components/OnboardingTutorial";
 
 const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester"];
 const TESTER_CODE  = "unfiltr2026demo";
