@@ -253,7 +253,7 @@ export default function ChatPage() {
   return (
     <>
     <div
-      className="fixed inset-0 flex flex-col overflow-hidden"
+      className="screen"
       style={{ backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center bottom" }}
     >
       {/* Dim overlay */}
