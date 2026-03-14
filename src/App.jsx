@@ -16,6 +16,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import FeedbackPage from './pages/FeedbackPage';
 import FeedbackAdmin from './pages/admin/FeedbackAdmin';
+import Pricing from './pages/Pricing';
 import FeedbackButton from './components/FeedbackButton';
 
 // Pages where the bottom tab bar should NOT appear
