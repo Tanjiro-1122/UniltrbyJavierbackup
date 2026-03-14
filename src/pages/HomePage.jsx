@@ -51,7 +51,8 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: loaded ? 1 : 0, y: loaded ? 0 : 30 }}
         transition={{ duration: 0.9, ease: "easeOut" }}
-        className="relative z-10 flex flex-col items-center px-6 text-center w-full max-w-sm pt-12"
+        className="scroll-area relative z-10 flex flex-col items-center px-6 text-center w-full"
+        style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))", paddingBottom: "1rem" }}
       >
         {/* Logo */}
         <div style={{ animation: "float 5s ease-in-out infinite" }} className="mb-5">
