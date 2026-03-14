@@ -256,19 +256,22 @@ export default function ChatPage() {
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center bottom" }}
     >
-      <div className="absolute inset-0 bg-black/25" />
+      {/* Dim overlay */}
+      <div className="absolute inset-0 bg-black/20" />
 
       <style>{`
         @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
         @keyframes listenPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
+        @keyframes pulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
         .particle { animation: particleFly 1s ease-out forwards; }
         .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
       `}</style>
 
       <div className="relative flex flex-col h-full z-10">
-        {/* Top bar */}
+
+        {/* ── TOP BAR ── */}
         <div
-          className="flex items-center justify-between px-4 pb-3 bg-black/40 backdrop-blur-md border-b border-white/10"
+          className="flex items-center justify-between px-4 pb-3 bg-black/30 backdrop-blur-md border-b border-white/10"
           style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}
         >
           <button
@@ -286,75 +289,71 @@ export default function ChatPage() {
                 {remaining}/{FREE_LIMIT} msgs left
               </button>
             )}
-            {isPremium && (
-              <p className="text-[10px] text-purple-400/80">✨ Premium</p>
-            )}
+            {isPremium && <p className="text-[10px] text-purple-400/80">✨ Premium</p>}
           </div>
 
-          <button
-            onClick={() => navigate("/settings")}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
-          >
+          <button onClick={() => navigate("/settings")} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
             <Settings className="w-4 h-4 text-white" />
           </button>
         </div>
 
-        {/* Avatar zone */}
-        <div className="flex items-end justify-center pt-4" style={{ height: "280px" }}>
-          <div className="relative flex flex-col items-center">
-            {/* Greenscreen effect - subtle shadow grounding */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-48 pointer-events-none" style={{
-              background: "radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 70%)",
-              zIndex: 0
-            }} />
-            
-            {/* Speaking glow ring */}
-            {isSpeaking && (
-              <div className="absolute inset-0 rounded-full pointer-events-none" style={{ boxShadow: "0 0 40px 20px rgba(168,85,247,0.4)", borderRadius: "50%", zIndex: 2 }} />
-            )}
-            {/* Particles */}
-            {particles.map((p) => (
-              <div
-                key={p.id}
-                className="particle absolute text-base pointer-events-none"
-                style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "55%", left: "50%", transform: "translate(-50%,0)", zIndex: 3 }}
-              >
-                {p.emoji}
-              </div>
-            ))}
-            <div style={{ position: "relative", zIndex: 1, background: "radial-gradient(ellipse at center bottom, rgba(0,0,0,0.2) 0%, transparent 60%)", borderRadius: "50%", width: "280px", height: "280px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <LiveAvatar
-                companionId={companion.id}
-                mood={companionMood}
-                isSpeaking={isSpeaking}
-                onClick={() => { spawnParticles(); }}
-              />
+        {/* ── AVATAR ZONE — sits above chat, fully visible ── */}
+        <div className="flex-1 flex items-end justify-center relative pointer-events-none" style={{ minHeight: 0 }}>
+          {/* Ground shadow */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-16 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, transparent 70%)" }} />
+
+          {/* Speaking glow */}
+          {isSpeaking && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full pointer-events-none"
+              style={{ background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "pulse 1.2s ease-in-out infinite" }} />
+          )}
+
+          {/* Particles */}
+          {particles.map((p) => (
+            <div key={p.id} className="particle absolute text-base pointer-events-none"
+              style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "45%", left: "50%", transform: "translate(-50%,0)", zIndex: 3 }}>
+              {p.emoji}
             </div>
+          ))}
+
+          {/* Avatar — pointer-events re-enabled just on the image */}
+          <div className="pointer-events-auto" style={{ paddingBottom: "8px" }}>
+            <LiveAvatar
+              companionId={companion.id}
+              mood={companionMood}
+              isSpeaking={isSpeaking}
+              onClick={() => spawnParticles()}
+            />
           </div>
         </div>
 
-        {/* Messages with Pull-to-Refresh */}
-        <PullToRefresh onRefresh={handleRefresh}>
-          <div className="flex-1 overflow-y-auto px-4 pt-6 pb-3 space-y-3">
+        {/* ── CHAT PANEL — frosted glass, pinned bottom ── */}
+        <div className="flex flex-col shrink-0" style={{
+          background: "linear-gradient(to bottom, rgba(10,5,20,0) 0%, rgba(10,5,20,0.92) 14%, rgba(10,5,20,0.97) 100%)",
+          paddingBottom: "max(5.5rem, env(safe-area-inset-bottom, 5.5rem))",
+        }}>
+          {/* Messages scroll area */}
+          <div className="overflow-y-auto px-4 pt-2 pb-2 space-y-2" style={{ maxHeight: "36vh" }}>
             {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
-                    msg.role === "user"
-                      ? "bg-purple-600 text-white rounded-br-md"
-                      : "bg-black/50 backdrop-blur-md text-white border border-white/10 rounded-bl-md"
-                  }`}
-                >
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
+                  msg.role === "user"
+                    ? "text-white rounded-br-md"
+                    : "text-white rounded-bl-md border border-purple-500/20"
+                }`}
+                style={msg.role === "user"
+                  ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
+                  : { background: "rgba(88, 28, 135, 0.35)", backdropFilter: "blur(8px)", boxShadow: "0 0 12px rgba(168,85,247,0.15)" }
+                }>
                   {msg.content}
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
+                <div className="px-4 py-3 rounded-2xl rounded-bl-md flex items-center gap-2 border border-purple-500/20"
+                  style={{ background: "rgba(88,28,135,0.35)", backdropFilter: "blur(8px)" }}>
                   <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
                   <span className="text-white/50 text-xs">{companion.name} is thinking...</span>
                 </div>
@@ -362,43 +361,43 @@ export default function ChatPage() {
             )}
             <div ref={messagesEndRef} />
           </div>
-        </PullToRefresh>
 
-        {/* Input bar */}
-        <div className="px-4 pt-2 pb-20" style={{ paddingBottom: "max(5rem, env(safe-area-inset-bottom, 5rem))" }}>
-          <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 shadow-lg">
-            {/* Mic button */}
-            <button
-              onPointerDown={startListening}
-              onPointerUp={stopListening}
-              className={`w-9 h-9 flex items-center justify-center rounded-full shrink-0 transition-all ${
-                isListening
-                  ? "bg-red-500 listen-pulse"
-                  : "bg-white/10 hover:bg-white/20"
-              }`}
-            >
-              {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white/70" />}
-            </button>
+          {/* ── INPUT BAR ── */}
+          <div className="px-4 pt-2">
+            <div className="flex items-center gap-2 border border-white/10 rounded-full px-4 py-2.5 shadow-lg"
+              style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(16px)" }}>
+              <button
+                onPointerDown={startListening}
+                onPointerUp={stopListening}
+                className={`w-9 h-9 flex items-center justify-center rounded-full shrink-0 transition-all ${
+                  isListening ? "bg-red-500 listen-pulse" : "bg-white/10 hover:bg-white/20"
+                }`}
+              >
+                {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white/70" />}
+              </button>
 
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={isListening ? "Listening..." : `Talk to ${companion.name}...`}
-              className="flex-1 bg-transparent text-white placeholder-white/30 text-sm outline-none"
-            />
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={isListening ? "Listening..." : `Talk to ${companion.name}...`}
+                className="flex-1 bg-transparent text-white placeholder-white/30 text-sm outline-none"
+              />
 
-            <button
-              onClick={() => handleSend()}
-              disabled={loading || !input.trim()}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 shrink-0 shadow disabled:opacity-40 active:scale-90 transition-transform"
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
+              <button
+                onClick={() => handleSend()}
+                disabled={loading || !input.trim()}
+                className="w-9 h-9 flex items-center justify-center rounded-full shrink-0 shadow disabled:opacity-40 active:scale-90 transition-transform"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)" }}
+              >
+                <Send className="w-4 h-4 text-white" />
+              </button>
+            </div>
+            <p className="text-center text-white/20 text-xs mt-1.5">Hold 🎤 to speak • Tap to type</p>
           </div>
-          <p className="text-center text-white/20 text-xs mt-2">Hold 🎤 to speak • Tap to type</p>
         </div>
+
       </div>
     </div>
 
