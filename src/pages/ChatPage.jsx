@@ -43,6 +43,8 @@ export default function ChatPage() {
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
   const [showTutorial, setShowTutorial]       = useState(false);
+  const [showRatingPrompt, setShowRatingPrompt] = useState(false);
+  const [shareCard, setShareCard]             = useState(null); // { message, mood }
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
