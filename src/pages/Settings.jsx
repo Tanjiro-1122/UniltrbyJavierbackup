@@ -56,13 +56,16 @@ function CompanionNicknameField({ companion, userProfile }) {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState(null);
-  const [companion, setCompanion] = useState(null);
+  const [userProfile, setUserProfile]     = useState(null);
+  const [companion, setCompanion]         = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [savingCompanion, setSavingCompanion] = useState(false);
+  const [deleting, setDeleting]           = useState(false);
+  const [showPaywall, setShowPaywall]     = useState(false);
+  const [savingCompanion, setSavingCompanion]   = useState(false);
   const [savingBackground, setSavingBackground] = useState(false);
+  const [streak, setStreak]               = useState(0);
+  const [daysSince, setDaysSince]         = useState(0);
+  const [moodHistory, setMoodHistory]     = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,6 +76,25 @@ export default function Settings() {
       setUserProfile(profile);
       setCompanion(comp);
     };
+
+    // Load streak
+    const todayStr = new Date().toDateString();
+    const streakData = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
+    setStreak(streakData.date === todayStr || streakData.date === new Date(Date.now() - 86400000).toDateString() ? streakData.count : 0);
+
+    // Days with companion
+    const created = localStorage.getItem("unfiltr_companion_created");
+    if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
+
+    // Mood history skeleton (last 7 days)
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const today = new Date();
+    const history = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today); d.setDate(today.getDate() - (6 - i));
+      return { day: days[d.getDay()], mood: null };
+    });
+    setMoodHistory(history);
+
     loadData();
   }, []);
 
@@ -141,14 +163,62 @@ export default function Settings() {
 
       {/* Content */}
       <div className="scroll-area px-4 py-6 space-y-6">
-        {/* Display Name */}
+
+        {/* ── STATS CARD ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(219,39,119,0.1))",
+            border: "1px solid rgba(168,85,247,0.2)",
+            borderRadius: 16, padding: "16px",
+            display: "flex", gap: 0,
+          }}>
+            {[
+              { label: "Day Streak", value: streak > 0 ? `${streak} 🔥` : "Start today!", sub: "consecutive days" },
+              { label: "Days Together", value: daysSince, sub: "with your companion" },
+              { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
+            ].map((stat, i) => (
+              <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 18, margin: 0 }}>{stat.value}</p>
+                <p style={{ color: "white", fontWeight: 600, fontSize: 11, margin: "2px 0 0" }}>{stat.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, margin: "1px 0 0" }}>{stat.sub}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── MOOD THIS WEEK ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+            Mood This Week
+          </p>
+          <div style={{
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 14, padding: "14px 12px",
+            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+          }}>
+            {moodHistory.map((entry, i) => (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{
+                  width: 28, height: entry.mood ? 44 : 28, borderRadius: 8,
+                  background: entry.mood ? "linear-gradient(180deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.06)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {entry.mood && <span style={{ fontSize: 14 }}>{entry.mood}</span>}
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 9 }}>{entry.day}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Display Name */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Display Name</p>
           <p className="text-white font-semibold text-lg">{userProfile.display_name}</p>
         </motion.div>
 
         {/* Companion Nickname */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Nickname</p>
           <p className="text-white/40 text-xs mb-2">Give your companion a personal name only you call them.</p>
           <CompanionNicknameField companion={companion} userProfile={userProfile} />
