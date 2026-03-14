@@ -115,17 +115,8 @@ export default function Settings() {
   };
 
   if (!userProfile || !companion) return (
-    <div style={{
-      position: "fixed", inset: 0, display: "flex",
-      alignItems: "center", justifyContent: "center",
-      background: "#0a0a0f",
-    }}>
-      <div style={{
-        width: 28, height: 28, borderRadius: "50%",
-        border: "3px solid rgba(168,85,247,0.3)",
-        borderTopColor: "#a855f7",
-        animation: "spin 0.8s linear infinite",
-      }} />
+    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f" }}>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
     </div>
   );
@@ -134,22 +125,14 @@ export default function Settings() {
     <div className="screen no-tabs" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
       {/* Header */}
       <div style={{
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
+        flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
         padding: "0 16px 14px",
         paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
         <button
           onClick={() => navigate("/chat")}
-          style={{
-            width: 40, height: 40, borderRadius: "50%",
-            background: "rgba(255,255,255,0.1)", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-          }}
+          style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronLeft size={20} color="white" />
         </button>
@@ -178,19 +161,10 @@ export default function Settings() {
             {COMPANIONS.map((c) => {
               const isSelected = companion.name === c.name;
               return (
-                <button
-                  key={c.id}
-                  onClick={() => handleChangeCompanion(c)}
-                  className="flex flex-col items-center gap-1.5 relative"
-                >
+                <button key={c.id} onClick={() => handleChangeCompanion(c)} className="flex flex-col items-center gap-1.5 relative">
                   <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-500 scale-105" : "border-white/10"}`}
                     style={{ background: isSelected ? "#2d1a4e" : "#1a1a2e" }}>
-                    <img
-                      src={c.poses.neutral}
-                      alt={c.name}
-                      className="w-full h-full object-cover object-top"
-                      style={{ background: "none", backgroundColor: "transparent", border: "none", mixBlendMode: "normal" }}
-                    />
+                    <img src={c.poses?.neutral || c.avatar} alt={c.name} className="w-full h-full object-cover object-top" />
                     {isSelected && (
                       <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
@@ -212,13 +186,8 @@ export default function Settings() {
             {BACKGROUNDS.map((bg) => {
               const isSelected = userProfile.background_id === bg.id;
               return (
-                <button
-                  key={bg.id}
-                  onClick={() => handleChangeBackground(bg.id)}
-                  className={`relative h-24 rounded-2xl border-2 overflow-hidden transition-all ${
-                    isSelected ? "border-purple-500" : "border-white/10"
-                  }`}
-                >
+                <button key={bg.id} onClick={() => handleChangeBackground(bg.id)}
+                  className={`relative h-24 rounded-2xl border-2 overflow-hidden transition-all ${isSelected ? "border-purple-500" : "border-white/10"}`}>
                   <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
                   <div className="absolute bottom-0 inset-x-0 p-2 text-center pointer-events-none">
@@ -241,10 +210,10 @@ export default function Settings() {
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Status</p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${userProfile.premium ? "bg-purple-500" : "bg-white/30"}`} />
-              <p className="text-white font-semibold">{userProfile.premium ? "✨ Premium" : "Free (20 msgs/day)"}</p>
+              <div className={`w-3 h-3 rounded-full ${(userProfile.premium || userProfile.is_premium) ? "bg-purple-500" : "bg-white/30"}`} />
+              <p className="text-white font-semibold">{(userProfile.premium || userProfile.is_premium) ? "✨ Premium" : "Free (20 msgs/day)"}</p>
             </div>
-            {!userProfile.premium && (
+            {!(userProfile.premium || userProfile.is_premium) && (
               <button
                 onClick={() => setShowPaywall(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full"
@@ -288,20 +257,16 @@ export default function Settings() {
         }}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-end justify-center z-50"
             onClick={() => setShowDeleteConfirm(false)}
           >
             <motion.div
-              initial={{ y: 80, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 80, opacity: 0 }}
+              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-[430px] bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
               style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}

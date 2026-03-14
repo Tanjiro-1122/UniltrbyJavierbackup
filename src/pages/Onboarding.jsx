@@ -5,6 +5,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
+// ── TESTER ACCOUNT CONFIG ──
+// Apple / Google reviewers use this name to get full premium access
+const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester"];
+const TESTER_CODE  = "unfiltr2026demo"; // hidden easter-egg code also works
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep]                             = useState(0);
@@ -13,6 +18,7 @@ export default function Onboarding() {
   const [companionNickname, setCompanionNickname]   = useState("");
   const [selectedBackground, setSelectedBackground] = useState(null);
   const [loading, setLoading]                       = useState(false);
+  const [isTesterAccount, setIsTesterAccount]       = useState(false);
 
   const canAdvance = [
     displayName.trim().length > 0,
@@ -44,7 +50,14 @@ export default function Onboarding() {
           display_name:  displayName,
           companion_id:  companion.id,
           background_id: selectedBackground,
-          premium:       false,
+          premium:       isTesterAccount,
+          is_premium:    isTesterAccount,
+          session_memory: isTesterAccount ? [
+            {
+              date: "Mar 14, 2026",
+              summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
+            }
+          ] : [],
         });
 
         localStorage.setItem("userProfileId",  userProfile.id);
@@ -168,13 +181,30 @@ export default function Onboarding() {
             <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>{STEP_SUBS[0]}</p>
             <input
               type="text" value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                setDisplayName(val);
+                const normalized = val.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                setIsTesterAccount(TESTER_NAMES.includes(normalized) || normalized === TESTER_CODE);
+              }}
               onKeyDown={e => e.key === "Enter" && handleNext()}
               placeholder="Enter display name" autoFocus
               style={{ width: "100%", padding: "16px", borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)", background: "rgba(139,92,246,0.1)", color: "white", fontSize: 16, outline: "none", caretColor: "#a855f7" }}
               onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
               onBlur={e  => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
             />
+            {isTesterAccount && (
+              <div style={{
+                marginTop: 10, padding: "8px 14px", borderRadius: 12,
+                background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <span style={{ fontSize: 16 }}>✨</span>
+                <span style={{ color: "rgba(196,180,252,0.9)", fontSize: 13 }}>
+                  <strong style={{ color: "#c084fc" }}>Premium Demo Account</strong> — full access enabled
+                </span>
+              </div>
+            )}
           </motion.div>
         )}
 
