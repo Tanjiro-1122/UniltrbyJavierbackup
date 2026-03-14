@@ -170,33 +170,58 @@ export default function Onboarding() {
             initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
             className="relative z-10 flex-1 flex flex-col min-h-0 px-4"
           >
-            <h2 className="text-3xl font-black text-white mb-2 shrink-0"
+            <h2 className="text-3xl font-black text-white mb-1 shrink-0"
               style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
-              {STEP_TITLES[1]}
+              Pick your companion
             </h2>
-            <p className="text-purple-300/70 text-sm mb-4 shrink-0">{STEP_SUBTITLES[1]}</p>
-            <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3 pb-4">
+            <p className="text-purple-300/70 text-sm mb-3 shrink-0">Choose who you want to hang with.</p>
+
+            <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+              <div className="grid grid-cols-3 gap-2 pb-4 no-scrollbar">
                 {COMPANIONS.map((c) => (
-                  <motion.button key={c.id} onClick={() => setSelectedCompanion(c.id)}
-                    whileTap={{ scale: 0.96 }}
-                    className="rounded-2xl flex flex-col items-center p-3 overflow-hidden transition-all"
+                  <motion.button
+                    key={c.id}
+                    onClick={() => setSelectedCompanion(c.id)}
+                    whileTap={{ scale: 0.94 }}
+                    className="flex flex-col items-center rounded-2xl overflow-hidden transition-all"
                     style={{
                       background: selectedCompanion === c.id
                         ? "rgba(139,92,246,0.25)"
                         : "rgba(255,255,255,0.04)",
                       border: selectedCompanion === c.id
-                        ? "2px solid rgba(168,85,247,0.8)"
-                        : "2px solid rgba(255,255,255,0.1)",
+                        ? "2px solid rgba(168,85,247,0.85)"
+                        : "2px solid rgba(255,255,255,0.08)",
                       boxShadow: selectedCompanion === c.id
-                        ? "0 0 20px rgba(168,85,247,0.3)"
+                        ? "0 0 18px rgba(168,85,247,0.35)"
                         : "none",
+                      paddingTop: "8px",
+                      paddingBottom: "8px",
+                      paddingLeft: "4px",
+                      paddingRight: "4px",
                     }}
                   >
-                    <img src={c.avatar} alt={c.name} className="w-full h-32 object-contain"
-                      onError={(e) => { e.target.style.opacity = "0.3"; }} />
-                    <p className="text-white text-sm font-bold mt-2">{c.emoji} {c.name}</p>
-                    <p className="text-white/40 text-[11px] text-center mt-0.5 leading-tight">{c.tagline}</p>
+                    <div className="w-full overflow-hidden rounded-xl" style={{ height: "80px" }}>
+                      <img
+                        src={c.avatar}
+                        alt={c.name}
+                        className="w-full h-full object-contain object-top"
+                        onError={(e) => { e.target.style.opacity = "0.3"; }}
+                      />
+                    </div>
+                    <p className="text-white text-xs font-bold mt-1.5 text-center leading-tight">
+                      {c.emoji} {c.name}
+                    </p>
+                    <p className="text-white/40 text-[10px] text-center leading-tight mt-0.5 px-1">
+                      {c.tagline}
+                    </p>
+                    {selectedCompanion === c.id && (
+                      <div className="mt-1 w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                          <path d="M1.5 4L3 5.5L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
                   </motion.button>
                 ))}
               </div>
