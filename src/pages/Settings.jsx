@@ -363,6 +363,75 @@ export default function Settings() {
         }}
       />
 
+      {/* Pause Modal */}
+      <AnimatePresence>
+        {showPauseModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-end justify-center z-50"
+            onClick={() => setShowPauseModal(false)}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[430px] bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
+              style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}
+            >
+              <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+              {pauseSuccess ? (
+                <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+                  <p style={{ fontSize: 40, marginBottom: 12 }}>💙</p>
+                  <h3 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: "0 0 8px" }}>Account Paused</h3>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.6, margin: "0 0 20px" }}>
+                    Your account is paused. Your companion will be waiting when you're back 💙
+                  </p>
+                  <button onClick={() => setShowPauseModal(false)}
+                    style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-white font-bold text-xl mb-1">Pause My Account</h3>
+                  <p className="text-white/50 text-sm mb-5">Take a break. Your companion will be right here when you return.</p>
+
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Pause duration</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                    {[
+                      { value: "1week",  label: "1 Week" },
+                      { value: "2weeks", label: "2 Weeks" },
+                      { value: "1month", label: "1 Month" },
+                    ].map(opt => (
+                      <button key={opt.value} onClick={() => setPauseDuration(opt.value)}
+                        style={{
+                          padding: "13px 16px", borderRadius: 14, textAlign: "left",
+                          background: pauseDuration === opt.value ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${pauseDuration === opt.value ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"}`,
+                          color: pauseDuration === opt.value ? "white" : "rgba(255,255,255,0.55)",
+                          fontWeight: pauseDuration === opt.value ? 700 : 500, fontSize: 15, cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                        }}>
+                        {opt.label}
+                        {pauseDuration === opt.value && <span style={{ fontSize: 16 }}>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button onClick={handlePauseAccount} disabled={pausing}
+                    style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, #4f46e5, #7c3aed)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pausing ? 0.6 : 1, marginBottom: 10 }}>
+                    {pausing ? "Pausing…" : "Confirm Pause"}
+                  </button>
+                  <button onClick={() => setShowPauseModal(false)}
+                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Delete Confirmation */}
       <AnimatePresence>
         {showDeleteConfirm && (
@@ -385,7 +454,7 @@ export default function Settings() {
                 disabled={deleting}
                 className="w-full py-3 bg-red-600 text-white font-bold rounded-xl mb-3 disabled:opacity-50"
               >
-                {deleting ? "Deleting..." : "Yes, delete everything"}
+                {deleting ? "Processing…" : "Yes, delete everything"}
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
