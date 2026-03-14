@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   UNFILTR — GLOBAL MOBILE CSS  (clean rewrite)
+   UNFILTR — GLOBAL MOBILE CSS
    ══════════════════════════════════════════════════════════ */
 
 /* ── 1. Base reset ── */
@@ -13,9 +13,10 @@
 }
 
 html {
-  /* Real available height on mobile (shrinks when URL bar hides) */
   height: 100%;
   height: -webkit-fill-available;
+  /* Fills the gray dead zone on Safari iOS */
+  background: #06020f;
 }
 
 body {
@@ -24,7 +25,6 @@ body {
   height: -webkit-fill-available;
   background: #06020f;
   overflow: hidden;
-  /* position:fixed stops iOS elastic bounce */
   position: fixed;
   overscroll-behavior: none;
   color-scheme: dark;
@@ -34,16 +34,10 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: #06020f;
 }
 
 /* ── 2. .screen — outermost wrapper for every page ── */
-/*
-   IMPORTANT positioning logic:
-   - position:fixed, top:0, bottom:0  → full height always
-   - width:100%, max-width:430px      → phone-width cap
-   - left:50%, translateX(-50%)       → horizontally centered
-   - DO NOT use inset:0 (sets left:0 AND right:0 which fights with left:50%)
-*/
 .screen {
   position: fixed;
   top: 0;
@@ -55,37 +49,37 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Dynamic viewport height — shrinks when browser chrome appears */
-  height: 100dvh;
-  /* Fallback for browsers without dvh support */
-  height: 100%;
+  /* Account for bottom tab bar (64px) + safe area */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
-/* ── 3. .scroll-area — fills remaining flex space, scrollable ── */
+/* Pages that have NO bottom tabs — use .screen.no-tabs to override */
+.screen.no-tabs {
+  padding-bottom: 0;
+}
+
+/* ── 3. .scroll-area ── */
 .scroll-area {
   flex: 1;
-  /* min-height:0 is REQUIRED — flex children don't shrink below content by default */
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  /* Hide scrollbar visually, keep it functional */
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .scroll-area::-webkit-scrollbar { display: none; }
 
-/* ── 4. .sticky-bottom — always pinned to the bottom, safe area aware ── */
+/* ── 4. .sticky-bottom ── */
 .sticky-bottom {
   flex-shrink: 0;
   width: 100%;
   padding: 0.75rem 1rem;
-  /* Push above home indicator on iPhone X+ */
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
 }
 
-/* ── 5. Text selection — allow in content, block elsewhere ── */
+/* ── 5. Text selection ── */
 * {
   -webkit-user-select: none;
   user-select: none;
@@ -96,12 +90,12 @@ input, textarea, p, span, [contenteditable], [data-selectable] {
   user-select: text;
 }
 
-/* ── 6. Prevent iOS zoom on input focus (requires font-size >= 16px) ── */
+/* ── 6. Prevent iOS zoom on input focus ── */
 input, textarea, select {
   font-size: 16px !important;
 }
 
-/* ── 7. Safe area utility classes ── */
+/* ── 7. Safe area utilities ── */
 @supports (padding: max(0px)) {
   .safe-top    { padding-top:    max(0px, env(safe-area-inset-top)); }
   .safe-bottom { padding-bottom: max(0px, env(safe-area-inset-bottom)); }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, LogOut, Trash2, Sparkles, Check } from "lucide-react";
+import { ChevronLeft, Trash2, Sparkles, Check } from "lucide-react";
 import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
@@ -78,7 +78,6 @@ export default function Settings() {
 
   const handleSignOut = async () => {
     localStorage.clear();
-    await base44.auth.logout();
   };
 
   const handleChangeCompanion = async (newCompanion) => {
@@ -113,7 +112,6 @@ export default function Settings() {
     if (profileId) await base44.entities.UserProfile.delete(profileId);
     if (companionId) await base44.entities.Companion.delete(companionId);
     localStorage.clear();
-    await base44.auth.logout();
   };
 
   if (!userProfile || !companion) return (
@@ -133,7 +131,7 @@ export default function Settings() {
   );
 
   return (
-    <div className="screen" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
+    <div className="screen no-tabs" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
       {/* Header */}
       <div style={{
         flexShrink: 0,
@@ -191,6 +189,7 @@ export default function Settings() {
                       src={c.poses.neutral}
                       alt={c.name}
                       className="w-full h-full object-cover object-top"
+                      style={{ background: "none", backgroundColor: "transparent", border: "none", mixBlendMode: "normal" }}
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
@@ -258,15 +257,8 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      {/* Sign Out + Delete */}
-      <motion.div className="sticky-bottom space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-        <button
-          onClick={handleSignOut}
-          className="w-full py-3 bg-red-500/20 border border-red-500/40 text-red-400 font-semibold rounded-xl hover:bg-red-500/30 transition flex items-center justify-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
+      {/* Delete Account */}
+      <motion.div className="sticky-bottom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="w-full py-3 bg-transparent border border-white/10 text-white/30 font-medium rounded-xl hover:border-red-500/30 hover:text-red-400/60 transition flex items-center justify-center gap-2 text-sm"

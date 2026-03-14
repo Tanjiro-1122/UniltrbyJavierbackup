@@ -14,12 +14,11 @@ export default function Onboarding() {
   const [selectedBackground, setSelectedBackground] = useState(null);
   const [loading, setLoading]                       = useState(false);
 
-  /* step can advance when: */
   const canAdvance = [
-    displayName.trim().length > 0,  // step 0: need a name
-    !!selectedCompanion,             // step 1: need a companion (auto-advances)
-    true,                            // step 2: nickname optional
-    !!selectedBackground,            // step 3: need a background
+    displayName.trim().length > 0,
+    !!selectedCompanion,
+    true,
+    !!selectedBackground,
   ];
 
   const handleBack = () => {
@@ -48,10 +47,9 @@ export default function Onboarding() {
           premium:       false,
         });
 
-        localStorage.setItem("userProfileId",      userProfile.id);
-        localStorage.setItem("companionId",         companion.id);
+        localStorage.setItem("userProfileId",  userProfile.id);
+        localStorage.setItem("companionId",     companion.id);
 
-        // Resolve display name: nickname > default
         const finalName = companionNickname.trim() || companionData.name;
         if (companionNickname.trim()) {
           localStorage.setItem("unfiltr_companion_nickname", companionNickname.trim());
@@ -79,13 +77,8 @@ export default function Onboarding() {
     setStep(s => s + 1);
   };
 
-  const STEP_TITLES = [
-    "What's your name?",
-    "Pick your companion",
-    "Name your companion",
-    "Pick your space",
-  ];
-  const STEP_SUBS = [
+  const STEP_TITLES = ["What's your name?", "Pick your companion", "Name your companion", "Pick your space"];
+  const STEP_SUBS   = [
     "This is what your companion will call you.",
     "Choose who you want to hang with.",
     "Give them a nickname — or keep their real name.",
@@ -94,7 +87,7 @@ export default function Onboarding() {
 
   return (
     <div
-      className="screen"
+      className="screen no-tabs"
       style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}
     >
       {/* Stars */}
@@ -163,125 +156,59 @@ export default function Onboarding() {
         </div>
       </div>
 
-      {/* ── STEP CONTENT (flex-1, scrollable) ── */}
+      {/* ── STEP CONTENT ── */}
       <AnimatePresence mode="wait">
 
-        {/* STEP 0 — Your name */}
         {step === 0 && (
-          <motion.div
-            key="s0"
+          <motion.div key="s0"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{
-              flex: 1, minHeight: 0,
-              display: "flex", flexDirection: "column",
-              padding: "16px 16px 0",
-              position: "relative", zIndex: 1,
-            }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "16px 16px 0", position: "relative", zIndex: 1 }}
           >
-            <h2 style={{
-              color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px",
-              textShadow: "0 0 20px rgba(168,85,247,0.5)",
-            }}>
-              {STEP_TITLES[0]}
-            </h2>
-            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>
-              {STEP_SUBS[0]}
-            </p>
+            <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[0]}</h2>
+            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>{STEP_SUBS[0]}</p>
             <input
-              type="text"
-              value={displayName}
+              type="text" value={displayName}
               onChange={e => setDisplayName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleNext()}
-              placeholder="Enter display name"
-              autoFocus
-              style={{
-                width: "100%", padding: "16px",
-                borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)",
-                background: "rgba(139,92,246,0.1)",
-                color: "white", fontSize: 16, outline: "none",
-                caretColor: "#a855f7",
-              }}
+              placeholder="Enter display name" autoFocus
+              style={{ width: "100%", padding: "16px", borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)", background: "rgba(139,92,246,0.1)", color: "white", fontSize: 16, outline: "none", caretColor: "#a855f7" }}
               onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
               onBlur={e  => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
             />
           </motion.div>
         )}
 
-        {/* STEP 1 — Pick companion */}
         {step === 1 && (
-          <motion.div
-            key="s1"
+          <motion.div key="s1"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{
-              flex: 1, minHeight: 0,
-              display: "flex", flexDirection: "column",
-              position: "relative", zIndex: 1,
-            }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}
           >
             <div style={{ flexShrink: 0, padding: "0 16px 10px" }}>
-              <h2 style={{
-                color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px",
-                textShadow: "0 0 20px rgba(168,85,247,0.5)",
-              }}>
-                {STEP_TITLES[1]}
-              </h2>
+              <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[1]}</h2>
               <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[1]}</p>
             </div>
-
-            {/* Scrollable grid */}
             <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 10,
-                paddingBottom: 8,
-              }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, paddingBottom: 8 }}>
                 {COMPANIONS.map(c => (
-                  <motion.button
-                    key={c.id}
-                    whileTap={{ scale: 0.94 }}
+                  <motion.button key={c.id} whileTap={{ scale: 0.94 }}
                     onClick={() => { setSelectedCompanion(c.id); setStep(2); }}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center",
-                      borderRadius: 18, overflow: "hidden", cursor: "pointer",
-                      padding: "10px 6px 8px",
-                      background: selectedCompanion === c.id
-                        ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.04)",
-                      border: `2px solid ${selectedCompanion === c.id
-                        ? "rgba(168,85,247,0.85)" : "rgba(255,255,255,0.08)"}`,
-                      boxShadow: selectedCompanion === c.id
-                        ? "0 0 18px rgba(168,85,247,0.35)" : "none",
+                      borderRadius: 18, overflow: "hidden", cursor: "pointer", padding: "10px 6px 8px",
+                      background: selectedCompanion === c.id ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `2px solid ${selectedCompanion === c.id ? "rgba(168,85,247,0.85)" : "rgba(255,255,255,0.08)"}`,
+                      boxShadow: selectedCompanion === c.id ? "0 0 18px rgba(168,85,247,0.35)" : "none",
                       transition: "all 0.15s",
                     }}
                   >
                     <div style={{ width: "100%", height: 80, overflow: "hidden", borderRadius: 10 }}>
-                      <img
-                        src={c.avatar} alt={c.name}
-                        style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }}
-                        onError={e => e.target.style.opacity = "0.3"}
-                      />
+                      <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }} onError={e => e.target.style.opacity = "0.3"} />
                     </div>
-                    <p style={{
-                      color: "white", fontSize: 11, fontWeight: 700,
-                      margin: "6px 0 2px", textAlign: "center", lineHeight: 1.2,
-                    }}>
-                      {c.emoji} {c.name}
-                    </p>
-                    <p style={{
-                      color: "rgba(255,255,255,0.4)", fontSize: 10,
-                      textAlign: "center", lineHeight: 1.2, margin: 0,
-                    }}>
-                      {c.tagline}
-                    </p>
+                    <p style={{ color: "white", fontSize: 11, fontWeight: 700, margin: "6px 0 2px", textAlign: "center", lineHeight: 1.2 }}>{c.emoji} {c.name}</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textAlign: "center", lineHeight: 1.2, margin: 0 }}>{c.tagline}</p>
                     {selectedCompanion === c.id && (
-                      <div style={{
-                        marginTop: 5, width: 16, height: 16, borderRadius: "50%",
-                        background: "#a855f7",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                          <path d="M1.5 4L3 5.5L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                      <div style={{ marginTop: 5, width: 16, height: 16, borderRadius: "50%", background: "#a855f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </div>
                     )}
                   </motion.button>
@@ -291,40 +218,17 @@ export default function Onboarding() {
           </motion.div>
         )}
 
-        {/* STEP 2 — Name companion */}
         {step === 2 && (
-          <motion.div
-            key="s2"
+          <motion.div key="s2"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{
-              flex: 1, minHeight: 0,
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
-              display: "flex", flexDirection: "column",
-              padding: "16px 16px 0",
-              position: "relative", zIndex: 1,
-            }}
+            style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", padding: "16px 16px 0", position: "relative", zIndex: 1 }}
           >
-            <h2 style={{
-              color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px",
-              textShadow: "0 0 20px rgba(168,85,247,0.5)",
-            }}>
-              {STEP_TITLES[2]}
-            </h2>
-            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>
-              {STEP_SUBS[2]}
-            </p>
-
-            {/* Selected companion preview */}
+            <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[2]}</h2>
+            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>{STEP_SUBS[2]}</p>
             {selectedCompanion && (() => {
               const c = COMPANIONS.find(cd => cd.id === selectedCompanion);
               return (
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 16, marginBottom: 20,
-                  padding: "14px 16px", borderRadius: 18,
-                  background: "rgba(139,92,246,0.1)",
-                  border: "1px solid rgba(139,92,246,0.2)",
-                }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20, padding: "14px 16px", borderRadius: 18, background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
                   <img src={c.avatar} alt={c.name} style={{ width: 60, height: 60, objectFit: "contain" }} />
                   <div>
                     <p style={{ color: "white", fontWeight: 700, margin: "0 0 2px" }}>{c.name}</p>
@@ -333,98 +237,47 @@ export default function Onboarding() {
                 </div>
               );
             })()}
-
             <input
-              type="text"
-              value={companionNickname}
+              type="text" value={companionNickname}
               onChange={e => setCompanionNickname(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleNext()}
               placeholder={`Default: ${COMPANIONS.find(c => c.id === selectedCompanion)?.name || "companion"}`}
-              maxLength={20}
-              autoFocus
-              style={{
-                width: "100%", padding: "16px",
-                borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)",
-                background: "rgba(139,92,246,0.1)",
-                color: "white", fontSize: 16, outline: "none",
-                caretColor: "#a855f7",
-              }}
+              maxLength={20} autoFocus
+              style={{ width: "100%", padding: "16px", borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)", background: "rgba(139,92,246,0.1)", color: "white", fontSize: 16, outline: "none", caretColor: "#a855f7" }}
               onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
               onBlur={e  => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
             />
-            <p style={{
-              color: "rgba(255,255,255,0.3)", fontSize: 12,
-              textAlign: "center", margin: "10px 0 0",
-            }}>
-              Leave blank to use their default name
-            </p>
+            <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", margin: "10px 0 0" }}>Leave blank to use their default name</p>
           </motion.div>
         )}
 
-        {/* STEP 3 — Pick background */}
         {step === 3 && (
-          <motion.div
-            key="s3"
+          <motion.div key="s3"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{
-              flex: 1, minHeight: 0,
-              display: "flex", flexDirection: "column",
-              position: "relative", zIndex: 1,
-            }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}
           >
             <div style={{ flexShrink: 0, padding: "0 16px 12px" }}>
-              <h2 style={{
-                color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px",
-                textShadow: "0 0 20px rgba(168,85,247,0.5)",
-              }}>
-                {STEP_TITLES[3]}
-              </h2>
+              <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[3]}</h2>
               <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[3]}</p>
             </div>
-
             <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 12,
-                paddingBottom: 8,
-              }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 8 }}>
                 {BACKGROUNDS.map(bg => (
-                  <motion.button
-                    key={bg.id}
-                    whileTap={{ scale: 0.96 }}
-                    onClick={() => setSelectedBackground(bg.id)}
+                  <motion.button key={bg.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedBackground(bg.id)}
                     style={{
-                      position: "relative", height: 120, borderRadius: 18,
-                      overflow: "hidden", cursor: "pointer",
-                      border: `2px solid ${selectedBackground === bg.id
-                        ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
-                      boxShadow: selectedBackground === bg.id
-                        ? "0 0 20px rgba(168,85,247,0.35)" : "none",
+                      position: "relative", height: 120, borderRadius: 18, overflow: "hidden", cursor: "pointer",
+                      border: `2px solid ${selectedBackground === bg.id ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
+                      boxShadow: selectedBackground === bg.id ? "0 0 20px rgba(168,85,247,0.35)" : "none",
                       transition: "border-color 0.15s, box-shadow 0.15s",
                     }}
                   >
                     <img src={bg.url} alt={bg.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    <div style={{
-                      position: "absolute", inset: 0,
-                      background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)",
-                      pointerEvents: "none",
-                    }} />
-                    <div style={{
-                      position: "absolute", bottom: 0, left: 0, right: 0,
-                      padding: "8px", textAlign: "center", pointerEvents: "none",
-                    }}>
-                      <p style={{ color: "white", fontSize: 12, fontWeight: 600, margin: 0 }}>
-                        {bg.emoji} {bg.label}
-                      </p>
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px", textAlign: "center", pointerEvents: "none" }}>
+                      <p style={{ color: "white", fontSize: 12, fontWeight: 600, margin: 0 }}>{bg.emoji} {bg.label}</p>
                     </div>
                     {selectedBackground === bg.id && (
-                      <div style={{
-                        position: "absolute", top: 8, right: 8,
-                        width: 20, height: 20, borderRadius: "50%",
-                        background: "white",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
+                      <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#7c3aed" }} />
                       </div>
                     )}
@@ -437,21 +290,14 @@ export default function Onboarding() {
 
       </AnimatePresence>
 
-      {/* ── FOOTER BUTTON (sticky-bottom) ── */}
-      {/* Step 1 auto-advances on tap, so hide the button there */}
       {step !== 1 && (
         <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
           <button
             onClick={handleNext}
             disabled={!canAdvance[step] || loading}
             style={{
-              width: "100%",
-              padding: "16px 0",
-              borderRadius: 18,
-              border: "none",
-              color: "white",
-              fontWeight: 900,
-              fontSize: 17,
+              width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
+              color: "white", fontWeight: 900, fontSize: 17,
               cursor: canAdvance[step] && !loading ? "pointer" : "default",
               opacity: canAdvance[step] && !loading ? 1 : 0.3,
               background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",

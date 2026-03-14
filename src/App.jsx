@@ -1,10 +1,11 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import BottomTabs from '@/components/BottomTabs';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
@@ -13,50 +14,53 @@ import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
-// Add page imports here
+
+// Pages where the bottom tab bar should NOT appear
+const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy"];
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const location = useLocation();
 
-  // Show loading spinner while checking app public settings or auth
+  const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
+
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#06020f" }}>
+        <div className="w-8 h-8 border-4 border-purple-900 border-t-purple-500 rounded-full animate-spin" />
       </div>
     );
   }
 
-  // Handle authentication errors
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
       navigateToLogin();
       return null;
     }
   }
 
-  // Render the main app
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/vibe" element={<VibePage />} />
-      <Route path="/chat" element={<ChatPage />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
-      <Route path="/AdminDashboard" element={<AdminDashboard />} />
-      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/"                     element={<HomePage />} />
+        <Route path="/onboarding"           element={<Onboarding />} />
+        <Route path="/vibe"                 element={<VibePage />} />
+        <Route path="/chat"                 element={<ChatPage />} />
+        <Route path="/settings"             element={<Settings />} />
+        <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
+        <Route path="/AdminDashboard"       element={<AdminDashboard />} />
+        <Route path="/PrivacyPolicy"        element={<PrivacyPolicy />} />
+        <Route path="*"                     element={<PageNotFound />} />
+      </Routes>
+
+      {showTabs && <BottomTabs />}
+    </>
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -66,7 +70,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

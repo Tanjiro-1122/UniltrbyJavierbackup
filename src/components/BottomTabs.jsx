@@ -1,40 +1,96 @@
 import React from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Home, MessageSquare, Settings } from "lucide-react";
 
 const TABS = [
-  { path: "/", label: "Home", icon: Home },
-  { path: "/chat", label: "Chat", icon: MessageSquare },
-  { path: "/settings", label: "Settings", icon: Settings },
+  { path: "/",        label: "Home",    icon: Home },
+  { path: "/chat",    label: "Chat",    icon: MessageSquare },
+  { path: "/settings",label: "Settings",icon: Settings },
 ];
 
 export default function BottomTabs() {
-  const location = useLocation();
+  const location  = useLocation();
+  const navigate  = useNavigate();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 z-40 safe-area-inset-bottom"
-      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}>
-      <div className="max-w-4xl mx-auto flex items-center justify-around h-16 px-4">
-        {TABS.map(({ path, label, icon: Icon }) => {
-          const isActive = location.pathname === path || (path === "/chat" && location.pathname.startsWith("/chat"));
-          return (
-            <Link
-              key={path}
-              to={path}
-              className="flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl transition-colors flex-1"
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: 430,
+        height: "calc(64px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        background: "rgba(10,6,20,0.96)",
+        borderTop: "1px solid rgba(139,92,246,0.18)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-around",
+        zIndex: 100,
+        boxShadow: "0 -4px 24px rgba(0,0,0,0.5)",
+      }}
+    >
+      {TABS.map(({ path, label, icon: Icon }) => {
+        const isActive =
+          path === "/"
+            ? location.pathname === "/"
+            : location.pathname.startsWith(path);
+
+        return (
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            style={{
+              flex: 1,
+              height: 64,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              transition: "opacity 0.15s",
+              opacity: isActive ? 1 : 0.45,
+            }}
+          >
+            {/* Active glow pill */}
+            {isActive && (
+              <div style={{
+                position: "absolute",
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(168,85,247,0.25) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+            )}
+            <Icon
+              size={22}
+              color={isActive ? "#a855f7" : "#9ca3af"}
               style={{
-                color: isActive ? "#a78bfa" : "#9ca3af",
-                backgroundColor: isActive ? "rgba(167, 139, 250, 0.1)" : "transparent",
+                filter: isActive ? "drop-shadow(0 0 6px rgba(168,85,247,0.8))" : "none",
+                transition: "all 0.2s",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? "#a855f7" : "#9ca3af",
+                letterSpacing: "0.3px",
               }}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{label}</span>
-            </Link>
-          );
-        })}
-      </div>
-      {/* Safe area padding for notch/home indicator */}
-      <div className="h-safe-area-inset-bottom safe-area-bottom" />
+              {label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

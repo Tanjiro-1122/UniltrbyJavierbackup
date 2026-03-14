@@ -40,7 +40,6 @@ export default function ChatPage() {
   const recognitionRef = useRef(null);
   const audioRef      = useRef(null);
 
-  /* ─── INIT ─── */
   useEffect(() => {
     const init = async () => {
       const c = localStorage.getItem("unfiltr_companion");
@@ -51,7 +50,6 @@ export default function ChatPage() {
       const parsedCompanion = JSON.parse(c);
       const parsedEnv       = JSON.parse(e);
 
-      // Resolve the display name: nickname > default name
       const savedNickname = localStorage.getItem("unfiltr_companion_nickname");
       parsedCompanion.displayName =
         (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
@@ -78,7 +76,6 @@ export default function ChatPage() {
     init();
   }, []);
 
-  /* ─── GREETING ─── */
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
@@ -93,12 +90,10 @@ export default function ChatPage() {
     }]);
   }, [companion]);
 
-  /* ─── AUTO-SCROLL ─── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* ─── IDLE ANIMATION LOOP ─── */
   useEffect(() => {
     const iv = setInterval(() => {
       if (avatarState === "idle" && !loading && !isSpeaking) triggerAnim("wave", 1200);
@@ -112,7 +107,6 @@ export default function ChatPage() {
     stateTimeout.current = setTimeout(() => setAvatarState("idle"), ms);
   };
 
-  /* ─── PARTICLES ─── */
   const spawnParticles = () => {
     const emoji = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
     const batch = Array.from({ length: 5 }, (_, i) => ({
@@ -125,7 +119,6 @@ export default function ChatPage() {
     setTimeout(() => setParticles(p => p.filter(x => !batch.find(b => b.id === x.id))), 1000);
   };
 
-  /* ─── TTS ─── */
   const speakText = async (text, companionId) => {
     if (!voiceEnabled) return;
     try {
@@ -143,7 +136,6 @@ export default function ChatPage() {
     } catch { setIsSpeaking(false); setAvatarState("idle"); }
   };
 
-  /* ─── SEND ─── */
   const handleSend = async (textOverride) => {
     const text = (textOverride || input).trim();
     if (!text || loading) return;
@@ -178,7 +170,6 @@ export default function ChatPage() {
     } finally { setLoading(false); }
   };
 
-  /* ─── VOICE ─── */
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
@@ -194,7 +185,6 @@ export default function ChatPage() {
   };
   const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
-  /* ─── IAP ─── */
   const handleSubscribe = () => {
     if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
       window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
@@ -210,18 +200,9 @@ export default function ChatPage() {
     }
   };
 
-  /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
-    <div style={{
-      position: "fixed", inset: 0, display: "flex",
-      alignItems: "center", justifyContent: "center", background: "#06020f",
-    }}>
-      <div style={{
-        width: 32, height: 32, borderRadius: "50%",
-        border: "4px solid rgba(168,85,247,0.3)",
-        borderTopColor: "#a855f7",
-        animation: "spin 0.8s linear infinite",
-      }} />
+    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -231,85 +212,45 @@ export default function ChatPage() {
   return (
     <>
       <div
-        className="screen"
+        className="screen no-tabs"
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
           backgroundPosition: "center bottom",
         }}
       >
-        {/* Dim overlay */}
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.22)", pointerEvents: "none" }} />
 
         <style>{`
-          @keyframes particleFly {
-            0%   { opacity: 1; transform: translate(0,0) scale(1); }
-            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); }
-          }
-          @keyframes listenPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50%       { transform: scale(1.15); opacity: 0.7; }
-          }
-          @keyframes speakPulse {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50%       { opacity: 0.7; transform: scale(1.05); }
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
+          @keyframes listenPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
+          @keyframes speakPulse  { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
+          @keyframes spin        { to { transform: rotate(360deg); } }
           .particle     { animation: particleFly 1s ease-out forwards; }
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        {/* ── Flex column, full height ── */}
-        <div style={{
-          position: "relative", zIndex: 1,
-          display: "flex", flexDirection: "column",
-          height: "100%",
-        }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
 
-          {/* ══ TOP BAR ══ */}
+          {/* TOP BAR */}
           <div style={{
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "0 16px 12px",
             paddingTop: "max(2.5rem, env(safe-area-inset-top, 2.5rem))",
-            background: "rgba(0,0,0,0.35)",
-            backdropFilter: "blur(16px)",
+            background: "rgba(0,0,0,0.35)", backdropFilter: "blur(16px)",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}>
-            {/* Voice toggle */}
-            <button
-              onClick={() => setVoiceEnabled(v => !v)}
-              style={{
-                width: 36, height: 36, borderRadius: "50%",
-                background: "rgba(255,255,255,0.1)", border: "none",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              {voiceEnabled
-                ? <Volume2  size={16} color="white" />
-                : <VolumeX  size={16} color="rgba(255,255,255,0.4)" />}
+            <button onClick={() => setVoiceEnabled(v => !v)}
+              style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
             </button>
 
-            {/* Center info */}
             <div style={{ textAlign: "center", flex: 1, padding: "0 8px" }}>
-              <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>
-                {companionDisplayName}
-              </p>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>
-                {vibe} mode · {environment.label}
-              </p>
+              <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>{companionDisplayName}</p>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
               {!isPremium ? (
-                <button
-                  onClick={() => setShowPaywall(true)}
-                  style={{
-                    marginTop: 3, fontSize: 10, color: "rgba(196,180,252,0.75)",
-                    background: "rgba(139,92,246,0.15)", border: "none",
-                    padding: "2px 8px", borderRadius: 999, cursor: "pointer",
-                  }}
-                >
+                <button onClick={() => setShowPaywall(true)}
+                  style={{ marginTop: 3, fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
                   {remaining}/{FREE_LIMIT} msgs left
                 </button>
               ) : (
@@ -317,228 +258,79 @@ export default function ChatPage() {
               )}
             </div>
 
-            {/* Settings */}
-            <button
-              onClick={() => navigate("/settings")}
-              style={{
-                width: 36, height: 36, borderRadius: "50%",
-                background: "rgba(255,255,255,0.1)", border: "none",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => navigate("/settings")}
+              style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <Settings size={16} color="white" />
             </button>
           </div>
 
-          {/* ══ AVATAR ZONE ══ */}
-          <div style={{
-            flex: 1,
-            minHeight: 0,
-            position: "relative",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "center",
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}>
-            {/* Ground shadow */}
-            <div style={{
-              position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
-              width: 240, height: 50,
-              background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }} />
-
-            {/* Speaking glow ring */}
+          {/* AVATAR ZONE */}
+          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
+            <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 240, height: 50, background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
             {isSpeaking && (
-              <div style={{
-                position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-                width: 200, height: 200, borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
-                animation: "speakPulse 1.2s ease-in-out infinite",
-                pointerEvents: "none",
-              }} />
+              <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
             )}
-
-            {/* Particles */}
             {particles.map(p => (
-              <div
-                key={p.id}
-                className="particle"
-                style={{
-                  position: "absolute",
-                  bottom: "45%", left: "50%",
-                  transform: "translate(-50%, 0)",
-                  "--tx": `${p.x}px`,
-                  "--ty": `${p.y}px`,
-                  fontSize: 14,
-                  zIndex: 3,
-                  pointerEvents: "none",
-                }}
-              >
+              <div key={p.id} className="particle"
+                style={{ position: "absolute", bottom: "45%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 14, zIndex: 3, pointerEvents: "none" }}>
                 {p.emoji}
               </div>
             ))}
-
-            {/* Avatar */}
             <div style={{ pointerEvents: "auto", paddingBottom: 4 }}>
-              <LiveAvatar
-                companionId={companion.id}
-                mood={companionMood}
-                isSpeaking={isSpeaking}
-                onClick={spawnParticles}
-              />
+              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
             </div>
           </div>
 
-          {/* ══ CHAT PANEL ══ */}
-          <div style={{
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            maxHeight: "52%",
-            background: "linear-gradient(to bottom, rgba(8,3,16,0) 0%, rgba(8,3,16,0.9) 10%, rgba(8,3,16,0.97) 100%)",
-          }}>
-
-            {/* Messages — scrollable */}
-            <div style={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: "auto",
-              overflowX: "hidden",
-              WebkitOverflowScrolling: "touch",
-              padding: "8px 16px 4px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}>
+          {/* CHAT PANEL */}
+          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", maxHeight: "52%", background: "linear-gradient(to bottom, rgba(8,3,16,0) 0%, rgba(8,3,16,0.9) 10%, rgba(8,3,16,0.97) 100%)" }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", padding: "8px 16px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
               {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
+                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
                   <div style={{
-                    maxWidth: "82%",
-                    padding: "10px 16px",
+                    maxWidth: "82%", padding: "10px 16px",
                     borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                    wordBreak: "break-word",
-                    color: "white",
+                    fontSize: 14, lineHeight: 1.5, wordBreak: "break-word", color: "white",
                     ...(msg.role === "user"
                       ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
-                      : {
-                          background: "rgba(88,28,135,0.4)",
-                          backdropFilter: "blur(8px)",
-                          border: "1px solid rgba(168,85,247,0.2)",
-                          boxShadow: "0 0 12px rgba(168,85,247,0.12)",
-                        }
+                      : { background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", boxShadow: "0 0 12px rgba(168,85,247,0.12)" }
                     ),
-                  }}>
-                    {msg.content}
-                  </div>
+                  }}>{msg.content}</div>
                 </div>
               ))}
-
-              {/* Thinking indicator */}
               {loading && (
                 <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{
-                    padding: "10px 16px",
-                    borderRadius: "18px 18px 18px 4px",
-                    background: "rgba(88,28,135,0.4)",
-                    backdropFilter: "blur(8px)",
-                    border: "1px solid rgba(168,85,247,0.2)",
-                    display: "flex", alignItems: "center", gap: 8,
-                  }}>
+                  <div style={{ padding: "10px 16px", borderRadius: "18px 18px 18px 4px", background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", gap: 8 }}>
                     <Loader2 size={14} color="#a855f7" style={{ animation: "spin 0.8s linear infinite" }} />
-                    <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
-                      {companionDisplayName} is thinking…
-                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>{companionDisplayName} is thinking…</span>
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ── INPUT BAR ── */}
             <div style={{ flexShrink: 0, padding: "6px 16px 0" }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                background: "rgba(255,255,255,0.07)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 999,
-                padding: "8px 12px",
-              }}>
-                {/* Mic */}
-                <button
-                  onPointerDown={startListening}
-                  onPointerUp={stopListening}
-                  style={{
-                    width: 36, height: 36, borderRadius: "50%", border: "none",
-                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer",
-                    background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)",
-                  }}
-                  className={isListening ? "listen-pulse" : ""}
-                >
-                  {isListening
-                    ? <MicOff size={16} color="white" />
-                    : <Mic    size={16} color="rgba(255,255,255,0.65)" />}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "8px 12px" }}>
+                <button onPointerDown={startListening} onPointerUp={stopListening}
+                  style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
+                  className={isListening ? "listen-pulse" : ""}>
+                  {isListening ? <MicOff size={16} color="white" /> : <Mic size={16} color="rgba(255,255,255,0.65)" />}
                 </button>
-
-                {/* Text input */}
                 <input
-                  type="text"
-                  value={input}
+                  type="text" value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSend()}
                   placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
-                  style={{
-                    flex: 1, background: "transparent", border: "none", outline: "none",
-                    color: "white", fontSize: 14, minWidth: 0,
-                    caretColor: "#a855f7",
-                  }}
+                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
                 />
-
-                {/* Send */}
-                <button
-                  onClick={() => handleSend()}
-                  disabled={loading || !input.trim()}
-                  style={{
-                    width: 36, height: 36, borderRadius: "50%", border: "none",
-                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: loading || !input.trim() ? "default" : "pointer",
-                    opacity: loading || !input.trim() ? 0.4 : 1,
-                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    transition: "opacity 0.15s",
-                  }}
-                >
+                <button onClick={() => handleSend()} disabled={loading || !input.trim()}
+                  style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: loading || !input.trim() ? "default" : "pointer", opacity: loading || !input.trim() ? 0.4 : 1, background: "linear-gradient(135deg, #7c3aed, #db2777)", transition: "opacity 0.15s" }}>
                   <Send size={15} color="white" />
                 </button>
               </div>
-
-              <p style={{
-                textAlign: "center", color: "rgba(255,255,255,0.18)",
-                fontSize: 11, margin: "5px 0 0",
-              }}>
-                Hold 🎤 to speak · Tap to type
-              </p>
+              <p style={{ textAlign: "center", color: "rgba(255,255,255,0.18)", fontSize: 11, margin: "5px 0 0" }}>Hold 🎤 to speak · Tap to type</p>
             </div>
 
-            {/* Safe area inset at the very bottom */}
-            <div style={{
-              flexShrink: 0,
-              height: "max(12px, env(safe-area-inset-bottom, 12px))",
-            }} />
+            <div style={{ flexShrink: 0, height: "max(12px, env(safe-area-inset-bottom, 12px))" }} />
           </div>
 
         </div>
