@@ -7,26 +7,24 @@ import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [displayName, setDisplayName] = useState("");
-  const [selectedCompanion, setSelectedCompanion] = useState(null);
+  const [step, setStep]                             = useState(0);
+  const [displayName, setDisplayName]               = useState("");
+  const [selectedCompanion, setSelectedCompanion]   = useState(null);
+  const [companionNickname, setCompanionNickname]   = useState("");
   const [selectedBackground, setSelectedBackground] = useState(null);
-  const [companionNickname, setCompanionNickname] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]                       = useState(false);
 
+  /* step can advance when: */
   const canAdvance = [
-    displayName.trim().length > 0,
-    !!selectedCompanion,
-    true,
-    !!selectedBackground,
+    displayName.trim().length > 0,  // step 0: need a name
+    !!selectedCompanion,             // step 1: need a companion (auto-advances)
+    true,                            // step 2: nickname optional
+    !!selectedBackground,            // step 3: need a background
   ];
 
   const handleBack = () => {
-    if (step === 0) {
-      navigate("/");
-    } else {
-      setStep((s) => s - 1);
-    }
+    if (step === 0) navigate("/");
+    else setStep(s => s - 1);
   };
 
   const handleNext = async () => {
@@ -35,33 +33,41 @@ export default function Onboarding() {
     if (step === 3) {
       setLoading(true);
       try {
-        const companionData = COMPANIONS.find((c) => c.id === selectedCompanion);
+        const companionData = COMPANIONS.find(c => c.id === selectedCompanion);
         const companion = await base44.entities.Companion.create({
-          name: companionData.name,
+          name:       companionData.name,
           avatar_url: companionData.avatar,
-          mood_mode: "neutral",
+          mood_mode:  "neutral",
           personality: companionData.tagline,
         });
 
         const userProfile = await base44.entities.UserProfile.create({
-          display_name: displayName,
-          companion_id: companion.id,
+          display_name:  displayName,
+          companion_id:  companion.id,
           background_id: selectedBackground,
-          premium: false,
+          premium:       false,
         });
 
-        localStorage.setItem("userProfileId", userProfile.id);
-        localStorage.setItem("companionId", companion.id);
-        localStorage.setItem("unfiltr_companion", JSON.stringify({
-          id: companionData.id,
-          name: companionData.name,
-          systemPrompt: `You are ${companionData.name}, a supportive AI companion. ${companionData.tagline}`,
-        }));
-        const bg = BACKGROUNDS.find((b) => b.id === selectedBackground);
-        localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
+        localStorage.setItem("userProfileId",      userProfile.id);
+        localStorage.setItem("companionId",         companion.id);
+
+        // Resolve display name: nickname > default
+        const finalName = companionNickname.trim() || companionData.name;
         if (companionNickname.trim()) {
           localStorage.setItem("unfiltr_companion_nickname", companionNickname.trim());
         }
+
+        localStorage.setItem("unfiltr_companion", JSON.stringify({
+          id:          companionData.id,
+          name:        companionData.name,
+          displayName: finalName,
+          systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
+        }));
+
+        const bg = BACKGROUNDS.find(b => b.id === selectedBackground);
+        localStorage.setItem("unfiltr_env", JSON.stringify({
+          id: bg.id, label: bg.label, bg: bg.url,
+        }));
 
         navigate("/vibe");
       } finally {
@@ -69,7 +75,8 @@ export default function Onboarding() {
       }
       return;
     }
-    setStep((s) => s + 1);
+
+    setStep(s => s + 1);
   };
 
   const STEP_TITLES = [
@@ -78,7 +85,7 @@ export default function Onboarding() {
     "Name your companion",
     "Pick your space",
   ];
-  const STEP_SUBTITLES = [
+  const STEP_SUBS = [
     "This is what your companion will call you.",
     "Choose who you want to hang with.",
     "Give them a nickname — or keep their real name.",
@@ -88,144 +95,190 @@ export default function Onboarding() {
   return (
     <div
       className="screen"
-      style={{
-        background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
-      }}
+      style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}
     >
       {/* Stars */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
         {Array.from({ length: 60 }).map((_, i) => (
-          <div key={i} className="absolute rounded-full bg-white"
-            style={{
-              width: Math.random() * 2 + 0.5 + "px",
-              height: Math.random() * 2 + 0.5 + "px",
-              top: Math.random() * 100 + "%",
-              left: Math.random() * 100 + "%",
-              opacity: Math.random() * 0.6 + 0.1,
-              animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-              animationDelay: Math.random() * 4 + "s",
-            }}
-          />
+          <div key={i} style={{
+            position: "absolute",
+            width:  Math.random() * 2 + 0.5,
+            height: Math.random() * 2 + 0.5,
+            borderRadius: "50%",
+            background: "white",
+            top:  Math.random() * 100 + "%",
+            left: Math.random() * 100 + "%",
+            opacity: Math.random() * 0.6 + 0.1,
+            animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
+            animationDelay: Math.random() * 4 + "s",
+          }} />
         ))}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", top: "-40px" }} />
+        <div style={{
+          position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)",
+          width: 320, height: 320, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
       </div>
 
-      <style>{`
-        @keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.9} }
-      `}</style>
+      <style>{`@keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.9} }`}</style>
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between px-4 pb-2 shrink-0"
-        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
+      {/* ── HEADER ── */}
+      <div style={{
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 16px 8px",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        position: "relative",
+        zIndex: 1,
+      }}>
         <button
           onClick={handleBack}
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
+          style={{
+            width: 40, height: 40, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
-          <ChevronLeft className="w-5 h-5 text-white" />
+          <ChevronLeft size={20} color="white" />
         </button>
-        <p className="text-white/40 text-sm">Step {step + 1} of 4</p>
-        <div className="w-10" />
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Step {step + 1} of 4</p>
+        <div style={{ width: 40 }} />
       </div>
 
-      {/* Progress bar */}
-      <div className="relative z-10 px-4 pb-5 shrink-0">
-        <div className="h-1 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-          <div
-            className="h-1 rounded-full transition-all duration-500"
-            style={{
-              width: `${((step + 1) / 4) * 100}%`,
-              background: "linear-gradient(90deg, #7c3aed, #db2777)",
-              boxShadow: "0 0 8px rgba(168,85,247,0.6)",
-            }}
-          />
+      {/* ── PROGRESS BAR ── */}
+      <div style={{ flexShrink: 0, padding: "0 16px 16px", position: "relative", zIndex: 1 }}>
+        <div style={{ height: 3, borderRadius: 99, background: "rgba(255,255,255,0.08)" }}>
+          <div style={{
+            height: "100%", borderRadius: 99,
+            width: `${((step + 1) / 4) * 100}%`,
+            background: "linear-gradient(90deg, #7c3aed, #db2777)",
+            boxShadow: "0 0 8px rgba(168,85,247,0.6)",
+            transition: "width 0.4s ease",
+          }} />
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── STEP CONTENT (flex-1, scrollable) ── */}
       <AnimatePresence mode="wait">
+
+        {/* STEP 0 — Your name */}
         {step === 0 && (
-          <motion.div key="step0"
-            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
-            className="relative z-10 flex-1 flex flex-col justify-start pt-6 px-4"
+          <motion.div
+            key="s0"
+            initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            style={{
+              flex: 1, minHeight: 0,
+              display: "flex", flexDirection: "column",
+              padding: "16px 16px 0",
+              position: "relative", zIndex: 1,
+            }}
           >
-            <h2 className="text-3xl font-black text-white mb-2"
-              style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
+            <h2 style={{
+              color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px",
+              textShadow: "0 0 20px rgba(168,85,247,0.5)",
+            }}>
               {STEP_TITLES[0]}
             </h2>
-            <p className="text-purple-300/70 text-sm mb-6">{STEP_SUBTITLES[0]}</p>
+            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>
+              {STEP_SUBS[0]}
+            </p>
             <input
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleNext()}
+              onChange={e => setDisplayName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleNext()}
               placeholder="Enter display name"
-              className="w-full px-4 py-4 rounded-2xl text-white placeholder-white/30 focus:outline-none text-base"
-              style={{
-                background: "rgba(139,92,246,0.1)",
-                border: "1px solid rgba(139,92,246,0.3)",
-                boxShadow: "0 0 0 0 rgba(139,92,246,0)",
-                transition: "box-shadow 0.2s",
-              }}
-              onFocus={(e) => e.target.style.boxShadow = "0 0 0 2px rgba(139,92,246,0.5)"}
-              onBlur={(e) => e.target.style.boxShadow = "0 0 0 0 rgba(139,92,246,0)"}
               autoFocus
+              style={{
+                width: "100%", padding: "16px",
+                borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)",
+                background: "rgba(139,92,246,0.1)",
+                color: "white", fontSize: 16, outline: "none",
+                caretColor: "#a855f7",
+              }}
+              onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
+              onBlur={e  => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
             />
           </motion.div>
         )}
 
+        {/* STEP 1 — Pick companion */}
         {step === 1 && (
-          <motion.div key="step1"
-            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
-            className="relative z-10 flex-1 flex flex-col min-h-0 px-4"
+          <motion.div
+            key="s1"
+            initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            style={{
+              flex: 1, minHeight: 0,
+              display: "flex", flexDirection: "column",
+              position: "relative", zIndex: 1,
+            }}
           >
-            <h2 className="text-3xl font-black text-white mb-1 shrink-0"
-              style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
-              Pick your companion
-            </h2>
-            <p className="text-purple-300/70 text-sm mb-3 shrink-0">Choose who you want to hang with.</p>
+            <div style={{ flexShrink: 0, padding: "0 16px 10px" }}>
+              <h2 style={{
+                color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px",
+                textShadow: "0 0 20px rgba(168,85,247,0.5)",
+              }}>
+                {STEP_TITLES[1]}
+              </h2>
+              <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[1]}</p>
+            </div>
 
-            <div className="scroll-area">
-              <div className="grid grid-cols-3 gap-2 pb-4">
-                {COMPANIONS.map((c) => (
+            {/* Scrollable grid */}
+            <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 10,
+                paddingBottom: 8,
+              }}>
+                {COMPANIONS.map(c => (
                   <motion.button
                     key={c.id}
-                    onClick={() => { setSelectedCompanion(c.id); setStep(2); }}
                     whileTap={{ scale: 0.94 }}
-                    className="flex flex-col items-center rounded-2xl overflow-hidden transition-all"
+                    onClick={() => { setSelectedCompanion(c.id); setStep(2); }}
                     style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      borderRadius: 18, overflow: "hidden", cursor: "pointer",
+                      padding: "10px 6px 8px",
                       background: selectedCompanion === c.id
-                        ? "rgba(139,92,246,0.25)"
-                        : "rgba(255,255,255,0.04)",
-                      border: selectedCompanion === c.id
-                        ? "2px solid rgba(168,85,247,0.85)"
-                        : "2px solid rgba(255,255,255,0.08)",
+                        ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `2px solid ${selectedCompanion === c.id
+                        ? "rgba(168,85,247,0.85)" : "rgba(255,255,255,0.08)"}`,
                       boxShadow: selectedCompanion === c.id
-                        ? "0 0 18px rgba(168,85,247,0.35)"
-                        : "none",
-                      paddingTop: "8px",
-                      paddingBottom: "8px",
-                      paddingLeft: "4px",
-                      paddingRight: "4px",
+                        ? "0 0 18px rgba(168,85,247,0.35)" : "none",
+                      transition: "all 0.15s",
                     }}
                   >
-                    <div className="w-full overflow-hidden rounded-xl" style={{ height: "80px" }}>
+                    <div style={{ width: "100%", height: 80, overflow: "hidden", borderRadius: 10 }}>
                       <img
-                        src={c.avatar}
-                        alt={c.name}
-                        className="w-full h-full object-contain object-top"
-                        onError={(e) => { e.target.style.opacity = "0.3"; }}
+                        src={c.avatar} alt={c.name}
+                        style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }}
+                        onError={e => e.target.style.opacity = "0.3"}
                       />
                     </div>
-                    <p className="text-white text-xs font-bold mt-1.5 text-center leading-tight">
+                    <p style={{
+                      color: "white", fontSize: 11, fontWeight: 700,
+                      margin: "6px 0 2px", textAlign: "center", lineHeight: 1.2,
+                    }}>
                       {c.emoji} {c.name}
                     </p>
-                    <p className="text-white/40 text-[10px] text-center leading-tight mt-0.5 px-1">
+                    <p style={{
+                      color: "rgba(255,255,255,0.4)", fontSize: 10,
+                      textAlign: "center", lineHeight: 1.2, margin: 0,
+                    }}>
                       {c.tagline}
                     </p>
                     {selectedCompanion === c.id && (
-                      <div className="mt-1 w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
+                      <div style={{
+                        marginTop: 5, width: 16, height: 16, borderRadius: "50%",
+                        background: "#a855f7",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
                         <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
                           <path d="M1.5 4L3 5.5L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -238,26 +291,44 @@ export default function Onboarding() {
           </motion.div>
         )}
 
+        {/* STEP 2 — Name companion */}
         {step === 2 && (
-          <motion.div key="step2"
-            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
-            className="relative z-10 flex-1 flex flex-col justify-start pt-6 px-4"
+          <motion.div
+            key="s2"
+            initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            style={{
+              flex: 1, minHeight: 0,
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              display: "flex", flexDirection: "column",
+              padding: "16px 16px 0",
+              position: "relative", zIndex: 1,
+            }}
           >
-            <h2 className="text-3xl font-black text-white mb-2"
-              style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
+            <h2 style={{
+              color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px",
+              textShadow: "0 0 20px rgba(168,85,247,0.5)",
+            }}>
               {STEP_TITLES[2]}
             </h2>
-            <p className="text-purple-300/70 text-sm mb-6">{STEP_SUBTITLES[2]}</p>
+            <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 20px" }}>
+              {STEP_SUBS[2]}
+            </p>
 
+            {/* Selected companion preview */}
             {selectedCompanion && (() => {
               const c = COMPANIONS.find(cd => cd.id === selectedCompanion);
               return (
-                <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl"
-                  style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
-                  <img src={c.avatar} alt={c.name} className="w-16 h-16 object-contain" />
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 16, marginBottom: 20,
+                  padding: "14px 16px", borderRadius: 18,
+                  background: "rgba(139,92,246,0.1)",
+                  border: "1px solid rgba(139,92,246,0.2)",
+                }}>
+                  <img src={c.avatar} alt={c.name} style={{ width: 60, height: 60, objectFit: "contain" }} />
                   <div>
-                    <p className="text-white font-bold">{c.name}</p>
-                    <p className="text-white/40 text-xs">{c.tagline}</p>
+                    <p style={{ color: "white", fontWeight: 700, margin: "0 0 2px" }}>{c.name}</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>{c.tagline}</p>
                   </div>
                 </div>
               );
@@ -266,56 +337,95 @@ export default function Onboarding() {
             <input
               type="text"
               value={companionNickname}
-              onChange={(e) => setCompanionNickname(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleNext()}
+              onChange={e => setCompanionNickname(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleNext()}
               placeholder={`Default: ${COMPANIONS.find(c => c.id === selectedCompanion)?.name || "companion"}`}
               maxLength={20}
-              className="w-full px-4 py-4 rounded-2xl text-white placeholder-white/30 focus:outline-none text-base"
-              style={{
-                background: "rgba(139,92,246,0.1)",
-                border: "1px solid rgba(139,92,246,0.3)",
-              }}
-              onFocus={(e) => e.target.style.boxShadow = "0 0 0 2px rgba(139,92,246,0.5)"}
-              onBlur={(e) => e.target.style.boxShadow = "none"}
               autoFocus
+              style={{
+                width: "100%", padding: "16px",
+                borderRadius: 16, border: "1px solid rgba(139,92,246,0.35)",
+                background: "rgba(139,92,246,0.1)",
+                color: "white", fontSize: 16, outline: "none",
+                caretColor: "#a855f7",
+              }}
+              onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
+              onBlur={e  => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
             />
-            <p className="text-white/30 text-xs mt-3 text-center">Leave blank to use their default name</p>
+            <p style={{
+              color: "rgba(255,255,255,0.3)", fontSize: 12,
+              textAlign: "center", margin: "10px 0 0",
+            }}>
+              Leave blank to use their default name
+            </p>
           </motion.div>
         )}
 
+        {/* STEP 3 — Pick background */}
         {step === 3 && (
-          <motion.div key="step3"
-            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
-            className="relative z-10 flex-1 flex flex-col min-h-0 px-4"
+          <motion.div
+            key="s3"
+            initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            style={{
+              flex: 1, minHeight: 0,
+              display: "flex", flexDirection: "column",
+              position: "relative", zIndex: 1,
+            }}
           >
-            <h2 className="text-3xl font-black text-white mb-2 shrink-0"
-              style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
-              {STEP_TITLES[3]}
-            </h2>
-            <p className="text-purple-300/70 text-sm mb-4 shrink-0">{STEP_SUBTITLES[3]}</p>
-            <div className="scroll-area">
-              <div className="grid grid-cols-2 gap-3 pb-2">
-                {BACKGROUNDS.map((bg) => (
-                  <motion.button key={bg.id} onClick={() => setSelectedBackground(bg.id)}
+            <div style={{ flexShrink: 0, padding: "0 16px 12px" }}>
+              <h2 style={{
+                color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px",
+                textShadow: "0 0 20px rgba(168,85,247,0.5)",
+              }}>
+                {STEP_TITLES[3]}
+              </h2>
+              <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[3]}</p>
+            </div>
+
+            <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 12,
+                paddingBottom: 8,
+              }}>
+                {BACKGROUNDS.map(bg => (
+                  <motion.button
+                    key={bg.id}
                     whileTap={{ scale: 0.96 }}
-                    className="relative h-32 rounded-2xl overflow-hidden transition-all"
+                    onClick={() => setSelectedBackground(bg.id)}
                     style={{
-                      border: selectedBackground === bg.id
-                        ? "2px solid rgba(168,85,247,0.9)"
-                        : "2px solid rgba(255,255,255,0.1)",
+                      position: "relative", height: 120, borderRadius: 18,
+                      overflow: "hidden", cursor: "pointer",
+                      border: `2px solid ${selectedBackground === bg.id
+                        ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
                       boxShadow: selectedBackground === bg.id
-                        ? "0 0 20px rgba(168,85,247,0.35)"
-                        : "none",
+                        ? "0 0 20px rgba(168,85,247,0.35)" : "none",
+                      transition: "border-color 0.15s, box-shadow 0.15s",
                     }}
                   >
-                    <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-                    <div className="absolute bottom-0 inset-x-0 p-2 text-center pointer-events-none">
-                      <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+                    <img src={bg.url} alt={bg.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)",
+                      pointerEvents: "none",
+                    }} />
+                    <div style={{
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      padding: "8px", textAlign: "center", pointerEvents: "none",
+                    }}>
+                      <p style={{ color: "white", fontSize: 12, fontWeight: 600, margin: 0 }}>
+                        {bg.emoji} {bg.label}
+                      </p>
                     </div>
                     {selectedBackground === bg.id && (
-                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+                      <div style={{
+                        position: "absolute", top: 8, right: 8,
+                        width: 20, height: 20, borderRadius: "50%",
+                        background: "white",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#7c3aed" }} />
                       </div>
                     )}
                   </motion.button>
@@ -324,24 +434,38 @@ export default function Onboarding() {
             </div>
           </motion.div>
         )}
+
       </AnimatePresence>
 
-      {/* Footer button */}
-      <div className="sticky-bottom relative z-10">
-        <button
-          onClick={handleNext}
-          disabled={!canAdvance[step] || loading}
-          className="w-full py-4 text-white font-black text-lg rounded-2xl disabled:opacity-30 active:scale-95 transition-all"
-          style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-            boxShadow: canAdvance[step] ? "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)" : "none",
-          }}
-        >
-          {step === 3
-            ? loading ? "Setting up..." : "Enter this world →"
-            : <>Next <ChevronRight className="inline w-4 h-4" /></>}
-        </button>
-      </div>
+      {/* ── FOOTER BUTTON (sticky-bottom) ── */}
+      {/* Step 1 auto-advances on tap, so hide the button there */}
+      {step !== 1 && (
+        <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
+          <button
+            onClick={handleNext}
+            disabled={!canAdvance[step] || loading}
+            style={{
+              width: "100%",
+              padding: "16px 0",
+              borderRadius: 18,
+              border: "none",
+              color: "white",
+              fontWeight: 900,
+              fontSize: 17,
+              cursor: canAdvance[step] && !loading ? "pointer" : "default",
+              opacity: canAdvance[step] && !loading ? 1 : 0.3,
+              background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+              boxShadow: canAdvance[step] ? "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)" : "none",
+              transition: "opacity 0.2s, box-shadow 0.2s",
+            }}
+          >
+            {step === 3
+              ? (loading ? "Setting up…" : "Enter this world →")
+              : <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>
+            }
+          </button>
+        </div>
+      )}
     </div>
   );
 }

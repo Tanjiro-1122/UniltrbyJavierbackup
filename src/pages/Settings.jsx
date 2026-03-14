@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, LogOut, Trash2, Sparkles, Check } from "lucide-react";
-import AppFooter from "@/components/AppFooter";
 import PaywallModal from "@/components/PaywallModal";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
@@ -19,7 +18,7 @@ function CompanionNicknameField({ companion, userProfile }) {
     const stored = localStorage.getItem("unfiltr_companion");
     if (stored) {
       const parsed = JSON.parse(stored);
-      parsed.nickname = nickname.trim();
+      parsed.displayName = nickname.trim();
       localStorage.setItem("unfiltr_companion", JSON.stringify(parsed));
     }
     setSaved(true);
@@ -85,13 +84,11 @@ export default function Settings() {
   const handleChangeCompanion = async (newCompanion) => {
     if (savingCompanion || newCompanion.name === companion.name) return;
     setSavingCompanion(true);
-    // Update the existing Companion record with the new companion's data
     await base44.entities.Companion.update(userProfile.companion_id, {
       name: newCompanion.name,
       avatar_url: newCompanion.avatar,
       personality: newCompanion.tagline,
     });
-    // Update localStorage so ChatPage loads the right companion
     const updatedComp = { ...newCompanion, systemPrompt: companion.systemPrompt };
     localStorage.setItem("unfiltr_companion", JSON.stringify(updatedComp));
     setCompanion((prev) => ({ ...prev, name: newCompanion.name, avatar_url: newCompanion.avatar }));
@@ -119,19 +116,46 @@ export default function Settings() {
     await base44.auth.logout();
   };
 
-  if (!userProfile || !companion) return null;
+  if (!userProfile || !companion) return (
+    <div style={{
+      position: "fixed", inset: 0, display: "flex",
+      alignItems: "center", justifyContent: "center",
+      background: "#0a0a0f",
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: "50%",
+        border: "3px solid rgba(168,85,247,0.3)",
+        borderTopColor: "#a855f7",
+        animation: "spin 0.8s linear infinite",
+      }} />
+      <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
+    </div>
+  );
 
   return (
     <div className="screen" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pb-6 border-b border-white/5" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
+      <div style={{
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "0 16px 14px",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
         <button
           onClick={() => navigate("/chat")}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+          style={{
+            width: 40, height: 40, borderRadius: "50%",
+            background: "rgba(255,255,255,0.1)", border: "none",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
-          <ChevronLeft className="w-5 h-5 text-white" />
+          <ChevronLeft size={20} color="white" />
         </button>
-        <h1 className="text-white font-bold text-xl">Settings</h1>
+        <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0 }}>Settings</h1>
       </div>
 
       {/* Content */}
@@ -167,7 +191,6 @@ export default function Settings() {
                       src={c.poses.neutral}
                       alt={c.name}
                       className="w-full h-full object-cover object-top"
-                      style={{ background: "none", backgroundColor: "transparent", border: "none", mixBlendMode: "normal" }}
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
@@ -235,13 +258,8 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      {/* Footer with Extra Padding */}
-      <div className="pb-4">
-        <AppFooter dark />
-      </div>
-
       {/* Sign Out + Delete */}
-      <motion.div className="px-4 pt-2 space-y-3" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+      <motion.div className="sticky-bottom space-y-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         <button
           onClick={handleSignOut}
           className="w-full py-3 bg-red-500/20 border border-red-500/40 text-red-400 font-semibold rounded-xl hover:bg-red-500/30 transition flex items-center justify-center gap-2"

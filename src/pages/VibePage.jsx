@@ -12,7 +12,9 @@ const VIBES = [
     gradientFrom: "#0d4f4f",
     gradientTo: "#0a3a3a",
     borderColor: "rgba(45,212,191,0.35)",
+    activeBorder: "rgba(45,212,191,0.85)",
     labelColor: "#2dd4bf",
+    glow: "rgba(45,212,191,0.25)",
   },
   {
     id: "vent",
@@ -22,7 +24,9 @@ const VIBES = [
     gradientFrom: "#1a2a5e",
     gradientTo: "#111a40",
     borderColor: "rgba(99,102,241,0.35)",
+    activeBorder: "rgba(99,102,241,0.85)",
     labelColor: "#818cf8",
+    glow: "rgba(99,102,241,0.25)",
   },
   {
     id: "hype",
@@ -32,7 +36,9 @@ const VIBES = [
     gradientFrom: "#5c2a00",
     gradientTo: "#3d1a00",
     borderColor: "rgba(251,146,60,0.35)",
+    activeBorder: "rgba(251,146,60,0.85)",
     labelColor: "#fb923c",
+    glow: "rgba(251,146,60,0.25)",
   },
   {
     id: "deep",
@@ -41,13 +47,15 @@ const VIBES = [
     desc: "2am thoughts, existential questions, real talk.",
     gradientFrom: "#2d1254",
     gradientTo: "#1a0a35",
-    borderColor: "rgba(168,85,247,0.4)",
+    borderColor: "rgba(168,85,247,0.35)",
+    activeBorder: "rgba(168,85,247,0.9)",
     labelColor: "#c084fc",
+    glow: "rgba(168,85,247,0.25)",
   },
 ];
 
 export default function VibePage() {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const [selected, setSelected] = useState(null);
 
   const handleContinue = () => {
@@ -59,67 +67,104 @@ export default function VibePage() {
   return (
     <div
       className="screen"
-      style={{
-        background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)",
-      }}
+      style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)" }}
     >
       {/* Stars */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
         {Array.from({ length: 50 }).map((_, i) => (
-          <div key={i} className="absolute rounded-full bg-white"
-            style={{
-              width: Math.random() * 2 + 0.5 + "px",
-              height: Math.random() * 2 + 0.5 + "px",
-              top: Math.random() * 100 + "%",
-              left: Math.random() * 100 + "%",
-              opacity: Math.random() * 0.5 + 0.1,
-              animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-              animationDelay: Math.random() * 4 + "s",
-            }}
-          />
+          <div key={i} style={{
+            position: "absolute",
+            width:  Math.random() * 2 + 0.5,
+            height: Math.random() * 2 + 0.5,
+            borderRadius: "50%", background: "white",
+            top:  Math.random() * 100 + "%",
+            left: Math.random() * 100 + "%",
+            opacity: Math.random() * 0.5 + 0.1,
+            animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
+            animationDelay: Math.random() * 4 + "s",
+          }} />
         ))}
       </div>
       <style>{`@keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.9} }`}</style>
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center gap-3 px-4 pb-4 shrink-0"
-        style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
-        <button onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
-          <ChevronLeft className="w-5 h-5 text-white" />
+      {/* ── HEADER ── (shrink-0) */}
+      <div style={{
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "0 16px 16px",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        position: "relative",
+        zIndex: 1,
+      }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.08)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0, cursor: "pointer",
+          }}
+        >
+          <ChevronLeft size={20} color="white" />
         </button>
         <div>
-          <h1 className="text-white font-black text-2xl" style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
+          <h1 style={{
+            color: "white", fontWeight: 900, fontSize: 24, margin: 0,
+            textShadow: "0 0 20px rgba(168,85,247,0.5)",
+          }}>
             Set the vibe
           </h1>
-          <p className="text-purple-300/60 text-xs">How do you want to roll today?</p>
+          <p style={{ color: "rgba(196,180,252,0.6)", fontSize: 12, margin: "2px 0 0" }}>
+            How do you want to roll today?
+          </p>
         </div>
       </div>
 
-      {/* Vibe cards */}
-      <div className="scroll-area px-4 flex flex-col gap-3 justify-center py-2 relative z-10">
-        {VIBES.map((v) => (
+      {/* ── VIBE CARDS (scroll-area) ── */}
+      <div
+        className="scroll-area"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          padding: "4px 16px 8px",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {VIBES.map(v => (
           <motion.button
             key={v.id}
             whileTap={{ scale: 0.97 }}
             onClick={() => setSelected(v.id)}
-            className="w-full rounded-2xl p-4 text-left transition-all"
             style={{
+              width: "100%",
+              borderRadius: 20,
+              padding: "16px",
+              textAlign: "left",
+              border: `1.5px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
               background: `linear-gradient(135deg, ${v.gradientFrom}, ${v.gradientTo})`,
-              border: `1.5px solid ${selected === v.id ? v.borderColor.replace("0.35", "0.8").replace("0.4", "0.9") : v.borderColor}`,
-              boxShadow: selected === v.id ? `0 0 20px ${v.borderColor}` : "none",
+              boxShadow: selected === v.id ? `0 0 24px ${v.glow}` : "none",
+              cursor: "pointer",
+              transition: "border-color 0.15s, box-shadow 0.15s",
+              flexShrink: 0,
             }}
           >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl shrink-0">{v.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-base" style={{ color: v.labelColor }}>{v.label}</p>
-                <p className="text-white/60 text-sm leading-snug">{v.desc}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 30, flexShrink: 0 }}>{v.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: v.labelColor, fontWeight: 700, fontSize: 16, margin: 0 }}>{v.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "3px 0 0", lineHeight: 1.35 }}>{v.desc}</p>
               </div>
               {selected === v.id && (
-                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
-                  <div className="w-3 h-3 rounded-full bg-purple-600" />
+                <div style={{
+                  width: 24, height: 24, borderRadius: "50%",
+                  background: "white", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#7c3aed" }} />
                 </div>
               )}
             </div>
@@ -127,15 +172,26 @@ export default function VibePage() {
         ))}
       </div>
 
-      {/* CTA */}
-      <div className="sticky-bottom relative z-10">
+      {/* ── CTA BUTTON (sticky-bottom) ── */}
+      <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
         <button
           onClick={handleContinue}
           disabled={!selected}
-          className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-all disabled:opacity-30"
           style={{
-            background: selected ? "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)" : "rgba(255,255,255,0.08)",
+            width: "100%",
+            padding: "16px 0",
+            borderRadius: 18,
+            border: "none",
+            color: "white",
+            fontWeight: 900,
+            fontSize: 17,
+            cursor: selected ? "pointer" : "default",
+            opacity: selected ? 1 : 0.3,
+            background: selected
+              ? "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)"
+              : "rgba(255,255,255,0.08)",
             boxShadow: selected ? "0 0 24px rgba(168,85,247,0.45)" : "none",
+            transition: "opacity 0.2s, box-shadow 0.2s",
           }}
         >
           Let's go →

@@ -1,417 +1,556 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, MicOff, ChevronDown, Loader2, Volume2, VolumeX, Settings } from "lucide-react";
+import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
-import PullToRefresh from "@/components/PullToRefresh";
 import { useMessageLimit } from "@/components/useMessageLimit";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
-  vent: "Be a compassionate listener. Let them vent. Validate feelings. Ask gentle follow-up questions.",
-  hype: "Be ENERGETIC and hyped up! Use caps, exclamation marks, pump them up!",
-  deep: "Go deep. Be thoughtful, philosophical. Explore emotions and meaning.",
+  vent:  "Be a compassionate listener. Let them vent. Validate feelings. Ask gentle follow-up questions.",
+  hype:  "Be ENERGETIC and hyped up! Use caps, exclamation marks, pump them up!",
+  deep:  "Go deep. Be thoughtful, philosophical. Explore emotions and meaning.",
 };
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
 export default function ChatPage() {
   const navigate = useNavigate();
-  const [companion, setCompanion] = useState(null);
-  const [environment, setEnvironment] = useState(null);
-  const [vibe, setVibe] = useState("chill");
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [avatarState, setAvatarState] = useState("idle");
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [companion, setCompanion]       = useState(null);
+  const [environment, setEnvironment]   = useState(null);
+  const [vibe, setVibe]                 = useState("chill");
+  const [messages, setMessages]         = useState([]);
+  const [input, setInput]               = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [isSpeaking, setIsSpeaking]     = useState(false);
+  const [isListening, setIsListening]   = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
   const [companionDbId, setCompanionDbId] = useState(null);
-  const [isPremium, setIsPremium] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [isPremium, setIsPremium]       = useState(false);
+  const [showPaywall, setShowPaywall]   = useState(false);
+  const [avatarState, setAvatarState]   = useState("idle");
+  const [particles, setParticles]       = useState([]);
+
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
-  const [particles, setParticles] = useState([]);
-  const particleId = useRef(0);
-  const stateTimeout = useRef(null);
+  const particleId    = useRef(0);
+  const stateTimeout  = useRef(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
-  const audioRef = useRef(null);
+  const audioRef      = useRef(null);
 
+  /* ─── INIT ─── */
   useEffect(() => {
     const init = async () => {
-    const c = localStorage.getItem("unfiltr_companion");
-    const e = localStorage.getItem("unfiltr_env");
-    const v = localStorage.getItem("unfiltr_vibe");
-    if (!c || !e) { navigate("/companions"); return; }
-    const parsedCompanion = JSON.parse(c);
-    const parsedEnv = JSON.parse(e);
-    setCompanion(parsedCompanion);
-    setEnvironment(parsedEnv);
-    if (v) setVibe(v);
-    // Load premium status and companion DB record
-    const profileId = localStorage.getItem("userProfileId");
-    if (profileId) {
-      try {
-        const profile = await base44.entities.UserProfile.get(profileId);
-        setIsPremium(!!profile?.premium);
-        if (profile?.companion_id) {
-          setCompanionDbId(profile.companion_id);
-          try {
-            const dbCompanion = await base44.entities.Companion.get(profile.companion_id);
-            if (dbCompanion?.mood_mode) setCompanionMood(dbCompanion.mood_mode);
-          } catch { /* use default mood */ }
-        }
-      } catch { /* use free tier defaults */ }
-    }
+      const c = localStorage.getItem("unfiltr_companion");
+      const e = localStorage.getItem("unfiltr_env");
+      const v = localStorage.getItem("unfiltr_vibe");
+      if (!c || !e) { navigate("/"); return; }
+
+      const parsedCompanion = JSON.parse(c);
+      const parsedEnv       = JSON.parse(e);
+
+      // Resolve the display name: nickname > default name
+      const savedNickname = localStorage.getItem("unfiltr_companion_nickname");
+      parsedCompanion.displayName =
+        (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
+
+      setCompanion(parsedCompanion);
+      setEnvironment(parsedEnv);
+      if (v) setVibe(v);
+
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        try {
+          const profile = await base44.entities.UserProfile.get(profileId);
+          setIsPremium(!!profile?.premium);
+          if (profile?.companion_id) {
+            setCompanionDbId(profile.companion_id);
+            try {
+              const dbComp = await base44.entities.Companion.get(profile.companion_id);
+              if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
+            } catch { /* use default */ }
+          }
+        } catch { /* free tier */ }
+      }
     };
     init();
   }, []);
 
+  /* ─── GREETING ─── */
   useEffect(() => {
-    if (companion) {
-      const greeting = {
-        role: "assistant",
-        content: `Hey! I'm ${companion.name} 👋 ${
-          vibe === "chill" ? "What's good? Just vibing here 😌" :
-          vibe === "vent" ? "I'm here. Take your time — what's on your mind?" :
-          vibe === "hype" ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
-          "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-        }`,
-      };
-      setMessages([greeting]);
-    }
+    if (!companion) return;
+    const name = companion.displayName || companion.name;
+    setMessages([{
+      role: "assistant",
+      content: `Hey! I'm ${name} 👋 ${
+        vibe === "chill" ? "What's good? Just vibing here 😌" :
+        vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
+        vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
+        "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
+      }`,
+    }]);
   }, [companion]);
 
+  /* ─── AUTO-SCROLL ─── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto idle animation
+  /* ─── IDLE ANIMATION LOOP ─── */
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (avatarState === "idle" && !loading && !isSpeaking) {
-        triggerAnimation("wave", 1200);
-      }
+    const iv = setInterval(() => {
+      if (avatarState === "idle" && !loading && !isSpeaking) triggerAnim("wave", 1200);
     }, 8000);
-    return () => clearInterval(interval);
+    return () => clearInterval(iv);
   }, [avatarState, loading, isSpeaking]);
 
-  const triggerAnimation = (state, duration = 1200) => {
+  const triggerAnim = (state, ms = 1200) => {
     if (stateTimeout.current) clearTimeout(stateTimeout.current);
     setAvatarState(state);
-    stateTimeout.current = setTimeout(() => setAvatarState("idle"), duration);
+    stateTimeout.current = setTimeout(() => setAvatarState("idle"), ms);
   };
 
+  /* ─── PARTICLES ─── */
   const spawnParticles = () => {
     const emoji = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-    const newP = Array.from({ length: 5 }, (_, i) => ({
+    const batch = Array.from({ length: 5 }, (_, i) => ({
       id: particleId.current++,
       emoji,
       x: Math.cos((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20),
       y: Math.sin((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20) - 20,
     }));
-    setParticles((p) => [...p, ...newP]);
-    setTimeout(() => setParticles((p) => p.filter((par) => !newP.find((n) => n.id === par.id))), 1000);
+    setParticles(p => [...p, ...batch]);
+    setTimeout(() => setParticles(p => p.filter(x => !batch.find(b => b.id === x.id))), 1000);
   };
 
+  /* ─── TTS ─── */
   const speakText = async (text, companionId) => {
     if (!voiceEnabled) return;
     try {
-      setIsSpeaking(true);
-      setAvatarState("talk");
-      const response = await base44.functions.invoke("tts", { text, companionId });
-      const base64 = response.data?.audio;
-      if (!base64) throw new Error("No audio");
-
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "audio/mpeg" });
-      const url = URL.createObjectURL(blob);
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        URL.revokeObjectURL(audioRef.current.src);
-      }
+      setIsSpeaking(true); triggerAnim("talk", 99999);
+      const res    = await base44.functions.invoke("tts", { text, companionId });
+      const base64 = res.data?.audio;
+      if (!base64) throw new Error("no audio");
+      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const url   = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+      if (audioRef.current) { audioRef.current.pause(); URL.revokeObjectURL(audioRef.current.src); }
       const audio = new Audio(url);
       audioRef.current = audio;
-      audio.onended = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
-      audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); };
+      audio.onended = audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
       await audio.play();
-    } catch {
-      setIsSpeaking(false);
-      setAvatarState("idle");
-    }
+    } catch { setIsSpeaking(false); setAvatarState("idle"); }
   };
 
+  /* ─── SEND ─── */
   const handleSend = async (textOverride) => {
-    const text = textOverride || input;
-    if (!text.trim() || loading) return;
+    const text = (textOverride || input).trim();
+    if (!text || loading) return;
     if (isAtLimit) { setShowPaywall(true); return; }
-    const userMsg = { role: "user", content: text.trim() };
-    setMessages((m) => [...m, userMsg]);
+
+    setMessages(m => [...m, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
 
     try {
-      const systemPrompt = `${companion.systemPrompt}\n\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1-3 sentences max.`;
-      const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
-      const response = await base44.functions.invoke("chat", { messages: history, systemPrompt });
-      const replyText = response.data?.reply || "...";
-      const reply = { role: "assistant", content: replyText };
-      setMessages((m) => [...m, reply]);
+      const name         = companion.displayName || companion.name;
+      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.`;
+      const history      = [...messages, { role: "user", content: text }].slice(-10);
+      const res          = await base44.functions.invoke("chat", {
+        messages: history.map(m => ({ role: m.role, content: m.content })),
+        systemPrompt,
+      });
+      const replyText = res.data?.reply || "...";
+      setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
-      // Use mood returned directly from AI
-      const validMoods = ['happy','neutral','sad','fear','disgust','surprise','anger','contentment','fatigue'];
-      const newMood = validMoods.includes(response.data?.mood) ? response.data.mood : "neutral";
+      const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+      const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId) {
-        base44.entities.Companion.update(companionDbId, { mood_mode: newMood });
-      }
+      if (companionDbId) base44.entities.Companion.update(companionDbId, { mood_mode: newMood });
+
       incrementCount();
       spawnParticles();
       await speakText(replyText, companion.id);
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
-      setIsSpeaking(false);
-      setAvatarState("idle");
-    } finally {
-      setLoading(false);
-    }
+      setMessages(m => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
+      setIsSpeaking(false); setAvatarState("idle");
+    } finally { setLoading(false); }
   };
 
+  /* ─── VOICE ─── */
   const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
     if (recognitionRef.current) recognitionRef.current.stop();
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      handleSend(transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.start();
+    const r = new SR();
+    r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 1;
+    recognitionRef.current = r;
+    r.onstart  = () => setIsListening(true);
+    r.onend    = () => setIsListening(false);
+    r.onerror  = () => setIsListening(false);
+    r.onresult = e => handleSend(e.results[0][0].transcript);
+    r.start();
   };
+  const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  };
-
-  const handleRefresh = async () => {
-    // Clear messages and reset to greeting
-    if (companion) {
-      const greeting = {
-        role: "assistant",
-        content: `Hey! I'm ${companion.name} 👋 ${
-          vibe === "chill" ? "What's good? Just vibing here 😌" :
-          vibe === "vent" ? "I'm here. Take your time — what's on your mind?" :
-          vibe === "hype" ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
-          "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-        }`,
-      };
-      setMessages([greeting]);
-    }
-    await new Promise(r => setTimeout(r, 500));
-  };
-
-  const handleSubscribe = async () => {
-    const isAndroid = /android/i.test(navigator.userAgent);
-    if (isAndroid && window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({
-        action: "subscribe",
-        productId: "com.unfiltr.premium.monthly"
-      });
+  /* ─── IAP ─── */
+  const handleSubscribe = () => {
+    if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
+      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
     } else if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ 
-        action: "subscribe", 
-        productId: "com.unfiltr.premium.monthly" 
-      });
+      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
     } else {
-      alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)\nGoogle Play Billing or Apple StoreKit will handle this.");
+      alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)");
     }
   };
-
   const handleRestore = () => {
     if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
-    } else {
-      alert("Restore purchases — handled by Apple StoreKit in the native app.");
     }
   };
 
-  if (!companion || !environment) return null;
+  /* ─── LOADING STATE ─── */
+  if (!companion || !environment) return (
+    <div style={{
+      position: "fixed", inset: 0, display: "flex",
+      alignItems: "center", justifyContent: "center", background: "#06020f",
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: "50%",
+        border: "4px solid rgba(168,85,247,0.3)",
+        borderTopColor: "#a855f7",
+        animation: "spin 0.8s linear infinite",
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  const companionDisplayName = companion.displayName || companion.name;
 
   return (
     <>
-    <div
-      className="screen"
-      style={{ backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center bottom" }}
-    >
-      {/* Dim overlay */}
-      <div className="absolute inset-0 bg-black/20" />
+      <div
+        className="screen"
+        style={{
+          backgroundImage: `url(${environment.bg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center bottom",
+        }}
+      >
+        {/* Dim overlay */}
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.22)", pointerEvents: "none" }} />
 
-      <style>{`
-        @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
-        @keyframes listenPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
-        @keyframes pulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
-        .particle { animation: particleFly 1s ease-out forwards; }
-        .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
-      `}</style>
+        <style>{`
+          @keyframes particleFly {
+            0%   { opacity: 1; transform: translate(0,0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); }
+          }
+          @keyframes listenPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%       { transform: scale(1.15); opacity: 0.7; }
+          }
+          @keyframes speakPulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50%       { opacity: 0.7; transform: scale(1.05); }
+          }
+          @keyframes spin { to { transform: rotate(360deg); } }
+          .particle     { animation: particleFly 1s ease-out forwards; }
+          .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
+        `}</style>
 
-      <div className="relative flex flex-col h-full z-10">
-
-        {/* ── TOP BAR ── */}
-        <div
-          className="flex items-center justify-between px-4 pb-3 bg-black/30 backdrop-blur-md border-b border-white/10"
-          style={{ paddingTop: "max(3rem, env(safe-area-inset-top, 3rem))" }}
-        >
-          <button
-            onClick={() => setVoiceEnabled((v) => !v)}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
-          >
-            {voiceEnabled ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white/40" />}
-          </button>
-
-          <div className="text-center">
-            <p className="text-white font-bold">{companion.name}</p>
-            <p className="text-white/50 text-xs capitalize">{vibe} mode • {environment.label}</p>
-            {!isPremium && (
-              <button onClick={() => setShowPaywall(true)} className="mt-0.5 text-[10px] text-purple-300/70 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                {remaining}/{FREE_LIMIT} msgs left
-              </button>
-            )}
-            {isPremium && <p className="text-[10px] text-purple-400/80">✨ Premium</p>}
-          </div>
-
-          <button onClick={() => navigate("/settings")} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-            <Settings className="w-4 h-4 text-white" />
-          </button>
-        </div>
-
-        {/* ── AVATAR ZONE — sits above chat, fully visible ── */}
-        <div className="flex-1 flex items-end justify-center relative pointer-events-none" style={{ minHeight: 0 }}>
-          {/* Ground shadow */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-16 pointer-events-none"
-            style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, transparent 70%)" }} />
-
-          {/* Speaking glow */}
-          {isSpeaking && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-56 h-56 rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "pulse 1.2s ease-in-out infinite" }} />
-          )}
-
-          {/* Particles */}
-          {particles.map((p) => (
-            <div key={p.id} className="particle absolute text-base pointer-events-none"
-              style={{ "--tx": `${p.x}px`, "--ty": `${p.y}px`, bottom: "45%", left: "50%", transform: "translate(-50%,0)", zIndex: 3 }}>
-              {p.emoji}
-            </div>
-          ))}
-
-          {/* Avatar — pointer-events re-enabled just on the image */}
-          <div className="pointer-events-auto" style={{ paddingBottom: "8px" }}>
-            <LiveAvatar
-              companionId={companion.id}
-              mood={companionMood}
-              isSpeaking={isSpeaking}
-              onClick={() => spawnParticles()}
-            />
-          </div>
-        </div>
-
-        {/* ── CHAT PANEL — frosted glass, pinned bottom ── */}
-        <div className="flex flex-col shrink-0" style={{
-          background: "linear-gradient(to bottom, rgba(10,5,20,0) 0%, rgba(10,5,20,0.92) 14%, rgba(10,5,20,0.97) 100%)",
-          paddingBottom: "max(5.5rem, env(safe-area-inset-bottom, 5.5rem))",
+        {/* ── Flex column, full height ── */}
+        <div style={{
+          position: "relative", zIndex: 1,
+          display: "flex", flexDirection: "column",
+          height: "100%",
         }}>
-          {/* Messages scroll area */}
-          <div className="overflow-y-auto px-4 pt-2 pb-2 space-y-2" style={{ maxHeight: "36vh" }}>
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
-                  msg.role === "user"
-                    ? "text-white rounded-br-md"
-                    : "text-white rounded-bl-md border border-purple-500/20"
-                }`}
-                style={msg.role === "user"
-                  ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
-                  : { background: "rgba(88, 28, 135, 0.35)", backdropFilter: "blur(8px)", boxShadow: "0 0 12px rgba(168,85,247,0.15)" }
-                }>
-                  {msg.content}
-                </div>
+
+          {/* ══ TOP BAR ══ */}
+          <div style={{
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 16px 12px",
+            paddingTop: "max(2.5rem, env(safe-area-inset-top, 2.5rem))",
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(16px)",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+          }}>
+            {/* Voice toggle */}
+            <button
+              onClick={() => setVoiceEnabled(v => !v)}
+              style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "rgba(255,255,255,0.1)", border: "none",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              {voiceEnabled
+                ? <Volume2  size={16} color="white" />
+                : <VolumeX  size={16} color="rgba(255,255,255,0.4)" />}
+            </button>
+
+            {/* Center info */}
+            <div style={{ textAlign: "center", flex: 1, padding: "0 8px" }}>
+              <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>
+                {companionDisplayName}
+              </p>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>
+                {vibe} mode · {environment.label}
+              </p>
+              {!isPremium ? (
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  style={{
+                    marginTop: 3, fontSize: 10, color: "rgba(196,180,252,0.75)",
+                    background: "rgba(139,92,246,0.15)", border: "none",
+                    padding: "2px 8px", borderRadius: 999, cursor: "pointer",
+                  }}
+                >
+                  {remaining}/{FREE_LIMIT} msgs left
+                </button>
+              ) : (
+                <p style={{ marginTop: 2, fontSize: 10, color: "rgba(168,85,247,0.8)" }}>✨ Premium</p>
+              )}
+            </div>
+
+            {/* Settings */}
+            <button
+              onClick={() => navigate("/settings")}
+              style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "rgba(255,255,255,0.1)", border: "none",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <Settings size={16} color="white" />
+            </button>
+          </div>
+
+          {/* ══ AVATAR ZONE ══ */}
+          <div style={{
+            flex: 1,
+            minHeight: 0,
+            position: "relative",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}>
+            {/* Ground shadow */}
+            <div style={{
+              position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+              width: 240, height: 50,
+              background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, transparent 70%)",
+              pointerEvents: "none",
+            }} />
+
+            {/* Speaking glow ring */}
+            {isSpeaking && (
+              <div style={{
+                position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
+                width: 200, height: 200, borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                animation: "speakPulse 1.2s ease-in-out infinite",
+                pointerEvents: "none",
+              }} />
+            )}
+
+            {/* Particles */}
+            {particles.map(p => (
+              <div
+                key={p.id}
+                className="particle"
+                style={{
+                  position: "absolute",
+                  bottom: "45%", left: "50%",
+                  transform: "translate(-50%, 0)",
+                  "--tx": `${p.x}px`,
+                  "--ty": `${p.y}px`,
+                  fontSize: 14,
+                  zIndex: 3,
+                  pointerEvents: "none",
+                }}
+              >
+                {p.emoji}
               </div>
             ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="px-4 py-3 rounded-2xl rounded-bl-md flex items-center gap-2 border border-purple-500/20"
-                  style={{ background: "rgba(88,28,135,0.35)", backdropFilter: "blur(8px)" }}>
-                  <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
-                  <span className="text-white/50 text-xs">{companion.name} is thinking...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* ── INPUT BAR ── */}
-          <div className="px-4 pt-2">
-            <div className="flex items-center gap-2 border border-white/10 rounded-full px-4 py-2.5 shadow-lg"
-              style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(16px)" }}>
-              <button
-                onPointerDown={startListening}
-                onPointerUp={stopListening}
-                className={`w-9 h-9 flex items-center justify-center rounded-full shrink-0 transition-all ${
-                  isListening ? "bg-red-500 listen-pulse" : "bg-white/10 hover:bg-white/20"
-                }`}
-              >
-                {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white/70" />}
-              </button>
-
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder={isListening ? "Listening..." : `Talk to ${companion.name}...`}
-                className="flex-1 bg-transparent text-white placeholder-white/30 text-sm outline-none"
+            {/* Avatar */}
+            <div style={{ pointerEvents: "auto", paddingBottom: 4 }}>
+              <LiveAvatar
+                companionId={companion.id}
+                mood={companionMood}
+                isSpeaking={isSpeaking}
+                onClick={spawnParticles}
               />
-
-              <button
-                onClick={() => handleSend()}
-                disabled={loading || !input.trim()}
-                className="w-9 h-9 flex items-center justify-center rounded-full shrink-0 shadow disabled:opacity-40 active:scale-90 transition-transform"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)" }}
-              >
-                <Send className="w-4 h-4 text-white" />
-              </button>
             </div>
-            <p className="text-center text-white/20 text-xs mt-1.5">Hold 🎤 to speak • Tap to type</p>
           </div>
+
+          {/* ══ CHAT PANEL ══ */}
+          <div style={{
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: "52%",
+            background: "linear-gradient(to bottom, rgba(8,3,16,0) 0%, rgba(8,3,16,0.9) 10%, rgba(8,3,16,0.97) 100%)",
+          }}>
+
+            {/* Messages — scrollable */}
+            <div style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
+              padding: "8px 16px 4px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}>
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div style={{
+                    maxWidth: "82%",
+                    padding: "10px 16px",
+                    borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    wordBreak: "break-word",
+                    color: "white",
+                    ...(msg.role === "user"
+                      ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
+                      : {
+                          background: "rgba(88,28,135,0.4)",
+                          backdropFilter: "blur(8px)",
+                          border: "1px solid rgba(168,85,247,0.2)",
+                          boxShadow: "0 0 12px rgba(168,85,247,0.12)",
+                        }
+                    ),
+                  }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+
+              {/* Thinking indicator */}
+              {loading && (
+                <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                  <div style={{
+                    padding: "10px 16px",
+                    borderRadius: "18px 18px 18px 4px",
+                    background: "rgba(88,28,135,0.4)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(168,85,247,0.2)",
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    <Loader2 size={14} color="#a855f7" style={{ animation: "spin 0.8s linear infinite" }} />
+                    <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
+                      {companionDisplayName} is thinking…
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* ── INPUT BAR ── */}
+            <div style={{ flexShrink: 0, padding: "6px 16px 0" }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                background: "rgba(255,255,255,0.07)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 999,
+                padding: "8px 12px",
+              }}>
+                {/* Mic */}
+                <button
+                  onPointerDown={startListening}
+                  onPointerUp={stopListening}
+                  style={{
+                    width: 36, height: 36, borderRadius: "50%", border: "none",
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer",
+                    background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)",
+                  }}
+                  className={isListening ? "listen-pulse" : ""}
+                >
+                  {isListening
+                    ? <MicOff size={16} color="white" />
+                    : <Mic    size={16} color="rgba(255,255,255,0.65)" />}
+                </button>
+
+                {/* Text input */}
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSend()}
+                  placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
+                  style={{
+                    flex: 1, background: "transparent", border: "none", outline: "none",
+                    color: "white", fontSize: 14, minWidth: 0,
+                    caretColor: "#a855f7",
+                  }}
+                />
+
+                {/* Send */}
+                <button
+                  onClick={() => handleSend()}
+                  disabled={loading || !input.trim()}
+                  style={{
+                    width: 36, height: 36, borderRadius: "50%", border: "none",
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: loading || !input.trim() ? "default" : "pointer",
+                    opacity: loading || !input.trim() ? 0.4 : 1,
+                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  <Send size={15} color="white" />
+                </button>
+              </div>
+
+              <p style={{
+                textAlign: "center", color: "rgba(255,255,255,0.18)",
+                fontSize: 11, margin: "5px 0 0",
+              }}>
+                Hold 🎤 to speak · Tap to type
+              </p>
+            </div>
+
+            {/* Safe area inset at the very bottom */}
+            <div style={{
+              flexShrink: 0,
+              height: "max(12px, env(safe-area-inset-bottom, 12px))",
+            }} />
+          </div>
+
         </div>
-
       </div>
-    </div>
 
-    <PaywallModal
-      visible={showPaywall}
-      onClose={() => setShowPaywall(false)}
-      onSubscribe={handleSubscribe}
-      onRestore={handleRestore}
-      isAndroid={/android/i.test(navigator.userAgent)}
-    />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSubscribe={handleSubscribe}
+        onRestore={handleRestore}
+        isAndroid={/android/i.test(navigator.userAgent)}
+      />
     </>
   );
 }
