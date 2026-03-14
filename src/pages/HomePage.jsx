@@ -14,7 +14,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden"
+    <div className="screen"
       style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}
     >
       {/* ── STAR FIELD ── */}
