@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings } from "lucide-react";
+import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings, Brain } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
@@ -181,7 +181,8 @@ export default function ChatPage() {
 
       incrementCount();
       spawnParticles();
-      await speakText(replyText, companion.id);
+      // Fire TTS immediately — don't await, run in parallel with UI updates
+      speakText(replyText, companion.id);
 
       // Auto-summarize session every 10 user messages (premium only)
       if (isPremium) {
@@ -295,7 +296,14 @@ export default function ChatPage() {
                   {remaining}/{FREE_LIMIT} msgs left
                 </button>
               ) : (
-                <p style={{ marginTop: 2, fontSize: 10, color: "rgba(168,85,247,0.8)" }}>✨ Premium</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 2 }}>
+                  <p style={{ fontSize: 10, color: "rgba(168,85,247,0.8)", margin: 0 }}>✨ Premium</p>
+                  {sessionMemory.length > 0 && (
+                    <span style={{ fontSize: 10, color: "rgba(168,85,247,0.6)", display: "flex", alignItems: "center", gap: 2 }}>
+                      · <Brain size={9} color="rgba(168,85,247,0.6)" /> {sessionMemory.length} memories
+                    </span>
+                  )}
+                </div>
               )}
             </div>
 
