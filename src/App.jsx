@@ -41,22 +41,17 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
-      <div className="flex-1 overflow-hidden pb-20">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/vibe" element={<VibePage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
-          <Route path="/AdminDashboard" element={<AdminDashboard />} />
-          <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-          <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </div>
-      <BottomTabs />
-    </div>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/vibe" element={<VibePage />} />
+      <Route path="/chat" element={<ChatPage />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
+      <Route path="/AdminDashboard" element={<AdminDashboard />} />
+      <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
   );
 };
 
