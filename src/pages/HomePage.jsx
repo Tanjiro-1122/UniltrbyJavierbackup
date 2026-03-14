@@ -118,12 +118,9 @@ export default function HomePage() {
         >
           I already have one → Continue
         </button>
-      </motion.div>
-
-      {/* Footer */}
-      <div className="sticky-bottom relative z-10">
+        {/* Footer inside scroll */}
         <AppFooter dark />
-      </div>
+      </motion.div>
     </div>
   );
 }
