@@ -47,8 +47,28 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
+import AdminDashboard from './pages/AdminDashboard';
+import ChatPage from './pages/ChatPage';
+import HomePage from './pages/HomePage';
+import Onboarding from './pages/Onboarding';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Settings from './pages/Settings';
+import VibePage from './pages/VibePage';
 
-export const pagesConfig = {
-	Pages: {}
+
+export const PAGES = {
+    "AdminAvatarProcessor": AdminAvatarProcessor,
+    "AdminDashboard": AdminDashboard,
+    "ChatPage": ChatPage,
+    "HomePage": HomePage,
+    "Onboarding": Onboarding,
+    "PrivacyPolicy": PrivacyPolicy,
+    "Settings": Settings,
+    "VibePage": VibePage,
 }
 
+export const pagesConfig = {
+    mainPage: "HomePage",
+    Pages: PAGES,
+};
