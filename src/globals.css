@@ -2,6 +2,12 @@
    UNFILTR — GLOBAL MOBILE CSS
    ══════════════════════════════════════════════════════════ */
 
+/* ── 0. Override Tailwind white background — must come first ── */
+:root {
+  --background: 6 2 15; /* #06020f in RGB */
+  color-scheme: dark;
+}
+
 /* ── 1. Base reset ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -13,19 +19,25 @@
 }
 
 html {
-  height: 100%;
+  /* dvh = dynamic viewport height — accounts for Safari URL bar & bottom chrome */
+  height: 100dvh;
   height: -webkit-fill-available;
-  /* Fills the gray dead zone on Safari iOS */
-  background: #06020f;
+  background: #06020f !important;
+  background-color: #06020f !important;
 }
 
 body {
   width: 100%;
-  height: 100%;
+  height: 100dvh;
   height: -webkit-fill-available;
-  background: #06020f;
+  background: #06020f !important;
+  background-color: #06020f !important;
   overflow: hidden;
   position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overscroll-behavior: none;
   color-scheme: dark;
 }
@@ -33,29 +45,33 @@ body {
 #root {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background: #06020f;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── 2. .screen — outermost wrapper for every page ── */
 .screen {
   position: fixed;
   top: 0;
-  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  height: 100%;
   max-width: 430px;
+  /* dvh fills the actual visible area including Safari chrome */
+  height: 100dvh;
+  height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #06020f;
   /* Account for bottom tab bar (64px) + safe area */
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  background: #06020f;
 }
 
-/* Pages that have NO bottom tabs — use .screen.no-tabs to override */
+/* Pages that have NO bottom tabs */
 .screen.no-tabs {
   padding-bottom: 0;
 }
