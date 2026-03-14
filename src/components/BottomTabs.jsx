@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Home, MessageSquare, Settings } from "lucide-react";
 
 const TABS = [
-  { path: "/",        label: "Home",    icon: Home },
+  { path: "/Home",    label: "Home",    icon: Home },
   { path: "/chat",    label: "Chat",    icon: MessageSquare },
   { path: "/settings",label: "Settings",icon: Settings },
 ];
@@ -35,10 +35,7 @@ export default function BottomTabs() {
       }}
     >
       {TABS.map(({ path, label, icon: Icon }) => {
-        const isActive =
-          path === "/"
-            ? location.pathname === "/"
-            : location.pathname.startsWith(path);
+        const isActive = location.pathname.startsWith(path);
 
         return (
           <button
