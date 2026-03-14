@@ -121,7 +121,7 @@ export default function HomePage() {
       </motion.div>
 
       {/* Footer */}
-      <div className="relative z-10 w-full">
+      <div className="sticky-bottom relative z-10">
         <AppFooter dark />
       </div>
     </div>
