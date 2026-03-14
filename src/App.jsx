@@ -19,7 +19,10 @@ import FeedbackAdmin from './pages/admin/FeedbackAdmin';
 import FeedbackButton from './components/FeedbackButton';
 
 // Pages where the bottom tab bar should NOT appear
-const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy"];
+const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy", "/admin/feedback", "/feedback"];
+
+// Pages where the floating feedback button should NOT appear
+const HIDE_FEEDBACK_BTN_ON = ["/feedback", "/admin/feedback", "/onboarding"];
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
