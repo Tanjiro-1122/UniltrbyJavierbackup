@@ -23,6 +23,7 @@ function getMidnightCountdown() {
 export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading, isAndroid }) {
   const [tab, setTab] = useState("upgrade");
   const [countdown, setCountdown] = useState(getMidnightCountdown());
+  const [planType, setPlanType] = useState("annual");
 
   useEffect(() => {
     if (!visible) return;
