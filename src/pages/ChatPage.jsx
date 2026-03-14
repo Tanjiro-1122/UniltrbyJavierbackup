@@ -279,6 +279,7 @@ export default function ChatPage() {
         systemPrompt,
         isPremium,
         sessionMemory: isPremium ? sessionMemory : [],
+        memorySummary: memorySummary || "",
         imageBase64: imgBase64,
       });
       const replyText = res.data?.reply || "...";
