@@ -247,7 +247,16 @@ export default function ChatPage() {
 
     try {
       const name         = companion.displayName || companion.name;
-      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.`;
+      // Fetch memory_summary for non-premium users too (lightweight memory)
+      let memorySummary = "";
+      try {
+        const pid2 = localStorage.getItem("userProfileId");
+        if (pid2) {
+          const prof = await base44.entities.UserProfile.get(pid2);
+          memorySummary = prof?.memory_summary || "";
+        }
+      } catch { /* ignore */ }
+      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
       const userContent  = pendingImage ? (text || "What do you think of this?") : text;
       const history      = [...messages, { role: "user", content: userContent }].slice(-10);
 
