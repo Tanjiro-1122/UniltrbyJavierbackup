@@ -76,10 +76,10 @@ export default function ChatPage() {
       setEnvironment(parsedEnv);
       if (v) setVibe(v);
 
-      const profileId = localStorage.getItem("userProfileId");
-      if (profileId) {
+      const pid = localStorage.getItem("userProfileId");
+      if (pid) {
         try {
-          const profile = await base44.entities.UserProfile.get(profileId);
+          const profile = await base44.entities.UserProfile.get(pid);
           const premium = !!(profile?.is_premium || profile?.premium);
           setIsPremium(premium);
           if (premium && profile?.session_memory?.length > 0) {
@@ -94,6 +94,10 @@ export default function ChatPage() {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
             } catch { /* use default */ }
+          }
+          // Show tutorial for new users
+          if (!profile?.onboarding_complete) {
+            setShowTutorial(true);
           }
         } catch { /* free tier */ }
       }
