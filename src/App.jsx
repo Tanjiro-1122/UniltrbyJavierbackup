@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import BottomTabs from '@/components/BottomTabs';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
