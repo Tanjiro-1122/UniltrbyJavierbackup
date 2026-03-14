@@ -131,6 +131,24 @@ export default function Settings() {
     setSavingBackground(false);
   };
 
+  const handlePauseAccount = async () => {
+    setPausing(true);
+    const profileId = localStorage.getItem("userProfileId");
+    const now = new Date();
+    const until = new Date(now);
+    if (pauseDuration === "1week")  until.setDate(until.getDate() + 7);
+    if (pauseDuration === "2weeks") until.setDate(until.getDate() + 14);
+    if (pauseDuration === "1month") until.setMonth(until.getMonth() + 1);
+    await base44.entities.UserProfile.update(profileId, {
+      account_paused: true,
+      account_paused_at: now.toISOString(),
+      account_pause_until: until.toISOString(),
+    });
+    setUserProfile(prev => ({ ...prev, account_paused: true, account_pause_until: until.toISOString() }));
+    setPausing(false);
+    setPauseSuccess(true);
+  };
+
   const handleDeleteAccount = async () => {
     setDeleting(true);
     const profileId = localStorage.getItem("userProfileId");
