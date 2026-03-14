@@ -97,8 +97,8 @@ export default function VibePage() {
         </div>
       </div>
 
-      {/* Vibe cards — all 4 fit, no scrollbar */}
-      <div className="relative z-10 flex-1 px-4 flex flex-col gap-3 overflow-hidden justify-center pb-2">
+      {/* Vibe cards */}
+      <div className="scroll-area px-4 flex flex-col gap-3 justify-center py-2 relative z-10">
         {VIBES.map((v) => (
           <motion.button
             key={v.id}
@@ -127,9 +127,8 @@ export default function VibePage() {
         ))}
       </div>
 
-      {/* CTA — always visible, never cut off */}
-      <div className="relative z-10 px-4 pt-3 shrink-0"
-        style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom, 2.5rem))" }}>
+      {/* CTA */}
+      <div className="sticky-bottom relative z-10">
         <button
           onClick={handleContinue}
           disabled={!selected}
