@@ -40,8 +40,11 @@ export default function ChatPage() {
   const [showStreakBanner, setShowStreakBanner] = useState(false);
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
+  const [showTutorial, setShowTutorial]       = useState(false);
 
+  const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
+  usePushNotifications(profileId);
   const particleId    = useRef(0);
   const stateTimeout  = useRef(null);
   const messagesEndRef = useRef(null);
