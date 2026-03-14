@@ -134,7 +134,7 @@ export default function Onboarding() {
                     }`}
                     whileTap={{ scale: 0.97 }}
                   >
-                    <img src={c.avatar} alt={c.name} className="w-24 h-24 object-contain" />
+                    <img src={c.avatar} alt={c.name} className="w-full h-32 object-contain" onError={(e) => { e.target.style.opacity = '0.3'; }} />
                     <p className="text-white text-sm font-bold mt-2">{c.emoji} {c.name}</p>
                     <p className="text-white/50 text-[11px] text-center mt-0.5 leading-tight">{c.tagline}</p>
                   </motion.button>
