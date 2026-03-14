@@ -243,13 +243,58 @@ export default function Onboarding() {
         {step === 2 && (
           <motion.div key="step2"
             initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
+            className="relative z-10 flex-1 flex flex-col justify-start pt-6 px-4"
+          >
+            <h2 className="text-3xl font-black text-white mb-2"
+              style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
+              {STEP_TITLES[2]}
+            </h2>
+            <p className="text-purple-300/70 text-sm mb-6">{STEP_SUBTITLES[2]}</p>
+
+            {selectedCompanion && (() => {
+              const c = COMPANIONS.find(cd => cd.id === selectedCompanion);
+              return (
+                <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl"
+                  style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                  <img src={c.avatar} alt={c.name} className="w-16 h-16 object-contain" />
+                  <div>
+                    <p className="text-white font-bold">{c.name}</p>
+                    <p className="text-white/40 text-xs">{c.tagline}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <input
+              type="text"
+              value={companionNickname}
+              onChange={(e) => setCompanionNickname(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleNext()}
+              placeholder={`Default: ${COMPANIONS.find(c => c.id === selectedCompanion)?.name || "companion"}`}
+              maxLength={20}
+              className="w-full px-4 py-4 rounded-2xl text-white placeholder-white/30 focus:outline-none text-base"
+              style={{
+                background: "rgba(139,92,246,0.1)",
+                border: "1px solid rgba(139,92,246,0.3)",
+              }}
+              onFocus={(e) => e.target.style.boxShadow = "0 0 0 2px rgba(139,92,246,0.5)"}
+              onBlur={(e) => e.target.style.boxShadow = "none"}
+              autoFocus
+            />
+            <p className="text-white/30 text-xs mt-3 text-center">Leave blank to use their default name</p>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div key="step3"
+            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }}
             className="relative z-10 flex-1 flex flex-col min-h-0 px-4"
           >
             <h2 className="text-3xl font-black text-white mb-2 shrink-0"
               style={{ textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
-              {STEP_TITLES[2]}
+              {STEP_TITLES[3]}
             </h2>
-            <p className="text-purple-300/70 text-sm mb-4 shrink-0">{STEP_SUBTITLES[2]}</p>
+            <p className="text-purple-300/70 text-sm mb-4 shrink-0">{STEP_SUBTITLES[3]}</p>
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 gap-3 pb-2">
                 {BACKGROUNDS.map((bg) => (
