@@ -136,7 +136,7 @@ export default function Onboarding() {
           <div
             className="h-1 rounded-full transition-all duration-500"
             style={{
-              width: `${((step + 1) / 3) * 100}%`,
+              width: `${((step + 1) / 4) * 100}%`,
               background: "linear-gradient(90deg, #7c3aed, #db2777)",
               boxShadow: "0 0 8px rgba(168,85,247,0.6)",
             }}
