@@ -102,15 +102,6 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 3000);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (showSplash) return <SplashScreen />;
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
