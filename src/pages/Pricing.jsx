@@ -1,224 +1,198 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Check, Loader2 } from "lucide-react";
-import BottomTabs from "@/components/BottomTabs";
-import { callNativeIAPWithCallback, submitReceiptToServer, restorePurchases } from "@/components/utils/iapBridge";
+import React, { useState } from 'react';
+import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
+import { Check, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2 } from 'lucide-react';
+
+const PERKS = [
+  { icon: MessageCircle, label: 'Unlimited messages, every day' },
+  { icon: Mic,           label: 'Unlimited voice conversations' },
+  { icon: Zap,           label: 'Priority responses' },
+  { icon: Sparkles,      label: 'All vibes & companions' },
+];
 
 export default function Pricing() {
-  const navigate = useNavigate();
-  const [loadingPlan, setLoadingPlan] = useState(null); // "monthly" | "annual" | null
+  const [selectedPlan, setSelectedPlan] = useState('annual');
+  const { products, loading, purchasing, error, statusMessage, purchase, restore } = useAppleSubscriptions();
 
-  const handleSubscribe = (plan) => {
-    if (loadingPlan) return;
-    const productId =
-      plan === "annual"
-        ? "com.huertas.unfiltr.premium.annual"
-        : "com.huertas.unfiltr.premium.monthly";
+  const annualProduct  = products.find(p => p.productId?.includes('annual'));
+  const monthlyProduct = products.find(p => p.productId?.includes('monthly'));
+  const selectedProduct = selectedPlan === 'annual' ? annualProduct : monthlyProduct;
 
-    setLoadingPlan(plan);
-    callNativeIAPWithCallback(productId, async (err, purchaseData) => {
-      if (err) {
-        setLoadingPlan(null);
-        return;
-      }
-      const profileId = localStorage.getItem("userProfileId");
-      await submitReceiptToServer(purchaseData, profileId);
-      setLoadingPlan(null);
-      navigate("/");
-    });
+  const handleSubscribe = async () => {
+    if (!selectedProduct) return;
+    await purchase(selectedProduct.productId);
   };
 
-  const handleRestore = () => restorePurchases();
-
   return (
-    <div className="screen" style={{ background: "#0a0a12" }}>
-      <div className="scroll-area" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
-      {/* Header */}
-      <div style={{ padding: "max(2rem, env(safe-area-inset-top, 2rem)) 20px 0", position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "6px 12px", borderRadius: 999,
-            background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)"
-          }}>
-            <span style={{ fontSize: 14 }}>✨</span>
-            <span style={{ color: "#c084fc", fontSize: 12, fontWeight: 700 }}>Go Premium</span>
-          </div>
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '24px 20px calc(80px + env(safe-area-inset-bottom, 0px))',
+      overflowY: 'auto',
+    }}>
+      <div style={{ width: '100%', maxWidth: 430 }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>✨</div>
+          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 26, margin: 0 }}>
+            Go Premium
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 8 }}>
+            Unlimited access to your AI companion — no limits, ever.
+          </p>
         </div>
 
-        <h1 style={{ textAlign: "center", margin: "0 0 8px", fontSize: 32, fontWeight: 900, color: "white" }}>
-          Unlock Unfiltr <span style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>fully</span>
-        </h1>
-
-        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.5)", fontSize: 14, margin: "0 0 24px", lineHeight: 1.6 }}>
-          You've used your free messages for today. Upgrade to keep the conversation going — unlimited, always.
-        </p>
-      </div>
-
-      {/* Free Plan Reminder */}
-      <div style={{
-        marginX: "auto", width: "calc(100% - 32px)", marginLeft: 16, marginRight: 16,
-        marginBottom: 24,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "12px 16px", borderRadius: 16,
-        background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 18 }}>💬</span>
-          <div>
-            <p style={{ color: "white", fontWeight: 700, margin: 0, fontSize: 13 }}>Free plan</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: "2px 0 0" }}>Resets every day at midnight</p>
-          </div>
-        </div>
-        <div style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)", borderRadius: 999, padding: "6px 12px" }}>
-          <p style={{ color: "white", fontSize: 11, fontWeight: 800, margin: 0 }}>20 msgs/day</p>
-        </div>
-      </div>
-
-      {/* Subscription Cards */}
-      <div style={{ padding: "0 16px", marginBottom: 32 }}>
-        {/* Monthly Card */}
-        <div style={{
-          padding: 20, marginBottom: 16, borderRadius: 20,
-          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-          backdropFilter: "blur(20px)"
-        }}>
-          <h3 style={{ color: "white", fontWeight: 800, fontSize: 20, margin: "0 0 4px" }}>Monthly</h3>
-          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, margin: "0 0 16px" }}>Full access, billed monthly</p>
-
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ color: "white", fontSize: 36, fontWeight: 900, margin: "0 0 4px" }}>$9.99</p>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: 0 }}>/month</p>
-          </div>
-
-          <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              "Unlimited messages",
-              "All companions",
-              "All mood modes",
-              "Voice chat",
-              "Memory & context"
-            ].map((feature, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Check size={16} color="#8b5cf6" strokeWidth={3} />
-                <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{feature}</span>
+        {/* Perks */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+          {PERKS.map(({ icon: Icon, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(139,92,246,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Icon size={16} color="#a855f7" />
               </div>
-            ))}
-          </div>
-
-          <button
-            onClick={() => handleSubscribe("monthly")}
-            disabled={!!loadingPlan}
-            style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.05)", color: "white", fontWeight: 700, fontSize: 15,
-              cursor: loadingPlan ? "default" : "pointer", opacity: loadingPlan && loadingPlan !== "monthly" ? 0.5 : 1,
-              position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-            }}
-          >
-            {loadingPlan === "monthly" && <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />}
-            Start Monthly Plan
-          </button>
-        </div>
-
-        {/* Annual Card (Featured) */}
-        <div style={{
-          padding: 20, borderRadius: 20, position: "relative",
-          background: "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(219,39,119,0.15))",
-          border: "2px solid rgba(139,92,246,0.6)", boxShadow: "0 0 24px rgba(168,85,247,0.3)"
-        }}>
-          {/* BEST VALUE Badge */}
-          <div style={{
-            position: "absolute", top: 16, right: 16,
-            background: "linear-gradient(135deg, #7c3aed, #db2777)", borderRadius: 999,
-            padding: "6px 14px", display: "flex", alignItems: "center", gap: 4
-          }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "white" }}>BEST VALUE 🔥</span>
-          </div>
-
-          <h3 style={{ color: "white", fontWeight: 800, fontSize: 20, margin: "0 0 4px", paddingRight: 100 }}>Annual</h3>
-          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, margin: "0 0 16px" }}>Everything in Monthly, billed yearly</p>
-
-          <div style={{ marginBottom: 6 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <p style={{ color: "white", fontSize: 36, fontWeight: 900, margin: 0 }}>$59.99</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: 0 }}>/year</p>
-              <p style={{ color: "#a855f7", fontSize: 13, fontWeight: 700, margin: 0 }}>($5.00/mo)</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: 0 }}>{label}</p>
             </div>
+          ))}
+        </div>
+
+        {/* Plan selector */}
+        {loading ? (
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: 20 }}>
+            Loading plans...
           </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
 
-          <p style={{ color: "#22c55e", fontSize: 13, fontWeight: 700, margin: "0 0 16px" }}>🎉 Save 50% vs monthly</p>
-
-          <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            {[
-              "Unlimited messages",
-              "All companions",
-              "All mood modes",
-              "Voice chat",
-              "Memory & context",
-              "Priority updates"
-            ].map((feature, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Check size={16} color="#a855f7" strokeWidth={3} />
-                <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>{feature}</span>
+            {/* Annual */}
+            <button
+              onClick={() => setSelectedPlan('annual')}
+              style={{
+                width: '100%', padding: '16px', borderRadius: 16, textAlign: 'left',
+                background: selectedPlan === 'annual' ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                border: `2px solid ${selectedPlan === 'annual' ? 'rgba(124,58,237,0.7)' : 'rgba(255,255,255,0.08)'}`,
+                cursor: 'pointer', position: 'relative',
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: -10, right: 12,
+                background: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+                borderRadius: 999, padding: '2px 10px',
+              }}>
+                <span style={{ color: 'white', fontWeight: 800, fontSize: 10 }}>BEST VALUE 🔥</span>
               </div>
-            ))}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 700, fontSize: 16, margin: 0 }}>
+                    {annualProduct?.price || '$59.99'}
+                    <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}> /year</span>
+                    <span style={{ fontSize: 13, color: '#a78bfa', marginLeft: 8 }}>($5.00/mo)</span>
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '3px 0 0' }}>
+                    🎉 Save 50% vs monthly · Cancel anytime
+                  </p>
+                </div>
+                {selectedPlan === 'annual' && (
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={13} color="white" />
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* Monthly */}
+            <button
+              onClick={() => setSelectedPlan('monthly')}
+              style={{
+                width: '100%', padding: '16px', borderRadius: 16, textAlign: 'left',
+                background: selectedPlan === 'monthly' ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `2px solid ${selectedPlan === 'monthly' ? 'rgba(124,58,237,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ color: 'white', fontWeight: 600, fontSize: 16, margin: 0 }}>
+                    {monthlyProduct?.price || '$9.99'}
+                    <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}> /month</span>
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, margin: '3px 0 0' }}>
+                    Auto-renews monthly
+                  </p>
+                </div>
+                {selectedPlan === 'monthly' && (
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={13} color="white" />
+                  </div>
+                )}
+              </div>
+            </button>
           </div>
+        )}
 
-          <button
-            onClick={() => handleSubscribe("annual")}
-            disabled={!!loadingPlan}
-            style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              background: "linear-gradient(135deg, #7c3aed, #db2777)",
-              color: "white", fontWeight: 700, fontSize: 15,
-              cursor: loadingPlan ? "default" : "pointer", opacity: loadingPlan && loadingPlan !== "annual" ? 0.5 : 1,
-              boxShadow: "0 0 16px rgba(168,85,247,0.4)",
-              position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-            }}
-          >
-            {loadingPlan === "annual" && <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />}
-            Start Annual Plan 🚀
-          </button>
-        </div>
+        {/* Error */}
+        {error && (
+          <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>
+        )}
+
+        {/* Status */}
+        {statusMessage ? (
+          <p style={{ color: '#a78bfa', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{statusMessage}</p>
+        ) : null}
+
+        {/* Subscribe button */}
+        <button
+          onClick={handleSubscribe}
+          disabled={purchasing || loading}
+          style={{
+            width: '100%', padding: '16px',
+            background: 'linear-gradient(135deg, #7c3aed, #a855f7, #db2777)',
+            border: 'none', borderRadius: 18,
+            color: 'white', fontWeight: 800, fontSize: 17,
+            boxShadow: '0 0 28px rgba(168,85,247,0.45)',
+            cursor: purchasing || loading ? 'not-allowed' : 'pointer',
+            opacity: purchasing || loading ? 0.7 : 1,
+            marginBottom: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          {purchasing ? (
+            <>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              Processing...
+            </>
+          ) : (
+            selectedPlan === 'annual' ? 'Start Annual Plan 🚀' : 'Start Monthly Plan'
+          )}
+        </button>
+
+        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>
+          🔒 7-day free trial · Cancel anytime
+        </p>
+
+        {/* Restore */}
+        <button
+          onClick={restore}
+          style={{
+            width: '100%', padding: '12px',
+            background: 'none', border: 'none',
+            color: 'rgba(255,255,255,0.3)', fontSize: 13,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            cursor: 'pointer',
+          }}
+        >
+          <RotateCcw size={13} />
+          Restore Purchase
+        </button>
+
       </div>
 
-      {/* Trial & Cancel Info */}
-      <p style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 12, margin: "0 0 32px", padding: "0 16px" }}>
-        🔒 7-day free trial on all plans · Cancel anytime
-      </p>
-
-      {/* Footer Links */}
-      <div style={{
-        textAlign: "center", padding: "24px 16px",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 12 }}>
-          <button
-            onClick={() => window.open("https://unfiltrbyjavier.base44.com/PrivacyPolicy")}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-          >
-            Privacy Policy
-          </button>
-          <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
-          <button
-            onClick={() => window.open("https://unfiltrbyjavier.base44.com/")}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-          >
-            Terms of Use
-          </button>
-          <span style={{ color: "rgba(255,255,255,0.15)" }}>|</span>
-          <button
-            onClick={handleRestore}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-          >
-            Restore Purchases
-          </button>
-        </div>
-      </div>
-      </div>
-      <BottomTabs />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -1,88 +1,69 @@
-/**
- * IAP Bridge — sends purchase messages to the native iOS/Android layer
- * and handles receipt submission back to the server for verification.
- */
-
 import { base44 } from "@/api/base44Client";
 
-/** Low-level: send a payload to whichever native bridge is available */
-export function sendIAPMessage(payload) {
-  if (window.webkit?.messageHandlers?.storekit) {
-    window.webkit.messageHandlers.storekit.postMessage(payload);
-  } else if (window.webkit?.messageHandlers?.billing) {
-    window.webkit.messageHandlers.billing.postMessage(payload);
-  } else if (window.ReactNativeWebView) {
-    window.ReactNativeWebView.postMessage(JSON.stringify(payload));
-  } else {
-    window.parent?.postMessage(payload, "*");
+export const callNativeIAPWithCallback = async (iapConfig, callback) => {
+  console.log('Initiating native IAP with config:', JSON.stringify(iapConfig));
+  
+  if (!window.WTN) {
+    console.error('window.WTN is not available');
+    callback({ isSuccess: false, error: 'Native bridge not available' });
+    return;
   }
-}
+  
+  if (typeof window.WTN.inAppPurchase !== 'function') {
+    console.error('window.WTN.inAppPurchase is not a function.');
+    callback({ isSuccess: false, error: 'IAP not available' });
+    return;
+  }
 
-/**
- * Trigger a native IAP purchase and invoke a callback when the native
- * layer responds with purchase_success or purchase_error.
- *
- * @param {string} productId  - e.g. "com.huertas.unfiltr.premium.monthly"
- * @param {function} callback - called with (error, { platform, receiptData, productId, purchaseToken })
- * @returns {function} unsubscribe — call to remove the listener early
- */
-export function callNativeIAPWithCallback(productId, callback) {
-  const handler = async (event) => {
-    try {
-      const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-      if (data.action === "purchase_success") {
-        cleanup();
-        callback(null, data);
-      } else if (data.action === "purchase_error") {
-        cleanup();
-        callback(new Error(data.error || "Purchase failed"), null);
+  try {
+    let callbackCalled = false;
+    
+    window.WTN.inAppPurchase(iapConfig, (result) => {
+      if (callbackCalled) return;
+      callbackCalled = true;
+      console.log('Native IAP callback received:', JSON.stringify(result));
+      
+      if (!result.isSuccess && !result.receiptData && !result.purchaseToken) {
+        const errorStr = (result.error || '').toLowerCase();
+        const isCancelled = 
+          result.isCancelled === true ||
+          result.status === 'cancelled' ||
+          errorStr.includes('cancel') ||
+          errorStr.includes('user') ||
+          errorStr === '' ||
+          result.error === undefined;
+        
+        if (isCancelled) {
+          callback({ isSuccess: false, error: 'user_cancelled', isCancelled: true });
+          return;
+        }
       }
-    } catch {
-      // ignore unrelated messages
-    }
-  };
-
-  const cleanup = () => window.removeEventListener("message", handler);
-  window.addEventListener("message", handler);
-
-  // Fire the native purchase request
-  sendIAPMessage({ action: "subscribe", productId });
-
-  return cleanup; // caller can use this to cancel listening
-}
-
-/**
- * Submit a receipt/token to the server for verification and, on success,
- * update the user's profile to premium.
- *
- * @param {{ platform, receiptData, productId, purchaseToken }} purchaseData
- * @param {string} profileId - UserProfile ID to update on success
- * @returns {Promise<{ valid: boolean, plan: string }>}
- */
-export async function submitReceiptToServer(purchaseData, profileId) {
-  const res = await base44.functions.invoke("verifyPurchase", purchaseData);
-  const result = res.data;
-
-  if (result?.valid && profileId) {
-    await base44.entities.UserProfile.update(profileId, {
-      is_premium: true,
-      annual_plan: result.plan === "annual",
+      
+      callback(result);
     });
+    
+  } catch (error) {
+    console.error('Error calling native inAppPurchase function:', error);
+    callback({ isSuccess: false, error: error.message || 'Native call failed' });
   }
+};
 
-  return result;
-}
+export const submitReceiptToServer = async (receiptData) => {
+  console.log('Submitting receipt to server:', receiptData);
+  try {
+    const response = await base44.functions.invoke('handleAppleIAP', {
+      receipt: receiptData.receipt,
+      productId: receiptData.productId,
+    });
 
-/** Convenience: subscribe to a plan by name ("monthly" | "annual") */
-export function subscribeToPlan(plan) {
-  const productId =
-    plan === "annual"
-      ? "com.huertas.unfiltr.premium.annual"
-      : "com.huertas.unfiltr.premium.monthly";
-  sendIAPMessage({ action: "subscribe", productId });
-}
+    if (response.data.success) {
+      console.log('Receipt validated successfully.');
+    } else {
+      throw new Error(response.data.error || 'Receipt validation failed.');
+    }
 
-/** Convenience: restore previous purchases */
-export function restorePurchases() {
-  sendIAPMessage({ action: "restore" });
-}
+  } catch (error) {
+    console.error('Failed to submit receipt to server:', error);
+    alert('There was a problem verifying your purchase. Please contact support if the issue persists.');
+  }
+};
