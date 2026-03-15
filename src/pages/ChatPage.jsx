@@ -480,13 +480,11 @@ export default function ChatPage() {
 
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
 
-          {/* ── AVATAR + NAME SECTION (fixed height) ── */}
+          {/* ── AVATAR + NAME SECTION (transparent, floats on background) ── */}
           <div style={{
             flexShrink: 0, position: "relative",
             display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "8px 16px 0",
-            background: "rgba(0,0,0,0.25)", backdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            padding: "6px 16px 0",
           }}>
             {/* Controls row */}
             <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
