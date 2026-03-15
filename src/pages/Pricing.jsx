@@ -16,6 +16,7 @@ export default function Pricing() {
     } else if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
     } else {
+      // Web/simulator fallback only — should not appear in TestFlight
       console.log("IAP fallback:", productId);
     }
   };
