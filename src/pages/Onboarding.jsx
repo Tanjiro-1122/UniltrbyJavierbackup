@@ -6,7 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 
-const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester"];
+const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester", "javier1122"];
 const TESTER_CODE  = "unfiltr2026demo";
 const GRADIENT = "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)";
 
@@ -300,7 +300,7 @@ export default function Onboarding() {
               <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[3]}</p>
             </div>
             <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 100 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 160 }}>
                 {BACKGROUNDS.map(bg => (
                   <motion.button key={bg.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedBackground(bg.id)}
                     style={{
