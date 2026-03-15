@@ -478,7 +478,7 @@ export default function ChatPage() {
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
 
           {/* TOP BAR */}
           <div style={{
