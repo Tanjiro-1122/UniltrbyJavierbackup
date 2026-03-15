@@ -332,7 +332,13 @@ export default function ChatPage() {
         imageBase64: imgBase64,
       });
       const replyText = res.data?.reply || "...";
-      setMessages(m => [...m, { role: "assistant", content: replyText }]);
+      setMessages(m => {
+        const updated = [...m, { role: "assistant", content: replyText }];
+        // Save chat history locally (skip greeting at index 0, keep last 50 messages)
+        const toSave = updated.slice(1).slice(-50).map(msg => ({ role: msg.role, content: msg.content }));
+        localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
+        return updated;
+      });
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
