@@ -169,7 +169,8 @@ export default function Pricing() {
               width: "100%", padding: "14px", borderRadius: 14, border: "none",
               background: "linear-gradient(135deg, #7c3aed, #db2777)",
               color: "white", fontWeight: 700, fontSize: 15,
-              cursor: "pointer", boxShadow: "0 0 16px rgba(168,85,247,0.4)"
+              cursor: "pointer", boxShadow: "0 0 16px rgba(168,85,247,0.4)",
+              position: "relative", zIndex: 10
             }}
           >
             Start Annual Plan 🚀
