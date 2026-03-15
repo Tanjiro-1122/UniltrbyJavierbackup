@@ -15,7 +15,7 @@ export default function Pricing() {
     } else if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
     } else {
-      alert(`In-app purchase: ${productId}`);
+      console.log("IAP fallback:", productId);
     }
   };
 
@@ -26,7 +26,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="screen no-tabs" style={{ background: "#0a0a12", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+    <div className="screen" style={{ background: "#0a0a12" }}>
       {/* Header */}
       <div style={{ padding: "max(2rem, env(safe-area-inset-top, 2rem)) 20px 0", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
