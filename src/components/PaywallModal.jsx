@@ -33,20 +33,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
     return () => clearInterval(timer);
   }, [visible]);
 
-  const handleSubscribe = async () => {
-    const productId = planType === "annual"
-      ? "com.huertas.unfiltr.premium.annual"
-      : "com.huertas.unfiltr.premium.monthly";
-    if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
-    } else if (window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
-    } else if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ action: "subscribe", productId }));
-    } else {
-      window.parent?.postMessage({ action: "subscribe", productId }, "*");
-    }
-  };
+  const handleSubscribe = () => subscribeToPlan(planType);
 
   return (
     <AnimatePresence>
