@@ -439,7 +439,7 @@ export default function ChatPage() {
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
-    <AppShell tabs={false} style={{ alignItems: "center", justifyContent: "center" }}>
+    <AppShell tabs={true} style={{ alignItems: "center", justifyContent: "center" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
     </AppShell>
   );
