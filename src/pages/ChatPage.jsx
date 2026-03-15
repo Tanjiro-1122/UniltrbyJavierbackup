@@ -604,7 +604,11 @@ export default function ChatPage() {
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
-            background: "rgba(8,3,16,0.7)",
+            margin: "8px 10px 0",
+            background: "rgba(8,3,16,0.78)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 20,
+            boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
             overflow: "hidden",
           }}>
             <div style={{
@@ -612,7 +616,7 @@ export default function ChatPage() {
               overflowY: "auto", overflowX: "hidden",
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
-              padding: "10px 12px",
+              padding: "12px",
               display: "flex", flexDirection: "column", gap: 8,
             }}>
               {messages.map((msg, i) => (
