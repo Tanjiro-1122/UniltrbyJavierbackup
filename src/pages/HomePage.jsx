@@ -51,8 +51,21 @@ export default function HomePage() {
       <style>{`
         @keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:1} }
         @keyframes float   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
-        @keyframes glow    { 0%,100%{filter:drop-shadow(0 0 18px rgba(168,85,247,0.7))} 50%{filter:drop-shadow(0 0 36px rgba(168,85,247,1))} }
         @keyframes shimmer { 0%,100%{opacity:0.88} 50%{opacity:1} }
+        @keyframes logoSpin { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(360deg)} }
+        @keyframes holoGlow {
+          0%  { filter: drop-shadow(0 0 16px rgba(168,85,247,0.9)) drop-shadow(0 0 32px rgba(168,85,247,0.5)) brightness(1); }
+          25% { filter: drop-shadow(0 0 24px rgba(219,39,119,0.9)) drop-shadow(0 0 48px rgba(219,39,119,0.5)) brightness(1.15); }
+          50% { filter: drop-shadow(0 0 32px rgba(99,102,241,0.9)) drop-shadow(0 0 64px rgba(99,102,241,0.6)) brightness(1.2); }
+          75% { filter: drop-shadow(0 0 24px rgba(236,72,153,0.9)) drop-shadow(0 0 48px rgba(236,72,153,0.5)) brightness(1.15); }
+          100%{ filter: drop-shadow(0 0 16px rgba(168,85,247,0.9)) drop-shadow(0 0 32px rgba(168,85,247,0.5)) brightness(1); }
+        }
+        @keyframes holoSheen {
+          0%   { opacity: 0; transform: translateX(-100%) rotate(30deg); }
+          20%  { opacity: 0.6; }
+          40%  { opacity: 0; transform: translateX(200%) rotate(30deg); }
+          100% { opacity: 0; transform: translateX(200%) rotate(30deg); }
+        }
       `}</style>
 
       {/* ── SCROLLABLE CONTENT ── */}
