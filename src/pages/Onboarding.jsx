@@ -352,7 +352,8 @@ export default function Onboarding() {
                       border: `2px solid ${selectedBackground === bg.id ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
                       boxShadow: selectedBackground === bg.id ? "0 0 20px rgba(168,85,247,0.35)" : "none",
                       transition: "border-color 0.15s, box-shadow 0.15s",
-                      background: "none",
+                      background: "transparent",
+                      padding: 0,
                     }}
                   >
                     <img src={bg.url} alt={bg.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
