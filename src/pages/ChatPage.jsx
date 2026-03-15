@@ -480,11 +480,12 @@ export default function ChatPage() {
 
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
 
-          {/* ── AVATAR + NAME SECTION (transparent, floats on background) ── */}
+          {/* ── AVATAR + NAME SECTION (transparent, fixed above chat box) ── */}
           <div style={{
             flexShrink: 0, position: "relative",
             display: "flex", flexDirection: "column", alignItems: "center",
             padding: "6px 16px 0",
+            width: "100%",
           }}>
             {/* Controls row */}
             <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
@@ -524,7 +525,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 100, height: 100 }}>
+            <div style={{ position: "relative", width: 148, height: 148, marginTop: 2 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
@@ -538,8 +539,8 @@ export default function ChatPage() {
             </div>
 
             {/* Name + info */}
-            <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: "4px 0 0" }}>{companionDisplayName}</p>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "1px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
+            <p style={{ color: "white", fontWeight: 700, fontSize: 17, margin: "6px 0 0" }}>{companionDisplayName}</p>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
             {!isPremium ? (
               <button onClick={() => setShowPaywall(true)}
                 style={{ margin: "3px 0 8px", fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
