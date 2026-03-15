@@ -18,10 +18,9 @@ export default function BottomTabs() {
       style={{
         position: "fixed",
         bottom: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
+        left: 0,
+        right: 0,
         width: "100%",
-        maxWidth: 430,
         height: "calc(64px + env(safe-area-inset-bottom, 0px))",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         background: "rgba(10,6,20,0.96)",
