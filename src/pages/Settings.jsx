@@ -396,12 +396,11 @@ export default function Settings() {
             )}
           </div>
         </motion.div>
-      </div>
 
-      {/* Account Management */}
-      <motion.div className="sticky-bottom" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-        style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2, textAlign: "center" }}>Account Management</p>
+        {/* Account Management */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2, textAlign: "center" }}>Account Management</p>
         <button
           onClick={() => { setPauseSuccess(false); setShowPauseModal(true); }}
           style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, color: "rgba(255,255,255,0.45)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
