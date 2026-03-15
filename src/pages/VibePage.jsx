@@ -79,28 +79,12 @@ export default function VibePage() {
 
       {/* ── HEADER ── */}
       <div style={{
-        flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
-        padding: "0 16px 12px",
+        flexShrink: 0, padding: "0 16px 12px",
         paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
         position: "relative", zIndex: 1,
       }}>
-        <button
-          onClick={() => navigate("/")}
-          style={{
-            width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, cursor: "pointer", transition: "all 0.2s",
-          }}
-          onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.12)"}
-          onMouseLeave={e => e.target.style.background = "rgba(255,255,255,0.08)"}
-        >
-          <ChevronLeft size={20} color="white" />
-        </button>
-        <div>
-          <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
-          <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
-        </div>
+        <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
+        <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
       </div>
 
       {/* ── VIBE CARDS ── */}
