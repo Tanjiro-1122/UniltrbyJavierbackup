@@ -48,19 +48,36 @@ export default function Onboarding() {
           personality: companionData.tagline,
         });
 
-        const userProfile = await base44.entities.UserProfile.create({
-          display_name:  displayName,
-          companion_id:  companion.id,
-          background_id: selectedBackground,
-          premium:       isTesterAccount,
-          is_premium:    isTesterAccount,
-          session_memory: isTesterAccount ? [
-            {
-              date: "Mar 14, 2026",
-              summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
-            }
-          ] : [],
-        });
+        let userProfile;
+        if (pendingProfileId) {
+          userProfile = await base44.entities.UserProfile.update(pendingProfileId, {
+            display_name:  displayName,
+            companion_id:  companion.id,
+            background_id: selectedBackground,
+            premium:       isTesterAccount,
+            is_premium:    isTesterAccount,
+            session_memory: isTesterAccount ? [
+              {
+                date: "Mar 14, 2026",
+                summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
+              }
+            ] : [],
+          });
+        } else {
+          userProfile = await base44.entities.UserProfile.create({
+            display_name:  displayName,
+            companion_id:  companion.id,
+            background_id: selectedBackground,
+            premium:       isTesterAccount,
+            is_premium:    isTesterAccount,
+            session_memory: isTesterAccount ? [
+              {
+                date: "Mar 14, 2026",
+                summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
+              }
+            ] : [],
+          });
+        }
 
         localStorage.setItem("userProfileId",  userProfile.id);
         localStorage.setItem("companionId",     companion.id);
