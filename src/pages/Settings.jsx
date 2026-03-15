@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3 } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
+import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
 import BottomTabs from "@/components/BottomTabs";
 import { base44 } from "@/api/base44Client";
@@ -364,6 +365,17 @@ export default function Settings() {
             })}
           </div>
           {savingBackground && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
+        </motion.div>
+
+        {/* Notifications */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+            Notifications
+          </p>
+          <NotificationSettings
+            profileId={localStorage.getItem("userProfileId")}
+            initialEnabled={userProfile?.daily_checkins_enabled}
+          />
         </motion.div>
 
         {/* Referral */}
