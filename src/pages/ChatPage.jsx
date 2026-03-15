@@ -9,7 +9,6 @@ import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
-import OnboardingTutorial from "@/components/OnboardingTutorial";
 import BottomTabs from "@/components/BottomTabs";
 
 const VIBES_SUFFIX = {
@@ -44,7 +43,6 @@ export default function ChatPage() {
   const [showStreakBanner, setShowStreakBanner] = useState(false);
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
-  const [showTutorial, setShowTutorial]       = useState(false);
   const [showRatingPrompt, setShowRatingPrompt] = useState(false);
   const [shareCard, setShareCard]             = useState(null); // { message, mood }
 
@@ -135,10 +133,6 @@ export default function ChatPage() {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
             } catch { /* use default */ }
-          }
-          // Show tutorial for new users
-          if (!profile?.onboarding_complete) {
-            setShowTutorial(true);
           }
         } catch { /* free tier */ }
       }
@@ -669,21 +663,14 @@ export default function ChatPage() {
       )}
 
       <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        onSubscribe={handleSubscribe}
-        onRestore={handleRestore}
-        isAndroid={/android/i.test(navigator.userAgent)}
-      />
+         visible={showPaywall}
+         onClose={() => setShowPaywall(false)}
+         onSubscribe={handleSubscribe}
+         onRestore={handleRestore}
+         isAndroid={/android/i.test(navigator.userAgent)}
+       />
 
-      {showTutorial && (
-        <OnboardingTutorial
-          profileId={localStorage.getItem("userProfileId")}
-          onComplete={() => setShowTutorial(false)}
-        />
-      )}
-
-      <RatingPromptModal
+       <RatingPromptModal
         visible={showRatingPrompt}
         onClose={() => setShowRatingPrompt(false)}
       />
