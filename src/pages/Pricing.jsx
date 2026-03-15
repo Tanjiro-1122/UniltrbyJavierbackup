@@ -11,13 +11,17 @@ export default function Pricing() {
       ? "com.huertas.unfiltr.premium.annual"
       : "com.huertas.unfiltr.premium.monthly";
     
-    if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
-    } else if (window.webkit?.messageHandlers?.storekit) {
+    // Try all possible native bridges
+    if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
+    } else if (window.webkit?.messageHandlers?.billing) {
+      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
+    } else if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ action: "subscribe", productId }));
     } else {
-      // Web/simulator fallback only — should not appear in TestFlight
-      console.log("IAP fallback:", productId);
+      // Last resort: post to parent
+      window.parent?.postMessage({ action: "subscribe", productId }, "*");
+      console.log("IAP bridge not found for:", productId);
     }
   };
 
