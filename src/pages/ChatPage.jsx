@@ -478,7 +478,7 @@ export default function ChatPage() {
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", maxHeight: "100%", overflow: "hidden" }}>
 
           {/* ── AVATAR + NAME SECTION (transparent, fixed above chat box) ── */}
           <div style={{
