@@ -7,37 +7,7 @@ import AppShell from "@/components/shell/AppShell";
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
-
-  // Auto-redirect returning premium users straight to chat
-  useEffect(() => {
-    const checkReturningUser = async () => {
-      const profileId = localStorage.getItem("userProfileId");
-      const companion = localStorage.getItem("unfiltr_companion");
-      const env = localStorage.getItem("unfiltr_env");
-
-      if (profileId && companion && env) {
-        try {
-          const profile = await base44.entities.UserProfile.get(profileId);
-          if (profile?.is_premium || profile?.premium) {
-            localStorage.setItem("unfiltr_welcome_back", "1");
-            navigate("/vibe", { replace: true });
-            return;
-          }
-        } catch { /* profile not found, show homepage */ }
-      }
-      setChecking(false);
-    };
-    checkReturningUser();
-  }, []);
-
-  if (checking) {
-    return (
-      <AppShell style={{ alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-      </AppShell>
-    );
-  }
+  const [checking, setChecking] = useState(false);
 
   return (
     <AppShell
