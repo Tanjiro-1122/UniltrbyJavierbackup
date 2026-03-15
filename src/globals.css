@@ -6,6 +6,11 @@
   --background: 6 2 15;
   --tab-bar-h: 64px;  /* height of BottomTabs (excl. safe-area) */
   color-scheme: dark;
+  /* Ensure safe-area vars are available */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 *, *::before, *::after {
