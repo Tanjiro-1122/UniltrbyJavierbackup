@@ -75,35 +75,28 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold text-white mb-3">7. Changes to This Policy</h2>
-            <p>
-              We may update this privacy policy from time to time. We will notify you of any material changes via the app or email.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-white mb-2">8. Children's Privacy</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">7. Children's Privacy</h2>
             <p className="text-sm">
               Unfiltr is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us at support@unfiltr.app and we will delete it promptly.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">9. Data Retention</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">8. Data Retention</h2>
             <p className="text-sm">
               We retain your data for as long as your account is active. Chat messages are stored to maintain conversation context. When you delete your account, all associated data (profile, messages, companion data) is permanently deleted within 24 hours.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">10. Changes to This Policy</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">9. Changes to This Policy</h2>
             <p className="text-sm">
               We may update this privacy policy from time to time. We will notify you of any material changes via the app or email.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">11. Contact Us</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">10. Contact Us</h2>
             <p className="text-sm">
               If you have questions about this privacy policy, please contact us at support@unfiltr.app
             </p>
