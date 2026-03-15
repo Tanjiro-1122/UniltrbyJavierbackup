@@ -83,9 +83,7 @@ export default function Onboarding() {
         localStorage.setItem("companionId",     companion.id);
 
         const finalName = companionNickname.trim() || companionData.name;
-        if (companionNickname.trim()) {
-          localStorage.setItem("unfiltr_companion_nickname", companionNickname.trim());
-        }
+        localStorage.setItem("unfiltr_companion_nickname", companionNickname.trim());
 
         localStorage.setItem("unfiltr_companion", JSON.stringify({
           id:          companionData.id,
