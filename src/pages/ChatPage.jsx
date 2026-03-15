@@ -9,7 +9,7 @@ import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
-import BottomTabs from "@/components/BottomTabs";
+import AppShell from "@/components/shell/AppShell";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -439,10 +439,9 @@ export default function ChatPage() {
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
-    <div className="screen" style={{ alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+    <AppShell tabs={false} style={{ alignItems: "center", justifyContent: "center" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    </AppShell>
   );
 
   const companionDisplayName = companion.displayName || companion.name;
@@ -459,8 +458,8 @@ export default function ChatPage() {
         onChange={handleFileChange}
       />
 
-      <div
-        className="screen"
+      <AppShell
+        tabs={false}
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
@@ -672,7 +671,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            <div style={{ flexShrink: 0, padding: "6px 16px", paddingBottom: "calc(64px + max(6px, env(safe-area-inset-bottom, 6px)))" }}>
+            <div style={{ flexShrink: 0, padding: "6px 16px", paddingBottom: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "8px 12px" }}>
                 <button onPointerDown={startListening} onPointerUp={stopListening}
                   style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
@@ -705,7 +704,7 @@ export default function ChatPage() {
           </div>
 
         </div>
-      </div>
+      </AppShell>
 
       {/* PHOTO DISCLAIMER MODAL */}
       {showPhotoDisclaimer && (
@@ -751,7 +750,6 @@ export default function ChatPage() {
         companionName={companionDisplayName}
         mood={shareCard?.mood || "neutral"}
       />
-      <BottomTabs />
     </>
   );
 }
