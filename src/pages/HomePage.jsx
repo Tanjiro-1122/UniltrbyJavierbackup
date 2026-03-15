@@ -67,8 +67,9 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "space-between",
         textAlign: "center",
+        overflow: "hidden",
         padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))"
-      }} className="my-12 rounded-xl">
+      }}>
         <div style={{
           width: "100%",
           display: "flex",
