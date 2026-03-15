@@ -28,8 +28,10 @@ html {
   color-scheme: dark;
   overscroll-behavior: none;
   overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: auto;
-  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: none;
+  touch-action: none;
+  position: fixed;
+  width: 100%;
 }
 
 body {
@@ -47,8 +49,8 @@ body {
   bottom: 0;
   overscroll-behavior: none;
   overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: auto;
-  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: none;
+  touch-action: none;
   color-scheme: dark;
 }
 
