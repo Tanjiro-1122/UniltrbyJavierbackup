@@ -38,8 +38,8 @@ export default function BottomTabs() {
       {TABS.map(({ path, label, icon: Icon }) => {
         const isActive =
           path === "/"
-            ? location.pathname === "/" || location.pathname === "/HomePage" || location.pathname.startsWith("/HomePage")
-            : location.pathname === path || location.pathname.startsWith(path);
+            ? location.pathname === "/"
+            : location.pathname === path;
 
         return (
           <button
