@@ -59,18 +59,21 @@ export default function HomePage() {
         zIndex: 1,
         width: "100%",
         maxWidth: 400,
-        height: "100%",
+        flex: 1,
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: "space-between",
         textAlign: "center",
-        padding: "6px 20px 12px",
+        padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))",
       }}>
         <div style={{
           width: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          flexShrink: 0,
         }}>
           {/* Logo */}
           <div style={{
@@ -174,7 +177,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div style={{ width: "100%", marginTop: "auto", paddingTop: 18 }}>
+        <div style={{ width: "100%", flexShrink: 0, paddingTop: 18 }}>
           <AppFooter dark />
         </div>
       </div>
