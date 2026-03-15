@@ -228,7 +228,7 @@ export default function Onboarding() {
             </div>
             <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, paddingBottom: 8 }}>
-                {COMPANIONS.map(c => (
+                {COMPANIONS.filter(c => !c.testerOnly || isTesterAccount).map(c => (
                   <motion.button key={c.id} whileTap={{ scale: 0.94 }}
                     onClick={() => { setSelectedCompanion(c.id); setStep(2); }}
                     style={{
