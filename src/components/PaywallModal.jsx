@@ -34,8 +34,8 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
 
   const handleSubscribe = async () => {
     const productId = planType === "annual"
-      ? "com.unfiltr.premium.annual"
-      : "com.unfiltr.premium.monthly";
+      ? "com.huertas.unfiltr.premium.annual"
+      : "com.huertas.unfiltr.premium.monthly";
     const price = planType === "annual" ? "$59.99/year" : "$9.99/month";
     if (isAndroid && window.webkit?.messageHandlers?.billing) {
       window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId, price });

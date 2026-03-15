@@ -8,8 +8,8 @@ export default function Pricing() {
 
   const handleSubscribe = (plan) => {
     const productId = plan === "annual"
-      ? "com.unfiltr.premium.annual"
-      : "com.unfiltr.premium.monthly";
+      ? "com.huertas.unfiltr.premium.annual"
+      : "com.huertas.unfiltr.premium.monthly";
     
     if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
       window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });

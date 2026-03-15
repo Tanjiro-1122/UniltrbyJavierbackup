@@ -386,9 +386,9 @@ export default function ChatPage() {
   /* ─── IAP ─── */
   const handleSubscribe = () => {
     if (/android/i.test(navigator.userAgent) && window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
+      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId: "com.huertas.unfiltr.premium.monthly" });
     } else if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
+      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.huertas.unfiltr.premium.monthly" });
     } else {
       alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)");
     }
