@@ -179,7 +179,7 @@ export default function Pricing() {
       <div style={{
         textAlign: "center", padding: "24px 16px",
         borderTop: "1px solid rgba(255,255,255,0.06)",
-        marginBottom: "max(24px, env(safe-area-inset-bottom, 24px))"
+        paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))"
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 12 }}>
           <button
