@@ -16,7 +16,11 @@ export default function HomePage() {
   return (
     <div
       className="screen"
-      style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}
+      style={{
+        background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
       {/* ── STAR FIELD ── */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -75,13 +79,15 @@ export default function HomePage() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="scroll-area"
         style={{
+          flex: 1,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           textAlign: "center",
           position: "relative",
           zIndex: 1,
-          padding: "max(2.5rem, env(safe-area-inset-top, 2.5rem)) 24px 0",
+          padding: "max(2.5rem, env(safe-area-inset-top, 2.5rem)) 24px max(2rem, env(safe-area-inset-bottom, 2rem))",
         }}
       >
         {/* Logo */}
