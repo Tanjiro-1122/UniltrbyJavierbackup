@@ -415,7 +415,9 @@ export default function Settings() {
           <Trash2 size={16} />
           Delete My Account
         </button>
-      </motion.div>
+        </motion.div>
+
+      </div>
 
       {/* Paywall */}
       <BottomTabs />
