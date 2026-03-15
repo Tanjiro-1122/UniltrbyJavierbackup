@@ -26,6 +26,10 @@ html {
   background: #06020f !important;
   background-color: #06020f !important;
   color-scheme: dark;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: auto;
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -42,6 +46,9 @@ body {
   right: 0;
   bottom: 0;
   overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: auto;
+  touch-action: pan-x pan-y;
   color-scheme: dark;
 }
 
