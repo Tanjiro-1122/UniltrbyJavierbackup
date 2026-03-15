@@ -63,7 +63,7 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", paddingBottom: onNext ? "104px" : 0 }}>
         {children}
       </div>
 
