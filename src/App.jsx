@@ -85,7 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/"                     element={<HomePage />} />
         <Route path="/onboarding"           element={<Onboarding />} />
         <Route path="/vibe"                 element={<VibePage />} />
-        <Route path="/chat"                 element={<ChatPage />} />
+        <Route path="/ChatPage"             element={<ChatPage />} />
         <Route path="/settings"             element={<Settings />} />
         <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard"       element={<AdminDashboard />} />
