@@ -181,6 +181,25 @@ export default function ChatPage() {
       }`,
     };
 
+    // Check for welcome-back flag (premium returning users)
+    const welcomeBack = localStorage.getItem("unfiltr_welcome_back");
+    if (welcomeBack) {
+      localStorage.removeItem("unfiltr_welcome_back");
+      const saved = localStorage.getItem("unfiltr_chat_history");
+      let history = [];
+      try { history = saved ? JSON.parse(saved) : []; } catch { /* ignore */ }
+      const welcomeMsg = {
+        role: "assistant",
+        content: `Hey, welcome back! 💜 I remember our last chat. Ready to pick up where we left off?`,
+      };
+      if (history.length > 0) {
+        setMessages([welcomeMsg, ...history]);
+      } else {
+        setMessages([welcomeMsg]);
+      }
+      return;
+    }
+
     // Load chat history from localStorage
     const saved = localStorage.getItem("unfiltr_chat_history");
     if (saved) {

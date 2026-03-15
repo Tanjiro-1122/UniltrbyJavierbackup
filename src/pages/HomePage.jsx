@@ -2,16 +2,52 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, Mic, MessageCircle, MessageSquare } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import AppFooter from "@/components/AppFooter";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [loaded, setLoaded] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // Auto-redirect returning premium users straight to chat
+  useEffect(() => {
+    const checkReturningUser = async () => {
+      const profileId = localStorage.getItem("userProfileId");
+      const companion = localStorage.getItem("unfiltr_companion");
+      const env = localStorage.getItem("unfiltr_env");
+
+      if (profileId && companion && env) {
+        try {
+          const profile = await base44.entities.UserProfile.get(profileId);
+          if (profile?.is_premium || profile?.premium) {
+            // Set a flag so ChatPage shows a "welcome back" greeting
+            localStorage.setItem("unfiltr_welcome_back", "1");
+            navigate("/vibe", { replace: true });
+            return;
+          }
+        } catch { /* profile not found, show homepage */ }
+      }
+      setChecking(false);
+    };
+    checkReturningUser();
+  }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 300);
-    return () => clearTimeout(t);
-  }, []);
+    if (!checking) {
+      const t = setTimeout(() => setLoaded(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [checking]);
+
+  if (checking) {
+    return (
+      <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div
