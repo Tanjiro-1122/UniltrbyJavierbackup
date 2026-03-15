@@ -1,68 +1,83 @@
 /* ══════════════════════════════════════════════════════════
-   UNFILTR — GLOBAL CSS  (mobile-only, simplified)
+   UNFILTR — GLOBAL MOBILE CSS (FIXED)
    ══════════════════════════════════════════════════════════ */
 
+/* ── 0. Override Tailwind white background — must come first ── */
 :root {
-  --background: 6 2 15;
-  --tab-bar-h: 64px;  /* height of BottomTabs (excl. safe-area) */
+  --background: 6 2 15; /* #06020f in RGB */
   color-scheme: dark;
-  /* Ensure safe-area vars are available */
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-  --sar: env(safe-area-inset-right, 0px);
 }
 
+/* ── 1. Base reset ── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-}
-
-html, body, #root {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background: #06020f;
-  overflow: hidden;
-}
-
-html {
-  color-scheme: dark;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-#root {
-  position: fixed;
-  inset: 0;
+html {
+  height: 100%;
+  min-height: 100%;
+  background: #06020f !important;
+  background-color: #06020f !important;
+  color-scheme: dark;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
-/* ── AppShell — full-screen page wrapper ── */
-.app-shell {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+body {
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #06020f !important;
+  background-color: #06020f !important;
+  color-scheme: dark;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #06020f !important;
+  background-color: #06020f !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 2. .screen — outermost wrapper for every page ── */
+.screen {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  /* dvh fills the actual visible area including Safari chrome */
+  height: 100dvh;
+  height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Account for bottom tab bar (64px) + safe area */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
-  /* Reserve space for BottomTabs + safe-area bottom */
-  padding-bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 1;
 }
 
-/* Pages without tabs — no bottom padding at all (pages handle their own safe-area) */
-.app-shell.no-tabs {
-  padding-bottom: 0;
+/* Pages that have NO bottom tabs */
+.screen.no-tabs {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── Scrollable content area ── */
+/* ── 3. .scroll-area ── */
 .scroll-area {
   flex: 1;
   min-height: 0;
@@ -72,8 +87,39 @@ html {
   overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  will-change: scroll-position;
 }
-.scroll-area::-webkit-scrollbar { display: none; }
+
+.scroll-area::-webkit-scrollbar { 
+  display: none; 
+}
+
+/* Ensure content inside scroll-area flows properly */
+.scroll-area > * {
+  width: 100%;
+}
+
+/* ── Legacy .app-shell support ── */
+.app-shell {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  background: #06020f;
+  z-index: 1;
+}
+
+.app-shell.no-tabs {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* ── Text selection ── */
 * {
