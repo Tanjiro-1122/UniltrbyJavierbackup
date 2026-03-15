@@ -167,14 +167,17 @@ export default function Pricing() {
 
           <button
             onClick={() => handleSubscribe("annual")}
+            disabled={!!loadingPlan}
             style={{
               width: "100%", padding: "14px", borderRadius: 14, border: "none",
               background: "linear-gradient(135deg, #7c3aed, #db2777)",
               color: "white", fontWeight: 700, fontSize: 15,
-              cursor: "pointer", boxShadow: "0 0 16px rgba(168,85,247,0.4)",
-              position: "relative", zIndex: 10
+              cursor: loadingPlan ? "default" : "pointer", opacity: loadingPlan && loadingPlan !== "annual" ? 0.5 : 1,
+              boxShadow: "0 0 16px rgba(168,85,247,0.4)",
+              position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
             }}
           >
+            {loadingPlan === "annual" && <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />}
             Start Annual Plan 🚀
           </button>
         </div>
