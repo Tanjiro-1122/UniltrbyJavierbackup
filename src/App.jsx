@@ -1,15 +1,13 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import BottomTabs from '@/components/BottomTabs';
 import SplashScreen from '@/components/SplashScreen';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
@@ -31,12 +29,44 @@ const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDa
 const HIDE_FEEDBACK_BTN_ON = ["/feedback", "/admin/feedback", "/onboarding"];
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, authError, navigateToLogin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [profileChecked, setProfileChecked] = useState(false);
 
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const showFeedbackBtn = !HIDE_FEEDBACK_BTN_ON.some(p => location.pathname.startsWith(p));
 
+  // On app load, check if user already has a profile — if so, skip onboarding
+  useEffect(() => {
+    const checkProfile = async () => {
+      try {
+        const profiles = await base44.entities.UserProfile.list();
+        if (profiles && profiles.length > 0) {
+          const profile = profiles[0];
+          // Restore localStorage so the rest of the app works
+          localStorage.setItem("userProfileId", profile.id);
+          if (profile.companion_id) {
+            localStorage.setItem("companionId", profile.companion_id);
+          }
+          // If user lands on onboarding or root, redirect to home
+          if (location.pathname === "/onboarding" || location.pathname === "/") {
+            navigate("/", { replace: true });
+          }
+        }
+      } catch {
+        // No profile found — onboarding flow will handle creation
+      } finally {
+        setProfileChecked(true);
+      }
+    };
+
+    if (!authError) {
+      checkProfile();
+    } else {
+      setProfileChecked(true);
+    }
+  }, []);
 
   if (authError) {
     if (authError.type === 'user_not_registered') {
@@ -46,6 +76,8 @@ const AuthenticatedApp = () => {
       return null;
     }
   }
+
+  if (!profileChecked) return null;
 
   return (
     <>
