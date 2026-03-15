@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
 import FeedbackPage from './pages/FeedbackPage';
 import FeedbackAdmin from './pages/admin/FeedbackAdmin';
 import Pricing from './pages/Pricing';
@@ -24,7 +25,7 @@ import FeedbackButton from './components/FeedbackButton';
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/chat",
   "/AdminAvatarProcessor", "/AdminDashboard",
-  "/PrivacyPolicy", "/admin/feedback", "/feedback"
+  "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback"
 ];
 
 // Pages where the floating feedback button should NOT appear
@@ -78,6 +79,7 @@ const AuthenticatedApp = () => {
         <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
         <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/TermsOfUse" element={<TermsOfUse />} />
         <Route path="/Pricing" element={<Pricing />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/admin/feedback" element={<FeedbackAdmin />} />
