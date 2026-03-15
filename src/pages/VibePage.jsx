@@ -158,7 +158,6 @@ export default function VibePage() {
       {/* ── CTA ── */}
       <div style={{
         flexShrink: 0, padding: "12px 16px",
-        paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
         position: "relative", zIndex: 1,
       }}>
         <button
