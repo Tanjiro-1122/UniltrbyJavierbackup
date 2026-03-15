@@ -299,8 +299,8 @@ export default function Onboarding() {
               <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[3]}</h2>
               <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[3]}</p>
             </div>
-            <div className="scroll-area" style={{ padding: "4px 16px 8px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 160 }}>
+            <div className="scroll-area" style={{ flex: 1, minHeight: 0, padding: "4px 16px 8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 20 }}>
                 {BACKGROUNDS.map(bg => (
                   <motion.button key={bg.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedBackground(bg.id)}
                     style={{
