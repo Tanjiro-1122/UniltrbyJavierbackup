@@ -4,38 +4,31 @@ import OpenAI from 'npm:openai';
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 // OpenAI TTS voices: alloy | echo | fable | onyx | nova | shimmer
-// Assigned per companion personality & gender
-const VOICE_MAP = {
-  luna:   "nova",     // warm, soft female
-  kai:    "onyx",     // bold, deep male
-  nova:   "shimmer",  // bright, energetic female
-  river:  "fable",    // calm, gentle neutral
-  ash:    "echo",     // cool, steady male
-  sakura: "shimmer",  // light, cheerful female
-  ryuu:   "onyx",     // intense, serious male
-  sage:   "nova",     // wise, warm neutral
-  zara:   "alloy",    // confident, sharp female
-  silk:   "nova",     // smooth, sultry female
-  mike:   "echo",     // casual, chill male
+// Fallback mapping by gender
+const VOICE_BY_GENDER = {
+  male:    ["onyx", "echo", "alloy"],
+  female:  ["nova", "shimmer"],
+  neutral: ["fable"],
 };
 
 Deno.serve(async (req) => {
   try {
-    const { text, companionId } = await req.json();
+    const { text, companionId, voiceGender } = await req.json();
 
     if (!text || text.trim().length === 0) {
       return Response.json({ error: 'No text provided' }, { status: 400 });
     }
 
-    // Normalize companionId to lowercase for lookup
-    const id = (companionId || "").toLowerCase();
-    const voice = VOICE_MAP[id] || "nova";
+    // Select voice based on gender preference (voiceGender from Companion entity)
+    const gender = voiceGender || "female";
+    const voiceList = VOICE_BY_GENDER[gender] || VOICE_BY_GENDER.female;
+    const voice = voiceList[0];
 
     const mp3 = await openai.audio.speech.create({
-      model: "tts-1",      // fastest model
+      model: "tts-1",
       voice,
-      input: text.slice(0, 400),  // shorter = faster
-      speed: 1.05,         // slightly faster speech, feels snappier
+      input: text.slice(0, 400),
+      speed: 1.1,  // Slightly faster for snappier feel
     });
 
     const buffer = await mp3.arrayBuffer();

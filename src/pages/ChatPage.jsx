@@ -215,21 +215,26 @@ export default function ChatPage() {
   };
 
   /* ─── TTS ─── */
-  const speakText = async (text, companionId) => {
+  const speakText = async (text, companionId, voiceGender = "female") => {
     if (!voiceEnabled) return;
     try {
-      setIsSpeaking(true); triggerAnim("talk", 99999);
-      const res    = await base44.functions.invoke("tts", { text, companionId });
+      setIsSpeaking(true); 
+      triggerAnim("talk", 99999);
+      // Call TTS with voiceGender preference
+      const res = await base44.functions.invoke("tts", { text, companionId, voiceGender });
       const base64 = res.data?.audio;
       if (!base64) throw new Error("no audio");
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      const url   = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
+      const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
       if (audioRef.current) { audioRef.current.pause(); URL.revokeObjectURL(audioRef.current.src); }
       const audio = new Audio(url);
       audioRef.current = audio;
       audio.onended = audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
       await audio.play();
-    } catch { setIsSpeaking(false); setAvatarState("idle"); }
+    } catch { 
+      setIsSpeaking(false); 
+      setAvatarState("idle"); 
+    }
   };
 
   /* ─── PHOTO ─── */
@@ -323,7 +328,11 @@ export default function ChatPage() {
 
       incrementCount();
       spawnParticles();
-      speakText(replyText, companion.id);
+      // Get voice_gender from companion DB if available
+      const voiceGender = companionDbId 
+        ? (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female"
+        : "female";
+      speakText(replyText, companion.id, voiceGender);
 
       // Rating prompt after 10th message
       const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
