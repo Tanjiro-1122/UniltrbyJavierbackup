@@ -494,7 +494,7 @@ export default function Settings() {
             <motion.div
               initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[430px] bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
+              className="w-full bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
               style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}
             >
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
@@ -563,7 +563,7 @@ export default function Settings() {
             <motion.div
               initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[430px] bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
+              className="w-full bg-[#1a0a2e] border border-white/10 rounded-t-3xl px-6 pt-6"
               style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}
             >
               <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-6" />

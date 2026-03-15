@@ -49,7 +49,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", damping: 24, stiffness: 260 }}
-            className="w-full max-w-[430px] border border-white/10 rounded-t-3xl px-6 pt-6"
+            className="w-full border border-white/10 rounded-t-3xl px-6 pt-6"
             style={{
               background: "linear-gradient(180deg, #1a0a35 0%, #0d0520 100%)",
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
