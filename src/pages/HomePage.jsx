@@ -147,7 +147,16 @@ export default function HomePage() {
 
         {/* Secondary CTA */}
         <button
-          onClick={() => navigate("/ChatPage")}
+          onClick={() => {
+            const profileId = localStorage.getItem("userProfileId");
+            const companion = localStorage.getItem("unfiltr_companion");
+            const env = localStorage.getItem("unfiltr_env");
+            if (profileId && companion && env) {
+              navigate("/vibe");
+            } else {
+              navigate("/Onboarding");
+            }
+          }}
           style={{
             width: "100%", padding: "13px 0",
             borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
