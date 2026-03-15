@@ -343,7 +343,6 @@ export default function Onboarding() {
               overscrollBehavior: "contain",
               padding: "4px 16px 120px",
               position: "relative",
-              zIndex: 2,
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
