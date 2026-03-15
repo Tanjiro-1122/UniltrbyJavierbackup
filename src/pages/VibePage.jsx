@@ -86,7 +86,7 @@ export default function VibePage() {
         position: "relative", zIndex: 1,
       }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
           style={{
             width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)",
             background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)",

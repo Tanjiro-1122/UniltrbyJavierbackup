@@ -73,9 +73,9 @@ body {
   padding-bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom, 0px));
 }
 
-/* Pages without tabs — just handle safe-area */
+/* Pages without tabs — no bottom padding at all (pages handle their own safe-area) */
 .app-shell.no-tabs {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: 0;
 }
 
 /* ── Scrollable content area ── */
