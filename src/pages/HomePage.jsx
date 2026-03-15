@@ -12,28 +12,28 @@ export default function HomePage() {
   return (
     <AppShell
       bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
-      style={{ alignItems: "center", justifyContent: "flex-start" }}
-    >
+      style={{ alignItems: "center", justifyContent: "flex-start" }}>
+
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-        {Array.from({ length: 60 }).map((_, i) => (
-          <div key={i} style={{
-            position: "absolute",
-            width: Math.random() * 2 + 0.5,
-            height: Math.random() * 2 + 0.5,
-            borderRadius: "50%",
-            background: "white",
-            top: Math.random() * 100 + "%",
-            left: Math.random() * 100 + "%",
-            opacity: Math.random() * 0.6 + 0.1,
-            animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-            animationDelay: Math.random() * 4 + "s",
-          }} />
-        ))}
+        {Array.from({ length: 60 }).map((_, i) =>
+        <div key={i} style={{
+          position: "absolute",
+          width: Math.random() * 2 + 0.5,
+          height: Math.random() * 2 + 0.5,
+          borderRadius: "50%",
+          background: "white",
+          top: Math.random() * 100 + "%",
+          left: Math.random() * 100 + "%",
+          opacity: Math.random() * 0.6 + 0.1,
+          animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
+          animationDelay: Math.random() * 4 + "s"
+        }} />
+        )}
         <div style={{
           position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)",
           width: 380, height: 380, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)"
         }} />
       </div>
 
@@ -67,21 +67,21 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "space-between",
         textAlign: "center",
-        padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))",
-      }}>
+        padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))"
+      }} className="my-12 rounded-xl">
         <div style={{
           width: "100%",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          flexShrink: 0,
+          flexShrink: 0
         }}>
           {/* Logo */}
           <div style={{
             position: "relative",
             width: 156, height: 156,
             marginBottom: 10,
-            flexShrink: 0,
+            flexShrink: 0
           }}>
             <div style={{ position: "relative", zIndex: 1, width: 156, height: 156, borderRadius: "20%", overflow: "hidden" }}>
               <img
@@ -90,14 +90,14 @@ export default function HomePage() {
                 style={{
                   width: "100%", height: "100%",
                   objectFit: "contain",
-                  animation: "holoGlow 4s ease-in-out infinite",
-                }}
-              />
+                  animation: "holoGlow 4s ease-in-out infinite"
+                }} />
+
               <div style={{
                 position: "absolute", inset: 0,
                 background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
                 animation: "holoSheen 3s ease-in-out infinite",
-                pointerEvents: "none",
+                pointerEvents: "none"
               }} />
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function HomePage() {
           <h1 style={{
             fontSize: 28, fontWeight: 900, color: "white",
             margin: "0 0 2px",
-            textShadow: "0 0 30px rgba(168,85,247,0.9), 0 2px 8px rgba(0,0,0,0.8)",
+            textShadow: "0 0 30px rgba(168,85,247,0.9), 0 2px 8px rgba(0,0,0,0.8)"
           }}>
             Unfiltr By Javier
           </h1>
@@ -120,24 +120,24 @@ export default function HomePage() {
 
           <div style={{
             display: "flex", gap: 10, width: "100%", marginBottom: 18,
-            justifyContent: "center",
+            justifyContent: "center"
           }}>
             {[
-              { icon: <MessageCircle size={18} />, label: "Real convos" },
-              { icon: <Mic size={18} />, label: "Voice chat" },
-              { icon: <Sparkles size={18} />, label: "9 companions" },
-            ].map((f, i) => (
-              <div key={i} style={{
-                flex: 1, maxWidth: 110,
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                borderRadius: 14, padding: "10px 6px",
-                background: "rgba(139,92,246,0.12)",
-                border: "1px solid rgba(139,92,246,0.3)",
-              }}>
+            { icon: <MessageCircle size={18} />, label: "Real convos" },
+            { icon: <Mic size={18} />, label: "Voice chat" },
+            { icon: <Sparkles size={18} />, label: "9 companions" }].
+            map((f, i) =>
+            <div key={i} style={{
+              flex: 1, maxWidth: 110,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+              borderRadius: 14, padding: "10px 6px",
+              background: "rgba(139,92,246,0.12)",
+              border: "1px solid rgba(139,92,246,0.3)"
+            }}>
                 <div style={{ color: "#a78bfa", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.7))" }}>{f.icon}</div>
                 <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
               </div>
-            ))}
+            )}
           </div>
 
           <button
@@ -149,9 +149,9 @@ export default function HomePage() {
               background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
               boxShadow: "0 0 24px rgba(168,85,247,0.5), 0 4px 16px rgba(0,0,0,0.4)",
               animation: "shimmer 3s ease-in-out infinite",
-              cursor: "pointer", marginBottom: 8,
-            }}
-          >
+              cursor: "pointer", marginBottom: 8
+            }}>
+
             Meet your companion ✨
           </button>
 
@@ -171,9 +171,9 @@ export default function HomePage() {
               borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
               color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13,
               background: "rgba(255,255,255,0.05)",
-              cursor: "pointer",
-            }}
-          >
+              cursor: "pointer"
+            }}>
+
             I already have one → Continue
           </button>
         </div>
@@ -182,6 +182,6 @@ export default function HomePage() {
           <AppFooter dark />
         </div>
       </div>
-    </AppShell>
-  );
+    </AppShell>);
+
 }
