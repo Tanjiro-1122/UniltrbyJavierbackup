@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle } from "lucide-react";
+import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3 } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import PaywallModal from "@/components/PaywallModal";
 import BottomTabs from "@/components/BottomTabs";
@@ -74,6 +74,7 @@ export default function Settings() {
   const [moodHistory, setMoodHistory]     = useState([]);
   const [voiceGender, setVoiceGender]     = useState("female");
   const [savingVoice, setSavingVoice]     = useState(false);
+  const [isAdmin, setIsAdmin]             = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -105,6 +106,11 @@ export default function Settings() {
     setMoodHistory(history);
 
     loadData();
+
+    // Check admin role
+    base44.auth.me().then(me => {
+      if (me?.role === "admin") setIsAdmin(true);
+    }).catch(() => {});
   }, []);
 
   const handleChangeVoiceGender = async (newGender) => {
@@ -396,6 +402,32 @@ export default function Settings() {
             )}
           </div>
         </motion.div>
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, textAlign: "center" }}>
+              <ShieldCheck size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              Admin Tools
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={() => navigate("/AdminDashboard")}
+                style={{ width: "100%", padding: "13px 16px", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
+              >
+                <BarChart3 size={16} color="#a855f7" />
+                Admin Dashboard
+              </button>
+              <button
+                onClick={() => navigate("/admin/feedback")}
+                style={{ width: "100%", padding: "13px 16px", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
+              >
+                <MessageSquareMore size={16} color="#a855f7" />
+                Feedback Manager
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Account Management */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
