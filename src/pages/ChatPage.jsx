@@ -9,6 +9,7 @@ import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
+import BottomTabs from "@/components/BottomTabs";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",

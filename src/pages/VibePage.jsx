@@ -61,7 +61,7 @@ export default function VibePage() {
   const handleContinue = () => {
     if (!selected) return;
     localStorage.setItem("unfiltr_vibe", selected);
-    navigate("/chat");
+    navigate("/ChatPage");
   };
 
   return (

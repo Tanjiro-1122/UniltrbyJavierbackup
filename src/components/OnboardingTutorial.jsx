@@ -30,7 +30,7 @@ const STEPS = [
   },
 ];
 
-export default function OnboardingTutorial({ profileId, onComplete }) {
+export default function OnboardingTutorial({ profileId, onComplete, inline = false }) {
   const [step, setStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
 
