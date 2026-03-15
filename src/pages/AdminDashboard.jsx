@@ -50,7 +50,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="screen no-tabs" style={{ maxWidth: "100%", left: 0, transform: "none", alignItems: "center", justifyContent: "center" }}>
         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
 
   if (unauthorized) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">
+      <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none", alignItems: "center", justifyContent: "center" }}>
         <div className="text-center">
           <ShieldAlert className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
