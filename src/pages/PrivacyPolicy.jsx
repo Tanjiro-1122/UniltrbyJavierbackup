@@ -6,21 +6,22 @@ export default function PrivacyPolicy() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] to-[#1a0a2e] text-white">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-3xl font-bold">Privacy Policy</h1>
-        </div>
+    <div className="screen no-tabs" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
+      <div style={{
+        flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
+        padding: "0 16px 14px",
+        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <button onClick={() => navigate(-1)}
+          style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <ChevronLeft size={20} color="white" />
+        </button>
+        <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0 }}>Privacy Policy</h1>
+      </div>
 
-        {/* Content */}
-        <div className="space-y-6 text-white/80 leading-relaxed pb-12">
+      <div className="scroll-area px-4 py-6" style={{ paddingBottom: 60 }}>
+        <div className="space-y-6 text-white/80 leading-relaxed">
           <div>
             <h2 className="text-xl font-semibold text-white mb-3">1. Information We Collect</h2>
             <p>
@@ -81,14 +82,35 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold text-white mb-3">8. Contact Us</h2>
-            <p>
+            <h2 className="text-lg font-semibold text-white mb-2">8. Children's Privacy</h2>
+            <p className="text-sm">
+              Unfiltr is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us at support@unfiltr.app and we will delete it promptly.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-2">9. Data Retention</h2>
+            <p className="text-sm">
+              We retain your data for as long as your account is active. Chat messages are stored to maintain conversation context. When you delete your account, all associated data (profile, messages, companion data) is permanently deleted within 24 hours.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-2">10. Changes to This Policy</h2>
+            <p className="text-sm">
+              We may update this privacy policy from time to time. We will notify you of any material changes via the app or email.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-2">11. Contact Us</h2>
+            <p className="text-sm">
               If you have questions about this privacy policy, please contact us at support@unfiltr.app
             </p>
           </div>
 
-          <p className="text-white/50 text-sm pt-4">
-            Last updated: March 13, 2026
+          <p className="text-white/40 text-xs pt-4">
+            Last updated: March 15, 2026
           </p>
         </div>
       </div>
