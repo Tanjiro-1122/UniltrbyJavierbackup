@@ -343,7 +343,10 @@ export default function Onboarding() {
               padding: "4px 16px 8px",
               position: "relative",
               zIndex: 2,
-            }}>
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+            onWheel={(e) => e.currentTarget.scrollLeft = 0}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 8 }}>
                 {BACKGROUNDS.map(bg => (
                   <motion.button key={bg.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedBackground(bg.id)}
