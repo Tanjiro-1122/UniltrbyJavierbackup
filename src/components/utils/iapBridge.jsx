@@ -48,6 +48,26 @@ export const callNativeIAPWithCallback = async (iapConfig, callback) => {
   }
 };
 
+export const subscribeToPlan = (plan = 'monthly') => {
+  const productId = plan === 'annual'
+    ? 'com.huertas.unfiltr.premium.annual'
+    : 'com.huertas.unfiltr.premium.monthly';
+  callNativeIAPWithCallback({ productId }, (result) => {
+    if (result.isCancelled || !result.isSuccess) return;
+    submitReceiptToServer(result);
+  });
+};
+
+export const restorePurchases = () => {
+  if (window.WTN && typeof window.WTN.restorePurchases === 'function') {
+    window.WTN.restorePurchases((result) => {
+      console.log('Restore result:', JSON.stringify(result));
+    });
+  } else {
+    console.warn('Restore purchases not available');
+  }
+};
+
 export const submitReceiptToServer = async (receiptData) => {
   console.log('Submitting receipt to server:', receiptData);
   try {
