@@ -20,6 +20,7 @@ export default function Onboarding() {
   const [selectedBackground, setSelectedBackground] = useState(null);
   const [loading, setLoading]                       = useState(false);
   const [isTesterAccount, setIsTesterAccount]       = useState(false);
+  const [pendingProfileId, setPendingProfileId]     = useState(null);
 
   const canAdvance = [
     displayName.trim().length > 0,
