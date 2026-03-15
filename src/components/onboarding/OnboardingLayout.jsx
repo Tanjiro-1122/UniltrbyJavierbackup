@@ -63,16 +63,20 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
         {children}
       </div>
 
       {/* Next Button */}
       {onNext && (
         <div style={{
-          flexShrink: 0, padding: "12px 16px", background: "#06020f",
-          position: "fixed", bottom: 0, left: 0, right: 0, width: "100%",
-          paddingBottom: "max(12px, env(safe-area-inset-bottom))", zIndex: 1000,
+          flexShrink: 0,
+          width: "100%",
+          padding: "12px 16px",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          background: "linear-gradient(180deg, rgba(6,2,15,0.08) 0%, #06020f 28%)",
+          position: "relative",
+          zIndex: 2,
         }}>
           <button onClick={onNext} disabled={!canAdvance || loading} style={{
             width: "100%", padding: "16px 0", borderRadius: 18, border: "none",

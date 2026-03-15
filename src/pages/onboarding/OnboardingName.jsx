@@ -49,7 +49,7 @@ export default function OnboardingName() {
       onNext={handleNext}
       canAdvance={displayName.trim().length > 0}
     >
-      <div style={{ flex: 1, padding: "8px 16px 120px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div style={{ flex: 1, minHeight: 0, padding: "8px 16px 16px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           What's your name?
         </h2>

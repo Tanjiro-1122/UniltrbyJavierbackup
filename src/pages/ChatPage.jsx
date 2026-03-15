@@ -525,7 +525,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 148, height: 148, marginTop: 2 }}>
+            <div style={{ position: "relative", width: 172, height: 172, marginTop: 2 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
@@ -603,10 +603,10 @@ export default function ChatPage() {
 
           {/* ── CONVERSATION BOX (bounded, only this scrolls) ── */}
           <div style={{
-            flex: 1, minHeight: 0,
+            flex: "0 0 34%", minHeight: 0,
             display: "flex", flexDirection: "column",
             margin: "8px 10px 0",
-            background: "rgba(8,3,16,0.78)",
+            background: "rgba(8,3,16,0.82)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 20,
             boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
