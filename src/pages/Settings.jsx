@@ -305,26 +305,33 @@ export default function Settings() {
         {/* Companion Picker */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Your Companion</p>
-          <div className="grid grid-cols-4 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {COMPANIONS.map((c) => {
               const isSelected = companion.name === c.name;
               return (
-                <button key={c.id} onClick={() => handleChangeCompanion(c)} className="flex flex-col items-center gap-1.5 relative">
-                  <div className={`relative w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? "border-purple-500 scale-105" : "border-white/10"}`}
-                    style={{ background: isSelected ? "#2d1a4e" : "#1a1a2e" }}>
-                    <img src={c.poses?.neutral || c.avatar} alt={c.name} className="w-full h-full object-cover object-top" />
+                <button key={c.id} onClick={() => handleChangeCompanion(c)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <div style={{
+                    position: "relative", width: 56, height: 56, borderRadius: 14, overflow: "hidden",
+                    border: isSelected ? "2px solid #a855f7" : "2px solid rgba(255,255,255,0.1)",
+                    background: isSelected ? "#2d1a4e" : "#1a1a2e",
+                    transition: "all 0.15s",
+                    transform: isSelected ? "scale(1.05)" : "scale(1)",
+                  }}>
+                    <img src={c.avatar} alt={c.name}
+                      style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }} />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Check size={14} color="white" />
                       </div>
                     )}
                   </div>
-                  <span className={`text-xs font-medium ${isSelected ? "text-purple-300" : "text-white/50"}`}>{c.name}</span>
+                  <span style={{ fontSize: 11, fontWeight: isSelected ? 600 : 500, color: isSelected ? "#c4b5fd" : "rgba(255,255,255,0.5)" }}>{c.name}</span>
                 </button>
               );
             })}
           </div>
-          {savingCompanion && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
+          {savingCompanion && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 8, textAlign: "center" }}>Saving...</p>}
         </motion.div>
 
         {/* Background Picker */}
