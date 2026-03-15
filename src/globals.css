@@ -78,9 +78,21 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Account for bottom tab bar (64px) + safe area */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
+}
+
+.screen::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: env(safe-area-inset-bottom, 0px);
+  background: inherit;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Pages that have NO bottom tabs */
