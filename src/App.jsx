@@ -7,6 +7,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import BottomTabs from '@/components/BottomTabs';
+import SplashScreen from '@/components/SplashScreen';
 import { base44 } from '@/api/base44Client';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
@@ -102,6 +103,15 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (showSplash) return <SplashScreen />;
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
