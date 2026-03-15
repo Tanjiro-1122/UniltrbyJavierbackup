@@ -145,7 +145,7 @@ export default function Onboarding() {
       {!showTutorial && (
     <div
       className="screen no-tabs"
-      style={{ background: GRADIENT, position: "fixed", inset: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}
+      style={{ background: GRADIENT, position: "fixed", inset: 0, display: "flex", flexDirection: "column", overflow: "hidden", paddingBottom: 0 }}
     >
       {/* Stars */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
