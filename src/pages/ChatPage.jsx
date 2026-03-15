@@ -167,11 +167,11 @@ export default function ChatPage() {
     init();
   }, []);
 
-  /* ─── GREETING ─── */
+  /* ─── GREETING + LOAD HISTORY ─── */
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
-    setMessages([{
+    const greeting = {
       role: "assistant",
       content: `Hey! I'm ${name} 👋 ${
         vibe === "chill" ? "What's good? Just vibing here 😌" :
@@ -179,8 +179,27 @@ export default function ChatPage() {
         vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
         "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
       }`,
-    }]);
-  }, [companion]);
+    };
+
+    // Load recent messages from DB
+    const pid = localStorage.getItem("userProfileId");
+    if (pid && companionDbId) {
+      base44.entities.Message.filter(
+        { user_profile_id: pid, companion_id: companionDbId },
+        "-created_date",
+        20
+      ).then(dbMsgs => {
+        if (dbMsgs && dbMsgs.length > 0) {
+          const history = dbMsgs.reverse().map(m => ({ role: m.role, content: m.content }));
+          setMessages([greeting, ...history]);
+        } else {
+          setMessages([greeting]);
+        }
+      }).catch(() => setMessages([greeting]));
+    } else {
+      setMessages([greeting]);
+    }
+  }, [companion, companionDbId]);
 
   /* ─── AUTO-SCROLL ─── */
   useEffect(() => {
@@ -317,6 +336,8 @@ export default function ChatPage() {
         sessionMemory: isPremium ? sessionMemory : [],
         memorySummary: memorySummary || "",
         imageBase64: imgBase64,
+        userProfileId: localStorage.getItem("userProfileId"),
+        companionId: companionDbId,
       });
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
