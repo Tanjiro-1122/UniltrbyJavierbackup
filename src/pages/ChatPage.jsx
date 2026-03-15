@@ -484,8 +484,9 @@ export default function ChatPage() {
           <div style={{
             flexShrink: 0, position: "relative",
             display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "6px 16px 0",
+            padding: "4px 16px 0",
             width: "100%",
+            overflow: "hidden",
           }}>
             {/* Controls row */}
             <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
@@ -525,7 +526,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 172, height: 172, marginTop: 2 }}>
+            <div style={{ position: "relative", width: 190, height: 190, marginTop: 0 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
@@ -603,7 +604,7 @@ export default function ChatPage() {
 
           {/* ── CONVERSATION BOX (bounded, only this scrolls) ── */}
           <div style={{
-            flex: "0 0 34%", minHeight: 0,
+            flex: "0 0 28%", minHeight: 0,
             display: "flex", flexDirection: "column",
             margin: "8px 10px 0",
             background: "rgba(8,3,16,0.82)",
@@ -612,11 +613,13 @@ export default function ChatPage() {
             boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
             overflow: "hidden",
           }}>
-            <div style={{
+            <div className="scroll-area" style={{
               flex: 1, minHeight: 0,
               overflowY: "auto", overflowX: "hidden",
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
               padding: "12px",
               display: "flex", flexDirection: "column", gap: 8,
             }}>

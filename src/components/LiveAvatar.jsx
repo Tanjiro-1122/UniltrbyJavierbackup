@@ -73,7 +73,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           key={`${companionId}-${mood}`}
           draggable={false}
           style={{
-            height: "clamp(200px, 36dvh, 310px)",
+            height: "clamp(240px, 42dvh, 360px)",
             width: "auto",
             maxWidth: "100%",
             objectFit: "contain",
