@@ -157,7 +157,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   {isLoading ? "Loading..." : "Subscribe Now →"}
                 </button>
 
-                <button onClick={onRestore} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
+                <button onClick={restorePurchases} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
                   <RotateCcw className="w-3 h-3" />
                   Restore Purchase
                 </button>
