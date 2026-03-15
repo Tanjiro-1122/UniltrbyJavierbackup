@@ -480,227 +480,221 @@ export default function ChatPage() {
 
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
 
-          {/* TOP BAR */}
+          {/* ── AVATAR + NAME SECTION (fixed height) ── */}
           <div style={{
-            flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 16px 12px",
-            paddingTop: "12px",
-            background: "rgba(0,0,0,0.35)", backdropFilter: "blur(16px)",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            flexShrink: 0, position: "relative",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            padding: "8px 16px 0",
+            background: "rgba(0,0,0,0.25)", backdropFilter: "blur(12px)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}>
-            <button onClick={() => setVoiceEnabled(v => !v)}
-              style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
-            </button>
-
-            <div style={{ textAlign: "center", flex: 1, padding: "0 8px" }}>
-              <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>{companionDisplayName}</p>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
-              {!isPremium ? (
-                <button onClick={() => setShowPaywall(true)}
-                  style={{ marginTop: 3, fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
-                  {remaining}/{FREE_LIMIT} msgs left
+            {/* Controls row */}
+            <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <button onClick={() => setVoiceEnabled(v => !v)}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                {voiceEnabled ? <Volume2 size={14} color="white" /> : <VolumeX size={14} color="rgba(255,255,255,0.4)" />}
+              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                {isPremium && (
+                  <button onClick={() => {
+                    const data = JSON.stringify(messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })), null, 2);
+                    const blob = new Blob([data], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = `unfiltr-chat-${new Date().toISOString().slice(0,10)}.json`; a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    title="Save conversation">
+                    <Save size={13} color="#a855f7" />
+                  </button>
+                )}
+                <button onClick={() => {
+                  localStorage.removeItem("unfiltr_chat_history");
+                  const name = companion.displayName || companion.name;
+                  setMessages([{ role: "assistant", content: `Fresh start! Hey, I'm ${name} 👋 What's up?` }]);
+                }}
+                  style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  title="New chat">
+                  <MessageSquare size={13} color="rgba(255,255,255,0.6)" />
                 </button>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 2 }}>
-                  <p style={{ fontSize: 10, color: "rgba(168,85,247,0.8)", margin: 0 }}>✨ Premium</p>
-                  {sessionMemory.length > 0 && (
-                    <span style={{ fontSize: 10, color: "rgba(168,85,247,0.6)", display: "flex", alignItems: "center", gap: 2 }}>
-                      · <Brain size={9} color="rgba(168,85,247,0.6)" /> {sessionMemory.length} memories
-                    </span>
-                  )}
-                </div>
+                <button onClick={() => navigate("/settings")}
+                  style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Settings size={14} color="white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Avatar + particles */}
+            <div style={{ position: "relative", width: 100, height: 100 }}>
+              {isSpeaking && (
+                <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
+              {particles.map(p => (
+                <div key={p.id} className="particle"
+                  style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
+                  {p.emoji}
+                </div>
+              ))}
+              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
             </div>
 
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => {
-                localStorage.removeItem("unfiltr_chat_history");
-                const name = companion.displayName || companion.name;
-                setMessages([{
-                  role: "assistant",
-                  content: `Fresh start! Hey, I'm ${name} 👋 What's up?`,
-                }]);
-              }}
-                style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                title="New chat">
-                <MessageSquare size={14} color="rgba(255,255,255,0.6)" />
+            {/* Name + info */}
+            <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: "4px 0 0" }}>{companionDisplayName}</p>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "1px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
+            {!isPremium ? (
+              <button onClick={() => setShowPaywall(true)}
+                style={{ margin: "3px 0 8px", fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
+                {remaining}/{FREE_LIMIT} msgs left
               </button>
-              <button onClick={() => navigate("/settings")}
-                style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <Settings size={16} color="white" />
-              </button>
-            </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "2px 0 8px" }}>
+                <p style={{ fontSize: 10, color: "rgba(168,85,247,0.8)", margin: 0 }}>✨ Premium</p>
+                {sessionMemory.length > 0 && (
+                  <span style={{ fontSize: 10, color: "rgba(168,85,247,0.6)", display: "flex", alignItems: "center", gap: 2 }}>
+                    · <Brain size={9} color="rgba(168,85,247,0.6)" /> {sessionMemory.length} memories
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Banners overlay */}
+            {showStreakBanner && (
+              <div style={{
+                position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
+                backdropFilter: "blur(12px)", borderRadius: 999,
+                padding: "6px 14px", zIndex: 20, whiteSpace: "nowrap",
+                animation: "bannerSlide 0.4s ease-out forwards",
+                boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
+              }}>
+                <span style={{ color: "white", fontWeight: 700, fontSize: 12 }}>🔥 {streak} day streak!</span>
+              </div>
+            )}
+            {showAnniversary && anniversary && (
+              <div style={{
+                position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
+                backdropFilter: "blur(12px)", borderRadius: 14,
+                padding: "6px 14px", zIndex: 20, whiteSpace: "nowrap",
+                animation: "bannerSlide 0.4s ease-out forwards",
+                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
+                textAlign: "center",
+              }}>
+                <span style={{ color: "white", fontWeight: 800, fontSize: 12 }}>🎉 {anniversary} Days Together! ✨</span>
+              </div>
+            )}
           </div>
-
-          {/* STREAK BANNER */}
-          {showStreakBanner && (
-            <div style={{
-              position: "absolute", top: "4rem",
-              left: "50%", transform: "translateX(-50%)",
-              background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
-              backdropFilter: "blur(12px)", borderRadius: 999,
-              padding: "8px 18px", zIndex: 20, whiteSpace: "nowrap",
-              animation: "bannerSlide 0.4s ease-out forwards",
-              boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
-            }}>
-              <span style={{ color: "white", fontWeight: 700, fontSize: 13 }}>🔥 {streak} day streak! Keep it up!</span>
-            </div>
-          )}
-
-          {/* ANNIVERSARY BANNER */}
-          {showAnniversary && anniversary && (
-            <div style={{
-              position: "absolute", top: "4rem",
-              left: "50%", transform: "translateX(-50%)",
-              background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
-              backdropFilter: "blur(12px)", borderRadius: 16,
-              padding: "10px 20px", zIndex: 20, whiteSpace: "nowrap",
-              animation: "bannerSlide 0.4s ease-out forwards",
-              boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
-              textAlign: "center",
-            }}>
-              <p style={{ color: "white", fontWeight: 800, fontSize: 14, margin: 0 }}>🎉 {anniversary} Days Together!</p>
-              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, margin: "2px 0 0" }}>You two have something special ✨</p>
-            </div>
-          )}
 
           {/* MEMORY BANNER — free users only */}
           {showMemoryBanner && !isPremium && (
-            <div
-              onClick={() => setShowPaywall(true)}
+            <div onClick={() => setShowPaywall(true)}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, padding: "7px 16px",
+                gap: 6, padding: "6px 16px",
                 background: "rgba(139,92,246,0.12)",
                 borderBottom: "1px solid rgba(139,92,246,0.2)",
                 cursor: "pointer",
-              }}
-            >
-              <span style={{ fontSize: 13 }}>🔒</span>
-              <span style={{ color: "rgba(196,180,252,0.85)", fontSize: 12, fontWeight: 600 }}>
-                Unlock Memory — she'll remember you forever
-              </span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#a855f7", background: "rgba(168,85,247,0.2)", padding: "2px 7px", borderRadius: 999 }}>
-                Premium
-              </span>
+              }}>
+              <span style={{ fontSize: 12 }}>🔒</span>
+              <span style={{ color: "rgba(196,180,252,0.85)", fontSize: 11, fontWeight: 600 }}>Unlock Memory — they'll remember you forever</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#a855f7", background: "rgba(168,85,247,0.2)", padding: "2px 6px", borderRadius: 999 }}>Premium</span>
             </div>
           )}
 
-          {/* AVATAR ZONE */}
-          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
-            <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 240, height: 50, background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
-            {isSpeaking && (
-              <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
-            )}
-            {particles.map(p => (
-              <div key={p.id} className="particle"
-                style={{ position: "absolute", bottom: "45%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 14, zIndex: 3, pointerEvents: "none" }}>
-                {p.emoji}
-              </div>
-            ))}
-            <div style={{ pointerEvents: "auto", paddingBottom: 4 }}>
-              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-            </div>
-          </div>
-
-          {/* CHAT PANEL */}
-          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", maxHeight: "52%", background: "linear-gradient(to bottom, rgba(8,3,16,0) 0%, rgba(8,3,16,0.9) 10%, rgba(8,3,16,0.97) 100%)" }}>
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", padding: "8px 16px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* ── CONVERSATION BOX (bounded, only this scrolls) ── */}
+          <div style={{
+            flex: 1, minHeight: 0,
+            display: "flex", flexDirection: "column",
+            margin: "0 12px",
+            borderRadius: 16,
+            background: "rgba(8,3,16,0.75)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            overflow: "hidden",
+          }}>
+            <div style={{
+              flex: 1, minHeight: 0,
+              overflowY: "auto", overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+              padding: "10px 12px",
+              display: "flex", flexDirection: "column", gap: 8,
+            }}>
               {messages.map((msg, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 6 }}>
+                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 5 }}>
                   <div style={{
-                    maxWidth: "82%", padding: "10px 16px",
-                    borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    fontSize: 14, lineHeight: 1.5, wordBreak: "break-word", color: "white",
+                    maxWidth: "82%", padding: "9px 14px",
+                    borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                    fontSize: 13, lineHeight: 1.5, wordBreak: "break-word", color: "white",
                     ...(msg.role === "user"
                       ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
-                      : { background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", boxShadow: "0 0 12px rgba(168,85,247,0.12)" }
+                      : { background: "rgba(88,28,135,0.45)", border: "1px solid rgba(168,85,247,0.15)", boxShadow: "0 0 8px rgba(168,85,247,0.08)" }
                     ),
                   }}>
                     {msg.imagePreview && (
-                      <img src={msg.imagePreview} alt="shared" style={{ width: "100%", maxWidth: 200, borderRadius: 10, marginBottom: 6, display: "block" }} />
+                      <img src={msg.imagePreview} alt="shared" style={{ width: "100%", maxWidth: 180, borderRadius: 8, marginBottom: 5, display: "block" }} />
                     )}
                     {msg.content}
                   </div>
                   {msg.role === "assistant" && (
-                    <button
-                      onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
-                      style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 2 }}
-                    >
-                      <Share2 size={11} color="rgba(255,255,255,0.35)" />
+                    <button onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
+                      style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                      <Share2 size={10} color="rgba(255,255,255,0.3)" />
                     </button>
                   )}
                 </div>
               ))}
               {loading && (
                 <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{ padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: "rgba(88,28,135,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", gap: 6 }}>
-                    <style>{`
-                      @keyframes typingBounce {
-                        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-                        30% { transform: translateY(-5px); opacity: 1; }
-                      }
-                    `}</style>
+                  <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "rgba(88,28,135,0.45)", border: "1px solid rgba(168,85,247,0.15)", display: "flex", alignItems: "center", gap: 5 }}>
+                    <style>{`@keyframes typingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-4px);opacity:1} }`}</style>
                     {[0, 1, 2].map(d => (
-                      <div key={d} style={{
-                        width: 7, height: 7, borderRadius: "50%",
-                        background: "#a855f7",
-                        animation: `typingBounce 1.2s ease-in-out infinite`,
-                        animationDelay: `${d * 0.2}s`,
-                      }} />
+                      <div key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "#a855f7", animation: `typingBounce 1.2s ease-in-out infinite`, animationDelay: `${d * 0.2}s` }} />
                     ))}
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
+          </div>
 
-            {/* PENDING IMAGE PREVIEW */}
+          {/* ── TYPING FIELD (fixed at bottom) ── */}
+          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))" }}>
+            {/* Pending image preview */}
             {pendingImage && (
-              <div style={{ flexShrink: 0, padding: "4px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <img src={pendingImage.preview} alt="pending" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", border: "2px solid rgba(168,85,247,0.5)" }} />
-                  <button
-                    onClick={() => setPendingImage(null)}
-                    style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X size={10} color="white" />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <div style={{ position: "relative" }}>
+                  <img src={pendingImage.preview} alt="pending" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(168,85,247,0.5)" }} />
+                  <button onClick={() => setPendingImage(null)}
+                    style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X size={9} color="white" />
                   </button>
                 </div>
-                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Photo attached</span>
+                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}>Photo attached</span>
               </div>
             )}
-
-            <div style={{ flexShrink: 0, padding: "6px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "8px 12px" }}>
-                <button onPointerDown={startListening} onPointerUp={stopListening}
-                  style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
-                  className={isListening ? "listen-pulse" : ""}>
-                  {isListening ? <MicOff size={16} color="white" /> : <Mic size={16} color="rgba(255,255,255,0.65)" />}
-                </button>
-
-                {/* Photo button */}
-                <button onClick={handlePhotoClick}
-                  style={{ width: 32, height: 32, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(255,255,255,0.08)" }}>
-                  <Camera size={15} color={isPremium ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.3)"} />
-                </button>
-
-                <input
-                  type="text" value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSend()}
-                  placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
-                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
-                />
-                <button onClick={() => handleSend()} disabled={loading || (!input.trim() && !pendingImage)}
-                  style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: loading || (!input.trim() && !pendingImage) ? "default" : "pointer", opacity: loading || (!input.trim() && !pendingImage) ? 0.4 : 1, background: "linear-gradient(135deg, #7c3aed, #db2777)", transition: "opacity 0.15s" }}>
-                  <Send size={15} color="white" />
-                </button>
-              </div>
-              <p style={{ textAlign: "center", color: "rgba(255,255,255,0.18)", fontSize: 11, margin: "5px 0 0" }}>Hold 🎤 to speak · Tap to type</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "7px 10px" }}>
+              <button onPointerDown={startListening} onPointerUp={stopListening}
+                style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
+                className={isListening ? "listen-pulse" : ""}>
+                {isListening ? <MicOff size={15} color="white" /> : <Mic size={15} color="rgba(255,255,255,0.65)" />}
+              </button>
+              <button onClick={handlePhotoClick}
+                style={{ width: 30, height: 30, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(255,255,255,0.08)" }}>
+                <Camera size={14} color={isPremium ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.3)"} />
+              </button>
+              <input type="text" value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSend()}
+                placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
+                style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
+              />
+              <button onClick={() => handleSend()} disabled={loading || (!input.trim() && !pendingImage)}
+                style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: loading || (!input.trim() && !pendingImage) ? "default" : "pointer", opacity: loading || (!input.trim() && !pendingImage) ? 0.4 : 1, background: "linear-gradient(135deg, #7c3aed, #db2777)", transition: "opacity 0.15s" }}>
+                <Send size={14} color="white" />
+              </button>
             </div>
-
-
           </div>
 
         </div>
