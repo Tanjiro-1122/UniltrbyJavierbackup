@@ -48,8 +48,12 @@ body {
   height: 100dvh;
   overflow: hidden;
   background: #06020f;
+  background-color: #06020f !important;
   display: flex;
   flex-direction: column;
+  /* Ensure no white leaks through on any device */
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
 }
 
 /* ── 2. .screen — outermost wrapper for every page ── */
