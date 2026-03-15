@@ -220,7 +220,7 @@ export default function Onboarding() {
         {step === 0 && (
           <motion.div key="s0"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "8px 16px 0", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "8px 16px 120px 16px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
           >
             <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[0]}</h2>
             <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 14px" }}>{STEP_SUBS[0]}</p>
