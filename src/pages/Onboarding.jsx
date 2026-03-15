@@ -106,6 +106,23 @@ export default function Onboarding() {
       return;
     }
 
+    // Save display_name to DB when leaving step 0
+    if (step === 0) {
+      try {
+        if (pendingProfileId) {
+          await base44.entities.UserProfile.update(pendingProfileId, { display_name: displayName });
+        } else {
+          const profile = await base44.entities.UserProfile.create({ 
+            display_name: displayName,
+            companion_id: "pending",
+            background_id: "pending",
+          });
+          setPendingProfileId(profile.id);
+          localStorage.setItem("userProfileId", profile.id);
+        }
+      } catch { /* non-blocking */ }
+    }
+
     setStep(s => s + 1);
   };
 
