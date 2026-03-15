@@ -1,4 +1,26 @@
+// Companions only visible to specific tester accounts
+export const TESTER_ONLY_COMPANIONS = ["tanjiro"];
+
 export const COMPANIONS = [
+  {
+    id: "tanjiro",
+    name: "Tanjiro",
+    emoji: "🔥",
+    tagline: "Brave & Compassionate",
+    testerOnly: true,
+    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+    poses: {
+      happy:       "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      neutral:     "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      sad:         "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      fear:        "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      disgust:     "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      surprise:    "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      anger:       "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      contentment: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+      fatigue:     "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/6cd30fce1_generated_image.png",
+    },
+  },
   {
     id: "luna",
     name: "Luna",
