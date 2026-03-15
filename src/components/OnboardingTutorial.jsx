@@ -55,37 +55,40 @@ export default function OnboardingTutorial({ profileId, onComplete, inline = fal
   const current = STEPS[step];
 
   return (
-    <div style={inline ? {
-      position: "absolute", inset: 0, zIndex: 10,
-      background: "rgba(6,2,15,0.92)", backdropFilter: "blur(8px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "24px",
-    } : {
-      position: "fixed", inset: 0, zIndex: 300,
-      background: "rgba(6,2,15,0.92)", backdropFilter: "blur(8px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "24px",
+    <div style={{
+      position: inline ? "absolute" : "fixed",
+      inset: 0,
+      zIndex: inline ? 10 : 300,
+      background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      paddingTop: `max(2rem, env(safe-area-inset-top, 2rem))`,
+      paddingBottom: `max(2rem, env(safe-area-inset-bottom, 2rem))`,
+      paddingLeft: "24px",
+      paddingRight: "24px",
     }}>
-      <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* Progress dots */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 32 }}>
-          {STEPS.map((_, i) => (
-            <div key={i} style={{
-              height: 6, borderRadius: 999,
-              width: i === step ? 24 : 6,
-              background: i <= step ? "linear-gradient(90deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.15)",
-              transition: "all 0.35s ease",
-            }} />
-          ))}
-        </div>
+      {/* Progress dots — top */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, flexShrink: 0 }}>
+        {STEPS.map((_, i) => (
+          <div key={i} style={{
+            height: 6, borderRadius: 999,
+            width: i === step ? 24 : 6,
+            background: i <= step ? "linear-gradient(90deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.15)",
+            transition: "all 0.35s ease",
+          }} />
+        ))}
+      </div>
 
+      {/* Content — center with vertical distribution */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 0 }}>
         <AnimatePresence mode="wait">
           <motion.div key={step}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -24 }}
             transition={{ duration: 0.3 }}
-            style={{ textAlign: "center" }}
+            style={{ textAlign: "center", width: "100%", maxWidth: 380 }}
           >
             {/* Emoji */}
             <div style={{ fontSize: 72, marginBottom: 20, lineHeight: 1 }}>{current.emoji}</div>
@@ -102,14 +105,16 @@ export default function OnboardingTutorial({ profileId, onComplete, inline = fal
             {/* Body */}
             <p style={{
               color: "rgba(255,255,255,0.55)", fontSize: 15, lineHeight: 1.65,
-              margin: "0 0 36px",
+              margin: 0,
             }}>
               {current.body}
             </p>
           </motion.div>
         </AnimatePresence>
+      </div>
 
-        {/* CTA */}
+      {/* Button area — bottom */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0, width: "100%", maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
         <button
           onClick={handleNext}
           disabled={finishing}
@@ -130,7 +135,7 @@ export default function OnboardingTutorial({ profileId, onComplete, inline = fal
         {/* Skip */}
         {step < STEPS.length - 1 && (
           <button onClick={handleNext}
-            style={{ marginTop: 14, width: "100%", background: "none", border: "none", color: "rgba(255,255,255,0.2)", fontSize: 13, cursor: "pointer" }}>
+            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.2)", fontSize: 13, cursor: "pointer", padding: 0 }}>
             Skip tutorial
           </button>
         )}
