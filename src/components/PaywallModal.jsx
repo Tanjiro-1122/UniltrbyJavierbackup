@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock } from "lucide-react";
+import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 
 const PERKS = [
   { icon: MessageCircle, label: "Unlimited messages, every day" },
