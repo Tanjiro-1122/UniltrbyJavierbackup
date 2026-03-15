@@ -4,9 +4,9 @@ import { Home, MessageSquare, Settings, Star } from "lucide-react";
 
 const TABS = [
   { path: "/",        label: "Home",    icon: Home },
-  { path: "/ChatPage", label: "Chat",    icon: MessageSquare },
+  { path: "/chat",     label: "Chat",    icon: MessageSquare },
   { path: "/Pricing",  label: "Premium", icon: Star },
-  { path: "/Settings", label: "Settings",icon: Settings },
+  { path: "/settings", label: "Settings",icon: Settings },
 ];
 
 export default function BottomTabs() {
