@@ -25,7 +25,8 @@ import FeedbackButton from './components/FeedbackButton';
 const HIDE_TABS_ON = [
   "/onboarding",
   "/AdminAvatarProcessor", "/AdminDashboard",
-  "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback"
+  "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback",
+  "/Pricing"
 ];
 
 // Pages where the floating feedback button should NOT appear
