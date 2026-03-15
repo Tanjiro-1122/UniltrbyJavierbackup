@@ -658,7 +658,7 @@ export default function ChatPage() {
           </div>
 
           {/* ── TYPING FIELD (fixed at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))" }}>
+          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))", background: "linear-gradient(180deg, rgba(6,2,15,0) 0%, rgba(6,2,15,0.72) 24%, rgba(6,2,15,0.95) 100%)" }}>
             {/* Pending image preview */}
             {pendingImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
