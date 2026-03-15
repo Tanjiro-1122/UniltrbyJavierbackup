@@ -390,7 +390,7 @@ export default function ChatPage() {
     } else if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.huertas.unfiltr.premium.monthly" });
     } else {
-      alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)");
+      console.log("IAP fallback: com.huertas.unfiltr.premium.monthly");
     }
   };
   const handleRestore = () => {
