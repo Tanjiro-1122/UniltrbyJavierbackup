@@ -385,23 +385,8 @@ export default function ChatPage() {
   const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
   /* ─── IAP ─── */
-  const handleSubscribe = () => {
-    const productId = "com.huertas.unfiltr.premium.monthly";
-    if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
-    } else if (window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
-    } else if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ action: "subscribe", productId }));
-    } else {
-      window.parent?.postMessage({ action: "subscribe", productId }, "*");
-    }
-  };
-  const handleRestore = () => {
-    if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
-    }
-  };
+  const handleSubscribe = () => subscribeToPlan("monthly");
+  const handleRestore = () => restorePurchases();
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
