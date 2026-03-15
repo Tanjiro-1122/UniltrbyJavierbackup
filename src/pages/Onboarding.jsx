@@ -329,7 +329,7 @@ export default function Onboarding() {
         {step === 3 && (
           <motion.div key="s3"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 2 }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}
           >
             <div style={{ flexShrink: 0, padding: "0 16px 12px", position: "relative", zIndex: 2 }}>
               <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[3]}</h2>
