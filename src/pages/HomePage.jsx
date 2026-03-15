@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <AppShell
       bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
-      style={{ alignItems: "center", justifyContent: "center" }}
+      style={{ alignItems: "center", justifyContent: "flex-start" }}
     >
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -53,125 +53,130 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* Content — centered flex column, no scrolling */}
+      {/* Content */}
       <div style={{
         position: "relative",
         zIndex: 1,
         width: "100%",
         maxWidth: 400,
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        padding: "0 24px",
-        paddingBottom: 16,
+        padding: "6px 20px 12px",
       }}>
-        {/* Logo — smaller to fit */}
         <div style={{
-          position: "relative",
-          width: 140, height: 140,
-          marginBottom: 12,
-          flexShrink: 0,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}>
-          <div style={{ position: "relative", zIndex: 1, width: 140, height: 140, borderRadius: "20%", overflow: "hidden" }}>
-            <img
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9710f9cf7_da0a2eaa1_generated_image.png"
-              alt="Unfiltr By Javier"
-              style={{
-                width: "100%", height: "100%",
-                objectFit: "contain",
-                animation: "holoGlow 4s ease-in-out infinite",
-              }}
-            />
-            <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)",
-              animation: "holoSheen 3s ease-in-out infinite",
-              pointerEvents: "none",
-            }} />
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1 style={{
-          fontSize: 28, fontWeight: 900, color: "white",
-          margin: "0 0 2px",
-          textShadow: "0 0 30px rgba(168,85,247,0.9), 0 2px 8px rgba(0,0,0,0.8)",
-        }}>
-          Unfiltr By Javier
-        </h1>
-
-        <p style={{ color: "#c084fc", fontSize: 13, fontWeight: 600, margin: "0 0 4px" }}>
-          Your AI companion, always here.
-        </p>
-
-        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.5, margin: "0 0 16px", maxWidth: 260 }}>
-          Talk, vent, laugh, or just hang out. No judgement. Just a friend who gets you.
-        </p>
-
-        {/* Feature tiles */}
-        <div style={{
-          display: "flex", gap: 10, width: "100%", marginBottom: 18,
-          justifyContent: "center",
-        }}>
-          {[
-            { icon: <MessageCircle size={18} />, label: "Real convos" },
-            { icon: <Mic size={18} />, label: "Voice chat" },
-            { icon: <Sparkles size={18} />, label: "9 companions" },
-          ].map((f, i) => (
-            <div key={i} style={{
-              flex: 1, maxWidth: 110,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-              borderRadius: 14, padding: "10px 6px",
-              background: "rgba(139,92,246,0.12)",
-              border: "1px solid rgba(139,92,246,0.3)",
-            }}>
-              <div style={{ color: "#a78bfa", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.7))" }}>{f.icon}</div>
-              <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
+          {/* Logo */}
+          <div style={{
+            position: "relative",
+            width: 156, height: 156,
+            marginBottom: 10,
+            flexShrink: 0,
+          }}>
+            <div style={{ position: "relative", zIndex: 1, width: 156, height: 156, borderRadius: "20%", overflow: "hidden" }}>
+              <img
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9710f9cf7_da0a2eaa1_generated_image.png"
+                alt="Unfiltr By Javier"
+                style={{
+                  width: "100%", height: "100%",
+                  objectFit: "contain",
+                  animation: "holoGlow 4s ease-in-out infinite",
+                }}
+              />
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)",
+                animation: "holoSheen 3s ease-in-out infinite",
+                pointerEvents: "none",
+              }} />
             </div>
-          ))}
+          </div>
+
+          <h1 style={{
+            fontSize: 28, fontWeight: 900, color: "white",
+            margin: "0 0 2px",
+            textShadow: "0 0 30px rgba(168,85,247,0.9), 0 2px 8px rgba(0,0,0,0.8)",
+          }}>
+            Unfiltr By Javier
+          </h1>
+
+          <p style={{ color: "#c084fc", fontSize: 13, fontWeight: 600, margin: "0 0 4px" }}>
+            Your AI companion, always here.
+          </p>
+
+          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.5, margin: "0 0 16px", maxWidth: 260 }}>
+            Talk, vent, laugh, or just hang out. No judgement. Just a friend who gets you.
+          </p>
+
+          <div style={{
+            display: "flex", gap: 10, width: "100%", marginBottom: 18,
+            justifyContent: "center",
+          }}>
+            {[
+              { icon: <MessageCircle size={18} />, label: "Real convos" },
+              { icon: <Mic size={18} />, label: "Voice chat" },
+              { icon: <Sparkles size={18} />, label: "9 companions" },
+            ].map((f, i) => (
+              <div key={i} style={{
+                flex: 1, maxWidth: 110,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                borderRadius: 14, padding: "10px 6px",
+                background: "rgba(139,92,246,0.12)",
+                border: "1px solid rgba(139,92,246,0.3)",
+              }}>
+                <div style={{ color: "#a78bfa", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.7))" }}>{f.icon}</div>
+                <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => navigate("/onboarding")}
+            style={{
+              width: "100%", padding: "14px 0",
+              borderRadius: 18, border: "none",
+              color: "white", fontWeight: 900, fontSize: 16,
+              background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+              boxShadow: "0 0 24px rgba(168,85,247,0.5), 0 4px 16px rgba(0,0,0,0.4)",
+              animation: "shimmer 3s ease-in-out infinite",
+              cursor: "pointer", marginBottom: 8,
+            }}
+          >
+            Meet your companion ✨
+          </button>
+
+          <button
+            onClick={() => {
+              const profileId = localStorage.getItem("userProfileId");
+              const companion = localStorage.getItem("unfiltr_companion");
+              const env = localStorage.getItem("unfiltr_env");
+              if (profileId && companion && env) {
+                navigate("/vibe");
+              } else {
+                navigate("/onboarding");
+              }
+            }}
+            style={{
+              width: "100%", padding: "12px 0",
+              borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
+              color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13,
+              background: "rgba(255,255,255,0.05)",
+              cursor: "pointer",
+            }}
+          >
+            I already have one → Continue
+          </button>
         </div>
 
-        {/* CTAs */}
-        <button
-          onClick={() => navigate("/onboarding")}
-          style={{
-            width: "100%", padding: "14px 0",
-            borderRadius: 18, border: "none",
-            color: "white", fontWeight: 900, fontSize: 16,
-            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-            boxShadow: "0 0 24px rgba(168,85,247,0.5), 0 4px 16px rgba(0,0,0,0.4)",
-            animation: "shimmer 3s ease-in-out infinite",
-            cursor: "pointer", marginBottom: 8,
-          }}
-        >
-          Meet your companion ✨
-        </button>
-
-        <button
-          onClick={() => {
-            const profileId = localStorage.getItem("userProfileId");
-            const companion = localStorage.getItem("unfiltr_companion");
-            const env = localStorage.getItem("unfiltr_env");
-            if (profileId && companion && env) {
-              navigate("/vibe");
-            } else {
-              navigate("/onboarding");
-            }
-          }}
-          style={{
-            width: "100%", padding: "12px 0",
-            borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
-            color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13,
-            background: "rgba(255,255,255,0.05)",
-            cursor: "pointer", marginBottom: 6,
-          }}
-        >
-          I already have one → Continue
-        </button>
-
-        {/* Footer links */}
-        <AppFooter dark />
+        <div style={{ width: "100%", marginTop: "auto", paddingTop: 18 }}>
+          <AppFooter dark />
+        </div>
       </div>
     </AppShell>
   );
