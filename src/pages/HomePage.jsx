@@ -85,17 +85,47 @@ export default function HomePage() {
         }}
       >
         {/* Logo */}
-        <div style={{ animation: "float 5s ease-in-out infinite", marginBottom: 16 }}>
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9710f9cf7_da0a2eaa1_generated_image.png"
-            alt="Unfiltr By Javier"
-            style={{
-              width: 180, height: 180,
-              objectFit: "contain",
-              animation: "glow 4s ease-in-out infinite",
-              filter: "drop-shadow(0 0 24px rgba(168,85,247,0.8))",
-            }}
-          />
+        <div style={{
+          position: "relative",
+          width: 200, height: 200,
+          marginBottom: 16,
+          perspective: "800px",
+        }}>
+          {/* Outer glow ring */}
+          <div style={{
+            position: "absolute", inset: -12, borderRadius: "28%",
+            background: "conic-gradient(from 0deg, rgba(168,85,247,0.5), rgba(219,39,119,0.5), rgba(99,102,241,0.5), rgba(168,85,247,0.5))",
+            animation: "logoSpin 6s linear infinite",
+            filter: "blur(12px)",
+            zIndex: 0,
+          }} />
+          {/* Inner ring */}
+          <div style={{
+            position: "absolute", inset: -4, borderRadius: "22%",
+            background: "conic-gradient(from 0deg, rgba(168,85,247,0.8), rgba(219,39,119,0.8), rgba(99,102,241,0.9), rgba(168,85,247,0.8))",
+            animation: "logoSpin 4s linear infinite reverse",
+            filter: "blur(4px)",
+            zIndex: 0,
+          }} />
+          {/* Logo image */}
+          <div style={{ position: "relative", zIndex: 1, width: 200, height: 200, borderRadius: "20%", overflow: "hidden" }}>
+            <img
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9710f9cf7_da0a2eaa1_generated_image.png"
+              alt="Unfiltr By Javier"
+              style={{
+                width: "100%", height: "100%",
+                objectFit: "contain",
+                animation: "holoGlow 4s ease-in-out infinite",
+              }}
+            />
+            {/* Holographic sheen overlay */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)",
+              animation: "holoSheen 3s ease-in-out infinite",
+              pointerEvents: "none",
+            }} />
+          </div>
         </div>
 
         {/* Title */}
