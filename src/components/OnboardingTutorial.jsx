@@ -55,7 +55,12 @@ export default function OnboardingTutorial({ profileId, onComplete, inline = fal
   const current = STEPS[step];
 
   return (
-    <div style={{
+    <div style={inline ? {
+      position: "absolute", inset: 0, zIndex: 10,
+      background: "rgba(6,2,15,0.92)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "24px",
+    } : {
       position: "fixed", inset: 0, zIndex: 300,
       background: "rgba(6,2,15,0.92)", backdropFilter: "blur(8px)",
       display: "flex", alignItems: "center", justifyContent: "center",

@@ -422,7 +422,7 @@ export default function ChatPage() {
       />
 
       <div
-        className="screen no-tabs"
+        className="screen"
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",

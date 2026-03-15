@@ -143,7 +143,7 @@ export default function VibePage() {
       </div>
 
       {/* ── CTA ── */}
-      <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
+      <div className="sticky-bottom" style={{ position: "relative", zIndex: 1, background: "linear-gradient(180deg, #06020f 0%, #120626 100%)" }}>
         <button
           onClick={handleContinue}
           disabled={!selected}
