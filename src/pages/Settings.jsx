@@ -72,6 +72,8 @@ export default function Settings() {
   const [streak, setStreak]               = useState(0);
   const [daysSince, setDaysSince]         = useState(0);
   const [moodHistory, setMoodHistory]     = useState([]);
+  const [voiceGender, setVoiceGender]     = useState("female");
+  const [savingVoice, setSavingVoice]     = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -81,6 +83,7 @@ export default function Settings() {
       const comp = await base44.entities.Companion.get(profile.companion_id);
       setUserProfile(profile);
       setCompanion(comp);
+      setVoiceGender(comp?.voice_gender || "female");
     };
 
     // Load streak
@@ -103,6 +106,20 @@ export default function Settings() {
 
     loadData();
   }, []);
+
+  const handleChangeVoiceGender = async (newGender) => {
+    if (savingVoice || !userProfile || !companion) return;
+    setSavingVoice(true);
+    try {
+      await base44.entities.Companion.update(userProfile.companion_id, { voice_gender: newGender });
+      setVoiceGender(newGender);
+      setCompanion(prev => ({ ...prev, voice_gender: newGender }));
+    } catch (e) {
+      console.error("Voice gender save error:", e);
+    } finally {
+      setSavingVoice(false);
+    }
+  };
 
   const handleSignOut = async () => {
     localStorage.clear();
@@ -251,6 +268,38 @@ export default function Settings() {
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Nickname</p>
           <p className="text-white/40 text-xs mb-2">Give your companion a personal name only you call them.</p>
           <CompanionNicknameField companion={companion} userProfile={userProfile} />
+        </motion.div>
+
+        {/* Voice Gender */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Voice</p>
+          <div style={{ display: "flex", gap: 10 }}>
+            {["male", "female", "neutral"].map(gender => (
+              <button
+                key={gender}
+                onClick={() => handleChangeVoiceGender(gender)}
+                disabled={savingVoice}
+                style={{
+                  flex: 1,
+                  padding: "12px 10px",
+                  borderRadius: 12,
+                  border: voiceGender === gender ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
+                  background: voiceGender === gender ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)",
+                  color: voiceGender === gender ? "white" : "rgba(255,255,255,0.5)",
+                  fontWeight: voiceGender === gender ? 700 : 500,
+                  fontSize: 13,
+                  cursor: savingVoice ? "default" : "pointer",
+                  opacity: savingVoice ? 0.6 : 1,
+                  transition: "all 0.15s",
+                  textTransform: "capitalize",
+                }}
+              >
+                {gender === "male" && "🎤 Male"}
+                {gender === "female" && "✨ Female"}
+                {gender === "neutral" && "🤖 Neutral"}
+              </button>
+            ))}
+          </div>
         </motion.div>
 
         {/* Companion Picker */}
