@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import BottomTabs from '@/components/BottomTabs';
+import TopTabs from '@/components/TopTabs';
 import Layout from '@/Layout';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
@@ -86,7 +86,7 @@ const AuthenticatedApp = () => {
         <Route path="*" element={<PageNotFound />} />
       </Routes>
 
-      {showTabs && <BottomTabs />}
+      {showTabs && <TopTabs />}
       {showFeedbackBtn && <FeedbackButton />}
     </>
   );
