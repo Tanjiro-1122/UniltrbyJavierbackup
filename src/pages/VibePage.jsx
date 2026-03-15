@@ -66,31 +66,21 @@ export default function VibePage() {
 
   return (
     <div
-      className="screen no-tabs"
+      className="screen"
       style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)" }}
     >
-      {/* Stars */}
-      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div key={i} style={{
-            position: "absolute",
-            width:  Math.random() * 2 + 0.5,
-            height: Math.random() * 2 + 0.5,
-            borderRadius: "50%", background: "white",
-            top:  Math.random() * 100 + "%",
-            left: Math.random() * 100 + "%",
-            opacity: Math.random() * 0.5 + 0.1,
-            animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-            animationDelay: Math.random() * 4 + "s",
-          }} />
-        ))}
-      </div>
-      <style>{`@keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.9} }`}</style>
+      {/* Ambient glow */}
+      <div style={{
+        position: "absolute", top: -100, left: "50%", transform: "translateX(-50%)",
+        width: 300, height: 300, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
+        pointerEvents: "none", zIndex: 0,
+      }} />
 
       {/* ── HEADER ── */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
-        padding: "0 16px 16px",
+        padding: "0 16px 12px",
         paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
         position: "relative", zIndex: 1,
       }}>
@@ -98,63 +88,89 @@ export default function VibePage() {
           onClick={() => navigate(-1)}
           style={{
             width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, cursor: "pointer",
+            flexShrink: 0, cursor: "pointer", transition: "all 0.2s",
           }}
+          onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.12)"}
+          onMouseLeave={e => e.target.style.background = "rgba(255,255,255,0.08)"}
         >
           <ChevronLeft size={20} color="white" />
         </button>
         <div>
-          <h1 style={{ color: "white", fontWeight: 900, fontSize: 24, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
-          <p style={{ color: "rgba(196,180,252,0.6)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
+          <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
+          <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
         </div>
       </div>
 
       {/* ── VIBE CARDS ── */}
-      <div className="scroll-area" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "4px 16px 8px", position: "relative", zIndex: 1 }}>
+      <div className="scroll-area" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 10, padding: "12px 16px", position: "relative", zIndex: 1 }}>
         {VIBES.map(v => (
           <motion.button
             key={v.id}
-            whileTap={{ scale: 0.97 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setSelected(v.id)}
             style={{
-              width: "100%", borderRadius: 20, padding: "16px", textAlign: "left",
-              border: `1.5px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
-              background: `linear-gradient(135deg, ${v.gradientFrom}, ${v.gradientTo})`,
-              boxShadow: selected === v.id ? `0 0 24px ${v.glow}` : "none",
-              cursor: "pointer", transition: "border-color 0.15s, box-shadow 0.15s", flexShrink: 0,
+              width: "100%", borderRadius: 18, padding: "18px",
+              border: `2px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
+              background: `linear-gradient(135deg, ${v.gradientFrom} 0%, ${v.gradientTo} 100%)`,
+              backdropFilter: "blur(12px)",
+              boxShadow: selected === v.id ? `0 8px 32px ${v.glow}, inset 0 1px 0 rgba(255,255,255,0.1)` : `inset 0 1px 0 rgba(255,255,255,0.05)`,
+              cursor: "pointer",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              flexShrink: 0,
+              position: "relative",
+              overflow: "hidden",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 30, flexShrink: 0 }}>{v.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ color: v.labelColor, fontWeight: 700, fontSize: 16, margin: 0 }}>{v.label}</p>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "3px 0 0", lineHeight: 1.35 }}>{v.desc}</p>
+            {/* Shimmer effect */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: selected === v.id ? "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)" : "transparent",
+              pointerEvents: "none",
+            }} />
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1 }}>
+              <span style={{ fontSize: 40, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }}>{v.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 17, margin: 0 }}>{v.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, margin: "4px 0 0", lineHeight: 1.4 }}>{v.desc}</p>
               </div>
               {selected === v.id && (
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: "white", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#7c3aed" }} />
-                </div>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    width: 28, height: 28, borderRadius: "50%", background: "white",
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  }}>
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: v.labelColor }} />
+                </motion.div>
               )}
             </div>
           </motion.button>
         ))}
+        <div style={{ height: 12 }} />
       </div>
 
       {/* ── CTA ── */}
-      <div className="sticky-bottom" style={{ position: "relative", zIndex: 1, background: "linear-gradient(180deg, #06020f 0%, #120626 100%)" }}>
+      <div style={{
+        flexShrink: 0, padding: "12px 16px",
+        paddingBottom: "calc(76px + max(12px, env(safe-area-inset-bottom, 12px)))",
+        position: "relative", zIndex: 1,
+      }}>
         <button
           onClick={handleContinue}
           disabled={!selected}
           style={{
             width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
-            color: "white", fontWeight: 900, fontSize: 17,
+            color: "white", fontWeight: 900, fontSize: 18, letterSpacing: "0.5px",
             cursor: selected ? "pointer" : "default",
             opacity: selected ? 1 : 0.3,
-            background: selected ? "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)" : "rgba(255,255,255,0.08)",
-            boxShadow: selected ? "0 0 24px rgba(168,85,247,0.45)" : "none",
-            transition: "opacity 0.2s, box-shadow 0.2s",
+            background: selected ? "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)" : "rgba(255,255,255,0.08)",
+            boxShadow: selected ? "0 8px 32px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.2)" : "none",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           Let's go →
