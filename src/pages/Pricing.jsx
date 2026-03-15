@@ -1,13 +1,33 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import BottomTabs from "@/components/BottomTabs";
-import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
+import { callNativeIAPWithCallback, submitReceiptToServer, restorePurchases } from "@/components/utils/iapBridge";
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [loadingPlan, setLoadingPlan] = useState(null); // "monthly" | "annual" | null
 
-  const handleSubscribe = (plan) => subscribeToPlan(plan);
+  const handleSubscribe = (plan) => {
+    if (loadingPlan) return;
+    const productId =
+      plan === "annual"
+        ? "com.huertas.unfiltr.premium.annual"
+        : "com.huertas.unfiltr.premium.monthly";
+
+    setLoadingPlan(plan);
+    callNativeIAPWithCallback(productId, async (err, purchaseData) => {
+      if (err) {
+        setLoadingPlan(null);
+        return;
+      }
+      const profileId = localStorage.getItem("userProfileId");
+      await submitReceiptToServer(purchaseData, profileId);
+      setLoadingPlan(null);
+      navigate("/");
+    });
+  };
+
   const handleRestore = () => restorePurchases();
 
   return (
