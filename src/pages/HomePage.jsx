@@ -40,16 +40,14 @@ export default function HomePage() {
   }
 
   return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      overflow: "hidden",
-    }}>
+    <div
+      className="screen"
+      style={{
+        background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
         {Array.from({ length: 60 }).map((_, i) => (
