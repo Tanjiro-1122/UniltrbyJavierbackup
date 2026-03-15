@@ -63,7 +63,7 @@ export default function FeedbackButton() {
           onClick={() => setOpen(false)}
         >
           <div
-            style={{ width: "100%", maxWidth: 430, background: "#120820", borderRadius: "24px 24px 0 0", padding: "20px 20px", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))", border: "1px solid rgba(139,92,246,0.2)", borderBottom: "none" }}
+            style={{ width: "100%", background: "#120820", borderRadius: "24px 24px 0 0", padding: "20px 20px", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))", border: "1px solid rgba(139,92,246,0.2)", borderBottom: "none" }}
             onClick={e => e.stopPropagation()}
           >
             {/* Handle */}
