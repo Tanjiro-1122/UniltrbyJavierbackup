@@ -536,7 +536,7 @@ export default function ChatPage() {
           {/* STREAK BANNER */}
           {showStreakBanner && (
             <div style={{
-              position: "absolute", top: "max(5.5rem, calc(env(safe-area-inset-top) + 5rem))",
+              position: "absolute", top: "4rem",
               left: "50%", transform: "translateX(-50%)",
               background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
               backdropFilter: "blur(12px)", borderRadius: 999,
@@ -551,7 +551,7 @@ export default function ChatPage() {
           {/* ANNIVERSARY BANNER */}
           {showAnniversary && anniversary && (
             <div style={{
-              position: "absolute", top: "max(5.5rem, calc(env(safe-area-inset-top) + 5rem))",
+              position: "absolute", top: "4rem",
               left: "50%", transform: "translateX(-50%)",
               background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
               backdropFilter: "blur(12px)", borderRadius: 16,
