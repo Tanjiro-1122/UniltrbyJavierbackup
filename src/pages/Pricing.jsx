@@ -2,34 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import BottomTabs from "@/components/BottomTabs";
+import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 
 export default function Pricing() {
   const navigate = useNavigate();
 
-  const handleSubscribe = (plan) => {
-    const productId = plan === "annual"
-      ? "com.huertas.unfiltr.premium.annual"
-      : "com.huertas.unfiltr.premium.monthly";
-    
-    // Try all possible native bridges
-    if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
-    } else if (window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
-    } else if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ action: "subscribe", productId }));
-    } else {
-      // Last resort: post to parent
-      window.parent?.postMessage({ action: "subscribe", productId }, "*");
-      console.log("IAP bridge not found for:", productId);
-    }
-  };
-
-  const handleRestore = () => {
-    if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
-    }
-  };
+  const handleSubscribe = (plan) => subscribeToPlan(plan);
+  const handleRestore = () => restorePurchases();
 
   return (
     <div className="screen" style={{ background: "#0a0a12" }}>
