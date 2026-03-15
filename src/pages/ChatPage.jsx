@@ -495,10 +495,24 @@ export default function ChatPage() {
               )}
             </div>
 
-            <button onClick={() => navigate("/settings")}
-              style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <Settings size={16} color="white" />
-            </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => {
+                localStorage.removeItem("unfiltr_chat_history");
+                const name = companion.displayName || companion.name;
+                setMessages([{
+                  role: "assistant",
+                  content: `Fresh start! Hey, I'm ${name} 👋 What's up?`,
+                }]);
+              }}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                title="New chat">
+                <MessageSquare size={14} color="rgba(255,255,255,0.6)" />
+              </button>
+              <button onClick={() => navigate("/settings")}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <Settings size={16} color="white" />
+              </button>
+            </div>
           </div>
 
           {/* STREAK BANNER */}

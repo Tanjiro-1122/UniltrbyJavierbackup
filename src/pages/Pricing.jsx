@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
+import { base44 } from '@/api/base44Client';
 import { Check, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2 } from 'lucide-react';
 
 const PERKS = [
@@ -17,9 +19,25 @@ export default function Pricing() {
   const monthlyProduct = products.find(p => p.productId?.includes('monthly'));
   const selectedProduct = selectedPlan === 'annual' ? annualProduct : monthlyProduct;
 
+  const navigate = useNavigate();
+  const [upgraded, setUpgraded] = useState(false);
+
   const handleSubscribe = async () => {
     if (!selectedProduct) return;
-    await purchase(selectedProduct.productId);
+    const result = await purchase(selectedProduct.productId);
+    if (result?.success) {
+      // Update profile in DB
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        const isAnnual = selectedPlan === 'annual';
+        await base44.entities.UserProfile.update(profileId, {
+          is_premium: true,
+          premium: true,
+          annual_plan: isAnnual,
+        });
+      }
+      setUpgraded(true);
+    }
   };
 
   return (
@@ -170,9 +188,34 @@ export default function Pricing() {
           🔒 7-day free trial · Cancel anytime
         </p>
 
+        {/* Upgraded success */}
+        {upgraded && (
+          <button
+            onClick={() => navigate('/chat')}
+            style={{
+              width: '100%', padding: '14px',
+              background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)',
+              borderRadius: 16, color: 'white', fontWeight: 700, fontSize: 15,
+              cursor: 'pointer', marginBottom: 12,
+            }}
+          >
+            🎉 You're Premium! Start Chatting →
+          </button>
+        )}
+
         {/* Restore */}
         <button
-          onClick={restore}
+          onClick={async () => {
+            await restore();
+            // After restore, check if profile should be upgraded
+            const profileId = localStorage.getItem("userProfileId");
+            if (profileId) {
+              const profile = await base44.entities.UserProfile.get(profileId);
+              if (profile?.is_premium || profile?.premium) {
+                setUpgraded(true);
+              }
+            }
+          }}
           style={{
             width: '100%', padding: '12px',
             background: 'none', border: 'none',
