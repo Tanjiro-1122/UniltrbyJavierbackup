@@ -214,7 +214,7 @@ export default function Onboarding() {
       </div>
 
       {/* ── STEP CONTENT ── */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
       <AnimatePresence mode="wait">
 
         {step === 0 && (
