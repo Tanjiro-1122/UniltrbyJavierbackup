@@ -7,7 +7,6 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import BottomTabs from '@/components/BottomTabs';
-import SplashScreen from '@/components/SplashScreen';
 import { base44 } from '@/api/base44Client';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
