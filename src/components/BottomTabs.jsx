@@ -23,7 +23,7 @@ export default function BottomTabs() {
         width: "100%",
         height: "calc(64px + env(safe-area-inset-bottom, 0px))",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        background: "rgba(10,6,20,0.96)",
+        background: "#0a0614",
         borderTop: "1px solid rgba(139,92,246,0.18)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
