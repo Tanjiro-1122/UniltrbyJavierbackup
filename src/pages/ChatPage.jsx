@@ -439,7 +439,7 @@ export default function ChatPage() {
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+    <div className="screen" style={{ alignItems: "center", justifyContent: "center", background: "#06020f" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
