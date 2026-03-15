@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { messages, systemPrompt, isPremium, sessionMemory, userProfileId, companionId } = await req.json();
+    const { messages, systemPrompt, isPremium, sessionMemory } = await req.json();
 
     // Build memory block (premium only)
     let memoryBlock = "";
@@ -45,40 +45,6 @@ Do not explain the mood. Do not skip it. Always include it as the last line.`;
     const moodMatch = raw.match(/\[MOOD:(\w+)\]/i);
     const mood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     const reply = raw.replace(/\[MOOD:\w+\]/i, "").trim();
-
-    // Persist user message and assistant reply to DB
-    if (userProfileId && companionId) {
-      const lastUserMsg = messages[messages.length - 1];
-      try {
-        await Promise.all([
-          base44.asServiceRole.entities.Message.create({
-            user_profile_id: userProfileId,
-            companion_id: companionId,
-            role: "user",
-            content: lastUserMsg?.content || "",
-            emotional_tone: "neutral",
-          }),
-          base44.asServiceRole.entities.Message.create({
-            user_profile_id: userProfileId,
-            companion_id: companionId,
-            role: "assistant",
-            content: reply,
-            emotional_tone: mood === "happy" ? "happy" : mood === "sad" ? "sad" : mood === "anger" ? "angry" : mood === "fear" ? "anxious" : "neutral",
-          }),
-        ]);
-        // Update message count
-        if (userProfileId) {
-          try {
-            const profile = await base44.asServiceRole.entities.UserProfile.get(userProfileId);
-            await base44.asServiceRole.entities.UserProfile.update(userProfileId, {
-              message_count: (profile?.message_count || 0) + 1,
-            });
-          } catch { /* non-blocking */ }
-        }
-      } catch (e) {
-        console.error("Message save error:", e.message);
-      }
-    }
 
     return Response.json({ reply, mood });
   } catch (error) {

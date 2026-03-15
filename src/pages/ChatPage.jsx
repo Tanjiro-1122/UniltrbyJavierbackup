@@ -167,7 +167,7 @@ export default function ChatPage() {
     init();
   }, []);
 
-  /* ─── GREETING + LOAD HISTORY ─── */
+  /* ─── GREETING + LOAD LOCAL HISTORY ─── */
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
@@ -181,25 +181,19 @@ export default function ChatPage() {
       }`,
     };
 
-    // Load recent messages from DB
-    const pid = localStorage.getItem("userProfileId");
-    if (pid && companionDbId) {
-      base44.entities.Message.filter(
-        { user_profile_id: pid, companion_id: companionDbId },
-        "-created_date",
-        20
-      ).then(dbMsgs => {
-        if (dbMsgs && dbMsgs.length > 0) {
-          const history = dbMsgs.reverse().map(m => ({ role: m.role, content: m.content }));
+    // Load chat history from localStorage
+    const saved = localStorage.getItem("unfiltr_chat_history");
+    if (saved) {
+      try {
+        const history = JSON.parse(saved);
+        if (history.length > 0) {
           setMessages([greeting, ...history]);
-        } else {
-          setMessages([greeting]);
+          return;
         }
-      }).catch(() => setMessages([greeting]));
-    } else {
-      setMessages([greeting]);
+      } catch { /* ignore bad data */ }
     }
-  }, [companion, companionDbId]);
+    setMessages([greeting]);
+  }, [companion]);
 
   /* ─── AUTO-SCROLL ─── */
   useEffect(() => {
@@ -336,8 +330,6 @@ export default function ChatPage() {
         sessionMemory: isPremium ? sessionMemory : [],
         memorySummary: memorySummary || "",
         imageBase64: imgBase64,
-        userProfileId: localStorage.getItem("userProfileId"),
-        companionId: companionDbId,
       });
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
