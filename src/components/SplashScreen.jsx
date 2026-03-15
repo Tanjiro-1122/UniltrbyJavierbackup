@@ -84,7 +84,7 @@ export default function SplashScreen() {
         zIndex: 2,
       }}>
         <img
-          src="/appicon.png"
+          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/df8a8b3a0_newappicon.png"
           alt="Unfiltr"
           style={{ width: 200, height: 200, borderRadius: 36, objectFit: "cover" }}
         />

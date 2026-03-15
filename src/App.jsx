@@ -34,13 +34,6 @@ const AuthenticatedApp = () => {
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const showFeedbackBtn = !HIDE_FEEDBACK_BTN_ON.some(p => location.pathname.startsWith(p));
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#06020f" }}>
-        <div className="w-8 h-8 border-4 border-purple-900 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   if (authError) {
     if (authError.type === 'user_not_registered') {
