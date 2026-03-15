@@ -112,7 +112,7 @@ export default function VibePage() {
       </div>
 
       {/* ── VIBE CARDS ── */}
-      <div className="scroll-area" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "4px 16px 8px", position: "relative", zIndex: 1 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 12, padding: "4px 16px 8px", position: "relative", zIndex: 1, overflow: "hidden" }}>
         {VIBES.map(v => (
           <motion.button
             key={v.id}
