@@ -378,6 +378,7 @@ export default function Onboarding() {
         )}
 
       </AnimatePresence>
+      </div>
 
       {step !== 1 && (
         <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
