@@ -70,8 +70,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-4 pb-10">
-      <div className="max-w-2xl mx-auto">
+    <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none" }}>
+      <div className="scroll-area p-4 pb-10">
+        <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 pt-4">
           <div className="flex items-center gap-3">
@@ -160,6 +161,7 @@ export default function AdminDashboard() {
             <span className="text-sm">🖼️ Avatar Processor</span>
             <span className="text-xs text-gray-500">→</span>
           </Link>
+        </div>
         </div>
       </div>
     </div>
