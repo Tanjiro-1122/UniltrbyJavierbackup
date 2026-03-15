@@ -26,7 +26,7 @@ import FeedbackButton from './components/FeedbackButton';
 const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy", "/admin/feedback", "/feedback"];
 
 // Pages where the floating feedback button should NOT appear
-const HIDE_FEEDBACK_BTN_ON = ["/feedback", "/admin/feedback", "/onboarding"];
+const HIDE_FEEDBACK_BTN_ON = ["/feedback", "/admin/feedback", "/onboarding", "/vibe", "/ChatPage"];
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError, navigateToLogin } = useAuth();

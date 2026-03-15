@@ -97,7 +97,7 @@ body {
 
 /* Pages that have NO bottom tabs */
 .screen.no-tabs {
-  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* ── 3. .scroll-area ── */
