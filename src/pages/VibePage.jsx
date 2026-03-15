@@ -66,7 +66,7 @@ export default function VibePage() {
 
   return (
     <div
-      className="screen"
+      className="screen no-tabs"
       style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)" }}
     >
       {/* Ambient glow */}
