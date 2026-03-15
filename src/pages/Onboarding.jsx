@@ -328,14 +328,23 @@ export default function Onboarding() {
         {step === 3 && (
           <motion.div key="s3"
             initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
-            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative", zIndex: 2 }}
           >
-            <div style={{ flexShrink: 0, padding: "0 16px 12px" }}>
+            <div style={{ flexShrink: 0, padding: "0 16px 12px", position: "relative", zIndex: 2 }}>
               <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>{STEP_TITLES[3]}</h2>
               <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>{STEP_SUBS[3]}</p>
             </div>
-            <div className="scroll-area" style={{ flex: 1, minHeight: 0, padding: "4px 16px 8px", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 20 }}>
+            <div style={{
+              flex: 1, minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+              padding: "4px 16px 8px",
+              position: "relative",
+              zIndex: 2,
+            }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 8 }}>
                 {BACKGROUNDS.map(bg => (
                   <motion.button key={bg.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedBackground(bg.id)}
                     style={{
@@ -343,6 +352,7 @@ export default function Onboarding() {
                       border: `2px solid ${selectedBackground === bg.id ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
                       boxShadow: selectedBackground === bg.id ? "0 0 20px rgba(168,85,247,0.35)" : "none",
                       transition: "border-color 0.15s, box-shadow 0.15s",
+                      background: "none",
                     }}
                   >
                     <img src={bg.url} alt={bg.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
