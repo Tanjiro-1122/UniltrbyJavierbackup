@@ -606,11 +606,7 @@ export default function ChatPage() {
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
-            margin: "0 12px",
-            borderRadius: 16,
-            background: "rgba(8,3,16,0.75)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(8,3,16,0.7)",
             overflow: "hidden",
           }}>
             <div style={{
