@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings, Brain, Camera, X, Share2 } from "lucide-react";
+import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings, Brain, Camera, X, Share2, MessageSquare } from "lucide-react";
 import RatingPromptModal from "@/components/RatingPromptModal";
 import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 import ShareCardModal from "@/components/ShareCardModal";
