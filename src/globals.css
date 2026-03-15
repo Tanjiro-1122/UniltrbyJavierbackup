@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════
-   UNFILTR — GLOBAL CSS (simplified)
+   UNFILTR — GLOBAL CSS  (mobile-only, simplified)
    ══════════════════════════════════════════════════════════ */
 
 :root {
   --background: 6 2 15;
+  --tab-bar-h: 64px;  /* height of BottomTabs (excl. safe-area) */
   color-scheme: dark;
 }
 
@@ -14,7 +15,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -23,39 +24,29 @@ html, body {
   overflow: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Ensure background covers behind safe areas on iOS */
-  background-color: #06020f;
-  min-height: 100vh;
-  min-height: 100dvh;
 }
 
-#root {
-  height: 100%;
-  background: #06020f;
-  overflow: hidden;
-}
-
-/* ── .screen — outermost wrapper for every page ── */
-.screen {
+/* ── AppShell — full-screen page wrapper ── */
+.app-shell {
   position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;
   width: 100%;
-  max-width: 430px;
   height: 100vh;
   height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #06020f;
+  /* Reserve space for BottomTabs + safe-area bottom */
+  padding-bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom, 0px));
 }
 
-.screen.no-tabs {
+/* Pages without tabs — just handle safe-area */
+.app-shell.no-tabs {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── .scroll-area ── */
+/* ── Scrollable content area ── */
 .scroll-area {
   flex: 1;
   min-height: 0;
@@ -67,20 +58,6 @@ html, body {
   -ms-overflow-style: none;
 }
 .scroll-area::-webkit-scrollbar { display: none; }
-
-/* ── .sticky-bottom ── */
-.sticky-bottom {
-  flex-shrink: 0;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
-  background: #06020f;
-}
-
-.screen.no-tabs .sticky-bottom {
-  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
-  background: transparent;
-}
 
 /* ── Text selection ── */
 * {
@@ -113,8 +90,8 @@ input, textarea, select {
 
 /* ── Animations ── */
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes spin {
