@@ -710,7 +710,7 @@ export default function ChatPage() {
       {showPhotoDisclaimer && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
           onClick={() => setShowPhotoDisclaimer(false)}>
-          <div style={{ width: "100%", maxWidth: 430, background: "#1a0a2e", borderRadius: "24px 24px 0 0", padding: "24px 24px", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
+          <div style={{ width: "100%", background: "#1a0a2e", borderRadius: "24px 24px 0 0", padding: "24px 24px", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 999, margin: "0 auto 20px" }} />
             <p style={{ fontSize: 22, textAlign: "center", marginBottom: 8 }}>📸</p>
