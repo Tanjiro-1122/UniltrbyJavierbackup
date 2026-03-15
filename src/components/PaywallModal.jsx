@@ -36,13 +36,14 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
     const productId = planType === "annual"
       ? "com.huertas.unfiltr.premium.annual"
       : "com.huertas.unfiltr.premium.monthly";
-    const price = planType === "annual" ? "$59.99/year" : "$9.99/month";
-    if (isAndroid && window.webkit?.messageHandlers?.billing) {
-      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId, price });
-    } else if (window.webkit?.messageHandlers?.storekit) {
+    if (window.webkit?.messageHandlers?.storekit) {
       window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId });
+    } else if (window.webkit?.messageHandlers?.billing) {
+      window.webkit.messageHandlers.billing.postMessage({ action: "subscribe", productId });
+    } else if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ action: "subscribe", productId }));
     } else {
-      onSubscribe(planType);
+      window.parent?.postMessage({ action: "subscribe", productId }, "*");
     }
   };
 
