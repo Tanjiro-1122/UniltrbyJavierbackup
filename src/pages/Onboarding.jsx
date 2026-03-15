@@ -340,7 +340,7 @@ export default function Onboarding() {
               overflowX: "hidden",
               WebkitOverflowScrolling: "touch",
               overscrollBehavior: "contain",
-              padding: "4px 16px 8px",
+              padding: "4px 16px 120px",
               position: "relative",
               zIndex: 2,
               scrollbarWidth: "none",
