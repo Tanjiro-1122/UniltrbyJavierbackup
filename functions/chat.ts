@@ -5,9 +5,10 @@ const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 Deno.serve(async (req) => {
   try {
-    const { messages, systemPrompt, isPremium, sessionMemory } = await req.json();
-
     const base44 = createClientFromRequest(req);
+    const body = await new Response(req.body).json();
+    const { messages, systemPrompt, isPremium, sessionMemory } = body;
+
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
