@@ -88,7 +88,7 @@ export default function HomePage() {
         position: "relative",
         zIndex: 1,
         width: "100%",
-        maxWidth: 430,
+        maxWidth: 400,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
