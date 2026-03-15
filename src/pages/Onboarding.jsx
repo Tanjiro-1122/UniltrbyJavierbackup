@@ -381,7 +381,7 @@ export default function Onboarding() {
       </div>
 
       {step !== 1 && (
-        <div className="sticky-bottom" style={{ position: "relative", zIndex: 1 }}>
+        <div className="sticky-bottom" style={{ position: "relative", zIndex: 10 }}>
           <button
             onClick={handleNext}
             disabled={!canAdvance[step] || loading}
