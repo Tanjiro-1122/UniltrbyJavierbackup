@@ -459,7 +459,7 @@ export default function ChatPage() {
       />
 
       <AppShell
-        tabs={false}
+        tabs={true}
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
