@@ -44,7 +44,7 @@ export default function Pricing() {
   return (
     <AppShell bg="radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)"  >
       <div className="scroll-area" style={{ padding: '24px 20px', paddingBottom: 100 }}>
-        <div style={{ width: '100%', maxWidth: 430, margin: '0 auto' }}>
+        <div style={{ width: '100%' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
