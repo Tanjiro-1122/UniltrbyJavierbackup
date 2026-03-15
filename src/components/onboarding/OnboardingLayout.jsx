@@ -71,14 +71,15 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       {onNext &&
       <div style={{
         width: "100%",
+        maxWidth: 430,
         padding: "12px 16px",
         paddingBottom: "max(12px, env(safe-area-inset-bottom))",
         background: "linear-gradient(180deg, rgba(6,2,15,0.08) 0%, #06020f 28%)",
-        position: "absolute",
-        left: 0,
-        right: 0,
+        position: "fixed",
+        left: "50%",
+        transform: "translateX(-50%)",
         bottom: 0,
-        zIndex: 2
+        zIndex: 20
       }}>
           <button onClick={onNext} disabled={!canAdvance || loading} style={{
           width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
