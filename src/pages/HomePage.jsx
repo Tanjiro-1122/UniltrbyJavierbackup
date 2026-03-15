@@ -177,7 +177,7 @@ export default function HomePage() {
 
         {/* Primary CTA */}
         <button
-          onClick={() => navigate("/Onboarding")}
+          onClick={() => navigate("/onboarding")}
           style={{
             width: "100%", padding: "16px 0",
             borderRadius: 18, border: "none",
@@ -203,7 +203,7 @@ export default function HomePage() {
             if (profileId && companion && env) {
               navigate("/vibe");
             } else {
-              navigate("/Onboarding");
+              navigate("/onboarding");
             }
           }}
           style={{
