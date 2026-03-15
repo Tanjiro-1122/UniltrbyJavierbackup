@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
 import { base44 } from '@/api/base44Client';
 import { Check, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2 } from 'lucide-react';
+import AppShell from '@/components/shell/AppShell';
 
 const PERKS = [
   { icon: MessageCircle, label: 'Unlimited messages, every day' },
@@ -41,9 +42,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="screen" style={{
-      background: 'radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)',
-    }}>
+    <AppShell bg="radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)"  >
       <div className="scroll-area" style={{ padding: '24px 20px', paddingBottom: 100 }}>
         <div style={{ width: '100%', maxWidth: 430, margin: '0 auto' }}>
 
@@ -231,6 +230,6 @@ export default function Pricing() {
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
-    </div>
+    </AppShell>
   );
 }

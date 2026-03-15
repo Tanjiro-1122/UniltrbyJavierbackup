@@ -5,7 +5,7 @@ import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, Message
 import ReferralSection from "@/components/ReferralSection";
 import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
-import BottomTabs from "@/components/BottomTabs";
+import AppShell from "@/components/shell/AppShell";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
@@ -197,7 +197,7 @@ export default function Settings() {
   );
 
   return (
-    <div className="screen" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
+    <AppShell bg="linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)"  >
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
@@ -464,8 +464,6 @@ export default function Settings() {
       </div>
 
       {/* Paywall */}
-      <BottomTabs />
-
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
@@ -588,6 +586,6 @@ export default function Settings() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </AppShell>
   );
 }

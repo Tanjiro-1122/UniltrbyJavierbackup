@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Sparkles, Mic, MessageCircle } from "lucide-react";
 import AppFooter from "@/components/AppFooter";
+import AppShell from "@/components/shell/AppShell";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -32,21 +33,16 @@ export default function HomePage() {
 
   if (checking) {
     return (
-      <div className="screen" style={{ alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+      <AppShell style={{ alignItems: "center", justifyContent: "center" }}>
         <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div
-      className="screen"
-      style={{
-        background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <AppShell
+      bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
+      style={{ alignItems: "center", justifyContent: "center" }}
     >
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -98,7 +94,7 @@ export default function HomePage() {
         alignItems: "center",
         textAlign: "center",
         padding: "0 24px",
-        paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px))",
+        paddingBottom: 16,
       }}>
         {/* Logo — smaller to fit */}
         <div style={{
@@ -207,6 +203,6 @@ export default function HomePage() {
         {/* Footer links */}
         <AppFooter dark />
       </div>
-    </div>
+    </AppShell>
   );
 }

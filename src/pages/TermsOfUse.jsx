@@ -1,12 +1,13 @@
 import React from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AppShell from "@/components/shell/AppShell";
 
 export default function TermsOfUse() {
   const navigate = useNavigate();
 
   return (
-    <div className="screen no-tabs" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
+    <AppShell tabs={false} bg="linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)"  >
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
         padding: "0 16px 14px",
@@ -83,6 +84,6 @@ export default function TermsOfUse() {
           <p className="text-white/40 text-xs pt-4">Last updated: March 15, 2026</p>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Star } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import AppShell from "@/components/shell/AppShell";
 
 const CATEGORIES = ["Bug Report", "Feature Request", "General Feedback", "Something Broke"];
 
@@ -35,7 +36,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="screen no-tabs" style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)" }}>
+    <AppShell tabs={false} bg="linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)"  >
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
@@ -136,6 +137,6 @@ export default function FeedbackPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

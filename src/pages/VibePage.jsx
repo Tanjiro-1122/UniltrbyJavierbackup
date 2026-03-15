@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
+import AppShell from "@/components/shell/AppShell";
 
 const VIBES = [
   {
@@ -65,9 +66,9 @@ export default function VibePage() {
   };
 
   return (
-    <div
-      className="screen no-tabs"
-      style={{ background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)" }}
+    <AppShell
+      tabs={false}
+      bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)"
     >
       {/* Ambient glow */}
       <div style={{
@@ -176,6 +177,6 @@ export default function VibePage() {
           Let's go →
         </button>
       </div>
-    </div>
+    </AppShell>
   );
 }
