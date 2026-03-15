@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
+import BottomTabs from "@/components/BottomTabs";
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function Pricing() {
 
   return (
     <div className="screen" style={{ background: "#0a0a12" }}>
+      <div className="scroll-area">
       {/* Header */}
       <div style={{ padding: "max(2rem, env(safe-area-inset-top, 2rem)) 20px 0", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
@@ -204,6 +206,8 @@ export default function Pricing() {
           </button>
         </div>
       </div>
+      </div>
+      <BottomTabs />
     </div>
   );
 }
