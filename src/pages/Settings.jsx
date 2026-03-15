@@ -202,7 +202,7 @@ export default function Settings() {
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
         padding: "0 16px 14px",
-        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        paddingTop: "12px",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
         <button

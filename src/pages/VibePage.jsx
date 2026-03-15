@@ -80,7 +80,7 @@ export default function VibePage() {
       {/* ── HEADER ── */}
       <div style={{
         flexShrink: 0, padding: "0 16px 12px",
-        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
+        paddingTop: "12px",
         position: "relative", zIndex: 1,
       }}>
         <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>

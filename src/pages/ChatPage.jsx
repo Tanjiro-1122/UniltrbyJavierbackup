@@ -484,7 +484,7 @@ export default function ChatPage() {
           <div style={{
             flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "0 16px 12px",
-            paddingTop: "max(2.5rem, env(safe-area-inset-top, 2.5rem))",
+            paddingTop: "12px",
             background: "rgba(0,0,0,0.35)", backdropFilter: "blur(16px)",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}>
@@ -671,7 +671,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            <div style={{ flexShrink: 0, padding: "6px 16px", paddingBottom: 10 }}>
+            <div style={{ flexShrink: 0, padding: "6px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "8px 12px" }}>
                 <button onPointerDown={startListening} onPointerUp={stopListening}
                   style={{ width: 36, height: 36, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
