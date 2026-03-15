@@ -227,7 +227,7 @@ export default function Settings() {
             {[
               { label: "Day Streak", value: streak > 0 ? `${streak} 🔥` : "Start today!", sub: "consecutive days" },
               { label: "Days Together", value: daysSince, sub: "with your companion" },
-              { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
+              { label: "Messages", value: parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) || userProfile?.message_count || 0, sub: "total sent" },
             ].map((stat, i) => (
               <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
                 <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 18, margin: 0 }}>{stat.value}</p>

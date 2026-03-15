@@ -347,6 +347,14 @@ export default function ChatPage() {
 
       incrementCount();
       spawnParticles();
+
+      // Increment local message count and sync to DB
+      const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
+      localStorage.setItem("unfiltr_msg_total", String(localCount));
+      const pid3 = localStorage.getItem("userProfileId");
+      if (pid3) {
+        base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
+      }
       // Get voice_gender from companion DB if available
       const voiceGender = companionDbId 
         ? (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female"
