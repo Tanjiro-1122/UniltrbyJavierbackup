@@ -23,16 +23,11 @@ export default function Pricing() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
+    <div className="screen" style={{
       background: 'radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: '24px 20px calc(80px + env(safe-area-inset-bottom, 0px))',
-      overflowY: 'auto',
     }}>
-      <div style={{ width: '100%', maxWidth: 430 }}>
+      <div className="scroll-area" style={{ padding: '24px 20px', paddingBottom: 100 }}>
+        <div style={{ width: '100%', maxWidth: 430, margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
