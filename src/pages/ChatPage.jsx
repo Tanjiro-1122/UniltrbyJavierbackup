@@ -649,7 +649,7 @@ export default function ChatPage() {
               <p style={{ textAlign: "center", color: "rgba(255,255,255,0.18)", fontSize: 11, margin: "5px 0 0" }}>Hold 🎤 to speak · Tap to type</p>
             </div>
 
-            <div style={{ flexShrink: 0, height: "max(12px, env(safe-area-inset-bottom, 12px))" }} />
+
           </div>
 
         </div>
@@ -706,6 +706,7 @@ export default function ChatPage() {
         companionName={companionDisplayName}
         mood={shareCard?.mood || "neutral"}
       />
+      <BottomTabs />
     </>
   );
 }

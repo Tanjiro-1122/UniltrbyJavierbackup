@@ -309,6 +309,18 @@ export default function Settings() {
           <ReferralSection profileId={localStorage.getItem("userProfileId")} />
         </motion.div>
 
+        {/* Pricing Page Link */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.29 }}>
+          <button
+            onClick={() => navigate("/Pricing")}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(219,39,119,0.1))", border: "1px solid rgba(168,85,247,0.25)" }}
+          >
+            <span className="text-white font-semibold text-sm">✨ View Premium Plans</span>
+            <span style={{ color: "rgba(168,85,247,0.7)", fontSize: 18 }}>›</span>
+          </button>
+        </motion.div>
+
         {/* Premium Status */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Status</p>
@@ -351,6 +363,8 @@ export default function Settings() {
       </motion.div>
 
       {/* Paywall */}
+      <BottomTabs />
+
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
