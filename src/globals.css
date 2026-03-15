@@ -39,8 +39,8 @@ html, body {
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
