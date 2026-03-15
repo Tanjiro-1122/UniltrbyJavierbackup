@@ -33,7 +33,7 @@ export default function Pricing() {
 
   return (
     <div className="screen" style={{ background: "#0a0a12" }}>
-      <div className="scroll-area">
+      <div className="scroll-area" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
       {/* Header */}
       <div style={{ padding: "max(2rem, env(safe-area-inset-top, 2rem)) 20px 0", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
