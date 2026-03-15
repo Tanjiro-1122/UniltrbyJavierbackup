@@ -108,12 +108,15 @@ export default function Pricing() {
 
           <button
             onClick={() => handleSubscribe("monthly")}
+            disabled={!!loadingPlan}
             style={{
               width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
               background: "rgba(255,255,255,0.05)", color: "white", fontWeight: 700, fontSize: 15,
-              cursor: "pointer", position: "relative", zIndex: 10
+              cursor: loadingPlan ? "default" : "pointer", opacity: loadingPlan && loadingPlan !== "monthly" ? 0.5 : 1,
+              position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
             }}
           >
+            {loadingPlan === "monthly" && <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />}
             Start Monthly Plan
           </button>
         </div>
