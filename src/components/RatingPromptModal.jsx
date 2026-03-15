@@ -33,6 +33,7 @@ export default function RatingPromptModal({ visible, onClose }) {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%", maxWidth: 340,
+              position: "relative",
               background: "linear-gradient(180deg, #1e0d3a 0%, #130825 100%)",
               border: "1px solid rgba(168,85,247,0.25)",
               borderRadius: 24, padding: "28px 24px",
