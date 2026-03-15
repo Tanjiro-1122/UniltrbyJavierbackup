@@ -380,7 +380,7 @@ export default function Onboarding() {
       </div>
 
       {step !== 1 && (
-        <div style={{ flexShrink: 0, padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "#06020f", position: "relative", zIndex: 100 }}>
+        <div style={{ flexShrink: 0, padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "#06020f", position: "fixed", bottom: 64, left: 0, right: 0, width: "100%", maxWidth: 430, marginLeft: "auto", marginRight: "auto", zIndex: 1000 }}>
           <button
             onClick={handleNext}
             disabled={!canAdvance[step] || loading}
