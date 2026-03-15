@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import OnboardingTutorial from "@/components/OnboardingTutorial";
+import AppShell from "@/components/shell/AppShell";
 
 const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester", "javier1122"];
 const TESTER_CODE  = "unfiltr2026demo";
@@ -141,9 +142,9 @@ export default function Onboarding() {
         />
       )}
       {!showTutorial && (
-    <div
-      className="screen no-tabs"
-      style={{ background: GRADIENT }}
+    <AppShell
+      tabs={false}
+      bg={GRADIENT}
     >
       {/* Stars */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -372,7 +373,7 @@ export default function Onboarding() {
       </div>
 
       {step !== 1 && (
-        <div style={{ flexShrink: 0, padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "#06020f", position: "fixed", bottom: 0, left: 0, right: 0, width: "100%", maxWidth: 430, marginLeft: "auto", marginRight: "auto", zIndex: 1000 }}>
+        <div style={{ flexShrink: 0, padding: "12px 16px", background: "#06020f", position: "fixed", bottom: 0, left: 0, right: 0, width: "100%", paddingBottom: "max(12px, env(safe-area-inset-bottom))", zIndex: 1000 }}>
           <button
             onClick={handleNext}
             disabled={!canAdvance[step] || loading}
@@ -393,7 +394,7 @@ export default function Onboarding() {
           </button>
         </div>
       )}
-    </div>
+    </AppShell>
       )}
     </>
   );
