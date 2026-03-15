@@ -16,18 +16,19 @@
 
 html, body {
   height: 100%;
+  margin: 0;
+  padding: 0;
   background: #06020f;
   color-scheme: dark;
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 #root {
-  min-height: 100%;
+  height: 100%;
   background: #06020f;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── .screen — outermost wrapper for every page ── */
