@@ -343,28 +343,41 @@ export default function Settings() {
 
         {/* Background Picker */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Background</p>
-          <div className="grid grid-cols-2 gap-3">
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+            Background
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
             {BACKGROUNDS.map((bg) => {
               const isSelected = userProfile.background_id === bg.id;
               return (
-                <button key={bg.id} onClick={() => handleChangeBackground(bg.id)}
-                  className={`relative h-24 rounded-2xl border-2 overflow-hidden transition-all ${isSelected ? "border-purple-500" : "border-white/10"}`}>
-                  <img src={bg.url} alt={bg.label} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-0 inset-x-0 p-2 text-center pointer-events-none">
-                    <p className="text-white text-xs font-semibold">{bg.emoji} {bg.label}</p>
+                <button
+                  key={bg.id}
+                  onClick={() => handleChangeBackground(bg.id)}
+                  style={{
+                    position: "relative",
+                    height: 96,
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    border: isSelected ? "2px solid #a855f7" : "2px solid rgba(255,255,255,0.1)",
+                    background: "#1a1a2e",
+                    cursor: "pointer",
+                  }}
+                >
+                  <img src={bg.url} alt={bg.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)", pointerEvents: "none" }} />
+                  <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, textAlign: "center", pointerEvents: "none" }}>
+                    <p style={{ color: "white", fontSize: 12, fontWeight: 600, margin: 0 }}>{bg.emoji} {bg.label}</p>
                   </div>
                   {isSelected && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
-                      <Check className="w-3 h-3 text-purple-600" />
+                    <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Check size={12} color="#9333ea" />
                     </div>
                   )}
                 </button>
               );
             })}
           </div>
-          {savingBackground && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
+          {savingBackground && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, marginTop: 8, textAlign: "center" }}>Saving...</p>}
         </motion.div>
 
         {/* Notifications */}
