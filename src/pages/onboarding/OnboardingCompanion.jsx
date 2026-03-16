@@ -20,8 +20,8 @@ export default function OnboardingCompanion() {
   const handleSelect = (id) => {
     setSelected(id);
     updateOnboardingStore({ selectedCompanion: id });
-    // Auto-advance to nickname step
-    navigate("/onboarding/nickname");
+    // Brief delay so user sees selected state before advancing
+    setTimeout(() => navigate("/onboarding/nickname"), 350);
   };
 
   return (

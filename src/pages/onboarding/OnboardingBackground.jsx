@@ -96,8 +96,8 @@ export default function OnboardingBackground() {
               onClick={() => { setSelected(bg.id); updateOnboardingStore({ selectedBackground: bg.id }); }}
               style={{
                 position: "relative", height: 120, borderRadius: 18, overflow: "hidden", cursor: "pointer",
-                border: `2px solid ${selected === bg.id ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.1)"}`,
-                boxShadow: selected === bg.id ? "0 0 20px rgba(168,85,247,0.35)" : "none",
+                border: `3px solid ${selected === bg.id ? "#a855f7" : "rgba(255,255,255,0.1)"}`,
+                boxShadow: selected === bg.id ? "0 0 28px rgba(168,85,247,0.6), inset 0 0 12px rgba(168,85,247,0.1)" : "none",
                 transition: "border-color 0.15s, box-shadow 0.15s",
                 background: "transparent", padding: 0,
               }}
@@ -108,8 +108,8 @@ export default function OnboardingBackground() {
                 <p style={{ color: "white", fontSize: 12, fontWeight: 600, margin: 0 }}>{bg.emoji} {bg.label}</p>
               </div>
               {selected === bg.id && (
-                <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#7c3aed" }} />
+                <div style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#db2777)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 10px rgba(168,85,247,0.8)" }}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
               )}
             </motion.button>

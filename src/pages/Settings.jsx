@@ -260,7 +260,7 @@ export default function Settings() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.2s",
                 }}>
-                  {entry.mood && <span style={{ fontSize: 16 }}>{entry.mood}</span>}
+                  {entry.mood ? <span style={{ fontSize: 16 }}>{entry.mood}</span> : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 16 }}>+</span>}
                 </div>
                 <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 9 }}>{entry.day}</span>
               </div>

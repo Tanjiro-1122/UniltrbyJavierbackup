@@ -553,24 +553,33 @@ export default function ChatPage() {
               <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
             </div>
 
-            {/* Name + info — with text shadow for readability over bg image */}
-            <p style={{ color: "white", fontWeight: 800, fontSize: 17, margin: "6px 0 0", textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.8)" }}>{companionDisplayName}</p>
-            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize", textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}>{vibe} mode · {environment.label}</p>
-            {!isPremium ? (
-              <button onClick={() => setShowPaywall(true)}
-                style={{ margin: "3px 0 8px", fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
-                {remaining}/{FREE_LIMIT} msgs left
-              </button>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "2px 0 8px" }}>
-                <p style={{ fontSize: 10, color: "rgba(168,85,247,0.8)", margin: 0 }}>✨ Premium</p>
-                {sessionMemory.length > 0 && (
-                  <span style={{ fontSize: 10, color: "rgba(168,85,247,0.6)", display: "flex", alignItems: "center", gap: 2 }}>
-                    · <Brain size={9} color="rgba(168,85,247,0.6)" /> {sessionMemory.length} memories
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Name + info — solid dark pill for readability */}
+            <div style={{
+              background: "rgba(6,2,15,0.75)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 16, padding: "8px 18px 6px",
+              margin: "6px 0 0", textAlign: "center",
+            }}>
+              <p style={{ color: "white", fontWeight: 800, fontSize: 17, margin: 0 }}>{companionDisplayName}</p>
+              <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 11, margin: "2px 0 4px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
+              {!isPremium ? (
+                <button onClick={() => setShowPaywall(true)}
+                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.4)", padding: "2px 10px", borderRadius: 999, cursor: "pointer" }}>
+                  {remaining}/{FREE_LIMIT} msgs left · Unlock unlimited
+                </button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <p style={{ fontSize: 10, color: "rgba(168,85,247,0.9)", margin: 0 }}>✨ Premium</p>
+                  {sessionMemory.length > 0 && (
+                    <span style={{ fontSize: 10, color: "rgba(168,85,247,0.7)", display: "flex", alignItems: "center", gap: 2 }}>
+                      · <Brain size={9} color="rgba(168,85,247,0.7)" /> {sessionMemory.length} memories
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Banners overlay */}
             {showStreakBanner && (
