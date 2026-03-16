@@ -532,7 +532,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 190, height: 190, marginTop: 0 }}>
+            <div style={{ position: "relative", width: 248, height: 248, marginTop: 0 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
