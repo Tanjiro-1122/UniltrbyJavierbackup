@@ -34,20 +34,32 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       <style>{`@keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.9} }`}</style>
 
       {/* Header */}
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
+      <div style={{
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "12px 16px 8px",
+        position: "relative",
+        zIndex: 1,
+        background: "transparent"
+      }}>
+        <button onClick={onBack} style={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer"
+        }}>
+          <ChevronLeft size={20} color="white" />
+        </button>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Step {step} of {totalSteps}</p>
+        <div style={{ width: 40 }} />
+      </div>
 
       {/* Progress Bar */}
       <div style={{ flexShrink: 0, padding: "0 16px 16px", position: "relative", zIndex: 1 }}>
@@ -85,9 +97,9 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
           width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
           color: "white", fontWeight: 900, fontSize: 17,
           cursor: canAdvance && !loading ? "pointer" : "default",
-          opacity: canAdvance && !loading ? 1 : 0.3,
+          opacity: 1,
           background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-          boxShadow: canAdvance ? "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)" : "none",
+          boxShadow: "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)",
           transition: "opacity 0.2s, box-shadow 0.2s"
         }}>
             {nextLabel || <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>}

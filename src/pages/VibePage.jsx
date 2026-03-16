@@ -150,9 +150,9 @@ export default function VibePage() {
             width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
             color: "white", fontWeight: 900, fontSize: 18, letterSpacing: "0.5px",
             cursor: selected ? "pointer" : "default",
-            opacity: selected ? 1 : 0.3,
-            background: selected ? "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)" : "rgba(255,255,255,0.08)",
-            boxShadow: selected ? "0 8px 32px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.2)" : "none",
+            opacity: 1,
+            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+            boxShadow: "0 8px 32px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >

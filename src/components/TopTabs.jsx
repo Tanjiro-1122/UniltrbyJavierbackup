@@ -17,27 +17,27 @@ export default function TopTabs() {
     <div
       style={{
         position: "fixed",
-        top: 0,
+        bottom: 0,
         left: "50%",
         transform: "translateX(-50%)",
         width: "100%",
         maxWidth: 430,
-        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
         background: "rgba(6,2,15,0.92)",
-        borderBottom: "1px solid rgba(139,92,246,0.18)",
+        borderTop: "1px solid rgba(139,92,246,0.18)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
         zIndex: 100,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+        boxShadow: "0 -4px 24px rgba(0,0,0,0.5)",
       }}
     >
       {TABS.map(({ path, label, icon: Icon }) => {
         const isActive =
           path === "/"
-            ? location.pathname === "/"
+            ? location.pathname === "/" || location.pathname === "/HomePage"
             : location.pathname === path;
 
         return (
