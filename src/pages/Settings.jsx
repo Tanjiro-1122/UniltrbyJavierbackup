@@ -197,7 +197,7 @@ export default function Settings() {
   );
 
   return (
-    <AppShell bg="linear-gradient(180deg, #0a0a0f 0%, #1a0a2e 100%)"  >
+    <AppShell bg="#0d0118" style={{ background: "#0d0118" }}>
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
