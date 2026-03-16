@@ -326,7 +326,7 @@ export default function Settings() {
                     transform: isSelected ? "scale(1.05)" : "scale(1)",
                   }}>
                     <img src={c.avatar} alt={c.name}
-                      style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "top" }} />
+                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
                     {isSelected && (
                       <div style={{ position: "absolute", inset: 0, background: "rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <Check size={14} color="white" />
