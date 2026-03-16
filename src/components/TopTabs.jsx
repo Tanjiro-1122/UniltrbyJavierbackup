@@ -17,12 +17,11 @@ export default function TopTabs() {
     <div
       style={{
         position: "fixed",
-        right: 0,
         bottom: 0,
-        left: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
         width: "100%",
-        paddingLeft: "env(safe-area-inset-left, 0px)",
-        paddingRight: "env(safe-area-inset-right, 0px)",
+        maxWidth: 430,
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         background: "rgba(6,2,15,0.92)",
         borderTop: "1px solid rgba(139,92,246,0.18)",
