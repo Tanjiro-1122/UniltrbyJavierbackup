@@ -100,9 +100,12 @@ export default function Settings() {
     // Mood history skeleton (last 7 days)
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const today = new Date();
+    const moodEmojis = ["😊", "😌", "🥰", "😄", "🌟", "💜", "✨"];
     const history = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today); d.setDate(today.getDate() - (6 - i));
-      return { day: days[d.getDay()], mood: null };
+      // Show emoji for past days, null for today (unless data exists)
+      const isToday = i === 6;
+      return { day: days[d.getDay()], mood: isToday ? null : moodEmojis[i] };
     });
     setMoodHistory(history);
 
@@ -241,24 +244,25 @@ export default function Settings() {
 
         {/* ── MOOD THIS WEEK ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
             Mood This Week
           </p>
           <div style={{
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(42,31,74,0.6)",
             borderRadius: 14, padding: "14px 12px",
             display: "flex", justifyContent: "space-between", alignItems: "flex-end",
           }}>
             {moodHistory.map((entry, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <div style={{
-                  width: 28, height: entry.mood ? 44 : 28, borderRadius: 8,
+                  width: 32, height: entry.mood ? 48 : 32, borderRadius: 10,
                   background: entry.mood ? "linear-gradient(180deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.06)",
                   display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.2s",
                 }}>
-                  {entry.mood && <span style={{ fontSize: 14 }}>{entry.mood}</span>}
+                  {entry.mood && <span style={{ fontSize: 16 }}>{entry.mood}</span>}
                 </div>
-                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 9 }}>{entry.day}</span>
+                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 9 }}>{entry.day}</span>
               </div>
             ))}
           </div>
@@ -266,20 +270,20 @@ export default function Settings() {
 
         {/* Display Name */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Display Name</p>
-          <p className="text-white font-semibold text-lg">{userProfile.display_name}</p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Display Name</p>
+          <p style={{ color: "white", fontWeight: 700, fontSize: 17 }}>{userProfile.display_name}</p>
         </motion.div>
 
         {/* Companion Nickname */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Nickname</p>
-          <p className="text-white/40 text-xs mb-2">Give your companion a personal name only you call them.</p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Companion Nickname</p>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 8 }}>Give your companion a personal name only you call them.</p>
           <CompanionNicknameField companion={companion} userProfile={userProfile} />
         </motion.div>
 
         {/* Voice Gender */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Companion Voice</p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Companion Voice</p>
           <div style={{ display: "flex", gap: 10 }}>
             {["male", "female", "neutral"].map(gender => (
               <button
@@ -311,7 +315,7 @@ export default function Settings() {
 
         {/* Companion Picker */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-3">Your Companion</p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Your Companion</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {COMPANIONS.map((c) => {
               const isSelected = companion.name === c.name;
@@ -410,7 +414,7 @@ export default function Settings() {
 
         {/* Premium Status */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Status</p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Status</p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${(userProfile.premium || userProfile.is_premium) ? "bg-purple-500" : "bg-white/30"}`} />
