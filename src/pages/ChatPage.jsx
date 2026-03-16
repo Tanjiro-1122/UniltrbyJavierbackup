@@ -422,7 +422,7 @@ export default function ChatPage() {
     } catch (error) {
       console.error("Chat send failed:", error?.message || error, error?.response?.data);
       const detailedMessage = error?.response?.data?.error || error?.message;
-      const fallbackText = detailedMessage ? `Hmm, lost the signal. ${detailedMessage}` : "Hmm, lost the signal. Try again? 🌙";
+      const fallbackText = detailedMessage || "Hmm, lost the signal. Try again? 🌙";
       setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
