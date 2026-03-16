@@ -1,28 +1,41 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
 
 const GRADIENT = "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)";
 
 export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext, canAdvance, loading, nextLabel, children }) {
   return (
-    <AppShell tabs={false} bg={GRADIENT}>
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: "100%",
+      maxWidth: 430,
+      height: "100dvh",
+      paddingTop: "env(safe-area-inset-top, 44px)",
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      background: GRADIENT,
+      zIndex: 1,
+    }}>
       {/* Stars */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
         {Array.from({ length: 60 }).map((_, i) =>
-        <div key={i} style={{
-          position: "absolute",
-          width: Math.random() * 2 + 0.5,
-          height: Math.random() * 2 + 0.5,
-          borderRadius: "50%",
-          background: "white",
-          top: Math.random() * 100 + "%",
-          left: Math.random() * 100 + "%",
-          opacity: Math.random() * 0.6 + 0.1,
-          animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-          animationDelay: Math.random() * 4 + "s"
-        }} />
+          <div key={i} style={{
+            position: "absolute",
+            width: Math.random() * 2 + 0.5,
+            height: Math.random() * 2 + 0.5,
+            borderRadius: "50%",
+            background: "white",
+            top: Math.random() * 100 + "%",
+            left: Math.random() * 100 + "%",
+            opacity: Math.random() * 0.6 + 0.1,
+            animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
+            animationDelay: Math.random() * 4 + "s"
+          }} />
         )}
         <div style={{
           position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)",
@@ -42,17 +55,12 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         padding: "12px 16px 8px",
         position: "relative",
         zIndex: 1,
-        background: "transparent"
       }}>
         <button onClick={onBack} style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
+          width: 40, height: 40, borderRadius: "50%",
           background: "rgba(255,255,255,0.08)",
           border: "1px solid rgba(255,255,255,0.12)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer"
         }}>
           <ChevronLeft size={20} color="white" />
@@ -74,34 +82,40 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+      {/* Content — scrollable, takes remaining space */}
+      <div className="scroll-area" style={{
+        flex: 1,
+        minHeight: 0,
+        width: "100%",
+        position: "relative",
+        zIndex: 1,
+      }}>
         {children}
       </div>
 
       {/* Next Button */}
-      {onNext &&
-      <div style={{
-        flexShrink: 0,
-        width: "100%",
-        padding: "12px 16px",
-        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-        background: "linear-gradient(180deg, rgba(6,2,15,0.08) 0%, #06020f 28%)",
-        zIndex: 20
-      }}>
-          <button onClick={onNext} disabled={!canAdvance || loading} style={{
-          width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
-          color: "white", fontWeight: 900, fontSize: 17,
-          cursor: canAdvance && !loading ? "pointer" : "default",
-          opacity: 1,
-          background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-          boxShadow: "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)",
-          transition: "opacity 0.2s, box-shadow 0.2s"
+      {onNext && (
+        <div style={{
+          flexShrink: 0,
+          width: "100%",
+          padding: "12px 16px 16px",
+          background: "linear-gradient(180deg, rgba(6,2,15,0.0) 0%, #06020f 30%)",
+          position: "relative",
+          zIndex: 10,
         }}>
-            {nextLabel || <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>}
+          <button onClick={onNext} disabled={!canAdvance || loading} style={{
+            width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
+            color: "white", fontWeight: 900, fontSize: 17,
+            cursor: canAdvance && !loading ? "pointer" : "default",
+            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+            boxShadow: "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)",
+            transition: "opacity 0.2s",
+            opacity: canAdvance && !loading ? 1 : 0.6,
+          }}>
+            {loading ? "…" : (nextLabel || <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>)}
           </button>
         </div>
-      }
-    </AppShell>);
-
+      )}
+    </div>
+  );
 }
