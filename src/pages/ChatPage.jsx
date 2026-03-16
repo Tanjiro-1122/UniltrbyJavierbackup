@@ -362,7 +362,9 @@ export default function ChatPage() {
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId) base44.entities.Companion.update(companionDbId, { mood_mode: newMood });
+      if (companionDbId && companionDbId !== "pending") {
+        base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
+      }
 
       incrementCount();
       spawnParticles();
@@ -375,9 +377,12 @@ export default function ChatPage() {
         base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
       }
       // Get voice_gender from companion DB if available
-      const voiceGender = companionDbId 
-        ? (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female"
-        : "female";
+      let voiceGender = "female";
+      if (companionDbId && companionDbId !== "pending") {
+        try {
+          voiceGender = (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female";
+        } catch {}
+      }
       speakText(replyText, companion.id, voiceGender);
 
       // Rating prompt after 10th message
@@ -411,7 +416,8 @@ export default function ChatPage() {
           }
         }).catch(() => {});
       }
-    } catch {
+    } catch (error) {
+      console.error("Chat send failed:", error?.message || error);
       setMessages(m => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
