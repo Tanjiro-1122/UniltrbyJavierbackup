@@ -23,7 +23,7 @@ happy, neutral, sad, fear, disgust, surprise, anger, contentment, fatigue
 Do not explain the mood. Do not skip it. Always include it as the last line.`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
