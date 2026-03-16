@@ -342,14 +342,28 @@ export default function ChatPage() {
         setPendingImage(null);
       }
 
-      const res = await base44.functions.invoke("chat", {
+      const chatPayload = {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt,
         isPremium,
         sessionMemory: isPremium ? sessionMemory : [],
         memorySummary: memorySummary || "",
         imageBase64: imgBase64,
-      });
+      };
+
+      let res;
+      try {
+        res = await base44.functions.invoke("chat", chatPayload);
+      } catch (primaryError) {
+        console.error("Primary chat invoke failed:", primaryError?.message || primaryError);
+        res = await base44.functions.invoke("chat", {
+          messages: [{ role: "user", content: userContent }],
+          systemPrompt: `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–2 sentences max.`,
+          isPremium: false,
+          sessionMemory: [],
+        });
+      }
+
       const replyText = res.data?.reply || "...";
       setMessages(m => {
         const updated = [...m, { role: "assistant", content: replyText }];
@@ -418,7 +432,8 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error("Chat send failed:", error?.message || error);
-      setMessages(m => [...m, { role: "assistant", content: "Hmm, lost the signal. Try again? 🌙" }]);
+      const fallbackText = error?.message ? `Hmm, lost the signal. ${error.message}` : "Hmm, lost the signal. Try again? 🌙";
+      setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
   };
