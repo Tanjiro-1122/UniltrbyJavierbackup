@@ -46,14 +46,14 @@ export default function TopTabs() {
             onClick={() => navigate(path)}
             style={{
               flex: 1,
-              minHeight: 56,
+              minHeight: 60,
               paddingTop: 10,
               paddingBottom: 10,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 4,
+              gap: 5,
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -68,18 +68,19 @@ export default function TopTabs() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: 52,
-                height: 36,
-                borderRadius: 12,
-                background: "rgba(168,85,247,0.15)",
-                border: "1px solid rgba(168,85,247,0.25)",
+                width: 56,
+                height: 40,
+                borderRadius: 14,
+                background: "rgba(168,85,247,0.2)",
+                border: "1px solid rgba(168,85,247,0.4)",
+                boxShadow: "0 0 12px rgba(168,85,247,0.25)",
               }} />
             )}
             <Icon
-              size={22}
-              color={isActive ? "#c084fc" : "rgba(156,163,175,0.6)"}
+              size={24}
+              color={isActive ? "#d8b4fe" : "rgba(156,163,175,0.55)"}
               style={{
-                filter: isActive ? "drop-shadow(0 0 8px rgba(192,132,252,0.9))" : "none",
+                filter: isActive ? "drop-shadow(0 0 6px rgba(216,180,254,0.8))" : "none",
                 transition: "all 0.2s",
                 position: "relative",
                 zIndex: 1,
@@ -87,9 +88,9 @@ export default function TopTabs() {
             />
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? "#c084fc" : "rgba(156,163,175,0.55)",
+                color: isActive ? "#d8b4fe" : "rgba(156,163,175,0.5)",
                 letterSpacing: "0.2px",
                 position: "relative",
                 zIndex: 1,

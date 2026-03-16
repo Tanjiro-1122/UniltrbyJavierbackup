@@ -502,10 +502,10 @@ export default function ChatPage() {
             {/* Controls row */}
             <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <button onClick={() => setVoiceEnabled(v => !v)}
-                style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                {voiceEnabled ? <Volume2 size={14} color="white" /> : <VolumeX size={14} color="rgba(255,255,255,0.4)" />}
+                style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                {voiceEnabled ? <Volume2 size={18} color="white" /> : <VolumeX size={18} color="rgba(255,255,255,0.4)" />}
               </button>
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 {isPremium && (
                   <button onClick={() => {
                     const data = JSON.stringify(messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })), null, 2);
@@ -515,9 +515,9 @@ export default function ChatPage() {
                     a.href = url; a.download = `unfiltr-chat-${new Date().toISOString().slice(0,10)}.json`; a.click();
                     URL.revokeObjectURL(url);
                   }}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                     title="Save conversation">
-                    <Save size={13} color="#a855f7" />
+                    <Save size={16} color="#a855f7" />
                   </button>
                 )}
                 <button onClick={() => {
@@ -525,13 +525,13 @@ export default function ChatPage() {
                   const name = companion.displayName || companion.name;
                   setMessages([{ role: "assistant", content: `Fresh start! Hey, I'm ${name} 👋 What's up?` }]);
                 }}
-                  style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                   title="New chat">
-                  <MessageSquare size={13} color="rgba(255,255,255,0.6)" />
+                  <MessageSquare size={16} color="rgba(255,255,255,0.6)" />
                 </button>
                 <button onClick={() => navigate("/settings")}
-                  style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Settings size={14} color="white" />
+                  style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Settings size={16} color="white" />
                 </button>
               </div>
             </div>
@@ -597,19 +597,19 @@ export default function ChatPage() {
             )}
           </div>
 
-          {/* MEMORY BANNER — free users only */}
+          {/* MEMORY BANNER — free users only, subtle */}
           {showMemoryBanner && !isPremium && (
             <div onClick={() => setShowPaywall(true)}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, padding: "6px 16px",
-                background: "rgba(139,92,246,0.12)",
-                borderBottom: "1px solid rgba(139,92,246,0.2)",
+                gap: 6, padding: "5px 16px",
+                background: "rgba(139,92,246,0.08)",
+                borderBottom: "1px solid rgba(139,92,246,0.12)",
                 cursor: "pointer",
+                opacity: 0.85,
               }}>
-              <span style={{ fontSize: 12 }}>🔒</span>
-              <span style={{ color: "rgba(196,180,252,0.85)", fontSize: 11, fontWeight: 600 }}>Unlock Memory — they'll remember you forever</span>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#a855f7", background: "rgba(168,85,247,0.2)", padding: "2px 6px", borderRadius: 999 }}>Premium</span>
+              <span style={{ fontSize: 11 }}>🔒</span>
+              <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
             </div>
           )}
 
