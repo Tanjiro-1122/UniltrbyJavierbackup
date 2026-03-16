@@ -92,6 +92,8 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         width: "100%",
         position: "relative",
         zIndex: 1,
+        overflowY: "auto",
+        overflowX: "hidden",
       }}>
         {children}
       </div>
