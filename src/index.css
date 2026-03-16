@@ -84,5 +84,11 @@
 
   body {
     @apply bg-background text-foreground;
+    background: #06020f !important;
+  }
+
+  #root {
+    border: none !important;
+    outline: none !important;
   }
 }
