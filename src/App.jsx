@@ -28,6 +28,7 @@ import FeedbackButton from './components/FeedbackButton';
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = [
   "/onboarding",
+  "/HomePage", "/",
   "/AdminAvatarProcessor", "/AdminDashboard",
   "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback",
   "/Pricing"

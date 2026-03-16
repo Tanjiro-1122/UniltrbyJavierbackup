@@ -167,9 +167,9 @@ export default function HomePage() {
             }}
             style={{
               width: "100%", padding: "14px 16px",
-              borderRadius: 18, border: "1px solid rgba(139,92,246,0.3)",
-              color: "rgba(255,255,255,0.8)", fontWeight: 600, fontSize: 14,
-              background: "rgba(139,92,246,0.08)",
+              borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
+              color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: 14,
+              background: "transparent",
               cursor: "pointer",
               letterSpacing: "0.2px",
             }}>
