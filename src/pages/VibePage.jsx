@@ -144,8 +144,9 @@ export default function VibePage() {
       {/* ── CTA ── */}
       <div style={{
         flexShrink: 0, padding: "12px 16px",
-        paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+        paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))",
         position: "relative", zIndex: 1,
+        background: "linear-gradient(to top, rgba(6,2,15,0.95) 60%, transparent 100%)",
       }}>
         <button
           onClick={handleContinue}

@@ -5,7 +5,13 @@
 /* ── 0. Override Tailwind white background — must come first ── */
 :root {
   --background: 6 2 15; /* #06020f in RGB */
+  --border: 0 0% 18%; /* override light border from tailwind */
   color-scheme: dark;
+}
+
+html, body, #root {
+  border: none !important;
+  outline: none !important;
 }
 
 html, body {

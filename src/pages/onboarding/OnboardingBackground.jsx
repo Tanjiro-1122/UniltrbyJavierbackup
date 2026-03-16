@@ -81,7 +81,11 @@ export default function OnboardingBackground() {
       loading={loading}
       nextLabel={loading ? "Setting up…" : "Enter this world →"}
     >
-      <div style={{ padding: "0 16px 16px" }}>
+      <div style={{
+        position: "sticky", top: 0, zIndex: 10,
+        padding: "0 16px 12px",
+        background: "linear-gradient(180deg, #0d0220 70%, transparent 100%)",
+      }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           Pick your space
         </h2>

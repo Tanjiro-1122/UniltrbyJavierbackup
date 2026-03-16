@@ -475,8 +475,7 @@ export default function ChatPage() {
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundAttachment: "local",
+          backgroundPosition: "center center",
         }}
       >
         {/* Strong dark overlay on bg image */}
@@ -540,7 +539,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 248, height: 248, marginTop: 0 }}>
+            <div style={{ position: "relative", width: 200, height: 200, marginTop: 0 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
@@ -627,13 +626,14 @@ export default function ChatPage() {
 
           {/* ── CONVERSATION BOX (bounded, only this scrolls) ── */}
           <div style={{
-            flex: "0 0 28%", minHeight: 0,
+            flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
             margin: "8px 10px 0",
-            background: "rgba(8,3,16,0.82)",
-            border: "1px solid rgba(42,31,74,0.6)",
-            borderRadius: 20,
-            boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
+            background: "rgba(6,2,15,0.65)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "20px 20px 0 0",
             overflow: "hidden",
           }}>
             <div className="scroll-area" style={{
@@ -685,7 +685,7 @@ export default function ChatPage() {
           </div>
 
           {/* ── TYPING FIELD (fixed at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))", background: "#0d0a1a" }}>
+          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))", background: "rgba(6,2,15,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
             {/* Pending image preview */}
             {pendingImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
