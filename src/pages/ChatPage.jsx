@@ -351,27 +351,7 @@ export default function ChatPage() {
         imageBase64: imgBase64,
       };
 
-      let res;
-      try {
-        res = await base44.functions.invoke("chat", chatPayload);
-      } catch (primaryError) {
-        console.error("Primary chat invoke failed:", primaryError?.message || primaryError);
-        const fallbackResponse = await fetch("/functions/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [{ role: "user", content: userContent }],
-            systemPrompt: `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–2 sentences max.`,
-            isPremium: false,
-            sessionMemory: [],
-          }),
-        });
-        const fallbackData = await fallbackResponse.json();
-        if (!fallbackResponse.ok) {
-          throw new Error(fallbackData?.error || "Chat request failed");
-        }
-        res = { data: fallbackData };
-      }
+      const res = await base44.functions.invoke("chat", chatPayload);
 
       const replyText = res.data?.reply || "...";
       setMessages(m => {
