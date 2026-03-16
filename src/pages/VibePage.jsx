@@ -114,24 +114,27 @@ export default function VibePage() {
               pointerEvents: "none",
             }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1 }}>
-              <span style={{ fontSize: 40, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }}>{v.emoji}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, minHeight: 64 }}>
+              <span style={{ fontSize: 44, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>{v.emoji}</span>
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 17, margin: 0 }}>{v.label}</p>
-                <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, margin: "4px 0 0", lineHeight: 1.4 }}>{v.desc}</p>
+                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 18, margin: 0 }}>{v.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, margin: "4px 0 0", lineHeight: 1.5 }}>{v.desc}</p>
               </div>
-              {selected === v.id && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  style={{
-                    width: 28, height: 28, borderRadius: "50%", background: "white",
-                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                  }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: v.labelColor }} />
-                </motion.div>
-              )}
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: selected === v.id ? 1 : 0, opacity: selected === v.id ? 1 : 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                style={{ flexShrink: 0 }}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: "linear-gradient(135deg, #7c3aed, #db2777)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 0 16px ${v.glow}`,
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              </motion.div>
             </div>
           </motion.button>
         ))}

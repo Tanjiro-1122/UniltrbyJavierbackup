@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { CheckCircle } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";

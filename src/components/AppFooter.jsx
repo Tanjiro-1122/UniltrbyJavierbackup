@@ -8,17 +8,33 @@ export default function AppFooter({ dark = false }) {
   const dividerClass = dark ? "text-white/35" : "text-white/30";
 
   return (
-    <div className="w-full flex flex-col items-center gap-1 py-3 px-4">
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px]">
-        <button onClick={() => navigate("/PrivacyPolicy")} className={`${textClass} transition-colors bg-transparent border-none cursor-pointer p-0`}>Privacy Policy</button>
-        <span className={dividerClass}>·</span>
-        <button onClick={() => navigate("/TermsOfUse")} className={`${textClass} transition-colors bg-transparent border-none cursor-pointer p-0`}>Terms of Use</button>
-        <span className={dividerClass}>·</span>
-        <button onClick={() => restorePurchases()} className={`${textClass} transition-colors bg-transparent border-none cursor-pointer p-0`}>Restore Purchases</button>
-        <span className={dividerClass}>·</span>
-        <a href="mailto:support@unfiltr.app" className={`${textClass} transition-colors`}>Support</a>
+    <div className="w-full flex flex-col items-center gap-2 py-2 px-4">
+      <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
+        <button
+          onClick={() => navigate("/PrivacyPolicy")}
+          style={{ minHeight: 44, padding: "0 10px", background: "transparent", border: "none", cursor: "pointer" }}
+          className={`${textClass} transition-colors text-xs font-medium`}
+        >Privacy Policy</button>
+        <span className={`${dividerClass} text-xs`}>·</span>
+        <button
+          onClick={() => navigate("/TermsOfUse")}
+          style={{ minHeight: 44, padding: "0 10px", background: "transparent", border: "none", cursor: "pointer" }}
+          className={`${textClass} transition-colors text-xs font-medium`}
+        >Terms of Use</button>
+        <span className={`${dividerClass} text-xs`}>·</span>
+        <button
+          onClick={() => restorePurchases()}
+          style={{ minHeight: 44, padding: "0 10px", background: "transparent", border: "none", cursor: "pointer" }}
+          className={`${textClass} transition-colors text-xs font-medium`}
+        >Restore Purchases</button>
+        <span className={`${dividerClass} text-xs`}>·</span>
+        <a
+          href="mailto:support@unfiltr.app"
+          style={{ minHeight: 44, padding: "0 10px", display: "flex", alignItems: "center" }}
+          className={`${textClass} transition-colors text-xs font-medium`}
+        >Support</a>
       </div>
-      <p className={`text-[9px] ${dark ? "text-white/45" : "text-white/30"} text-center`}>
+      <p className={`text-[10px] ${dark ? "text-white/40" : "text-white/30"} text-center`}>
         © {new Date().getFullYear()} Unfiltr. All rights reserved. Subscription auto-renews unless cancelled.
       </p>
     </div>
