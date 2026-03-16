@@ -1,10 +1,10 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Settings, Star } from "lucide-react";
+import { Home, MessageSquare, Settings, Sparkles } from "lucide-react";
 
 const TABS = [
   { path: "/",        label: "Home",    icon: Home },
-  { path: "/vibe",    label: "Vibe",    icon: Star },
+  { path: "/Pricing", label: "Premium", icon: Sparkles },
   { path: "/chat",    label: "Chat",    icon: MessageSquare },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
