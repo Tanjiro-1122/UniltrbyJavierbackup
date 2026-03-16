@@ -356,12 +356,21 @@ export default function ChatPage() {
         res = await base44.functions.invoke("chat", chatPayload);
       } catch (primaryError) {
         console.error("Primary chat invoke failed:", primaryError?.message || primaryError);
-        res = await base44.functions.invoke("chat", {
-          messages: [{ role: "user", content: userContent }],
-          systemPrompt: `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–2 sentences max.`,
-          isPremium: false,
-          sessionMemory: [],
+        const fallbackResponse = await fetch("/functions/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: userContent }],
+            systemPrompt: `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–2 sentences max.`,
+            isPremium: false,
+            sessionMemory: [],
+          }),
         });
+        const fallbackData = await fallbackResponse.json();
+        if (!fallbackResponse.ok) {
+          throw new Error(fallbackData?.error || "Chat request failed");
+        }
+        res = { data: fallbackData };
       }
 
       const replyText = res.data?.reply || "...";
@@ -431,8 +440,9 @@ export default function ChatPage() {
         }).catch(() => {});
       }
     } catch (error) {
-      console.error("Chat send failed:", error?.message || error);
-      const fallbackText = error?.message ? `Hmm, lost the signal. ${error.message}` : "Hmm, lost the signal. Try again? 🌙";
+      console.error("Chat send failed:", error?.message || error, error?.response?.data);
+      const detailedMessage = error?.response?.data?.error || error?.message;
+      const fallbackText = detailedMessage ? `Hmm, lost the signal. ${detailedMessage}` : "Hmm, lost the signal. Try again? 🌙";
       setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
