@@ -23,15 +23,15 @@ export default function TopTabs() {
         width: "100%",
         maxWidth: 430,
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        background: "rgba(6,2,15,0.92)",
-        borderTop: "1px solid rgba(139,92,246,0.18)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        background: "rgba(6,2,15,0.95)",
+        borderTop: "1px solid rgba(139,92,246,0.22)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
         zIndex: 100,
-        boxShadow: "0 -4px 24px rgba(0,0,0,0.5)",
+        boxShadow: "0 -4px 32px rgba(0,0,0,0.6)",
       }}
     >
       {TABS.map(({ path, label, icon: Icon }) => {
@@ -46,47 +46,53 @@ export default function TopTabs() {
             onClick={() => navigate(path)}
             style={{
               flex: 1,
-              height: 52,
+              minHeight: 56,
+              paddingTop: 10,
+              paddingBottom: 10,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 2,
+              gap: 4,
               background: "none",
               border: "none",
               cursor: "pointer",
-              transition: "opacity 0.15s",
-              opacity: isActive ? 1 : 0.45,
+              transition: "all 0.2s",
               position: "relative",
             }}
           >
+            {/* Active pill background */}
             {isActive && (
               <div style={{
                 position: "absolute",
-                bottom: 0,
+                top: "50%",
                 left: "50%",
-                transform: "translateX(-50%)",
-                width: 24,
-                height: 2,
-                borderRadius: 999,
-                background: "#a855f7",
-                boxShadow: "0 0 8px rgba(168,85,247,0.8)",
+                transform: "translate(-50%, -50%)",
+                width: 52,
+                height: 36,
+                borderRadius: 12,
+                background: "rgba(168,85,247,0.15)",
+                border: "1px solid rgba(168,85,247,0.25)",
               }} />
             )}
             <Icon
-              size={20}
-              color={isActive ? "#a855f7" : "#9ca3af"}
+              size={22}
+              color={isActive ? "#c084fc" : "rgba(156,163,175,0.6)"}
               style={{
-                filter: isActive ? "drop-shadow(0 0 6px rgba(168,85,247,0.8))" : "none",
+                filter: isActive ? "drop-shadow(0 0 8px rgba(192,132,252,0.9))" : "none",
                 transition: "all 0.2s",
+                position: "relative",
+                zIndex: 1,
               }}
             />
             <span
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? "#a855f7" : "#9ca3af",
-                letterSpacing: "0.3px",
+                color: isActive ? "#c084fc" : "rgba(156,163,175,0.55)",
+                letterSpacing: "0.2px",
+                position: "relative",
+                zIndex: 1,
               }}
             >
               {label}

@@ -57,16 +57,29 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         zIndex: 1,
       }}>
         <button onClick={onBack} style={{
-          width: 40, height: 40, borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.12)",
+          width: 44, height: 44, borderRadius: "50%",
+          background: "rgba(255,255,255,0.1)",
+          border: "1px solid rgba(255,255,255,0.18)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer"
+          cursor: "pointer",
+          flexShrink: 0,
         }}>
-          <ChevronLeft size={20} color="white" />
+          <ChevronLeft size={22} color="white" />
         </button>
-        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 600 }}>Step {step} of {totalSteps}</p>
-        <div style={{ width: 40 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 700, margin: 0 }}>Step {step} of {totalSteps}</p>
+          <div style={{ display: "flex", gap: 4 }}>
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div key={i} style={{
+                width: i < step ? 16 : 6, height: 6, borderRadius: 99,
+                background: i < step ? "linear-gradient(90deg, #7c3aed, #db2777)" : "rgba(255,255,255,0.15)",
+                transition: "all 0.3s ease",
+                boxShadow: i < step ? "0 0 6px rgba(168,85,247,0.5)" : "none",
+              }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ width: 44 }} />
       </div>
 
       {/* Progress Bar */}

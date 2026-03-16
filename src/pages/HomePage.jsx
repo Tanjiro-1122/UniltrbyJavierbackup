@@ -114,27 +114,27 @@ export default function HomePage() {
             Your AI companion, always here.
           </p>
 
-          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.5, margin: "0 0 16px", maxWidth: 260 }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, lineHeight: 1.6, margin: "0 0 18px", maxWidth: 280 }}>
             Talk, vent, laugh, or just hang out. No judgement. Just a friend who gets you.
           </p>
 
           <div style={{
-            display: "flex", gap: 8, width: "100%", marginBottom: 16,
+            display: "flex", gap: 8, width: "100%", marginBottom: 18,
           }}>
             {[
-            { icon: <MessageCircle size={16} />, label: "Real convos" },
-            { icon: <Mic size={16} />, label: "Voice chat" },
-            { icon: <Sparkles size={16} />, label: "9 companions" }].
+            { icon: <MessageCircle size={18} />, label: "Real convos" },
+            { icon: <Mic size={18} />, label: "Voice chat" },
+            { icon: <Sparkles size={18} />, label: "9 companions" }].
             map((f, i) =>
             <div key={i} style={{
               flex: 1,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-              borderRadius: 14, padding: "10px 4px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+              borderRadius: 16, padding: "14px 4px",
               background: "rgba(139,92,246,0.12)",
-              border: "1px solid rgba(42,31,74,0.8)"
+              border: "1px solid rgba(139,92,246,0.25)",
             }}>
-                <div style={{ color: "#a78bfa", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.7))" }}>{f.icon}</div>
-                <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
+                <div style={{ color: "#c084fc", filter: "drop-shadow(0 0 8px rgba(192,132,252,0.8))" }}>{f.icon}</div>
+                <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: 600, letterSpacing: "0.2px" }}>{f.label}</span>
               </div>
             )}
           </div>
@@ -142,13 +142,14 @@ export default function HomePage() {
           <button
             onClick={() => navigate("/onboarding")}
             style={{
-              width: "100%", padding: "14px 16px",
+              width: "100%", padding: "16px",
               borderRadius: 18, border: "none",
-              color: "white", fontWeight: 900, fontSize: 16,
+              color: "white", fontWeight: 900, fontSize: 17,
               background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-              boxShadow: "0 0 24px rgba(168,85,247,0.5), 0 4px 16px rgba(0,0,0,0.4)",
+              boxShadow: "0 0 32px rgba(168,85,247,0.55), 0 4px 20px rgba(0,0,0,0.5)",
               animation: "shimmer 3s ease-in-out infinite",
-              cursor: "pointer", marginBottom: 8
+              cursor: "pointer", marginBottom: 10,
+              letterSpacing: "0.2px",
             }}>
             Meet your companion ✨
           </button>
@@ -165,11 +166,12 @@ export default function HomePage() {
               }
             }}
             style={{
-              width: "100%", padding: "12px 16px",
-              borderRadius: 18, border: "1px solid rgba(42,31,74,0.9)",
-              color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 13,
-              background: "rgba(255,255,255,0.05)",
-              cursor: "pointer"
+              width: "100%", padding: "14px 16px",
+              borderRadius: 18, border: "1px solid rgba(139,92,246,0.3)",
+              color: "rgba(255,255,255,0.8)", fontWeight: 600, fontSize: 14,
+              background: "rgba(139,92,246,0.08)",
+              cursor: "pointer",
+              letterSpacing: "0.2px",
             }}>
             I already have one → Continue
           </button>
