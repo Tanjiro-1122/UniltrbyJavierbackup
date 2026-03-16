@@ -7,12 +7,11 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
   return (
     <div style={{
       position: "fixed",
-      top: 0,
+      inset: 0,
       left: "50%",
       transform: "translateX(-50%)",
       width: "100%",
       maxWidth: 430,
-      height: "100dvh",
       paddingTop: "env(safe-area-inset-top, 44px)",
       paddingBottom: "env(safe-area-inset-bottom, 0px)",
       display: "flex",

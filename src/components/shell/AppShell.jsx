@@ -24,9 +24,6 @@ export default function AppShell({
       className={`app-shell ${tabs ? "" : "no-tabs"} ${className}`}
       style={{
         background: bg || "#06020f",
-        minHeight: "100vh",
-        height: "100dvh",
-        flex: 1,
         ...style,
       }}
     >
