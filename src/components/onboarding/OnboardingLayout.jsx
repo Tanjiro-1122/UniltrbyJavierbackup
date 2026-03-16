@@ -58,32 +58,23 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       }}>
         <button onClick={onBack} style={{
           width: 48, height: 48, borderRadius: "50%",
-          background: "rgba(255,255,255,0.12)",
-          border: "1px solid rgba(255,255,255,0.22)",
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)",
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer",
           flexShrink: 0,
         }}>
           <ChevronLeft size={26} color="white" />
         </button>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <p style={{ color: "rgba(255,255,255,0.95)", fontSize: 14, fontWeight: 700, margin: 0, letterSpacing: "0.3px" }}>Step {step} of {totalSteps}</p>
-          <div style={{ display: "flex", gap: 6 }}>
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div key={i} style={{
-                width: i < step ? 20 : 8, height: 8, borderRadius: 99,
-                background: i < step ? "linear-gradient(90deg, #7c3aed, #db2777)" : "rgba(255,255,255,0.2)",
-                transition: "all 0.3s ease",
-                boxShadow: i < step ? "0 0 8px rgba(168,85,247,0.7)" : "none",
-              }} />
-            ))}
-          </div>
-        </div>
+        <p style={{ color: "rgba(255,255,255,0.95)", fontSize: 14, fontWeight: 700, margin: 0, letterSpacing: "0.3px" }}>Step {step} of {totalSteps}</p>
         <div style={{ width: 48 }} />
       </div>
 
-      {/* Progress Bar */}
-      <div style={{ flexShrink: 0, padding: "6px 16px 12px", position: "relative", zIndex: 1 }}>
+      {/* Progress Bar only — no duplicate dots */}
+      <div style={{ flexShrink: 0, padding: "8px 16px 12px", position: "relative", zIndex: 1 }}>
         <div style={{ height: 5, borderRadius: 99, background: "rgba(255,255,255,0.1)" }}>
           <div style={{
             height: "100%", borderRadius: 99,
@@ -111,7 +102,8 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         <div style={{
           flexShrink: 0,
           width: "100%",
-          padding: "12px 16px 16px",
+          padding: "12px 16px",
+          paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))",
           background: "linear-gradient(180deg, rgba(6,2,15,0.0) 0%, #06020f 30%)",
           position: "relative",
           zIndex: 10,

@@ -477,7 +477,10 @@ export default function ChatPage() {
           backgroundPosition: "center bottom",
         }}
       >
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.22)", pointerEvents: "none" }} />
+        {/* Strong dark overlay on bg image */}
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", pointerEvents: "none" }} />
+        {/* Extra bottom gradient to kill any background bleed below input */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to top, #06020f 40%, transparent 100%)", pointerEvents: "none", zIndex: 0 }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -550,9 +553,9 @@ export default function ChatPage() {
               <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
             </div>
 
-            {/* Name + info */}
-            <p style={{ color: "white", fontWeight: 700, fontSize: 17, margin: "6px 0 0" }}>{companionDisplayName}</p>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
+            {/* Name + info — with text shadow for readability over bg image */}
+            <p style={{ color: "white", fontWeight: 800, fontSize: 17, margin: "6px 0 0", textShadow: "0 2px 12px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.8)" }}>{companionDisplayName}</p>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, margin: "2px 0 0", textTransform: "capitalize", textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}>{vibe} mode · {environment.label}</p>
             {!isPremium ? (
               <button onClick={() => setShowPaywall(true)}
                 style={{ margin: "3px 0 8px", fontSize: 10, color: "rgba(196,180,252,0.75)", background: "rgba(139,92,246,0.15)", border: "none", padding: "2px 8px", borderRadius: 999, cursor: "pointer" }}>
