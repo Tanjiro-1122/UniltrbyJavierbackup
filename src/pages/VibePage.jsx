@@ -138,7 +138,7 @@ export default function VibePage() {
             </div>
           </motion.button>
         ))}
-        <div style={{ height: 12 }} />
+        <div style={{ height: 80 }} />
       </div>
 
       {/* ── CTA ── */}

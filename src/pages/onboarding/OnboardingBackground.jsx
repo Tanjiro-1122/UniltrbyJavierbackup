@@ -89,7 +89,7 @@ export default function OnboardingBackground() {
           Where do you want to hang out?
         </p>
       </div>
-      <div style={{ padding: "0 16px 24px" }}>
+      <div style={{ padding: "0 16px 120px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {BACKGROUNDS.map(bg => (
             <motion.button key={bg.id} whileTap={{ scale: 0.96 }}
