@@ -35,7 +35,7 @@ const HIDE_TABS_ON = [
 
 // Pages where the floating feedback button should NOT appear
 const HIDE_FEEDBACK_BTN_ON = [
-  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat"
+  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/"
 ];
 
 const AuthenticatedApp = () => {

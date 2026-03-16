@@ -119,23 +119,22 @@ export default function HomePage() {
           </p>
 
           <div style={{
-            display: "flex", gap: 10, width: "100%", marginBottom: 18,
-            justifyContent: "center"
+            display: "flex", gap: 8, width: "100%", marginBottom: 16,
           }}>
             {[
-            { icon: <MessageCircle size={18} />, label: "Real convos" },
-            { icon: <Mic size={18} />, label: "Voice chat" },
-            { icon: <Sparkles size={18} />, label: "9 companions" }].
+            { icon: <MessageCircle size={16} />, label: "Real convos" },
+            { icon: <Mic size={16} />, label: "Voice chat" },
+            { icon: <Sparkles size={16} />, label: "9 companions" }].
             map((f, i) =>
             <div key={i} style={{
-              flex: 1, maxWidth: 110,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-              borderRadius: 14, padding: "10px 6px",
+              flex: 1,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+              borderRadius: 14, padding: "10px 4px",
               background: "rgba(139,92,246,0.12)",
-              border: "1px solid rgba(139,92,246,0.3)"
+              border: "1px solid rgba(42,31,74,0.8)"
             }}>
                 <div style={{ color: "#a78bfa", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.7))" }}>{f.icon}</div>
-                <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
+                <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, fontWeight: 600 }}>{f.label}</span>
               </div>
             )}
           </div>
@@ -143,7 +142,7 @@ export default function HomePage() {
           <button
             onClick={() => navigate("/onboarding")}
             style={{
-              width: "100%", padding: "14px 0",
+              width: "100%", padding: "14px 16px",
               borderRadius: 18, border: "none",
               color: "white", fontWeight: 900, fontSize: 16,
               background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
@@ -151,7 +150,6 @@ export default function HomePage() {
               animation: "shimmer 3s ease-in-out infinite",
               cursor: "pointer", marginBottom: 8
             }}>
-
             Meet your companion ✨
           </button>
 
@@ -167,13 +165,12 @@ export default function HomePage() {
               }
             }}
             style={{
-              width: "100%", padding: "12px 0",
-              borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
-              color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13,
+              width: "100%", padding: "12px 16px",
+              borderRadius: 18, border: "1px solid rgba(42,31,74,0.9)",
+              color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 13,
               background: "rgba(255,255,255,0.05)",
               cursor: "pointer"
             }}>
-
             I already have one → Continue
           </button>
         </div>

@@ -65,7 +65,7 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         }}>
           <ChevronLeft size={20} color="white" />
         </button>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Step {step} of {totalSteps}</p>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, fontWeight: 600 }}>Step {step} of {totalSteps}</p>
         <div style={{ width: 40 }} />
       </div>
 

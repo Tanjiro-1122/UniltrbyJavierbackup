@@ -619,7 +619,7 @@ export default function ChatPage() {
             display: "flex", flexDirection: "column",
             margin: "8px 10px 0",
             background: "rgba(8,3,16,0.82)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid rgba(42,31,74,0.6)",
             borderRadius: 20,
             boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
             overflow: "hidden",
@@ -673,7 +673,7 @@ export default function ChatPage() {
           </div>
 
           {/* ── TYPING FIELD (fixed at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))", background: "linear-gradient(180deg, rgba(6,2,15,0) 0%, rgba(6,2,15,0.72) 24%, rgba(6,2,15,0.95) 100%)" }}>
+          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))", background: "linear-gradient(180deg, rgba(6,2,15,0) 0%, rgba(6,2,15,0.72) 24%, rgba(6,2,15,0.95) 100%)" }}>
             {/* Pending image preview */}
             {pendingImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
