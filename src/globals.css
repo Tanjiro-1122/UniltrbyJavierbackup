@@ -125,8 +125,10 @@ body {
   flex-direction: column;
   overflow: hidden !important;
   overscroll-behavior: none;
-  padding-top: calc(52px + env(safe-area-inset-top, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
   z-index: 1;
 }
