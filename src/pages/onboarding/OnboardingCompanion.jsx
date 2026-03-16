@@ -53,16 +53,16 @@ export default function OnboardingCompanion() {
                 transition: "all 0.15s",
               }}
             >
-              <div style={{ width: "100%", height: 90, overflow: "hidden", borderRadius: 10 }}>
+              <div style={{ position: "relative", width: "100%", height: 100, overflow: "hidden", borderRadius: 12 }}>
                 <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} onError={e => e.target.style.opacity = "0.3"} />
+                {selected === c.id && (
+                  <div style={{ position: "absolute", top: 5, right: 5 }}>
+                    <CheckCircle size={20} color="white" fill="#a855f7" />
+                  </div>
+                )}
               </div>
-              <p style={{ color: "white", fontSize: 11, fontWeight: 700, margin: "6px 0 2px", textAlign: "center", lineHeight: 1.2 }}>{c.emoji} {c.name}</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textAlign: "center", lineHeight: 1.2, margin: 0 }}>{c.tagline}</p>
-              {selected === c.id && (
-                <div style={{ marginTop: 5, width: 16, height: 16, borderRadius: "50%", background: "#a855f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-              )}
+              <p style={{ color: "white", fontSize: 12, fontWeight: 700, margin: "7px 0 2px", textAlign: "center", lineHeight: 1.2 }}>{c.name}</p>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, textAlign: "center", lineHeight: 1.3, margin: 0 }}>{c.tagline}</p>
             </motion.button>
           ))}
         </div>
