@@ -83,13 +83,13 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
       </div>
 
       {/* Progress Bar */}
-      <div style={{ flexShrink: 0, padding: "0 16px 16px", position: "relative", zIndex: 1 }}>
-        <div style={{ height: 3, borderRadius: 99, background: "rgba(255,255,255,0.08)" }}>
+      <div style={{ flexShrink: 0, padding: "0 16px 12px", position: "relative", zIndex: 1 }}>
+        <div style={{ height: 4, borderRadius: 99, background: "rgba(255,255,255,0.08)" }}>
           <div style={{
             height: "100%", borderRadius: 99,
             width: `${step / totalSteps * 100}%`,
             background: "linear-gradient(90deg, #7c3aed, #db2777)",
-            boxShadow: "0 0 8px rgba(168,85,247,0.6)",
+            boxShadow: "0 0 10px rgba(168,85,247,0.7)",
             transition: "width 0.4s ease"
           }} />
         </div>
