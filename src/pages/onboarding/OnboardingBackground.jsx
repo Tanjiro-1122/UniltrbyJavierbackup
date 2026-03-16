@@ -81,7 +81,7 @@ export default function OnboardingBackground() {
       loading={loading}
       nextLabel={loading ? "Setting up…" : "Enter this world →"}
     >
-      <div style={{ flexShrink: 0, padding: "0 16px 12px", position: "relative", zIndex: 2 }}>
+      <div style={{ padding: "0 16px 16px" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           Pick your space
         </h2>
@@ -89,9 +89,8 @@ export default function OnboardingBackground() {
           Where do you want to hang out?
         </p>
       </div>
-      <div style={{ flex: 1, minHeight: 0, margin: "4px 16px 12px", borderRadius: 22, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
-        <div className="scroll-area" style={{ height: "100%", padding: "10px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 12 }}>
+      <div style={{ padding: "0 16px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {BACKGROUNDS.map(bg => (
             <motion.button key={bg.id} whileTap={{ scale: 0.96 }}
               onClick={() => { setSelected(bg.id); updateOnboardingStore({ selectedBackground: bg.id }); }}
@@ -115,7 +114,6 @@ export default function OnboardingBackground() {
               )}
             </motion.button>
           ))}
-        </div>
         </div>
       </div>
     </OnboardingLayout>

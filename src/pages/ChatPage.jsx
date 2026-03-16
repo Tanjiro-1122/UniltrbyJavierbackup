@@ -471,16 +471,16 @@ export default function ChatPage() {
 
       <AppShell
         tabs={true}
+        bg="#06020f"
         style={{
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
-          backgroundPosition: "center bottom",
+          backgroundPosition: "center top",
+          backgroundAttachment: "local",
         }}
       >
         {/* Strong dark overlay on bg image */}
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", pointerEvents: "none" }} />
-        {/* Extra bottom gradient to kill any background bleed below input */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to top, #06020f 40%, transparent 100%)", pointerEvents: "none", zIndex: 0 }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
