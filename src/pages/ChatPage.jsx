@@ -539,7 +539,7 @@ export default function ChatPage() {
             </div>
 
             {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 200, height: 200, marginTop: 0 }}>
+            <div style={{ position: "relative", width: 160, height: 160, marginTop: 0 }}>
               {isSpeaking && (
                 <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
               )}
@@ -628,12 +628,8 @@ export default function ChatPage() {
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
-            margin: "8px 10px 0",
-            background: "rgba(6,2,15,0.65)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: "20px 20px 0 0",
+            margin: "4px 0 0",
+            background: "linear-gradient(180deg, rgba(6,2,15,0.5) 0%, rgba(6,2,15,0.85) 30%)",
             overflow: "hidden",
           }}>
             <div className="scroll-area" style={{
@@ -685,7 +681,7 @@ export default function ChatPage() {
           </div>
 
           {/* ── TYPING FIELD (fixed at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 12px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))", background: "rgba(6,2,15,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+          <div style={{ flexShrink: 0, padding: "8px 14px", paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))", background: "rgba(6,2,15,0.95)" }}>
             {/* Pending image preview */}
             {pendingImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>

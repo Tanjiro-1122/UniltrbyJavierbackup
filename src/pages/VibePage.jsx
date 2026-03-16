@@ -138,15 +138,15 @@ export default function VibePage() {
             </div>
           </motion.button>
         ))}
-        <div style={{ height: 80 }} />
+        <div style={{ height: 100 }} />
       </div>
 
       {/* ── CTA ── */}
       <div style={{
-        flexShrink: 0, padding: "12px 16px",
+        flexShrink: 0, padding: "12px 20px",
         paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))",
-        position: "relative", zIndex: 1,
-        background: "linear-gradient(to top, rgba(6,2,15,0.95) 60%, transparent 100%)",
+        position: "relative", zIndex: 2,
+        background: "linear-gradient(to top, #06020f 50%, rgba(6,2,15,0.95) 70%, transparent 100%)",
       }}>
         <button
           onClick={handleContinue}

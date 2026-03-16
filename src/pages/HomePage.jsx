@@ -68,7 +68,7 @@ export default function HomePage() {
         justifyContent: "space-between",
         textAlign: "center",
         overflow: "hidden",
-        padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))"
+        padding: "6px 24px max(16px, env(safe-area-inset-bottom, 16px))"
       }}>
         <div style={{
           width: "100%",

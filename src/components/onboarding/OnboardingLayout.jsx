@@ -102,7 +102,7 @@ export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext,
         <div style={{
           flexShrink: 0,
           width: "100%",
-          padding: "12px 16px",
+          padding: "12px 24px",
           paddingBottom: "max(48px, calc(env(safe-area-inset-bottom, 0px) + 32px))",
           background: "linear-gradient(180deg, rgba(6,2,15,0.0) 0%, #06020f 30%)",
           position: "relative",

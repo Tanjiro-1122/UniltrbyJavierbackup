@@ -28,7 +28,7 @@ export default function OnboardingNickname() {
       onNext={handleNext}
       canAdvance={true}
     >
-      <div style={{ flexShrink: 0, padding: "16px 20px 16px", display: "flex", flexDirection: "column" }}>
+      <div style={{ flexShrink: 0, padding: "16px 24px 16px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 6px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           Name your companion
         </h2>

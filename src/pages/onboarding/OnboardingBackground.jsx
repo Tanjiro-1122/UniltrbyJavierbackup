@@ -83,7 +83,7 @@ export default function OnboardingBackground() {
     >
       <div style={{
         position: "sticky", top: 0, zIndex: 10,
-        padding: "0 16px 12px",
+        padding: "0 24px 12px",
         background: "linear-gradient(180deg, #0d0220 70%, transparent 100%)",
       }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
@@ -93,7 +93,7 @@ export default function OnboardingBackground() {
           Where do you want to hang out?
         </p>
       </div>
-      <div style={{ padding: "0 16px 120px" }}>
+      <div style={{ padding: "0 24px 120px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {BACKGROUNDS.map(bg => (
             <motion.button key={bg.id} whileTap={{ scale: 0.96 }}
