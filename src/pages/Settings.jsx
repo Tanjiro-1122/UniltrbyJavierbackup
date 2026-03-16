@@ -415,17 +415,17 @@ export default function Settings() {
         {/* Premium Status */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Status</p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${(userProfile.premium || userProfile.is_premium) ? "bg-purple-500" : "bg-white/30"}`} />
-              <p className="text-white font-semibold">{(userProfile.premium || userProfile.is_premium) ? "✨ Premium" : "Free (20 msgs/day)"}</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: (userProfile.premium || userProfile.is_premium) ? "#a855f7" : "rgba(255,255,255,0.4)" }} />
+              <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>{(userProfile.premium || userProfile.is_premium) ? "✨ Premium" : "Free (20 msgs/day)"}</p>
             </div>
             {!(userProfile.premium || userProfile.is_premium) && (
               <button
                 onClick={() => setShowPaywall(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 999, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
               >
-                <Sparkles className="w-3 h-3" />
+                <Sparkles size={12} />
                 Upgrade
               </button>
             )}
