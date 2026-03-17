@@ -24,6 +24,8 @@ export default function AppShell({
       className={`app-shell ${tabs ? "" : "no-tabs"} ${className}`}
       style={{
         background: bg || "#06020f",
+        overflowX: "hidden",
+        maxWidth: "100%",
         ...style,
       }}
     >

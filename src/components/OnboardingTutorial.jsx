@@ -57,7 +57,10 @@ export default function OnboardingTutorial({ profileId, onComplete, inline = fal
   return (
     <div style={{
       position: inline ? "absolute" : "fixed",
-      inset: 0,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       zIndex: inline ? 10 : 300,
       background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)",
       display: "flex",
