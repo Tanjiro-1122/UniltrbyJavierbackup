@@ -456,6 +456,7 @@ export default function ChatPage() {
             companion={companion}
             navigate={navigate}
             setMessages={setMessages}
+            vibe={vibe}
           />
 
           {/* ▓▓ 2. AVATAR + COMPANION INFO (fixed, does NOT scroll) ▓▓ */}
