@@ -19,6 +19,7 @@ import AchievementBadges from "@/components/achievements/AchievementBadges";
 import GuidedMeditation from "@/components/meditation/GuidedMeditation";
 import MiniGames from "@/components/games/MiniGames";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
+import { COMPANIONS } from "@/components/companionData";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -522,7 +523,7 @@ export default function ChatPage() {
             <button onClick={() => setShowCompanionCard(true)}
               style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
               <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
-                {companionDisplayName} {companion.emoji || ""}
+                {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
               </span>
             </button>
 
