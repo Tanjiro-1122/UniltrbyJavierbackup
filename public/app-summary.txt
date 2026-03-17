@@ -1,0 +1,187 @@
+UNFILTR BY JAVIER — APP SUMMARY
+================================
+Last Updated: March 17, 2026
+
+OVERVIEW
+--------
+Unfiltr is a mobile-first AI companion app where users can chat, vent, laugh, 
+and hang out with customizable anime-style AI companions. The app features 
+real-time text and voice conversations, emotional mood tracking, journaling, 
+and premium subscription features.
+
+PAGES & FEATURES
+----------------
+
+1. HOME PAGE (/)
+   - Animated star-field background with holographic logo
+   - Returning users see "Continue chatting" with companion name
+   - New users see "Meet your companion" leading to onboarding
+   - Feature highlights: Real convos, Voice chat, 9 companions
+   - Footer with Privacy Policy, Terms of Use, Restore Purchases, Support links
+
+2. ONBOARDING FLOW (/onboarding)
+   - Step 1: Enter display name (/onboarding/name)
+   - Step 2: Choose companion (/onboarding/companion)
+   - Step 3: Give companion a nickname (/onboarding/nickname)
+   - Step 4: Select background environment (/onboarding/background)
+   - Progress bar and animated star-field layout throughout
+
+3. CHAT PAGE (/chat)
+   - Full-screen chat with selected companion and background
+   - Live animated avatar that changes poses based on mood/emotion
+   - Text messaging with AI companion (LLM-powered responses)
+   - Voice conversations (text-to-speech via backend TTS function)
+   - Image attachment support
+   - Conversation starters for new chats
+   - Mood check-in feature
+   - Mini-games integration
+   - Guided meditation sessions
+   - Achievement/badge system
+   - Streak tracking (consecutive days)
+   - Session memory (premium) — companion remembers past conversations
+   - Message reactions and swipe-to-reply
+   - Share companion quotes via share cards
+   - Journal entry saving from chat
+   - Chat history export
+   - Quote reply functionality
+   - Particle effects and haptic feedback
+
+4. VIBE PAGE (/vibe)
+   - Ambient experience page
+
+5. SETTINGS PAGE (/settings)
+   - User stats card (day streak, days together, total messages)
+   - Mood this week visualization (7-day emoji grid)
+   - Display name editor
+   - Companion nickname customization
+   - Voice gender selection (Male, Female, Neutral)
+   - Voice personality selection (Cheerful, Calm, Energetic, Professional)
+   - Companion switcher (grid of 9 companions)
+   - Background environment switcher (10 backgrounds)
+   - Daily check-in notification toggle
+   - Referral program section (unique code, share, bonus messages)
+   - Fun stuff: Personality quiz, Share companion card
+   - Premium plans link
+   - Premium status display with upgrade button
+   - Admin tools (dashboard, feedback manager) — admin only
+   - Account management (pause, delete)
+
+6. JOURNAL PAGE (/journal)
+   - View and manage journal entries saved from chat sessions
+
+7. CHAT HISTORY (/ChatHistory)
+   - Browse past conversations
+
+8. PERSONALITY QUIZ (/PersonalityQuiz)
+   - "Which companion are you?" interactive quiz
+
+9. PRICING PAGE (/Pricing)
+   - Premium subscription plans display
+   - Monthly ($9.99/mo) and Annual ($59.99/yr — save 50%)
+   - In-app purchase integration (Apple StoreKit)
+
+10. FEEDBACK PAGE (/feedback)
+    - Submit bug reports, feature requests, general feedback
+    - Category selection and message input
+
+11. LEGAL PAGES
+    - Privacy Policy (/PrivacyPolicy)
+    - Terms of Use (/TermsOfUse)
+
+12. ADMIN PAGES (admin role only)
+    - Admin Dashboard (/AdminDashboard)
+    - Feedback Manager (/admin/feedback)
+    - Avatar Processor (/AdminAvatarProcessor)
+
+COMPANIONS (9 total)
+--------------------
+1. Luna 🌙 — Calm & Nurturing
+2. Kai 🌊 — Bold & Motivating
+3. Nova ⚡ — Curious & Cosmic
+4. River 🌿 — Gentle & Flowing
+5. Ash 🌫️ — Chill & Laid-Back
+6. Sakura 🌸 — Sweet & Cheerful
+7. Ryuu 🐉 — Fierce & Disciplined
+8. Sage 🍃 — Wise & Grounded
+9. Zara ✨ — Edgy & Authentic
+
+Each companion has 9 mood poses: happy, neutral, sad, fear, disgust, 
+surprise, anger, contentment, fatigue.
+
+BACKGROUNDS (10 total)
+----------------------
+1. Cozy Living Room 🛋️
+2. Sunny Park 🌳
+3. Sunset Beach 🌅
+4. Outer Space 🚀
+5. Enchanted Forest 🍄
+6. Rainy Café ☕
+7. Anime Rooftop 🌇
+8. Deep Ocean 🐠
+9. Winter Cabin 🏔️
+10. Cyberpunk City 🌆
+
+PREMIUM FEATURES
+----------------
+- Unlimited messages (free tier: 20/day)
+- Unlimited voice conversations
+- Priority responses
+- All vibes & companions
+- Session memory (companion remembers past conversations)
+- Monthly plan: $9.99/mo
+- Annual plan: $59.99/yr (save 50%)
+
+INTEGRATIONS & BACKEND
+----------------------
+- AI Chat: OpenAI GPT for companion conversations
+- Text-to-Speech: Backend TTS function for voice output
+- Session Memory: LLM-powered session summarization
+- In-App Purchases: Apple StoreKit + Google Play verification
+- Push Notifications: Daily check-in reminders
+- Image Processing: RemoveBG API for avatar processing
+- Error Logging: Global frontend + backend error capture
+- Referral System: Unique codes with bonus message rewards
+- Rating Prompt: Smart timing for app store review requests
+
+ENTITIES (Database Models)
+--------------------------
+- UserProfile: display name, companion, background, premium status, 
+  session memory, message count, push settings, referral data, 
+  account management flags
+- Companion: name, avatar, mood mode, personality, voice settings
+- Message: conversation messages with emotional tone detection
+- JournalEntry: saved journal entries from chat sessions
+- Feedback: user-submitted bug reports and feature requests
+- User (built-in): authentication, roles (admin/user)
+
+NAVIGATION
+----------
+- Bottom tab bar with 4 tabs: Home, Premium, Chat, Settings
+- Tab bar hidden on: onboarding, chat, vibe, journal, chat history, 
+  personality quiz, admin pages, legal pages
+- Floating feedback button on most pages
+
+MOBILE OPTIMIZATIONS (Updated Today)
+-------------------------------------
+- viewport-fit=cover for proper notch/safe-area handling
+- Safe area insets applied to screen containers (top + bottom)
+- Settings header respects safe-area-inset-top
+- Dark background (#06020f) everywhere to prevent white flash/bars
+- Touch-optimized: no tap highlight, no text zoom on input focus
+- Overscroll behavior disabled to prevent bounce effects
+- Smooth scroll areas with momentum scrolling
+- PWA meta tags (apple-mobile-web-app-capable, theme-color, manifest)
+- Haptic feedback on interactions
+- 16px minimum font size on inputs to prevent iOS zoom
+
+DESIGN SYSTEM
+-------------
+- Dark theme throughout (deep purple/black palette)
+- Primary: Purple (#a855f7 / #7c3aed)
+- Accent: Pink (#db2777)
+- Background: Ultra-dark (#06020f)
+- Glassmorphism effects with backdrop blur
+- Gradient buttons and cards
+- Framer Motion animations throughout
+- Lucide React icons
+- Custom CSS animations (twinkle, shimmer, holoGlow, holoSheen)
