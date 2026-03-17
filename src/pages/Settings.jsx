@@ -74,7 +74,9 @@ export default function Settings() {
   const [daysSince, setDaysSince]         = useState(0);
   const [moodHistory, setMoodHistory]     = useState([]);
   const [voiceGender, setVoiceGender]     = useState("female");
+  const [voicePersonality, setVoicePersonality] = useState("cheerful");
   const [savingVoice, setSavingVoice]     = useState(false);
+  const [savingPersonality, setSavingPersonality] = useState(false);
   const [isAdmin, setIsAdmin]             = useState(false);
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export default function Settings() {
       setUserProfile(profile);
       setCompanion(comp);
       setVoiceGender(comp?.voice_gender || "female");
+      setVoicePersonality(comp?.voice_personality || "cheerful");
     };
 
     // Load streak
@@ -128,6 +131,20 @@ export default function Settings() {
       console.error("Voice gender save error:", e);
     } finally {
       setSavingVoice(false);
+    }
+  };
+
+  const handleChangeVoicePersonality = async (newPersonality) => {
+    if (savingPersonality || !userProfile || !companion) return;
+    setSavingPersonality(true);
+    try {
+      await base44.entities.Companion.update(userProfile.companion_id, { voice_personality: newPersonality });
+      setVoicePersonality(newPersonality);
+      setCompanion(prev => ({ ...prev, voice_personality: newPersonality }));
+    } catch (e) {
+      console.error("Voice personality save error:", e);
+    } finally {
+      setSavingPersonality(false);
     }
   };
 
@@ -308,6 +325,37 @@ export default function Settings() {
                 {gender === "male" && "🎤 Male"}
                 {gender === "female" && "✨ Female"}
                 {gender === "neutral" && "🤖 Neutral"}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Voice Personality */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.095 }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Voice Personality</p>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginBottom: 8 }}>How your companion sounds when speaking</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { id: "cheerful", emoji: "😊", label: "Cheerful", desc: "Bright & upbeat" },
+              { id: "calm", emoji: "🧘", label: "Calm", desc: "Slow & soothing" },
+              { id: "energetic", emoji: "⚡", label: "Energetic", desc: "Fast & lively" },
+              { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & steady" },
+            ].map(p => (
+              <button key={p.id} onClick={() => handleChangeVoicePersonality(p.id)}
+                disabled={savingPersonality}
+                style={{
+                  padding: "12px 10px",
+                  borderRadius: 14,
+                  border: voicePersonality === p.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
+                  background: voicePersonality === p.id ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)",
+                  cursor: savingPersonality ? "default" : "pointer",
+                  opacity: savingPersonality ? 0.6 : 1,
+                  transition: "all 0.15s",
+                  textAlign: "center",
+                }}>
+                <span style={{ fontSize: 20, display: "block", marginBottom: 4 }}>{p.emoji}</span>
+                <span style={{ color: voicePersonality === p.id ? "white" : "rgba(255,255,255,0.6)", fontWeight: voicePersonality === p.id ? 700 : 500, fontSize: 13, display: "block" }}>{p.label}</span>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>{p.desc}</span>
               </button>
             ))}
           </div>
