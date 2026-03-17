@@ -11,6 +11,8 @@ import { usePushNotifications } from "@/components/usePushNotifications";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessages from "@/components/chat/ChatMessages";
 import ChatInputBar from "@/components/chat/ChatInputBar";
+import ConversationStarters from "@/components/chat/ConversationStarters";
+import MoodCheckIn from "@/components/chat/MoodCheckIn";
 import LiveAvatar from "@/components/LiveAvatar";
 
 const VIBES_SUFFIX = {
@@ -48,6 +50,7 @@ export default function ChatPage() {
   const [showAnniversary, setShowAnniversary] = useState(false);
   const [showRatingPrompt, setShowRatingPrompt] = useState(false);
   const [shareCard, setShareCard]       = useState(null);
+  const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -141,6 +144,10 @@ export default function ChatPage() {
         if (newStreak > 1) { setStreak(newStreak); setShowStreakBanner(true); setTimeout(() => setShowStreakBanner(false), 4000); }
         else setStreak(newStreak);
       } else { setStreak(streakData.count); }
+
+      // Mood check-in (once per day)
+      const moodToday = localStorage.getItem("unfiltr_mood_checkin_date");
+      if (moodToday !== todayStr) setShowMoodCheckIn(true);
 
       // Anniversary
       const createdDate = localStorage.getItem("unfiltr_companion_created");
@@ -389,6 +396,14 @@ export default function ChatPage() {
   };
   const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
+  const handleMoodSelect = (mood) => {
+    localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString());
+    setShowMoodCheckIn(false);
+    // Send mood as first message context
+    const moodText = `I'm feeling ${mood.label.toLowerCase()} ${mood.emoji} today`;
+    handleSend(moodText);
+  };
+
   const handleSubscribe = () => subscribeToPlan("monthly");
   const handleRestore = () => restorePurchases();
 
@@ -558,6 +573,12 @@ export default function ChatPage() {
             />
           </div>
 
+          {/* ▓▓ 3.5. CONVERSATION STARTERS ▓▓ */}
+          <ConversationStarters
+            visible={messages.filter(m => m.role === "user").length === 0}
+            onSelect={(text) => handleSend(text)}
+          />
+
           {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
           <ChatInputBar
             input={input}
@@ -603,6 +624,14 @@ export default function ChatPage() {
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onSubscribe={handleSubscribe} onRestore={handleRestore} isAndroid={/android/i.test(navigator.userAgent)} />
       <RatingPromptModal visible={showRatingPrompt} onClose={() => setShowRatingPrompt(false)} />
       <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} mood={shareCard?.mood || "neutral"} />
+
+      {/* Mood Check-In */}
+      <MoodCheckIn
+        visible={showMoodCheckIn}
+        onSelect={handleMoodSelect}
+        onDismiss={() => { localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString()); setShowMoodCheckIn(false); }}
+        companionName={companionDisplayName}
+      />
     </>
   );
 }
