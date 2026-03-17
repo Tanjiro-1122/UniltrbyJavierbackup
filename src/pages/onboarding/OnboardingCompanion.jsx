@@ -41,7 +41,7 @@ export default function OnboardingCompanion() {
       <div style={{ flex: 1, minHeight: 0, margin: "4px 16px 12px", borderRadius: 22, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(42,31,74,0.6)", overflow: "hidden" }}>
         <div className="scroll-area" style={{ height: "100%", padding: "10px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, paddingBottom: 12 }}>
-          {COMPANIONS.filter(c => !c.testerOnly || store.isTesterAccount).map(c => (
+          {COMPANIONS.filter(c => !c.testerOnly).map(c => (
             <motion.button key={c.id} whileTap={{ scale: 0.94 }}
               onClick={() => handleSelect(c.id)}
               style={{
