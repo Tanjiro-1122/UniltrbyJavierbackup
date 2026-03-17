@@ -294,8 +294,9 @@ export default function ChatPage() {
     if (isAtLimit) { setShowPaywall(true); return; }
 
     const userMsg = pendingImage
-      ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview }
-      : { role: "user", content: text };
+      ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview, quoteReply: quoteReply || undefined }
+      : { role: "user", content: text, quoteReply: quoteReply || undefined };
+    setQuoteReply(null);
     setMessages(m => [...m, userMsg]);
     setInput("");
     setLoading(true);
@@ -652,6 +653,25 @@ export default function ChatPage() {
         onSelect={handleMoodSelect}
         onDismiss={() => { localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString()); setShowMoodCheckIn(false); }}
         companionName={companionDisplayName}
+      />
+
+      {/* Achievement Badges */}
+      <AchievementBadges visible={showAchievements} onClose={() => setShowAchievements(false)} />
+
+      {/* Guided Meditation */}
+      <GuidedMeditation visible={showMeditation} onClose={() => setShowMeditation(false)} companionName={companionDisplayName} />
+
+      {/* Mini Games */}
+      <MiniGames visible={showGames} onClose={() => setShowGames(false)}
+        onSendMessage={(text) => handleSend(text)} />
+
+      {/* Companion Share Card */}
+      <CompanionShareCard
+        visible={showCompanionCard}
+        onClose={() => setShowCompanionCard(false)}
+        companionId={companion?.id}
+        companionName={companionDisplayName}
+        daysTogether={(() => { const c = localStorage.getItem("unfiltr_companion_created"); return c ? Math.max(1, Math.floor((Date.now() - new Date(c).getTime()) / 86400000)) : 0; })()}
       />
     </>
   );
