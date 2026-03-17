@@ -48,11 +48,9 @@ export default function ChatInputBar({
         </button>
         <input type="text" value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend(); }}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
           placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
-          autoComplete="off"
-          autoCorrect="on"
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 16, minWidth: 0, caretColor: "#a855f7", WebkitUserSelect: "text", userSelect: "text", touchAction: "manipulation" }}
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
         />
         <button onClick={() => { hapticMedium(); soundSend(); handleSend(); }} disabled={loading || (!input.trim() && !pendingImage)}
           style={{
