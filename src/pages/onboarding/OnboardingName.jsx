@@ -64,13 +64,14 @@ export default function OnboardingName() {
           placeholder="Enter display name"
           autoFocus
           style={{
-            width: "100%", padding: "16px", borderRadius: 16,
-            border: "1px solid rgba(139,92,246,0.35)",
+            width: "100%", maxWidth: "100%", boxSizing: "border-box",
+            padding: "14px 16px", borderRadius: 18,
+            border: "1px solid rgba(139,92,246,0.2)",
             background: "rgba(139,92,246,0.1)", color: "white",
             fontSize: 16, outline: "none", caretColor: "#a855f7",
           }}
           onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
-          onBlur={e => e.target.style.borderColor = "rgba(139,92,246,0.35)"}
+          onBlur={e => e.target.style.borderColor = "rgba(139,92,246,0.2)"}
         />
         {isTester && (
           <div style={{
