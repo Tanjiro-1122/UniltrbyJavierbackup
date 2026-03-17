@@ -419,13 +419,13 @@ export default function ChatPage() {
       }}>
         {/* ── LAYER 0: Background image (fills entire screen including safe areas) ── */}
         <div style={{
-          position: "absolute", top: -50, left: -50, right: -50, bottom: -50, zIndex: 0,
+          position: "absolute", top: -100, left: -50, right: -50, bottom: -100, zIndex: 0,
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
           backgroundPosition: "center center",
         }} />
         {/* Dark overlay */}
-        <div style={{ position: "absolute", top: -50, left: -50, right: -50, bottom: -50, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
+        <div style={{ position: "absolute", top: -100, left: -50, right: -50, bottom: -100, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
