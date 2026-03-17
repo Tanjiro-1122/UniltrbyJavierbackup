@@ -7,7 +7,7 @@ import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
-import AppShell from "@/components/shell/AppShell";
+
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
