@@ -84,8 +84,8 @@
 
   body {
     @apply bg-background text-foreground;
-    background-color: #1a0533 !important;
-    background: #1a0533 !important;
+    background-color: #06020f !important;
+    background: #06020f !important;
   }
 
   #root {
@@ -99,7 +99,8 @@ html {
   min-height: 100dvh;
   overflow: visible;
   overscroll-behavior: none;
-  background-color: #1a0533 !important;
+  background-color: #06020f !important;
+  background: #06020f !important;
 }
 
 body {
@@ -116,7 +117,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #1a0533 !important;
+  background-color: #06020f !important;
+  background: #06020f !important;
 }
 
 #root {
@@ -131,7 +133,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #1a0533 !important;
+  background-color: #06020f !important;
+  background: #06020f !important;
   border: none !important;
   outline: none !important;
 }
