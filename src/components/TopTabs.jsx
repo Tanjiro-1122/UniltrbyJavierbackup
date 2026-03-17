@@ -22,7 +22,7 @@ export default function TopTabs() {
         right: 0,
         width: "100%",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        background: "rgba(6,2,15,0.95)",
+        background: "#06020f",
         borderTop: "1px solid rgba(139,92,246,0.22)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
