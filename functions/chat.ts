@@ -44,7 +44,7 @@ Do not explain the mood. Do not skip it. Always include it as the last line.`;
 
     return Response.json({ reply, mood });
   } catch (error) {
-    console.error('Chat error:', error.message);
+    console.error('Chat function error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
