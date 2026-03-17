@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Mic, MicOff, Loader2, Volume2, VolumeX, Settings, Brain, Camera, X, Share2, MessageSquare, Save } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import RatingPromptModal from "@/components/RatingPromptModal";
 import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 import ShareCardModal from "@/components/ShareCardModal";
-import { base44 } from "@/api/base44Client";
-import LiveAvatar from "@/components/LiveAvatar";
 import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
-import AppShell from "@/components/shell/AppShell";
+
+import ChatHeader from "@/components/chat/ChatHeader";
+import ChatAvatarSection from "@/components/chat/ChatAvatarSection";
+import ChatMessages from "@/components/chat/ChatMessages";
+import ChatInputBar from "@/components/chat/ChatInputBar";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -44,7 +46,7 @@ export default function ChatPage() {
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
   const [showRatingPrompt, setShowRatingPrompt] = useState(false);
-  const [shareCard, setShareCard]             = useState(null); // { message, mood }
+  const [shareCard, setShareCard]       = useState(null);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -55,41 +57,32 @@ export default function ChatPage() {
     const handleNativeMessage = async (event) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        
         if (data.action === 'purchase_success' || data.action === 'restore_success') {
           const { platform, receiptData, productId, purchaseToken } = data;
-          
           const res = await fetch('/functions/verifyPurchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ platform, receiptData, productId, purchaseToken })
           });
           const result = await res.json();
-          
           if (result.valid && profileId) {
-            await base44.entities.UserProfile.update(profileId, { 
-              is_premium: true, 
-              annual_plan: result.plan === 'annual' 
-            });
+            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: result.plan === 'annual' });
             setIsPremium(true);
             setShowPaywall(false);
           }
         }
-      } catch (e) {
-        console.error('Native message error:', e);
-      }
+      } catch (e) { console.error('Native message error:', e); }
     };
-
     window.addEventListener('message', handleNativeMessage);
     return () => window.removeEventListener('message', handleNativeMessage);
   }, [profileId]);
 
-  const particleId    = useRef(0);
-  const stateTimeout  = useRef(null);
+  const particleId     = useRef(0);
+  const stateTimeout   = useRef(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
-  const audioRef      = useRef(null);
-  const fileInputRef  = useRef(null);
+  const audioRef       = useRef(null);
+  const fileInputRef   = useRef(null);
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
@@ -106,10 +99,8 @@ export default function ChatPage() {
 
       const parsedCompanion = JSON.parse(c);
       const parsedEnv       = JSON.parse(e);
-
       const savedNickname = localStorage.getItem("unfiltr_companion_nickname");
-      parsedCompanion.displayName =
-        (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
+      parsedCompanion.displayName = (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
 
       setCompanion(parsedCompanion);
       setEnvironment(parsedEnv);
@@ -132,12 +123,12 @@ export default function ChatPage() {
             try {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
-            } catch { /* use default */ }
+            } catch {}
           }
-        } catch { /* free tier */ }
+        } catch {}
       }
 
-      // ── Streak logic ──
+      // Streak
       const todayStr = new Date().toDateString();
       const streakData = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
@@ -150,24 +141,20 @@ export default function ChatPage() {
         else setStreak(newStreak);
       } else { setStreak(streakData.count); }
 
-      // ── Anniversary logic ──
+      // Anniversary
       const createdDate = localStorage.getItem("unfiltr_companion_created");
       if (!createdDate) {
         localStorage.setItem("unfiltr_companion_created", new Date().toISOString());
       } else {
         const days = Math.floor((Date.now() - new Date(createdDate).getTime()) / 86400000);
         const milestones = [7, 14, 30, 60, 90, 180, 365];
-        if (milestones.includes(days)) {
-          setAnniversary(days);
-          setShowAnniversary(true);
-          setTimeout(() => setShowAnniversary(false), 6000);
-        }
+        if (milestones.includes(days)) { setAnniversary(days); setShowAnniversary(true); setTimeout(() => setShowAnniversary(false), 6000); }
       }
     };
     init();
   }, []);
 
-  /* ─── GREETING + LOAD LOCAL HISTORY ─── */
+  /* ─── GREETING + HISTORY ─── */
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
@@ -181,45 +168,31 @@ export default function ChatPage() {
       }`,
     };
 
-    // Check for welcome-back flag (premium returning users)
     const welcomeBack = localStorage.getItem("unfiltr_welcome_back");
     if (welcomeBack) {
       localStorage.removeItem("unfiltr_welcome_back");
       const saved = localStorage.getItem("unfiltr_chat_history");
       let history = [];
-      try { history = saved ? JSON.parse(saved) : []; } catch { /* ignore */ }
-      const welcomeMsg = {
-        role: "assistant",
-        content: `Hey, welcome back! 💜 I remember our last chat. Ready to pick up where we left off?`,
-      };
-      if (history.length > 0) {
-        setMessages([welcomeMsg, ...history]);
-      } else {
-        setMessages([welcomeMsg]);
-      }
+      try { history = saved ? JSON.parse(saved) : []; } catch {}
+      const welcomeMsg = { role: "assistant", content: `Hey, welcome back! 💜 I remember our last chat. Ready to pick up where we left off?` };
+      setMessages(history.length > 0 ? [welcomeMsg, ...history] : [welcomeMsg]);
       return;
     }
 
-    // Load chat history from localStorage
     const saved = localStorage.getItem("unfiltr_chat_history");
     if (saved) {
       try {
         const history = JSON.parse(saved);
-        if (history.length > 0) {
-          setMessages([greeting, ...history]);
-          return;
-        }
-      } catch { /* ignore bad data */ }
+        if (history.length > 0) { setMessages([greeting, ...history]); return; }
+      } catch {}
     }
     setMessages([greeting]);
   }, [companion]);
 
   /* ─── AUTO-SCROLL ─── */
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  /* ─── IDLE ANIMATION LOOP ─── */
+  /* ─── IDLE ANIM ─── */
   useEffect(() => {
     const iv = setInterval(() => {
       if (avatarState === "idle" && !loading && !isSpeaking) triggerAnim("wave", 1200);
@@ -237,8 +210,7 @@ export default function ChatPage() {
   const spawnParticles = () => {
     const emoji = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
     const batch = Array.from({ length: 5 }, (_, i) => ({
-      id: particleId.current++,
-      emoji,
+      id: particleId.current++, emoji,
       x: Math.cos((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20),
       y: Math.sin((i / 5) * 2 * Math.PI) * (40 + Math.random() * 20) - 20,
     }));
@@ -250,9 +222,8 @@ export default function ChatPage() {
   const speakText = async (text, companionId, voiceGender = "female") => {
     if (!voiceEnabled) return;
     try {
-      setIsSpeaking(true); 
+      setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      // Call TTS with voiceGender preference
       const res = await base44.functions.invoke("tts", { text, companionId, voiceGender });
       const base64 = res.data?.audio;
       if (!base64) throw new Error("no audio");
@@ -263,10 +234,7 @@ export default function ChatPage() {
       audioRef.current = audio;
       audio.onended = audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
       await audio.play();
-    } catch { 
-      setIsSpeaking(false); 
-      setAvatarState("idle"); 
-    }
+    } catch { setIsSpeaking(false); setAvatarState("idle"); }
   };
 
   /* ─── PHOTO ─── */
@@ -275,10 +243,7 @@ export default function ChatPage() {
     const today = new Date().toDateString();
     const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
     const count = stored.date === today ? stored.count : 0;
-    if (count >= PHOTO_DAILY_LIMIT) {
-      alert(`You've reached your ${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow! 📸`);
-      return;
-    }
+    if (count >= PHOTO_DAILY_LIMIT) { alert(`You've reached your ${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow! 📸`); return; }
     const seen = localStorage.getItem("unfiltr_photo_disclaimer_seen");
     if (!seen) { setShowPhotoDisclaimer(true); return; }
     fileInputRef.current?.click();
@@ -318,19 +283,15 @@ export default function ChatPage() {
     setLoading(true);
 
     try {
-      const name         = companion.displayName || companion.name;
-      // Fetch memory_summary for non-premium users too (lightweight memory)
+      const name = companion.displayName || companion.name;
       let memorySummary = "";
       try {
         const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) {
-          const prof = await base44.entities.UserProfile.get(pid2);
-          memorySummary = prof?.memory_summary || "";
-        }
-      } catch { /* ignore */ }
+        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); memorySummary = prof?.memory_summary || ""; }
+      } catch {}
       const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
-      const userContent  = pendingImage ? (text || "What do you think of this?") : text;
-      const history      = [...messages, { role: "user", content: userContent }].slice(-10);
+      const userContent = pendingImage ? (text || "What do you think of this?") : text;
+      const history = [...messages, { role: "user", content: userContent }].slice(-10);
 
       const imgBase64 = pendingImage?.base64 || null;
       if (imgBase64) {
@@ -342,21 +303,17 @@ export default function ChatPage() {
         setPendingImage(null);
       }
 
-      const chatPayload = {
+      const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
-        systemPrompt,
-        isPremium,
+        systemPrompt, isPremium,
         sessionMemory: isPremium ? sessionMemory : [],
         memorySummary: memorySummary || "",
         imageBase64: imgBase64,
-      };
-
-      const res = await base44.functions.invoke("chat", chatPayload);
+      });
 
       const replyText = res.data?.reply || "...";
       setMessages(m => {
         const updated = [...m, { role: "assistant", content: replyText }];
-        // Save chat history locally (skip greeting at index 0, keep last 50 messages)
         const toSave = updated.slice(1).slice(-50).map(msg => ({ role: msg.role, content: msg.content }));
         localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
         return updated;
@@ -365,64 +322,46 @@ export default function ChatPage() {
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId && companionDbId !== "pending") {
-        base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
-      }
+      if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
 
       incrementCount();
       spawnParticles();
 
-      // Increment local message count and sync to DB
       const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
-      if (pid3) {
-        base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
-      }
-      // Get voice_gender from companion DB if available
+      if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
+
       let voiceGender = "female";
       if (companionDbId && companionDbId !== "pending") {
-        try {
-          voiceGender = (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female";
-        } catch {}
+        try { voiceGender = (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female"; } catch {}
       }
       speakText(replyText, companion.id, voiceGender);
 
-      // Rating prompt after 10th message
       const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
       if (totalMsgs === 10) {
         const pid = localStorage.getItem("userProfileId");
-        if (pid) {
-          base44.functions.invoke("ratingPrompt", { profileId: pid }).then(res => {
-            if (res.data?.should_prompt) setShowRatingPrompt(true);
-          }).catch(() => {});
-        }
+        if (pid) base44.functions.invoke("ratingPrompt", { profileId: pid }).then(r => { if (r.data?.should_prompt) setShowRatingPrompt(true); }).catch(() => {});
       }
 
-      // Auto-summarize: every 10 msgs for premium, every 5 for free users
-      const profileId = localStorage.getItem("userProfileId");
+      const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
       const summarizeInterval = isPremium ? 10 : 5;
-      if (profileId && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
+      if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         base44.functions.invoke("summarizeSession", {
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
-          profileId,
-          companionName: cName,
-          isPremium,
-        }).then(res => {
-          if (res.data?.ok && !res.data?.skipped) {
-            base44.entities.UserProfile.get(profileId).then(profile => {
-              if (profile?.session_memory) setSessionMemory(profile.session_memory);
-            }).catch(() => {});
+          profileId: profileId2, companionName: cName, isPremium,
+        }).then(r => {
+          if (r.data?.ok && !r.data?.skipped) {
+            base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); }).catch(() => {});
           }
         }).catch(() => {});
       }
     } catch (error) {
       console.error("Chat send failed:", error?.message || error, error?.response?.data);
-      const detailedMessage = error?.response?.data?.error || error?.message;
-      const fallbackText = detailedMessage || "Hmm, lost the signal. Try again? 🌙";
+      const fallbackText = error?.response?.data?.error || error?.message || "Hmm, lost the signal. Try again? 🌙";
       setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { setLoading(false); }
@@ -436,23 +375,23 @@ export default function ChatPage() {
     const r = new SR();
     r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 1;
     recognitionRef.current = r;
-    r.onstart  = () => setIsListening(true);
-    r.onend    = () => setIsListening(false);
-    r.onerror  = () => setIsListening(false);
+    r.onstart = () => setIsListening(true);
+    r.onend = () => setIsListening(false);
+    r.onerror = () => setIsListening(false);
     r.onresult = e => handleSend(e.results[0][0].transcript);
     r.start();
   };
   const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
 
-  /* ─── IAP ─── */
   const handleSubscribe = () => subscribeToPlan("monthly");
   const handleRestore = () => restorePurchases();
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
-    <AppShell tabs={true} style={{ alignItems: "center", justifyContent: "center" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#06020f", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-    </AppShell>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 
   const companionDisplayName = companion.displayName || companion.name;
@@ -460,23 +399,27 @@ export default function ChatPage() {
   return (
     <>
       {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
 
-      <AppShell
-        tabs={true}
-        bg="#06020f"
-      >
-        {/* Background image — fills entire shell */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center center", pointerEvents: "none" }} />
+      {/* ═══ MAIN WRAPPER — strict fixed layout ═══ */}
+      <div style={{
+        position: "fixed",
+        top: 0, left: 0, right: 0, bottom: 0,
+        width: "100%",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 1,
+      }}>
+        {/* ── LAYER 0: Background image (fills entire screen) ── */}
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 0,
+          backgroundImage: `url(${environment.bg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center center",
+        }} />
         {/* Dark overlay */}
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -488,235 +431,98 @@ export default function ChatPage() {
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
+        {/* ── LAYER 1: Content flex column (on top of bg) ── */}
+        <div style={{
+          position: "relative", zIndex: 1,
+          display: "flex", flexDirection: "column",
+          width: "100%", height: "100%",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          boxSizing: "border-box",
+          overflow: "hidden",
+        }}>
 
-          {/* ── AVATAR + NAME SECTION (transparent, fixed above chat box) ── */}
-          <div style={{
-            flexShrink: 0, position: "relative",
-            display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "4px 16px 0",
-            width: "100%",
-            overflow: "hidden",
-          }}>
-            {/* Controls row */}
-            <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <button onClick={() => setVoiceEnabled(v => !v)}
-                style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                {voiceEnabled ? <Volume2 size={18} color="white" /> : <VolumeX size={18} color="rgba(255,255,255,0.4)" />}
-              </button>
-              <div style={{ display: "flex", gap: 8 }}>
-                {isPremium && (
-                  <button onClick={() => {
-                    const data = JSON.stringify(messages.filter(m => m.content).map(m => ({ role: m.role, content: m.content })), null, 2);
-                    const blob = new Blob([data], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url; a.download = `unfiltr-chat-${new Date().toISOString().slice(0,10)}.json`; a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                    style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                    title="Save conversation">
-                    <Save size={16} color="#a855f7" />
-                  </button>
-                )}
-                <button onClick={() => {
-                  localStorage.removeItem("unfiltr_chat_history");
-                  const name = companion.displayName || companion.name;
-                  setMessages([{ role: "assistant", content: `Fresh start! Hey, I'm ${name} 👋 What's up?` }]);
-                }}
-                  style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-                  title="New chat">
-                  <MessageSquare size={16} color="rgba(255,255,255,0.6)" />
-                </button>
-                <button onClick={() => navigate("/settings")}
-                  style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Settings size={16} color="white" />
-                </button>
-              </div>
-            </div>
+          {/* ▓▓ 1. FIXED HEADER ▓▓ */}
+          <ChatHeader
+            voiceEnabled={voiceEnabled}
+            setVoiceEnabled={setVoiceEnabled}
+            isPremium={isPremium}
+            messages={messages}
+            companion={companion}
+            navigate={navigate}
+            setMessages={setMessages}
+          />
 
-            {/* Avatar + particles */}
-            <div style={{ position: "relative", width: 160, height: 160, marginTop: 0 }}>
-              {isSpeaking && (
-                <div style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
-              )}
-              {particles.map(p => (
-                <div key={p.id} className="particle"
-                  style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
-                  {p.emoji}
-                </div>
-              ))}
-              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-            </div>
+          {/* ▓▓ 2. AVATAR + COMPANION INFO (fixed, does NOT scroll) ▓▓ */}
+          <ChatAvatarSection
+            companion={companion}
+            companionMood={companionMood}
+            isSpeaking={isSpeaking}
+            companionDisplayName={companionDisplayName}
+            vibe={vibe}
+            environment={environment}
+            isPremium={isPremium}
+            remaining={remaining}
+            FREE_LIMIT={FREE_LIMIT}
+            sessionMemory={sessionMemory}
+            setShowPaywall={setShowPaywall}
+            spawnParticles={spawnParticles}
+            particles={particles}
+            showStreakBanner={showStreakBanner}
+            streak={streak}
+            showAnniversary={showAnniversary}
+            anniversary={anniversary}
+          />
 
-            {/* Name + info — solid dark pill for readability */}
-            <div style={{
-              background: "rgba(6,2,15,0.75)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 16, padding: "8px 18px 6px",
-              margin: "6px 0 0", textAlign: "center",
-            }}>
-              <p style={{ color: "white", fontWeight: 800, fontSize: 17, margin: 0 }}>{companionDisplayName}</p>
-              <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 11, margin: "2px 0 4px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
-              {!isPremium ? (
-                <button onClick={() => setShowPaywall(true)}
-                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.4)", padding: "2px 10px", borderRadius: 999, cursor: "pointer" }}>
-                  {remaining}/{FREE_LIMIT} msgs left · Unlock unlimited
-                </button>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                  <p style={{ fontSize: 10, color: "rgba(168,85,247,0.9)", margin: 0 }}>✨ Premium</p>
-                  {sessionMemory.length > 0 && (
-                    <span style={{ fontSize: 10, color: "rgba(168,85,247,0.7)", display: "flex", alignItems: "center", gap: 2 }}>
-                      · <Brain size={9} color="rgba(168,85,247,0.7)" /> {sessionMemory.length} memories
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Banners overlay */}
-            {showStreakBanner && (
-              <div style={{
-                position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
-                backdropFilter: "blur(12px)", borderRadius: 999,
-                padding: "6px 14px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
-              }}>
-                <span style={{ color: "white", fontWeight: 700, fontSize: 12 }}>🔥 {streak} day streak!</span>
-              </div>
-            )}
-            {showAnniversary && anniversary && (
-              <div style={{
-                position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
-                backdropFilter: "blur(12px)", borderRadius: 14,
-                padding: "6px 14px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
-                textAlign: "center",
-              }}>
-                <span style={{ color: "white", fontWeight: 800, fontSize: 12 }}>🎉 {anniversary} Days Together! ✨</span>
-              </div>
-            )}
-          </div>
-
-          {/* MEMORY BANNER — free users only, subtle */}
+          {/* Memory banner */}
           {showMemoryBanner && !isPremium && (
             <div onClick={() => setShowPaywall(true)}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, padding: "5px 16px",
+                gap: 6, padding: "4px 16px",
                 background: "rgba(139,92,246,0.08)",
                 borderBottom: "1px solid rgba(139,92,246,0.12)",
-                cursor: "pointer",
-                opacity: 0.85,
+                cursor: "pointer", opacity: 0.85,
               }}>
               <span style={{ fontSize: 11 }}>🔒</span>
               <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
             </div>
           )}
 
-          {/* ── CONVERSATION BOX (bounded, only this scrolls) ── */}
+          {/* ▓▓ 3. CONVERSATION BOX (ONLY scrollable section) ▓▓ */}
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
             margin: "4px 0 0",
-            background: "linear-gradient(180deg, rgba(6,2,15,0.5) 0%, rgba(6,2,15,0.85) 30%)",
+            background: "linear-gradient(180deg, rgba(6,2,15,0.4) 0%, rgba(6,2,15,0.8) 40%)",
             overflow: "hidden",
+            borderRadius: "16px 16px 0 0",
           }}>
-            <div className="scroll-area" style={{
-              flex: 1, minHeight: 0,
-              overflowY: "auto", overflowX: "hidden",
-              WebkitOverflowScrolling: "touch",
-              overscrollBehavior: "contain",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              padding: "12px",
-              display: "flex", flexDirection: "column", gap: 8,
-            }}>
-              {messages.map((msg, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 5 }}>
-                  <div style={{
-                    maxWidth: "82%", padding: "9px 14px",
-                    borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    fontSize: 13, lineHeight: 1.5, wordBreak: "break-word", color: "white",
-                    ...(msg.role === "user"
-                      ? { background: "linear-gradient(135deg, #7c3aed, #db2777)" }
-                      : { background: "rgba(88,28,135,0.45)", border: "1px solid rgba(168,85,247,0.15)", boxShadow: "0 0 8px rgba(168,85,247,0.08)" }
-                    ),
-                  }}>
-                    {msg.imagePreview && (
-                      <img src={msg.imagePreview} alt="shared" style={{ width: "100%", maxWidth: 180, borderRadius: 8, marginBottom: 5, display: "block" }} />
-                    )}
-                    {msg.content}
-                  </div>
-                  {msg.role === "assistant" && (
-                    <button onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
-                      style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                      <Share2 size={10} color="rgba(255,255,255,0.3)" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              {loading && (
-                <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "rgba(88,28,135,0.45)", border: "1px solid rgba(168,85,247,0.15)", display: "flex", alignItems: "center", gap: 5 }}>
-                    <style>{`@keyframes typingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-4px);opacity:1} }`}</style>
-                    {[0, 1, 2].map(d => (
-                      <div key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "#a855f7", animation: `typingBounce 1.2s ease-in-out infinite`, animationDelay: `${d * 0.2}s` }} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            <ChatMessages
+              messages={messages}
+              loading={loading}
+              companionMood={companionMood}
+              setShareCard={setShareCard}
+              messagesEndRef={messagesEndRef}
+            />
           </div>
 
-          {/* ── TYPING FIELD (pinned at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 14px 8px", background: "rgba(6,2,15,0.95)", width: "100%", boxSizing: "border-box" }}>
-            {/* Pending image preview */}
-            {pendingImage && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <div style={{ position: "relative" }}>
-                  <img src={pendingImage.preview} alt="pending" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(168,85,247,0.5)" }} />
-                  <button onClick={() => setPendingImage(null)}
-                    style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X size={9} color="white" />
-                  </button>
-                </div>
-                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}>Photo attached</span>
-              </div>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 999, padding: "7px 10px" }}>
-              <button onPointerDown={startListening} onPointerUp={stopListening}
-                style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
-                className={isListening ? "listen-pulse" : ""}>
-                {isListening ? <MicOff size={15} color="white" /> : <Mic size={15} color="rgba(255,255,255,0.65)" />}
-              </button>
-              <button onClick={handlePhotoClick}
-                style={{ width: 30, height: 30, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(255,255,255,0.08)" }}>
-                <Camera size={14} color={isPremium ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.3)"} />
-              </button>
-              <input type="text" value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSend()}
-                placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
-                style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
-              />
-              <button onClick={() => handleSend()} disabled={loading || (!input.trim() && !pendingImage)}
-                style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: loading || (!input.trim() && !pendingImage) ? "default" : "pointer", opacity: loading || (!input.trim() && !pendingImage) ? 0.4 : 1, background: "linear-gradient(135deg, #7c3aed, #db2777)", transition: "opacity 0.15s" }}>
-                <Send size={14} color="white" />
-              </button>
-            </div>
-          </div>
-
+          {/* ▓▓ 4. FIXED TYPING BOX (pinned at bottom) ▓▓ */}
+          <ChatInputBar
+            input={input}
+            setInput={setInput}
+            loading={loading}
+            isListening={isListening}
+            isPremium={isPremium}
+            pendingImage={pendingImage}
+            setPendingImage={setPendingImage}
+            companionDisplayName={companionDisplayName}
+            handleSend={handleSend}
+            startListening={startListening}
+            stopListening={stopListening}
+            handlePhotoClick={handlePhotoClick}
+          />
         </div>
-      </AppShell>
+      </div>
 
       {/* PHOTO DISCLAIMER MODAL */}
       {showPhotoDisclaimer && (
@@ -742,26 +548,9 @@ export default function ChatPage() {
         </div>
       )}
 
-      <PaywallModal
-         visible={showPaywall}
-         onClose={() => setShowPaywall(false)}
-         onSubscribe={handleSubscribe}
-         onRestore={handleRestore}
-         isAndroid={/android/i.test(navigator.userAgent)}
-       />
-
-       <RatingPromptModal
-        visible={showRatingPrompt}
-        onClose={() => setShowRatingPrompt(false)}
-      />
-
-      <ShareCardModal
-        visible={!!shareCard}
-        onClose={() => setShareCard(null)}
-        message={shareCard?.message || ""}
-        companionName={companionDisplayName}
-        mood={shareCard?.mood || "neutral"}
-      />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onSubscribe={handleSubscribe} onRestore={handleRestore} isAndroid={/android/i.test(navigator.userAgent)} />
+      <RatingPromptModal visible={showRatingPrompt} onClose={() => setShowRatingPrompt(false)} />
+      <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} mood={shareCard?.mood || "neutral"} />
     </>
   );
 }
