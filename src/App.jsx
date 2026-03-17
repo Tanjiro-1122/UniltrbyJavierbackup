@@ -31,7 +31,8 @@ const HIDE_TABS_ON = [
   "/HomePage", "/",
   "/AdminAvatarProcessor", "/AdminDashboard",
   "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback",
-  "/Pricing"
+  "/Pricing",
+  "/chat"
 ];
 
 // Pages where the floating feedback button should NOT appear
