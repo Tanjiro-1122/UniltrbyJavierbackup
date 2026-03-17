@@ -53,8 +53,8 @@ export default function OnboardingCompanion() {
                 transition: "all 0.15s",
               }}
             >
-              <div style={{ position: "relative", width: "100%", height: 100, overflow: "hidden", borderRadius: 12 }}>
-                <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} onError={e => e.target.style.opacity = "0.3"} />
+              <div style={{ position: "relative", width: "100%", height: 100, overflow: "hidden", borderRadius: 12, background: "rgba(139,92,246,0.08)" }}>
+                <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center" }} onError={e => e.target.style.opacity = "0.3"} />
                 {selected === c.id && (
                   <div style={{ position: "absolute", top: 5, right: 5 }}>
                     <CheckCircle size={20} color="white" fill="#a855f7" />
