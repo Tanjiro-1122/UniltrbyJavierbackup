@@ -66,7 +66,7 @@ export default function VibePage() {
 
   return (
     <AppShell
-      tabs={true}
+      tabs={false}
       bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)"
     >
       {/* Ambient glow */}

@@ -30,29 +30,29 @@ export default function ChatHeader({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "4px 12px",
+      padding: "2px 12px",
       boxSizing: "border-box",
     }}>
       <button onClick={() => setVoiceEnabled(v => !v)}
-        style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        {voiceEnabled ? <Volume2 size={17} color="white" /> : <VolumeX size={17} color="rgba(255,255,255,0.4)" />}
+        style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
       </button>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 5 }}>
         {isPremium && (
           <button onClick={handleExport}
-            style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             title="Save conversation">
-            <Save size={15} color="#a855f7" />
+            <Save size={14} color="#a855f7" />
           </button>
         )}
         <button onClick={handleNewChat}
-          style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           title="New chat">
-          <MessageSquare size={15} color="rgba(255,255,255,0.6)" />
+          <MessageSquare size={14} color="rgba(255,255,255,0.6)" />
         </button>
         <button onClick={() => navigate("/settings")}
-          style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <Settings size={15} color="white" />
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <Settings size={14} color="white" />
         </button>
       </div>
     </div>

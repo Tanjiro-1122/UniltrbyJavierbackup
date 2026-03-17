@@ -18,9 +18,9 @@ export default function ChatAvatarSection({
       boxSizing: "border-box",
     }}>
       {/* Avatar + particles */}
-      <div style={{ position: "relative", width: 140, height: 140 }}>
+      <div style={{ position: "relative", width: 110, height: 110 }}>
         {isSpeaking && (
-          <div style={{ position: "absolute", inset: -16, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
         )}
         {particles.map(p => (
           <div key={p.id} className="particle"
@@ -37,11 +37,11 @@ export default function ChatAvatarSection({
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 16, padding: "6px 16px 5px",
-        margin: "4px 0 0", textAlign: "center",
+        borderRadius: 14, padding: "4px 14px 4px",
+        margin: "2px 0 0", textAlign: "center",
       }}>
-        <p style={{ color: "white", fontWeight: 800, fontSize: 16, margin: 0 }}>{companionDisplayName}</p>
-        <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 10, margin: "2px 0 3px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
+        <p style={{ color: "white", fontWeight: 800, fontSize: 15, margin: 0 }}>{companionDisplayName}</p>
+        <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 10, margin: "1px 0 2px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
         {!isPremium ? (
           <button onClick={() => setShowPaywall(true)}
             style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.4)", padding: "2px 10px", borderRadius: 999, cursor: "pointer" }}>

@@ -13,7 +13,7 @@ export default function HomePage() {
     <AppShell
       tabs={false}
       bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
-      style={{ alignItems: "center", justifyContent: "flex-start" }}>
+      style={{ alignItems: "center", justifyContent: "flex-start", overflow: "hidden" }}>
 
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -55,7 +55,7 @@ export default function HomePage() {
       `}</style>
 
       {/* Content */}
-      <div style={{
+      <div className="scroll-area" style={{
         position: "relative",
         zIndex: 1,
         width: "100%",
@@ -67,10 +67,10 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "space-between",
         textAlign: "center",
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
         padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))",
         boxSizing: "border-box",
-        maxWidth: "100%"
       }}>
         <div style={{
           width: "100%",
