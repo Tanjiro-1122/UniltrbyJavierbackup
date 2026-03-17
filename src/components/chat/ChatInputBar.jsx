@@ -11,8 +11,8 @@ export default function ChatInputBar({
       flexShrink: 0,
       width: "100%",
       padding: "6px 12px",
-      paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))",
-      background: "rgba(6,2,15,0.95)",
+      paddingBottom: "max(12px, calc(env(safe-area-inset-bottom, 8px) + 4px))",
+      background: "rgba(6,2,15,0.98)",
       boxSizing: "border-box",
     }}>
       {/* Pending image preview */}

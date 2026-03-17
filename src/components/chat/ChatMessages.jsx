@@ -16,6 +16,7 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
       display: "flex",
       flexDirection: "column",
       gap: 8,
+      justifyContent: "flex-end",
     }}>
       {messages.map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 5 }}>

@@ -59,7 +59,7 @@ export default function HomePage() {
         position: "relative",
         zIndex: 1,
         width: "100%",
-        maxWidth: 400,
+        maxWidth: "100%",
         flex: 1,
         minHeight: 0,
         display: "flex",
@@ -69,15 +69,17 @@ export default function HomePage() {
         textAlign: "center",
         overflowY: "auto",
         overflowX: "hidden",
-        padding: "6px 20px max(16px, env(safe-area-inset-bottom, 16px))",
+        padding: "6px 16px max(16px, env(safe-area-inset-bottom, 16px))",
         boxSizing: "border-box",
       }}>
         <div style={{
           width: "100%",
+          maxWidth: 400,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          flexShrink: 0
+          flexShrink: 0,
+          boxSizing: "border-box",
         }}>
           {/* Logo */}
           <div style={{

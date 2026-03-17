@@ -93,6 +93,7 @@ export default function VibePage() {
         display: "flex", flexDirection: "column", gap: 10,
         padding: "4px 20px 20px",
         position: "relative", zIndex: 1,
+        justifyContent: "center",
       }}>
         {VIBES.map(v => (
           <motion.button
@@ -146,6 +147,7 @@ export default function VibePage() {
       {/* ── FIXED CTA AT BOTTOM ── */}
       <div style={{
         flexShrink: 0, padding: "12px 20px",
+        paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
         position: "relative", zIndex: 2,
         background: "linear-gradient(to top, rgba(18,6,38,1) 60%, rgba(18,6,38,0.95) 80%, transparent 100%)",
       }}>

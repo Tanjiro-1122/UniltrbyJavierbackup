@@ -1,5 +1,5 @@
 import React from "react";
-import { Volume2, VolumeX, Settings, MessageSquare, Save } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save } from "lucide-react";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
@@ -45,11 +45,6 @@ export default function ChatHeader({
             <Save size={14} color="#a855f7" />
           </button>
         )}
-        <button onClick={handleNewChat}
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          title="New chat">
-          <MessageSquare size={14} color="rgba(255,255,255,0.6)" />
-        </button>
         <button onClick={() => navigate("/settings")}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Settings size={14} color="white" />

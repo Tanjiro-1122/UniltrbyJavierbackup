@@ -47,6 +47,11 @@ export function useAppleSubscriptions() {
 
       if (result.isMock) {
         setStatusMessage('✅ Purchase successful!');
+        // In mock/web mode, mark as upgraded directly
+        const profileId = localStorage.getItem("userProfileId");
+        if (profileId) {
+          try { await base44.entities.UserProfile.update(profileId, { is_premium: true, premium: true }); } catch {}
+        }
         return { success: true, mock: true };
       }
 
