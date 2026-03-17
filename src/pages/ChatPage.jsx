@@ -13,7 +13,12 @@ import ChatMessages from "@/components/chat/ChatMessages";
 import ChatInputBar from "@/components/chat/ChatInputBar";
 import ConversationStarters from "@/components/chat/ConversationStarters";
 import MoodCheckIn from "@/components/chat/MoodCheckIn";
+import QuoteReply from "@/components/chat/QuoteReply";
 import LiveAvatar from "@/components/LiveAvatar";
+import AchievementBadges from "@/components/achievements/AchievementBadges";
+import GuidedMeditation from "@/components/meditation/GuidedMeditation";
+import MiniGames from "@/components/games/MiniGames";
+import CompanionShareCard from "@/components/companion/CompanionShareCard";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -51,6 +56,11 @@ export default function ChatPage() {
   const [showRatingPrompt, setShowRatingPrompt] = useState(false);
   const [shareCard, setShareCard]       = useState(null);
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showMeditation, setShowMeditation] = useState(false);
+  const [showGames, setShowGames] = useState(false);
+  const [showCompanionCard, setShowCompanionCard] = useState(false);
+  const [quoteReply, setQuoteReply] = useState(null);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -472,6 +482,9 @@ export default function ChatPage() {
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            onShowGames={() => setShowGames(true)}
+            onShowMeditation={() => setShowMeditation(true)}
+            onShowAchievements={() => setShowAchievements(true)}
           />
 
           {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
@@ -570,6 +583,7 @@ export default function ChatPage() {
               companionMood={companionMood}
               setShareCard={setShareCard}
               messagesEndRef={messagesEndRef}
+              onSwipeReply={(text) => setQuoteReply(text)}
             />
           </div>
 
@@ -578,6 +592,13 @@ export default function ChatPage() {
             visible={messages.filter(m => m.role === "user").length === 0}
             onSelect={(text) => handleSend(text)}
           />
+
+          {/* Quote reply bar */}
+          {quoteReply && (
+            <div style={{ flexShrink: 0, padding: "0 12px" }}>
+              <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
+            </div>
+          )}
 
           {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
           <ChatInputBar
