@@ -12,6 +12,8 @@
 html, body, #root {
   border: none !important;
   outline: none !important;
+  background: #06020f !important;
+  background-color: #06020f !important;
 }
 
 /* ── 1. Base reset ── */
@@ -78,8 +80,9 @@ body {
   overflow-x: hidden !important;
   overscroll-behavior: none;
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
+  background-color: #06020f;
   z-index: 1;
 }
 
@@ -127,8 +130,9 @@ body {
   overflow-x: hidden !important;
   overscroll-behavior: none;
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
+  background-color: #06020f;
   z-index: 1;
 }
 
