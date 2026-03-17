@@ -691,6 +691,6 @@ export default function Settings() {
         companionName={localStorage.getItem("unfiltr_companion_nickname") || companion?.name}
         daysTogether={daysSince}
       />
-    </AppShell>
+    </div>
   );
 }
