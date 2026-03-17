@@ -88,7 +88,7 @@ export default function OnboardingBackground() {
         <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 16px", flexShrink: 0 }}>
           Where do you want to hang out?
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 16 }}>
           {BACKGROUNDS.map(bg => (
             <motion.button key={bg.id} whileTap={{ scale: 0.96 }}
               onClick={() => { setSelected(bg.id); updateOnboardingStore({ selectedBackground: bg.id }); }}
