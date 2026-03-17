@@ -9,9 +9,9 @@ import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 
 import ChatHeader from "@/components/chat/ChatHeader";
-import ChatAvatarSection from "@/components/chat/ChatAvatarSection";
 import ChatMessages from "@/components/chat/ChatMessages";
 import ChatInputBar from "@/components/chat/ChatInputBar";
+import LiveAvatar from "@/components/LiveAvatar";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
