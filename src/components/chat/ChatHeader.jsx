@@ -1,11 +1,41 @@
-import React from "react";
-import { Volume2, VolumeX, Settings, Save } from "lucide-react";
+import React, { useState } from "react";
+import { Volume2, VolumeX, Settings, Save, BookOpen } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
   isPremium, messages, companion, navigate,
-  setMessages,
+  setMessages, vibe,
 }) {
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveJournal = async () => {
+    if (saving) return;
+    const profileId = localStorage.getItem("userProfileId");
+    if (!profileId) return;
+    setSaving(true);
+    const convo = messages.filter(m => m.content).map(m => `${m.role === "user" ? "Me" : companion.displayName || companion.name}: ${m.content}`).join("\n");
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `Based on this journal conversation, write a personal journal entry in first person from the user's perspective. Also provide a short title (max 6 words) and a mood (one of: happy, neutral, sad, anxious, grateful, reflective, excited).\n\nConversation:\n${convo}`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          content: { type: "string" },
+          mood: { type: "string" },
+        },
+      },
+    });
+    await base44.entities.JournalEntry.create({
+      user_profile_id: profileId,
+      title: res.title || "Journal Entry",
+      content: res.content || convo,
+      mood: res.mood || "reflective",
+      companion_name: companion.displayName || companion.name,
+    });
+    setSaving(false);
+    navigate("/journal");
+  };
   const handleNewChat = () => {
     localStorage.removeItem("unfiltr_chat_history");
     const name = companion.displayName || companion.name;
@@ -38,7 +68,15 @@ export default function ChatHeader({
         {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
       </button>
       <div style={{ display: "flex", gap: 5 }}>
-        {isPremium && (
+        {vibe === "journal" && messages.filter(m => m.role === "user").length >= 2 && (
+          <button onClick={handleSaveJournal} disabled={saving}
+            style={{ height: 36, borderRadius: 18, background: "rgba(74,222,128,0.2)", border: "1px solid rgba(74,222,128,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: saving ? "default" : "pointer", padding: "0 12px", opacity: saving ? 0.5 : 1 }}
+            title="Save journal entry">
+            <BookOpen size={14} color="#4ade80" />
+            <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>{saving ? "Saving…" : "Save Entry"}</span>
+          </button>
+        )}
+        {isPremium && vibe !== "journal" && (
           <button onClick={handleExport}
             style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             title="Save conversation">
