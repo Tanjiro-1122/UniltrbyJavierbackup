@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, MessageCircle, Calendar, Trash2 } from "lucide-react";
+import { ChevronLeft, MessageCircle, Calendar, Search, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import AppShell from "@/components/shell/AppShell";
 
@@ -8,6 +8,7 @@ export default function ChatHistory() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const profileId = localStorage.getItem("userProfileId");
@@ -46,6 +47,32 @@ export default function ChatHistory() {
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0 }}>Chat History</h1>
       </div>
 
+      {/* Search bar */}
+      <div style={{ padding: "12px 16px 0", flexShrink: 0 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 14, padding: "10px 14px",
+        }}>
+          <Search size={16} color="rgba(255,255,255,0.35)" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search conversations..."
+            style={{
+              flex: 1, background: "none", border: "none", outline: "none",
+              color: "white", fontSize: 14,
+            }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <X size={16} color="rgba(255,255,255,0.4)" />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="scroll-area" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 10 }}>
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
@@ -60,7 +87,11 @@ export default function ChatHistory() {
             <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 12 }}>Start chatting to see your conversations here</p>
           </div>
         )}
-        {sessions.map((s, i) => (
+        {sessions.filter(s => {
+          if (!search.trim()) return true;
+          const q = search.toLowerCase();
+          return s.preview.toLowerCase().includes(q) || s.date.toLowerCase().includes(q);
+        }).map((s, i) => (
           <div key={i} style={{
             padding: "14px 16px", borderRadius: 16,
             background: "rgba(255,255,255,0.04)",

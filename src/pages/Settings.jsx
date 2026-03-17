@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3, Share2, HelpCircle, Heart } from "lucide-react";
+import { getMoodWeek } from "@/components/utils/moodTracker";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
@@ -102,17 +103,8 @@ export default function Settings() {
     const created = localStorage.getItem("unfiltr_companion_created");
     if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
 
-    // Mood history skeleton (last 7 days)
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const today = new Date();
-    const moodEmojis = ["😊", "😌", "🥰", "😄", "🌟", "💜", "✨"];
-    const history = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today); d.setDate(today.getDate() - (6 - i));
-      // Show emoji for past days, null for today (unless data exists)
-      const isToday = i === 6;
-      return { day: days[d.getDay()], mood: isToday ? null : moodEmojis[i] };
-    });
-    setMoodHistory(history);
+    // Load real mood history from localStorage
+    setMoodHistory(getMoodWeek());
 
     loadData();
 

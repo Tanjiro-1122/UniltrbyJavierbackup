@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { saveMood } from "@/components/utils/moodTracker";
 
 const MOODS = [
   { emoji: "😊", label: "Happy", value: "happy" },
@@ -18,6 +19,7 @@ export default function MoodCheckIn({ visible, onSelect, onDismiss, companionNam
 
   const handleSelect = (mood) => {
     setSelected(mood.value);
+    saveMood(mood.value);
     setTimeout(() => onSelect(mood), 400);
   };
 
