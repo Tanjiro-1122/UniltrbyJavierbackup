@@ -21,6 +21,13 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
 
+  // Check if user already has a saved session
+  const hasSession = !!(
+    localStorage.getItem("userProfileId") &&
+    localStorage.getItem("unfiltr_companion") &&
+    localStorage.getItem("unfiltr_env")
+  );
+
   return (
     <AppShell
       tabs={false}
