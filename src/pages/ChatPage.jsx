@@ -407,10 +407,10 @@ export default function ChatPage() {
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
 
-      {/* ═══ MAIN WRAPPER — strict fixed layout ═══ */}
+      {/* ═══ MAIN WRAPPER — position:fixed; inset:0; flex column ═══ */}
       <div style={{
         position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
+        inset: 0,
         width: "100%",
         overflow: "hidden",
         display: "flex",
@@ -418,15 +418,14 @@ export default function ChatPage() {
         zIndex: 1,
         background: "#1a0533",
       }}>
-        {/* ── LAYER 0: Background image (fills entire screen including safe areas) ── */}
+        {/* ── Background image (fills entire screen) ── */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 0,
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
           backgroundPosition: "center center",
         }} />
-        {/* Dark overlay */}
-        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "rgba(0,0,0,0.5)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -438,7 +437,7 @@ export default function ChatPage() {
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        {/* ── LAYER 1: Content flex column (on top of bg) ── */}
+        {/* ── Content layer ── */}
         <div style={{
           position: "absolute", inset: 0, zIndex: 1,
           display: "flex", flexDirection: "column",
@@ -448,7 +447,7 @@ export default function ChatPage() {
           overflow: "hidden",
         }}>
 
-          {/* ▓▓ 1. FIXED HEADER ▓▓ */}
+          {/* ▓▓ 1. TOP MENU BAR — fixed at top ▓▓ */}
           <ChatHeader
             voiceEnabled={voiceEnabled}
             setVoiceEnabled={setVoiceEnabled}
@@ -460,26 +459,72 @@ export default function ChatPage() {
             vibe={vibe}
           />
 
-          {/* ▓▓ 2. AVATAR + COMPANION INFO (fixed, does NOT scroll) ▓▓ */}
-          <ChatAvatarSection
-            companion={companion}
-            companionMood={companionMood}
-            isSpeaking={isSpeaking}
-            companionDisplayName={companionDisplayName}
-            vibe={vibe}
-            environment={environment}
-            isPremium={isPremium}
-            remaining={remaining}
-            FREE_LIMIT={FREE_LIMIT}
-            sessionMemory={sessionMemory}
-            setShowPaywall={setShowPaywall}
-            spawnParticles={spawnParticles}
-            particles={particles}
-            showStreakBanner={showStreakBanner}
-            streak={streak}
-            showAnniversary={showAnniversary}
-            anniversary={anniversary}
-          />
+          {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
+          <div style={{
+            flexShrink: 0,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            width: "100%",
+            padding: "0 16px",
+            boxSizing: "border-box",
+          }}>
+            {/* Speaking glow */}
+            {isSpeaking && (
+              <div style={{
+                position: "absolute", top: "50%", left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "clamp(180px, 40dvh, 300px)", height: "clamp(180px, 40dvh, 300px)",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+                animation: "speakPulse 1.2s ease-in-out infinite",
+                pointerEvents: "none",
+              }} />
+            )}
+            {/* Particles */}
+            {particles.map(p => (
+              <div key={p.id} className="particle"
+                style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
+                {p.emoji}
+              </div>
+            ))}
+            <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
+
+            {/* Free msg counter */}
+            {!isPremium && (
+              <button onClick={() => setShowPaywall(true)}
+                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left · Unlock unlimited
+              </button>
+            )}
+
+            {/* Streak banner */}
+            {showStreakBanner && (
+              <div style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
+                backdropFilter: "blur(12px)", borderRadius: 999,
+                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
+                animation: "bannerSlide 0.4s ease-out forwards",
+                boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
+              }}>
+                <span style={{ color: "white", fontWeight: 700, fontSize: 11 }}>🔥 {streak} day streak!</span>
+              </div>
+            )}
+            {showAnniversary && anniversary && (
+              <div style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
+                backdropFilter: "blur(12px)", borderRadius: 14,
+                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
+                animation: "bannerSlide 0.4s ease-out forwards",
+                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
+                textAlign: "center",
+              }}>
+                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
+              </div>
+            )}
+          </div>
 
           {/* Memory banner */}
           {showMemoryBanner && !isPremium && (
@@ -496,12 +541,11 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* ▓▓ 3. CONVERSATION BOX (ONLY scrollable section) ▓▓ */}
+          {/* ▓▓ 3. CHAT MESSAGES — scrollable middle section ▓▓ */}
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
-            margin: "2px 0 0",
-            background: "linear-gradient(180deg, rgba(6,2,15,0.4) 0%, rgba(6,2,15,0.85) 30%)",
+            background: "linear-gradient(180deg, rgba(6,2,15,0.3) 0%, rgba(6,2,15,0.85) 30%)",
             overflow: "hidden",
             borderRadius: "16px 16px 0 0",
           }}>
@@ -514,7 +558,7 @@ export default function ChatPage() {
             />
           </div>
 
-          {/* ▓▓ 4. FIXED TYPING BOX (pinned at bottom) ▓▓ */}
+          {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
           <ChatInputBar
             input={input}
             setInput={setInput}
