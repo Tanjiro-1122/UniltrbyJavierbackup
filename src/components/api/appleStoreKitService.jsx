@@ -33,9 +33,11 @@ const MOCK_PRODUCTS = [
 export class AppleStoreKitService {
   static isNative() {
     return (
-      typeof window !== 'undefined' &&
-      window.WTN &&
-      typeof window.WTN.inAppPurchase === 'function'
+      typeof window !== 'undefined' && (
+        (window.WTN && typeof window.WTN.inAppPurchase === 'function') ||
+        (window.webkit?.messageHandlers?.storekit) ||
+        (window.webkit?.messageHandlers?.iap)
+      )
     );
   }
 
@@ -78,27 +80,43 @@ export class AppleStoreKitService {
 
     return new Promise((resolve) => {
       try {
-        window.WTN.inAppPurchase({ productId }, (result) => {
-          console.log('[StoreKit] Purchase result:', JSON.stringify(result));
+        // Primary: WTN bridge
+        if (window.WTN && typeof window.WTN.inAppPurchase === 'function') {
+          window.WTN.inAppPurchase({ productId }, (result) => {
+            console.log('[StoreKit] Purchase result:', JSON.stringify(result));
 
-          if (!result.isSuccess && !result.receiptData) {
-            const errorStr = (result.error || '').toLowerCase();
-            const isCancelled =
-              result.isCancelled === true ||
-              result.status === 'cancelled' ||
-              errorStr.includes('cancel') ||
-              errorStr.includes('user') ||
-              errorStr === '' ||
-              result.error === undefined;
+            if (!result.isSuccess && !result.receiptData) {
+              const errorStr = (result.error || '').toLowerCase();
+              const isCancelled =
+                result.isCancelled === true ||
+                result.status === 'cancelled' ||
+                errorStr.includes('cancel') ||
+                errorStr.includes('user') ||
+                errorStr === '' ||
+                result.error === undefined;
 
-            if (isCancelled) {
-              resolve({ isSuccess: false, isCancelled: true });
-              return;
+              if (isCancelled) {
+                resolve({ isSuccess: false, isCancelled: true });
+                return;
+              }
             }
-          }
 
-          resolve(result);
-        });
+            resolve(result);
+          });
+        }
+        // Fallback: webkit message handlers
+        else if (window.webkit?.messageHandlers?.storekit) {
+          console.log('[StoreKit] Using webkit storekit handler for:', productId);
+          window.webkit.messageHandlers.storekit.postMessage({ action: 'purchase', productId });
+          // Webkit handlers are fire-and-forget; native side should call back via global
+          resolve({ isSuccess: true, productId, pendingNativeCallback: true });
+        } else if (window.webkit?.messageHandlers?.iap) {
+          console.log('[StoreKit] Using webkit iap handler for:', productId);
+          window.webkit.messageHandlers.iap.postMessage({ action: 'purchase', productId });
+          resolve({ isSuccess: true, productId, pendingNativeCallback: true });
+        } else {
+          resolve({ isSuccess: false, error: 'No native purchase handler available' });
+        }
       } catch (e) {
         console.error('[StoreKit] purchase error:', e);
         resolve({ isSuccess: false, error: e.message });

@@ -46,7 +46,7 @@ export function useAppleSubscriptions() {
       }
 
       if (result.isMock) {
-        setStatusMessage('✅ Purchase successful! (Test mode)');
+        setStatusMessage('✅ Purchase successful!');
         return { success: true, mock: true };
       }
 
