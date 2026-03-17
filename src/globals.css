@@ -82,8 +82,8 @@ body {
   overflow: visible;
   overflow-x: visible;
   overscroll-behavior: none;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
   background: #1a0533;
   background-color: #1a0533;
   z-index: 1;
