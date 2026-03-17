@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3, Share2 } from "lucide-react";
+import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3, Share2, HelpCircle, Heart } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
+import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
 import AppShell from "@/components/shell/AppShell";
@@ -79,6 +80,7 @@ export default function Settings() {
   const [savingVoice, setSavingVoice]     = useState(false);
   const [savingPersonality, setSavingPersonality] = useState(false);
   const [isAdmin, setIsAdmin]             = useState(false);
+  const [showCompanionCard, setShowCompanionCard] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -452,6 +454,31 @@ export default function Settings() {
           <ReferralSection profileId={localStorage.getItem("userProfileId")} />
         </motion.div>
 
+        {/* Fun Stuff */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.285 }}>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Fun Stuff</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button onClick={() => navigate("/PersonalityQuiz")}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
+              <span className="flex items-center gap-2">
+                <HelpCircle size={16} color="#a855f7" />
+                <span className="text-white font-semibold text-sm">Which companion are you?</span>
+              </span>
+              <span style={{ color: "rgba(168,85,247,0.7)", fontSize: 18 }}>›</span>
+            </button>
+            <button onClick={() => setShowCompanionCard(true)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ background: "rgba(219,39,119,0.1)", border: "1px solid rgba(219,39,119,0.2)" }}>
+              <span className="flex items-center gap-2">
+                <Heart size={16} color="#db2777" />
+                <span className="text-white font-semibold text-sm">Share your companion</span>
+              </span>
+              <span style={{ color: "rgba(219,39,119,0.7)", fontSize: 18 }}>›</span>
+            </button>
+          </div>
+        </motion.div>
+
         {/* Pricing Page Link */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.29 }}>
           <button
@@ -655,6 +682,14 @@ export default function Settings() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Companion Share Card */}
+      <CompanionShareCard
+        visible={showCompanionCard}
+        onClose={() => setShowCompanionCard(false)}
+        companionId={companion?.id}
+        companionName={localStorage.getItem("unfiltr_companion_nickname") || companion?.name}
+        daysTogether={daysSince}
+      />
     </AppShell>
   );
 }
