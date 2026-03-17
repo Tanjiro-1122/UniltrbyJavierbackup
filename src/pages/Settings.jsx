@@ -224,7 +224,7 @@ export default function Settings() {
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         display: "flex", alignItems: "center", gap: 12,
-        padding: "12px 16px 14px",
+        padding: "max(12px, env(safe-area-inset-top)) 16px 14px",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         background: '#0d0118',
       }}>
