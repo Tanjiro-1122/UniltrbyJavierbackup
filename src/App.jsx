@@ -24,6 +24,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import FeedbackAdmin from './pages/admin/FeedbackAdmin';
 import Pricing from './pages/Pricing';
 import FeedbackButton from './components/FeedbackButton';
+import Journal from './pages/Journal';
 
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = [
@@ -33,12 +34,13 @@ const HIDE_TABS_ON = [
   "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback",
   "/Pricing",
   "/chat",
-  "/vibe"
+  "/vibe",
+  "/journal"
 ];
 
 // Pages where the floating feedback button should NOT appear
 const HIDE_FEEDBACK_BTN_ON = [
-  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/"
+  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/", "/journal"
 ];
 
 const AuthenticatedApp = () => {
@@ -95,6 +97,7 @@ const AuthenticatedApp = () => {
         <Route path="/TermsOfUse" element={<TermsOfUse />} />
         <Route path="/Pricing" element={<Pricing />} />
         <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/journal" element={<Journal />} />
         <Route path="/admin/feedback" element={<FeedbackAdmin />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
