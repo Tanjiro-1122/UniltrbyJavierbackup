@@ -13,7 +13,7 @@ export default function HomePage() {
     <AppShell
       tabs={false}
       bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
-      style={{ alignItems: "center", justifyContent: "flex-start", overflow: "hidden" }}>
+      style={{ alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
 
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -65,7 +65,7 @@ export default function HomePage() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "center",
         textAlign: "center",
         overflowY: "auto",
         overflowX: "hidden",

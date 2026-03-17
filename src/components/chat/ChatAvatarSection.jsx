@@ -18,7 +18,7 @@ export default function ChatAvatarSection({
       boxSizing: "border-box",
     }}>
       {/* Avatar + particles */}
-      <div style={{ position: "relative", width: 110, height: 110, marginBottom: 6 }}>
+      <div style={{ position: "relative", width: 130, height: 130, marginBottom: 8 }}>
         {isSpeaking && (
           <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
         )}
@@ -37,8 +37,8 @@ export default function ChatAvatarSection({
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 14, padding: "4px 14px 4px",
-        margin: "2px 0 0", textAlign: "center",
+        borderRadius: 12, padding: "3px 12px 3px",
+        margin: "0", textAlign: "center",
       }}>
         <p style={{ color: "white", fontWeight: 800, fontSize: 15, margin: 0 }}>{companionDisplayName}</p>
         <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 10, margin: "1px 0 2px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
