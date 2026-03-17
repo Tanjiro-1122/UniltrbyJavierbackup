@@ -219,7 +219,7 @@ export default function Settings() {
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#1a0533', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '100px', paddingTop: '0', height: '100%' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#1a0533', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
