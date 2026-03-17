@@ -395,18 +395,21 @@ export default function ChatPage() {
   /* ─── VOICE ─── */
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    if (recognitionRef.current) recognitionRef.current.stop();
+    if (!SR) {
+      alert("Voice input isn't supported on this device. Try typing instead!");
+      return;
+    }
+    if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     const r = new SR();
     r.lang = "en-US"; r.interimResults = false; r.maxAlternatives = 1;
     recognitionRef.current = r;
     r.onstart = () => setIsListening(true);
-    r.onend = () => setIsListening(false);
-    r.onerror = () => setIsListening(false);
-    r.onresult = e => handleSend(e.results[0][0].transcript);
+    r.onend = () => { setIsListening(false); recognitionRef.current = null; };
+    r.onerror = (e) => { console.error("Speech error:", e.error); setIsListening(false); recognitionRef.current = null; };
+    r.onresult = e => { const transcript = e.results[0][0].transcript; if (transcript) handleSend(transcript); };
     r.start();
   };
-  const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
+  const stopListening = () => { recognitionRef.current?.stop(); recognitionRef.current = null; setIsListening(false); };
 
   const handleMoodSelect = (mood) => {
     localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString());
