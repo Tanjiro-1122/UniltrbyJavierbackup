@@ -518,6 +518,13 @@ export default function ChatPage() {
               </div>
             ))}
             <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
+            {/* Tap companion name to share */}
+            <button onClick={() => setShowCompanionCard(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
+                {companionDisplayName} {companion.emoji || ""}
+              </span>
+            </button>
 
             {/* Free msg counter */}
             {!isPremium && (
