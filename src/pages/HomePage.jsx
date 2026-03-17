@@ -24,7 +24,7 @@ export default function HomePage() {
   return (
     <AppShell
       tabs={false}
-      bg="#06020f"
+      bg="#1a0533"
       style={{ alignItems: "center", justifyContent: "flex-end", overflow: "hidden", background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}>
 
       {/* Stars background */}
