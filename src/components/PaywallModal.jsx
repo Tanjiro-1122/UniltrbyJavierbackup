@@ -43,6 +43,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm"
+          onClick={onClose}
         >
           <motion.div
             initial={{ y: 100, opacity: 0 }}
@@ -50,9 +51,14 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", damping: 24, stiffness: 260 }}
             className="w-full border border-white/10 rounded-t-3xl px-6 pt-6"
+            onClick={e => e.stopPropagation()}
             style={{
               background: "linear-gradient(180deg, #1a0a35 0%, #0d0520 100%)",
               paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
+              maxHeight: "85dvh",
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             {/* Handle + close */}
@@ -160,6 +166,11 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                 <button onClick={restorePurchases} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
                   <RotateCcw className="w-3 h-3" />
                   Restore Purchase
+                </button>
+
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-white/40 text-sm mt-2"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  Not now
                 </button>
               </>
             )}

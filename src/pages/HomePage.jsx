@@ -5,6 +5,18 @@ import { Sparkles, Mic, MessageCircle } from "lucide-react";
 import AppFooter from "@/components/AppFooter";
 import AppShell from "@/components/shell/AppShell";
 
+// Pre-generate stars once outside component to avoid re-renders
+const STARS = Array.from({ length: 40 }, (_, i) => ({
+  key: i,
+  width: Math.random() * 2 + 0.5,
+  height: Math.random() * 2 + 0.5,
+  top: Math.random() * 100 + "%",
+  left: Math.random() * 100 + "%",
+  opacity: Math.random() * 0.6 + 0.1,
+  duration: Math.random() * 4 + 2,
+  delay: Math.random() * 4,
+}));
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(false);
@@ -12,23 +24,23 @@ export default function HomePage() {
   return (
     <AppShell
       tabs={false}
-      bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)"
-      style={{ alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      bg="#06020f"
+      style={{ alignItems: "center", justifyContent: "center", overflow: "hidden", background: "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}>
 
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-        {Array.from({ length: 60 }).map((_, i) =>
-        <div key={i} style={{
+        {STARS.map(s =>
+        <div key={s.key} style={{
           position: "absolute",
-          width: Math.random() * 2 + 0.5,
-          height: Math.random() * 2 + 0.5,
+          width: s.width,
+          height: s.height,
           borderRadius: "50%",
           background: "white",
-          top: Math.random() * 100 + "%",
-          left: Math.random() * 100 + "%",
-          opacity: Math.random() * 0.6 + 0.1,
-          animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out infinite`,
-          animationDelay: Math.random() * 4 + "s"
+          top: s.top,
+          left: s.left,
+          opacity: s.opacity,
+          animation: `twinkle ${s.duration}s ease-in-out infinite`,
+          animationDelay: s.delay + "s"
         }} />
         )}
         <div style={{
