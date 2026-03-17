@@ -1,26 +1,6 @@
-// Companions only visible to specific tester accounts
-export const TESTER_ONLY_COMPANIONS = ["tanjiro"];
+export const TESTER_ONLY_COMPANIONS = [];
 
 export const COMPANIONS = [
-  {
-    id: "tanjiro",
-    name: "Tanjiro",
-    emoji: "🔥",
-    tagline: "Brave & Compassionate",
-    testerOnly: true,
-    avatar: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/2b84ba742_generated_image.png",
-    poses: {
-      happy:       "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/2b84ba742_generated_image.png",
-      neutral:     "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/65f63693d_generated_image.png",
-      sad:         "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/429684f9e_generated_image.png",
-      fear:        "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/6f073e625_generated_image.png",
-      disgust:     "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/6273bd0ea_generated_image.png",
-      surprise:    "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/51795963f_generated_image.png",
-      anger:       "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/c3d94ae69_generated_image.png",
-      contentment: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/3aaa1acfb_generated_image.png",
-      fatigue:     "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/1c404a7ad_generated_image.png",
-    },
-  },
   {
     id: "luna",
     name: "Luna",
