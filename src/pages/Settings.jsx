@@ -430,6 +430,35 @@ export default function Settings() {
           {savingBackground && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, marginTop: 8, textAlign: "center" }}>Saving...</p>}
         </motion.div>
 
+        {/* Vibe Mode */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Chat Vibe</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {[
+              { id: "chill", emoji: "😌", label: "Chill" },
+              { id: "vent", emoji: "💨", label: "Vent" },
+              { id: "hype", emoji: "🔥", label: "Hype" },
+              { id: "deep", emoji: "🌙", label: "Deep Talk" },
+              { id: "journal", emoji: "📓", label: "Journal" },
+            ].map(v => {
+              const currentVibe = localStorage.getItem("unfiltr_vibe") || "chill";
+              const isSelected = currentVibe === v.id;
+              return (
+                <button key={v.id} onClick={() => { localStorage.setItem("unfiltr_vibe", v.id); setUserProfile(prev => ({ ...prev })); }}
+                  style={{
+                    padding: "12px 8px", borderRadius: 14, textAlign: "center",
+                    border: isSelected ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
+                    background: isSelected ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)",
+                    cursor: "pointer", transition: "all 0.15s",
+                  }}>
+                  <span style={{ fontSize: 22, display: "block", marginBottom: 4 }}>{v.emoji}</span>
+                  <span style={{ color: isSelected ? "white" : "rgba(255,255,255,0.5)", fontWeight: isSelected ? 700 : 500, fontSize: 12 }}>{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+
         {/* Notifications */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
