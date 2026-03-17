@@ -238,7 +238,7 @@ export default function Settings() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="scroll-area" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: "16px 16px 100px", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── STATS CARD ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
