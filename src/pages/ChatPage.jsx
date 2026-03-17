@@ -302,6 +302,15 @@ export default function ChatPage() {
     setInput("");
     setLoading(true);
 
+    // Safety timeout — if anything hangs, force-clear loading after 30s
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setMessages(m => {
+        if (m[m.length - 1]?.role === "user") return [...m, { role: "assistant", content: "Hmm, that took too long. Try again? 🌙" }];
+        return m;
+      });
+    }, 30000);
+
     try {
       const name = companion.displayName || companion.name;
       let memorySummary = "";
@@ -352,16 +361,20 @@ export default function ChatPage() {
       const pid3 = localStorage.getItem("userProfileId");
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
 
-      let voiceGender = "female";
-      let voicePersonality = "cheerful";
+      // Voice — don't await, just fire and forget with cached values
+      const vg = companion._voiceGender || "female";
+      const vp = companion._voicePersonality || "cheerful";
+      speakText(replyText, companion.id, vg, vp);
+
+      // Background tasks — all fire-and-forget, no awaits
       if (companionDbId && companionDbId !== "pending") {
-        try {
-          const dbComp = await base44.entities.Companion.get(companionDbId);
-          voiceGender = dbComp?.voice_gender || "female";
-          voicePersonality = dbComp?.voice_personality || "cheerful";
-        } catch {}
+        base44.entities.Companion.get(companionDbId).then(dbComp => {
+          if (dbComp) {
+            companion._voiceGender = dbComp.voice_gender || "female";
+            companion._voicePersonality = dbComp.voice_personality || "cheerful";
+          }
+        }).catch(() => {});
       }
-      speakText(replyText, companion.id, voiceGender, voicePersonality);
 
       const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
       if (totalMsgs === 10) {
@@ -389,7 +402,7 @@ export default function ChatPage() {
       const fallbackText = error?.response?.data?.error || error?.message || "Hmm, lost the signal. Try again? 🌙";
       setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
       setIsSpeaking(false); setAvatarState("idle");
-    } finally { setLoading(false); }
+    } finally { clearTimeout(safetyTimer); setLoading(false); }
   };
 
   /* ─── VOICE ─── */
