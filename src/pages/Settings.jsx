@@ -218,7 +218,7 @@ export default function Settings() {
   );
 
   return (
-    <AppShell bg="#0d0118" style={{ background: "#0d0118" }}>
+    <AppShell bg="#0d0118" tabs={false} style={{ background: "#0d0118" }}>
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
@@ -236,7 +236,7 @@ export default function Settings() {
       </div>
 
       {/* Content */}
-      <div className="scroll-area" style={{ padding: "16px 16px 40px", background: "#0d0118", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="scroll-area" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", padding: "16px 16px 60px", background: "#0d0118", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── STATS CARD ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>

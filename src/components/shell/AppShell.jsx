@@ -25,6 +25,7 @@ export default function AppShell({
       style={{
         background: bg || "#06020f",
         overflowX: "hidden",
+        overflowY: "hidden",
         maxWidth: "100%",
         ...style,
       }}
