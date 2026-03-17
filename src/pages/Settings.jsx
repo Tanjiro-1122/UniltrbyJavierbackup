@@ -220,7 +220,7 @@ export default function Settings() {
   );
 
   return (
-    <AppShell bg="#0d0118" tabs={false} style={{ background: "#0d0118" }}>
+    <AppShell bg="#0d0118" tabs={true} style={{ background: "#0d0118" }}>
       {/* Header */}
       <div style={{
         flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
