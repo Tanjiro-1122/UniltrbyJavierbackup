@@ -468,7 +468,7 @@ export default function ChatPage() {
           backgroundSize: "cover",
           backgroundPosition: "center center",
         }} />
-        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "rgba(0,0,0,0.5)" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.6) 75%, rgba(6,2,15,0.9) 100%)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
