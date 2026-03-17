@@ -440,11 +440,10 @@ export default function ChatPage() {
 
         {/* ── LAYER 1: Content flex column (on top of bg) ── */}
         <div style={{
-          position: "relative", zIndex: 1,
+          position: "absolute", inset: 0, zIndex: 1,
           display: "flex", flexDirection: "column",
-          width: "100%", height: "100%",
+          width: "100%",
           paddingTop: "env(safe-area-inset-top, 0px)",
-          paddingBottom: 0,
           boxSizing: "border-box",
           overflow: "hidden",
         }}>
