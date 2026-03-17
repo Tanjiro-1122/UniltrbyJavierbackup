@@ -17,8 +17,8 @@ export default function ChatAvatarSection({
       width: "100%",
       boxSizing: "border-box",
     }}>
-      {/* Avatar + particles — takes up to 38% of viewport height, pulled up */}
-      <div style={{ position: "relative", width: "clamp(180px, 38dvh, 320px)", height: "clamp(180px, 38dvh, 320px)", marginTop: -20, marginBottom: -12 }}>
+      {/* Avatar + particles */}
+      <div style={{ position: "relative", width: "clamp(160px, 32dvh, 280px)", height: "clamp(160px, 32dvh, 280px)", marginBottom: 4 }}>
         {isSpeaking && (
           <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)", animation: "speakPulse 1.2s ease-in-out infinite", pointerEvents: "none" }} />
         )}
