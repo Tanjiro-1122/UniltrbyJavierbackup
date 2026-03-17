@@ -162,42 +162,39 @@ export default function HomePage() {
             )}
           </div>
 
-          <button
-            onClick={() => navigate("/onboarding")}
-            style={{
-              width: "100%", padding: "16px",
-              borderRadius: 18, border: "none",
-              color: "white", fontWeight: 900, fontSize: 17,
-              background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-              boxShadow: "0 0 32px rgba(168,85,247,0.55), 0 4px 20px rgba(0,0,0,0.5)",
-              animation: "shimmer 3s ease-in-out infinite",
-              cursor: "pointer", marginBottom: 10,
-              letterSpacing: "0.2px",
-            }}>
-            Meet your companion ✨
-          </button>
-
-          <button
-            onClick={() => {
-              const profileId = localStorage.getItem("userProfileId");
-              const companion = localStorage.getItem("unfiltr_companion");
-              const env = localStorage.getItem("unfiltr_env");
-              if (profileId && companion && env) {
-                navigate("/vibe");
-              } else {
-                navigate("/onboarding");
-              }
-            }}
-            style={{
-              width: "100%", padding: "14px 16px",
-              borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)",
-              color: "rgba(255,255,255,0.55)", fontWeight: 500, fontSize: 14,
-              background: "transparent",
-              cursor: "pointer",
-              letterSpacing: "0.2px",
-            }}>
-            I already have one → Continue
-          </button>
+          {hasSession ? (
+            /* Returning user — single "Continue" button goes straight to chat */
+            <button
+              onClick={() => navigate("/chat")}
+              style={{
+                width: "100%", padding: "16px",
+                borderRadius: 18, border: "none",
+                color: "white", fontWeight: 900, fontSize: 17,
+                background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+                boxShadow: "0 0 32px rgba(168,85,247,0.55), 0 4px 20px rgba(0,0,0,0.5)",
+                animation: "shimmer 3s ease-in-out infinite",
+                cursor: "pointer",
+                letterSpacing: "0.2px",
+              }}>
+              Continue chatting ✨
+            </button>
+          ) : (
+            /* New user — onboarding */
+            <button
+              onClick={() => navigate("/onboarding")}
+              style={{
+                width: "100%", padding: "16px",
+                borderRadius: 18, border: "none",
+                color: "white", fontWeight: 900, fontSize: 17,
+                background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+                boxShadow: "0 0 32px rgba(168,85,247,0.55), 0 4px 20px rgba(0,0,0,0.5)",
+                animation: "shimmer 3s ease-in-out infinite",
+                cursor: "pointer",
+                letterSpacing: "0.2px",
+              }}>
+              Meet your companion ✨
+            </button>
+          )}
         </div>
 
         <div style={{ width: "100%", flexShrink: 0, paddingTop: 18 }}>
