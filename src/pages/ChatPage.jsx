@@ -443,7 +443,7 @@ export default function ChatPage() {
           display: "flex", flexDirection: "column",
           width: "100%", height: "100%",
           paddingTop: "env(safe-area-inset-top, 0px)",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          paddingBottom: 0,
           boxSizing: "border-box",
           overflow: "hidden",
         }}>
