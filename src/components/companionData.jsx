@@ -44,7 +44,7 @@ export const COMPANIONS = [
     name: "Kai",
     emoji: "🌊",
     tagline: "Bold & Motivating",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a2b06aa89_kai_happy_nobg.png",
+    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a93b366ff_kai_neutral_nobg.png",
     poses: {
       happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a2b06aa89_kai_happy_nobg.png",
       neutral:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/a93b366ff_kai_neutral_nobg.png",
