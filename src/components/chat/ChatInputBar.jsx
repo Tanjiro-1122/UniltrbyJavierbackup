@@ -37,7 +37,7 @@ export default function ChatInputBar({
         borderRadius: 999,
         padding: "6px 10px",
       }}>
-        <button onPointerDown={startListening} onPointerUp={stopListening}
+        <button onClick={() => isListening ? stopListening() : startListening()}
           style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
           className={isListening ? "listen-pulse" : ""}>
           {isListening ? <MicOff size={15} color="white" /> : <Mic size={15} color="rgba(255,255,255,0.65)" />}
