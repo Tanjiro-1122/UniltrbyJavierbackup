@@ -219,12 +219,12 @@ export default function ChatPage() {
   };
 
   /* ─── TTS ─── */
-  const speakText = async (text, companionId, voiceGender = "female") => {
+  const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "cheerful") => {
     if (!voiceEnabled) return;
     try {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const res = await base44.functions.invoke("tts", { text, companionId, voiceGender });
+      const res = await base44.functions.invoke("tts", { text, companionId, voiceGender, voicePersonality });
       const base64 = res.data?.audio;
       if (!base64) throw new Error("no audio");
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
@@ -333,10 +333,15 @@ export default function ChatPage() {
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
 
       let voiceGender = "female";
+      let voicePersonality = "cheerful";
       if (companionDbId && companionDbId !== "pending") {
-        try { voiceGender = (await base44.entities.Companion.get(companionDbId))?.voice_gender || "female"; } catch {}
+        try {
+          const dbComp = await base44.entities.Companion.get(companionDbId);
+          voiceGender = dbComp?.voice_gender || "female";
+          voicePersonality = dbComp?.voice_personality || "cheerful";
+        } catch {}
       }
-      speakText(replyText, companion.id, voiceGender);
+      speakText(replyText, companion.id, voiceGender, voicePersonality);
 
       const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
       if (totalMsgs === 10) {
