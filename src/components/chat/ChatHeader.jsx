@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function ChatHeader({
@@ -64,11 +64,25 @@ export default function ChatHeader({
       boxSizing: "border-box",
       minHeight: 44,
     }}>
-      <button onClick={() => setVoiceEnabled(v => !v)}
-        style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
-      </button>
-      <div style={{ display: "flex", gap: 5 }}>
+      {/* Left side: back + voice */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <button onClick={() => navigate("/vibe")}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <ChevronLeft size={18} color="white" />
+        </button>
+        <button onClick={() => setVoiceEnabled(v => !v)}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          {voiceEnabled ? <Volume2 size={16} color="white" /> : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
+        </button>
+      </div>
+
+      {/* Center: companion name */}
+      <span style={{ color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.3px", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+        {companion?.displayName || companion?.name || ""}
+      </span>
+
+      {/* Right side: actions */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {vibe === "journal" && messages.filter(m => m.role === "user").length >= 2 && (
           <button onClick={handleSaveJournal} disabled={saving}
             style={{ height: 36, borderRadius: 18, background: "rgba(74,222,128,0.2)", border: "1px solid rgba(74,222,128,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: saving ? "default" : "pointer", padding: "0 12px", opacity: saving ? 0.5 : 1 }}
@@ -84,8 +98,13 @@ export default function ChatHeader({
             <Save size={14} color="#a855f7" />
           </button>
         )}
+        <button onClick={handleNewChat}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          title="New chat">
+          <RotateCcw size={14} color="white" />
+        </button>
         <button onClick={() => navigate("/settings")}
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Settings size={14} color="white" />
         </button>
       </div>
