@@ -220,13 +220,14 @@ export default function Settings() {
   );
 
   return (
-    <AppShell bg="#0d0118" tabs={true} style={{ background: "#0d0118" }}>
+    <div style={{ height: '100dvh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '80px', background: '#0d0118' }}>
       {/* Header */}
       <div style={{
-        flexShrink: 0, display: "flex", alignItems: "center", gap: 12,
-        padding: "0 16px 14px",
-        paddingTop: "12px",
+        position: 'sticky', top: 0, zIndex: 10,
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 16px 14px",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
+        background: '#0d0118',
       }}>
         <button
           onClick={() => navigate("/chat")}
@@ -238,7 +239,7 @@ export default function Settings() {
       </div>
 
       {/* Content */}
-      <div className="scroll-area" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", padding: "16px 16px 80px", background: "#0d0118", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── STATS CARD ── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
