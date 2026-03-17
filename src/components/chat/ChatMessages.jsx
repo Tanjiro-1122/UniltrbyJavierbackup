@@ -1,7 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Share2 } from "lucide-react";
+import { hapticLight } from "@/components/utils/haptics";
+import { soundReceive } from "@/components/utils/sounds";
 
 export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef }) {
+  // Sound + haptic on new assistant message
+  const lastMsg = messages[messages.length - 1];
+  useEffect(() => {
+    if (lastMsg?.role === "assistant" && messages.length > 1) {
+      soundReceive();
+      hapticLight();
+    }
+  }, [messages.length]);
+
   return (
     <div className="scroll-area" style={{
       flex: 1,
@@ -44,10 +55,24 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
       ))}
       {loading && (
         <div style={{ display: "flex", justifyContent: "flex-start" }}>
-          <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "rgba(88,28,135,0.45)", border: "1px solid rgba(168,85,247,0.15)", display: "flex", alignItems: "center", gap: 5 }}>
-            <style>{`@keyframes typingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-4px);opacity:1} }`}</style>
+          <div style={{
+            padding: "12px 18px", borderRadius: "20px 20px 20px 6px",
+            background: "linear-gradient(135deg, rgba(88,28,135,0.5), rgba(139,92,246,0.2))",
+            border: "1px solid rgba(168,85,247,0.2)",
+            display: "flex", alignItems: "center", gap: 6,
+            boxShadow: "0 2px 12px rgba(168,85,247,0.1)",
+          }}>
+            <style>{`
+              @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.3} 30%{transform:translateY(-6px) scale(1.2);opacity:1} }
+              @keyframes pulseGlow { 0%,100%{box-shadow:0 0 4px rgba(168,85,247,0.3)} 50%{box-shadow:0 0 12px rgba(168,85,247,0.6)} }
+            `}</style>
             {[0, 1, 2].map(d => (
-              <div key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "#a855f7", animation: `typingBounce 1.2s ease-in-out infinite`, animationDelay: `${d * 0.2}s` }} />
+              <div key={d} style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: "linear-gradient(135deg, #a855f7, #db2777)",
+                animation: `typingWave 1.4s ease-in-out infinite`,
+                animationDelay: `${d * 0.18}s`,
+              }} />
             ))}
           </div>
         </div>

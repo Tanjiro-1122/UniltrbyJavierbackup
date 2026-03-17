@@ -138,7 +138,10 @@ export default function HomePage() {
           </p>
 
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, lineHeight: 1.6, margin: "0 0 18px", maxWidth: 280 }}>
-            Talk, vent, laugh, or just hang out. No judgement. Just a friend who gets you.
+            {hasSession
+              ? `Welcome back${(() => { try { const p = JSON.parse(localStorage.getItem("unfiltr_companion")); return ` — ${p.displayName || p.name} missed you 💜`; } catch { return "!"; } })()}`
+              : "Talk, vent, laugh, or just hang out. No judgement. Just a friend who gets you."
+            }
           </p>
 
           <div style={{

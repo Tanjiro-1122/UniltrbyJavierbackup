@@ -1,5 +1,7 @@
 import React from "react";
 import { Send, Mic, MicOff, Camera, X } from "lucide-react";
+import { hapticMedium } from "@/components/utils/haptics";
+import { soundSend } from "@/components/utils/sounds";
 
 export default function ChatInputBar({
   input, setInput, loading, isListening, isPremium,
@@ -50,7 +52,7 @@ export default function ChatInputBar({
           placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 14, minWidth: 0, caretColor: "#a855f7" }}
         />
-        <button onClick={() => handleSend()} disabled={loading || (!input.trim() && !pendingImage)}
+        <button onClick={() => { hapticMedium(); soundSend(); handleSend(); }} disabled={loading || (!input.trim() && !pendingImage)}
           style={{
             width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
