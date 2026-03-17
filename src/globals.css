@@ -4,8 +4,8 @@
 
 /* ── 0. Override Tailwind white background — must come first ── */
 :root {
-  --background: 6 2 15; /* #06020f in RGB */
-  --border: 0 0% 18%; /* override light border from tailwind */
+  --background: 271 75% 11%; /* #1a0533 in HSL */
+  --border: 0 0% 18%;
   color-scheme: dark;
 }
 
@@ -17,6 +17,7 @@ html, body, #root {
   margin: 0 !important;
   padding: 0 !important;
   min-height: 100vh;
+  overscroll-behavior: none;
 }
 
 /* ── 1. Base reset ── */
