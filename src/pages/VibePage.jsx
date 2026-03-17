@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { BookOpen } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 
 const VIBES = [
@@ -94,8 +95,17 @@ export default function VibePage() {
         flexShrink: 0, padding: "12px 20px 12px",
         position: "relative", zIndex: 1,
       }}>
-        <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
-        <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
+            <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
+          </div>
+          <button onClick={() => navigate("/journal")}
+            style={{ background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 12, padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <BookOpen size={14} color="#4ade80" />
+            <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>Journal</span>
+          </button>
+        </div>
       </div>
 
       {/* ── SCROLLABLE VIBE CARDS ── */}
