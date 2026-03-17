@@ -20,9 +20,19 @@ export default function ReferralSection({ profileId }) {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [profileId]);
 
+  const shareMessage = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\nunfiltrbyjavier.base44.app`;
+
   const handleCopy = async () => {
-    const msg = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\nunfiltrbyjavier.base44.app`;
-    await navigator.clipboard.writeText(msg);
+    // Try native share first (mobile), fallback to clipboard
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Join me on Unfiltr!", text: shareMessage });
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      } catch {}
+    }
+    await navigator.clipboard.writeText(shareMessage);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
