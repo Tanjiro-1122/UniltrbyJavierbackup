@@ -95,6 +95,19 @@ export default function VibePage() {
         flexShrink: 0, padding: "12px 20px 12px",
         position: "relative", zIndex: 1,
       }}>
+        {/* Friend activity indicator */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
+          padding: "5px 10px", borderRadius: 999, width: "fit-content",
+          background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.15)",
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite" }} />
+          <span style={{ color: "rgba(74,222,128,0.7)", fontSize: 11, fontWeight: 500 }}>
+            {Math.floor(Math.random() * 8) + 2} friends are chatting right now
+          </span>
+          <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+        </div>
+
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>

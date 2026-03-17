@@ -202,6 +202,28 @@ export default function Pricing() {
           </button>
         )}
 
+        {/* Gift Subscription */}
+        <button
+          onClick={async () => {
+            const text = "🎁 Gift a friend Unfiltr Premium!\n\nGive someone you love unlimited access to their personal AI companion 💜\n\nunfiltrbyjavier.base44.app";
+            if (navigator.share) {
+              await navigator.share({ title: "Gift Unfiltr Premium", text });
+            } else {
+              await navigator.clipboard.writeText(text);
+              alert("Gift link copied to clipboard! 🎁");
+            }
+          }}
+          style={{
+            width: '100%', padding: '14px',
+            background: 'rgba(219,39,119,0.1)', border: '1px solid rgba(219,39,119,0.25)',
+            borderRadius: 16, color: 'white', fontWeight: 700, fontSize: 14,
+            cursor: 'pointer', marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          🎁 Gift Premium to a Friend
+        </button>
+
         {/* Restore */}
         <button
           onClick={async () => {
