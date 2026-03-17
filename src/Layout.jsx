@@ -9,7 +9,7 @@ const FullScreenLoader = () => (
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#06020f',
+    background: '#1a0533',
     zIndex: 9999,
   }}>
     <div style={{ textAlign: 'center' }}>
@@ -75,7 +75,7 @@ export default function Layout({ children }) {
       themeColor.name = 'theme-color';
       document.head.appendChild(themeColor);
     }
-    themeColor.content = '#06020f';
+    themeColor.content = '#1a0533';
 
     // Manifest
     if (!document.querySelector('link[rel="manifest"]')) {
