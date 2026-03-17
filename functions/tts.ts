@@ -4,31 +4,41 @@ import OpenAI from 'npm:openai';
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 // OpenAI TTS voices: alloy | echo | fable | onyx | nova | shimmer
-// Fallback mapping by gender
 const VOICE_BY_GENDER = {
   male:    ["onyx", "echo", "alloy"],
   female:  ["nova", "shimmer"],
   neutral: ["fable"],
 };
 
+// Voice personality → speed + voice variant adjustments
+const PERSONALITY_CONFIG = {
+  cheerful:     { speed: 1.15, voiceIndex: 0 },
+  calm:         { speed: 0.95, voiceIndex: 0 },
+  energetic:    { speed: 1.25, voiceIndex: 1 },
+  professional: { speed: 1.0,  voiceIndex: 0 },
+};
+
 Deno.serve(async (req) => {
   try {
-    const { text, companionId, voiceGender } = await req.json();
+    const { text, companionId, voiceGender, voicePersonality } = await req.json();
 
     if (!text || text.trim().length === 0) {
       return Response.json({ error: 'No text provided' }, { status: 400 });
     }
 
-    // Select voice based on gender preference (voiceGender from Companion entity)
     const gender = voiceGender || "female";
+    const personality = voicePersonality || "cheerful";
+    const config = PERSONALITY_CONFIG[personality] || PERSONALITY_CONFIG.cheerful;
+
     const voiceList = VOICE_BY_GENDER[gender] || VOICE_BY_GENDER.female;
-    const voice = voiceList[0];
+    // Use voiceIndex from personality config, fallback to first voice
+    const voice = voiceList[Math.min(config.voiceIndex, voiceList.length - 1)];
 
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
       voice,
       input: text.slice(0, 400),
-      speed: 1.1,  // Slightly faster for snappier feel
+      speed: config.speed,
     });
 
     const buffer = await mp3.arrayBuffer();
