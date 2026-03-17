@@ -60,8 +60,9 @@ export default function ChatHeader({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "2px 12px",
+      padding: "8px 12px",
       boxSizing: "border-box",
+      minHeight: 44,
     }}>
       <button onClick={() => setVoiceEnabled(v => !v)}
         style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>

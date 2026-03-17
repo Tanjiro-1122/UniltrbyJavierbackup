@@ -10,8 +10,8 @@ export default function ChatInputBar({
     <div style={{
       flexShrink: 0,
       width: "100%",
-      padding: "6px 12px max(12px, env(safe-area-inset-bottom, 12px))",
-      background: "rgba(6,2,15,0.98)",
+      padding: "6px 12px calc(8px + env(safe-area-inset-bottom, 8px))",
+      background: "rgba(6,2,15,1)",
       boxSizing: "border-box",
     }}>
       {/* Pending image preview */}

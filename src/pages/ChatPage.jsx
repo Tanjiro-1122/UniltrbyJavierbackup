@@ -416,16 +416,17 @@ export default function ChatPage() {
         display: "flex",
         flexDirection: "column",
         zIndex: 1,
+        background: "#1a0533",
       }}>
         {/* ── LAYER 0: Background image (fills entire screen including safe areas) ── */}
         <div style={{
-          position: "absolute", top: -100, left: -50, right: -50, bottom: -100, zIndex: 0,
+          position: "absolute", inset: 0, zIndex: 0,
           backgroundImage: `url(${environment.bg})`,
           backgroundSize: "cover",
           backgroundPosition: "center center",
         }} />
         {/* Dark overlay */}
-        <div style={{ position: "absolute", top: -100, left: -50, right: -50, bottom: -100, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "rgba(0,0,0,0.55)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -500,8 +501,8 @@ export default function ChatPage() {
           <div style={{
             flex: 1, minHeight: 0,
             display: "flex", flexDirection: "column",
-            margin: "4px 0 0",
-            background: "linear-gradient(180deg, rgba(6,2,15,0.4) 0%, rgba(6,2,15,0.8) 40%)",
+            margin: "2px 0 0",
+            background: "linear-gradient(180deg, rgba(6,2,15,0.4) 0%, rgba(6,2,15,0.85) 30%)",
             overflow: "hidden",
             borderRadius: "16px 16px 0 0",
           }}>
