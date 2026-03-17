@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function ChatHeader({
@@ -66,7 +66,7 @@ export default function ChatHeader({
     }}>
       {/* Left side: back + voice */}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <button onClick={() => navigate("/vibe")}
+        <button onClick={() => navigate("/")}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={18} color="white" />
         </button>
@@ -98,6 +98,11 @@ export default function ChatHeader({
             <Save size={14} color="#a855f7" />
           </button>
         )}
+        <button onClick={() => navigate("/ChatHistory")}
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          title="Chat history">
+          <History size={14} color="white" />
+        </button>
         <button onClick={handleNewChat}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           title="New chat">

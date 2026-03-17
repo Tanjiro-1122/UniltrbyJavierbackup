@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3 } from "lucide-react";
+import { ChevronLeft, Trash2, Sparkles, Check, PauseCircle, ShieldCheck, MessageSquareMore, BarChart3, Share2 } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
+import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
 import AppShell from "@/components/shell/AppShell";
@@ -285,10 +286,13 @@ export default function Settings() {
           </div>
         </motion.div>
 
-        {/* Display Name */}
+        {/* Display Name (editable) */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Display Name</p>
-          <p style={{ color: "white", fontWeight: 700, fontSize: 17 }}>{userProfile.display_name}</p>
+          <DisplayNameEditor
+            userProfile={userProfile}
+            onSave={(newName) => setUserProfile(prev => ({ ...prev, display_name: newName }))}
+          />
         </motion.div>
 
         {/* Companion Nickname */}
