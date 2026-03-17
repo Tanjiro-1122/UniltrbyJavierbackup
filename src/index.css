@@ -84,7 +84,7 @@
 
   body {
     @apply bg-background text-foreground;
-    background: #06020f !important;
+    background: #1a0533 !important;
   }
 
   #root {
@@ -97,7 +97,7 @@ html {
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;
-  background-color: #06020f !important;
+  background-color: #1a0533 !important;
 }
 
 body {
@@ -113,7 +113,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #06020f !important;
+  background-color: #1a0533 !important;
 }
 
 #root {
@@ -125,7 +125,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
-  background-color: #06020f !important;
+  background-color: #1a0533 !important;
   border: none !important;
   outline: none !important;
 }
