@@ -54,8 +54,8 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* Content */}
-      <div className="scroll-area" style={{
+      {/* Content — locked, no scroll */}
+      <div style={{
         position: "relative",
         zIndex: 1,
         width: "100%",
@@ -67,8 +67,7 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "hidden",
         padding: "6px 16px max(16px, env(safe-area-inset-bottom, 16px))",
         boxSizing: "border-box",
       }}>

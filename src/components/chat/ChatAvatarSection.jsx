@@ -31,33 +31,13 @@ export default function ChatAvatarSection({
         <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
       </div>
 
-      {/* Name + info pill */}
-      <div style={{
-        background: "rgba(6,2,15,0.75)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 12, padding: "3px 12px 3px",
-        margin: "0", textAlign: "center",
-      }}>
-        <p style={{ color: "white", fontWeight: 800, fontSize: 15, margin: 0 }}>{companionDisplayName}</p>
-        <p style={{ color: "rgba(196,180,252,0.8)", fontSize: 10, margin: "1px 0 2px", textTransform: "capitalize" }}>{vibe} mode · {environment.label}</p>
-        {!isPremium ? (
-          <button onClick={() => setShowPaywall(true)}
-            style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.4)", padding: "2px 10px", borderRadius: 999, cursor: "pointer" }}>
-            {remaining}/{FREE_LIMIT} msgs left · Unlock unlimited
-          </button>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-            <p style={{ fontSize: 10, color: "rgba(168,85,247,0.9)", margin: 0 }}>✨ Premium</p>
-            {sessionMemory.length > 0 && (
-              <span style={{ fontSize: 10, color: "rgba(168,85,247,0.7)", display: "flex", alignItems: "center", gap: 2 }}>
-                · <Brain size={9} color="rgba(168,85,247,0.7)" /> {sessionMemory.length} memories
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Minimal status — no name pill */}
+      {!isPremium && (
+        <button onClick={() => setShowPaywall(true)}
+          style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 2 }}>
+          {remaining}/{FREE_LIMIT} msgs left · Unlock unlimited
+        </button>
+      )}
 
       {/* Banners */}
       {showStreakBanner && (

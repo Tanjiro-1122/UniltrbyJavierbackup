@@ -18,6 +18,7 @@ const VIBES_SUFFIX = {
   vent:  "Be a compassionate listener. Let them vent. Validate feelings. Ask gentle follow-up questions.",
   hype:  "Be ENERGETIC and hyped up! Use caps, exclamation marks, pump them up!",
   deep:  "Go deep. Be thoughtful, philosophical. Explore emotions and meaning.",
+  journal: "You are a gentle journal scribe. Ask reflective questions one at a time. Listen carefully. After 3-4 exchanges, offer to save a journal entry summarizing their thoughts. Keep your questions short and open-ended. Don't give advice unless asked.",
 };
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];

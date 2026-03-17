@@ -52,6 +52,18 @@ const VIBES = [
     labelColor: "#c084fc",
     glow: "rgba(168,85,247,0.25)",
   },
+  {
+    id: "journal",
+    emoji: "📓",
+    label: "Journal",
+    desc: "Speak your thoughts. I'll write them down for you.",
+    gradientFrom: "#1a3a2a",
+    gradientTo: "#0d2418",
+    borderColor: "rgba(74,222,128,0.35)",
+    activeBorder: "rgba(74,222,128,0.85)",
+    labelColor: "#4ade80",
+    glow: "rgba(74,222,128,0.25)",
+  },
 ];
 
 export default function VibePage() {
