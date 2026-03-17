@@ -219,7 +219,7 @@ export default function Settings() {
   );
 
   return (
-    <div style={{ height: '100dvh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '80px', background: '#0d0118' }}>
+    <div style={{ height: '100dvh', overflowY: 'scroll', WebkitOverflowScrolling: 'touch', paddingBottom: '80px', boxSizing: 'border-box', background: '#0d0118' }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
