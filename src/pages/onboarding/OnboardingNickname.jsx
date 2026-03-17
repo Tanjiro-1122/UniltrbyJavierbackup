@@ -50,28 +50,24 @@ export default function OnboardingNickname() {
           </div>
         )}
 
-        <div style={{
-          padding: "14px 16px", borderRadius: 18,
-          background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)",
-        }}>
-          <input
-            type="text"
-            value={nickname}
-            onChange={e => setNickname(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleNext()}
-            placeholder={`Default: ${companion?.name || "companion"}`}
-            maxLength={20}
-            autoFocus
-            style={{
-              width: "100%", padding: "14px 0", borderRadius: 0,
-              border: "none", borderBottom: "1px solid rgba(139,92,246,0.35)",
-              background: "transparent", color: "white",
-              fontSize: 16, outline: "none", caretColor: "#a855f7",
-            }}
-            onFocus={e => e.target.style.borderBottomColor = "rgba(139,92,246,0.6)"}
-            onBlur={e => e.target.style.borderBottomColor = "rgba(139,92,246,0.35)"}
-          />
-        </div>
+        <input
+          type="text"
+          value={nickname}
+          onChange={e => setNickname(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleNext()}
+          placeholder={`Default: ${companion?.name || "companion"}`}
+          maxLength={20}
+          autoFocus
+          style={{
+            width: "100%", maxWidth: "100%", boxSizing: "border-box",
+            padding: "14px 16px", borderRadius: 18,
+            border: "1px solid rgba(139,92,246,0.2)",
+            background: "rgba(139,92,246,0.1)", color: "white",
+            fontSize: 16, outline: "none", caretColor: "#a855f7",
+          }}
+          onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
+          onBlur={e => e.target.style.borderColor = "rgba(139,92,246,0.2)"}
+        />
         <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", margin: "10px 0 0" }}>
           Leave blank to use their default name
         </p>
