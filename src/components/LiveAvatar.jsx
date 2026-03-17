@@ -34,8 +34,9 @@ const MOOD_ANIM_NAME = {
 
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick }) {
   const companionData = COMPANIONS.find(c => c.id === companionId);
-  const rawUrl        = companionData?.poses?.[mood] || companionData?.avatar;
-  const imageUrl      = rawUrl ? `${rawUrl}?v=2` : rawUrl;
+  // Get pose URL for current mood, fallback to neutral, then to avatar
+  const poseUrl = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
+  const imageUrl = poseUrl ? `${poseUrl}?mood=${mood}` : poseUrl;
 
   return (
     <>
