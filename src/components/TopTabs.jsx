@@ -18,10 +18,9 @@ export default function TopTabs() {
       style={{
         position: "fixed",
         bottom: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
+        left: 0,
+        right: 0,
         width: "100%",
-        maxWidth: 430,
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         background: "rgba(6,2,15,0.95)",
         borderTop: "1px solid rgba(139,92,246,0.22)",

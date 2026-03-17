@@ -472,13 +472,10 @@ export default function ChatPage() {
       <AppShell
         tabs={true}
         bg="#06020f"
-        style={{
-          backgroundImage: `url(${environment.bg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center center",
-        }}
       >
-        {/* Strong dark overlay on bg image */}
+        {/* Background image — fills entire shell */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${environment.bg})`, backgroundSize: "cover", backgroundPosition: "center center", pointerEvents: "none" }} />
+        {/* Dark overlay */}
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", pointerEvents: "none" }} />
 
         <style>{`
@@ -491,7 +488,7 @@ export default function ChatPage() {
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
 
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", maxHeight: "100%", overflow: "hidden" }}>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
 
           {/* ── AVATAR + NAME SECTION (transparent, fixed above chat box) ── */}
           <div style={{
@@ -680,8 +677,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* ── TYPING FIELD (fixed at bottom) ── */}
-          <div style={{ flexShrink: 0, padding: "8px 14px", paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))", background: "rgba(6,2,15,0.95)" }}>
+          {/* ── TYPING FIELD (pinned at bottom) ── */}
+          <div style={{ flexShrink: 0, padding: "8px 14px 8px", background: "rgba(6,2,15,0.95)", width: "100%", boxSizing: "border-box" }}>
             {/* Pending image preview */}
             {pendingImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>

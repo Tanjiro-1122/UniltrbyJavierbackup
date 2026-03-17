@@ -77,18 +77,23 @@ export default function VibePage() {
         pointerEvents: "none", zIndex: 0,
       }} />
 
-      {/* ── HEADER ── */}
+      {/* ── FIXED HEADER ── */}
       <div style={{
-        flexShrink: 0, padding: "0 16px 12px",
-        paddingTop: "12px",
+        flexShrink: 0, padding: "12px 20px 12px",
         position: "relative", zIndex: 1,
       }}>
         <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
         <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
       </div>
 
-      {/* ── VIBE CARDS ── */}
-      <div className="scroll-area" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 10, padding: "12px 16px", position: "relative", zIndex: 1 }}>
+      {/* ── SCROLLABLE VIBE CARDS ── */}
+      <div className="scroll-area" style={{
+        flex: 1, minHeight: 0,
+        overflowY: "auto", overflowX: "hidden",
+        display: "flex", flexDirection: "column", gap: 10,
+        padding: "4px 20px 20px",
+        position: "relative", zIndex: 1,
+      }}>
         {VIBES.map(v => (
           <motion.button
             key={v.id}
@@ -107,13 +112,11 @@ export default function VibePage() {
               overflow: "hidden",
             }}
           >
-            {/* Shimmer effect */}
             <div style={{
               position: "absolute", inset: 0,
               background: selected === v.id ? "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)" : "transparent",
               pointerEvents: "none",
             }} />
-
             <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, minHeight: 64 }}>
               <span style={{ fontSize: 44, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>{v.emoji}</span>
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
@@ -138,15 +141,13 @@ export default function VibePage() {
             </div>
           </motion.button>
         ))}
-        <div style={{ height: 100 }} />
       </div>
 
-      {/* ── CTA ── */}
+      {/* ── FIXED CTA AT BOTTOM ── */}
       <div style={{
         flexShrink: 0, padding: "12px 20px",
-        paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))",
         position: "relative", zIndex: 2,
-        background: "linear-gradient(to top, #06020f 50%, rgba(6,2,15,0.95) 70%, transparent 100%)",
+        background: "linear-gradient(to top, rgba(18,6,38,1) 60%, rgba(18,6,38,0.95) 80%, transparent 100%)",
       }}>
         <button
           onClick={handleContinue}
@@ -155,7 +156,7 @@ export default function VibePage() {
             width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
             color: "white", fontWeight: 900, fontSize: 18, letterSpacing: "0.5px",
             cursor: selected ? "pointer" : "default",
-            opacity: 1,
+            opacity: selected ? 1 : 0.5,
             background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
             boxShadow: "0 8px 32px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",

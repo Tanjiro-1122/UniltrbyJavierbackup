@@ -81,19 +81,13 @@ export default function OnboardingBackground() {
       loading={loading}
       nextLabel={loading ? "Setting up…" : "Enter this world →"}
     >
-      <div style={{
-        position: "sticky", top: 0, zIndex: 10,
-        padding: "0 20px 12px",
-        background: "linear-gradient(180deg, #0d0220 70%, transparent 100%)",
-      }}>
+      <div style={{ padding: "0 20px 20px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           Pick your space
         </h2>
-        <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: 0 }}>
+        <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 16px" }}>
           Where do you want to hang out?
         </p>
-      </div>
-      <div style={{ padding: "0 20px 24px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {BACKGROUNDS.map(bg => (
             <motion.button key={bg.id} whileTap={{ scale: 0.96 }}
@@ -119,7 +113,6 @@ export default function OnboardingBackground() {
             </motion.button>
           ))}
         </div>
-      </div>
-    </OnboardingLayout>
+      </div>    </OnboardingLayout>
   );
 }
