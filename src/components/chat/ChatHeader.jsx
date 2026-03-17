@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
   isPremium, messages, companion, navigate,
   setMessages, vibe,
+  onShowGames, onShowMeditation, onShowAchievements,
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -76,10 +77,24 @@ export default function ChatHeader({
         </button>
       </div>
 
-      {/* Center: companion name */}
-      <span style={{ color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.3px", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
-        {companion?.displayName || companion?.name || ""}
-      </span>
+      {/* Center: feature icons */}
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <button onClick={onShowMeditation}
+          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          title="Breathe">
+          <Wind size={13} color="rgba(255,255,255,0.5)" />
+        </button>
+        <button onClick={onShowGames}
+          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          title="Games">
+          <Gamepad2 size={13} color="rgba(255,255,255,0.5)" />
+        </button>
+        <button onClick={onShowAchievements}
+          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+          title="Achievements">
+          <Trophy size={13} color="rgba(255,255,255,0.5)" />
+        </button>
+      </div>
 
       {/* Right side: actions */}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
