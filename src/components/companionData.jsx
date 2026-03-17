@@ -134,7 +134,7 @@ export const COMPANIONS = [
     name: "Ryuu",
     emoji: "🐉",
     tagline: "Fierce & Disciplined",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/c6c894b96_ryuu_happy_nobg.png",
+    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/740564e98_ryuu_neutral_nobg.png",
     poses: {
       happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/c6c894b96_ryuu_happy_nobg.png",
       neutral:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/public/69b22f8b58e45d23cafd78d2/740564e98_ryuu_neutral_nobg.png",
