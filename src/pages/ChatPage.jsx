@@ -141,6 +141,9 @@ export default function ChatPage() {
             try {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
+              // Cache voice settings immediately so first message uses correct voice
+              if (dbComp?.voice_gender) localStorage.setItem("unfiltr_voice_gender", dbComp.voice_gender);
+              if (dbComp?.voice_personality) localStorage.setItem("unfiltr_voice_personality", dbComp.voice_personality);
             } catch {}
           }
         } catch {}
@@ -364,9 +367,9 @@ export default function ChatPage() {
       const pid3 = localStorage.getItem("userProfileId");
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount }).catch(() => {});
 
-      // Voice — don't await, just fire and forget with cached values
-      const vg = companion._voiceGender || "female";
-      const vp = companion._voicePersonality || "cheerful";
+      // Voice — use cached settings from DB, fall back to localStorage, then defaults
+      const vg = companion._voiceGender || localStorage.getItem("unfiltr_voice_gender") || "female";
+      const vp = companion._voicePersonality || localStorage.getItem("unfiltr_voice_personality") || "cheerful";
       speakText(replyText, companion.id, vg, vp);
 
       // Background tasks — all fire-and-forget, no awaits
@@ -375,6 +378,8 @@ export default function ChatPage() {
           if (dbComp) {
             companion._voiceGender = dbComp.voice_gender || "female";
             companion._voicePersonality = dbComp.voice_personality || "cheerful";
+            localStorage.setItem("unfiltr_voice_gender", companion._voiceGender);
+            localStorage.setItem("unfiltr_voice_personality", companion._voicePersonality);
           }
         }).catch(() => {});
       }
