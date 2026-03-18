@@ -1,8 +1,13 @@
 // Lightweight sound effect utility using Web Audio API
+// Imports audioUnlock side-effect to ensure audio is unlocked on first tap
+import "@/components/utils/audioUnlock";
+
 let audioCtx = null;
 
 function getCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // Resume if suspended (iOS)
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
   return audioCtx;
 }
 

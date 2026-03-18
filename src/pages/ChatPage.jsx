@@ -21,6 +21,7 @@ import MiniGames from "@/components/games/MiniGames";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import ParallaxBackground from "@/components/chat/ParallaxBackground";
 import BackgroundEffect from "@/components/chat/BackgroundEffect";
+import { isAudioUnlocked } from "@/components/utils/audioUnlock";
 
 import { COMPANIONS } from "@/components/companionData";
 
@@ -243,7 +244,7 @@ export default function ChatPage() {
     setTimeout(() => setParticles(p => p.filter(x => !batch.find(b => b.id === x.id))), 1000);
   };
 
-  /* ─── TTS ─── */
+  /* ─── TTS (with iOS audio unlock awareness) ─── */
   const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "cheerful") => {
     if (!voiceEnabled) return;
     try {
@@ -258,8 +259,15 @@ export default function ChatPage() {
       const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
       if (audioRef.current) { audioRef.current.pause(); URL.revokeObjectURL(audioRef.current.src); }
       const audio = new Audio(url);
+      audio.playsInline = true;
       audioRef.current = audio;
       audio.onended = audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
+      // On iOS, if audio isn't unlocked yet, skip gracefully instead of throwing
+      if (!isAudioUnlocked()) {
+        console.warn("TTS: audio not yet unlocked (waiting for user tap)");
+        setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url);
+        return;
+      }
       await audio.play();
     } catch (e) { console.warn("TTS failed:", e?.message); setIsSpeaking(false); setAvatarState("idle"); }
   };
