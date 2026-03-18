@@ -9,7 +9,7 @@ const FullScreenLoader = () => (
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#1a0533',
+    background: '#06020f',
     zIndex: 9999,
   }}>
     <div style={{ textAlign: 'center' }}>
