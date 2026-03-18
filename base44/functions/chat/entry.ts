@@ -16,11 +16,13 @@ Deno.serve(async (req) => {
 
     const moodInstruction = `
 
-At the very end of EVERY response, on its own line, append exactly one mood tag 
-in this format: [MOOD:happy]
-Choose the mood that best fits your response from this list ONLY:
-happy, neutral, sad, fear, disgust, surprise, anger, contentment, fatigue
-Do not explain the mood. Do not skip it. Always include it as the last line.`;
+CRITICAL INSTRUCTION - MOOD TAG:
+You MUST end EVERY single response with a mood tag on its own line.
+Format: [MOOD:value]
+Allowed values: happy, neutral, sad, fear, disgust, surprise, anger, contentment, fatigue
+Example: If the user is scared, end with [MOOD:fear]
+Example: If the user is happy, end with [MOOD:happy]
+NEVER skip this tag. It must always be the very last line.`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -38,9 +40,14 @@ Do not explain the mood. Do not skip it. Always include it as the last line.`;
     clearTimeout(timeoutId);
     const raw = completion.choices[0].message.content;
 
-    const moodMatch = raw.match(/\[MOOD:(\w+)\]/i);
-    const mood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
-    const reply = raw.replace(/\[MOOD:\w+\]/i, "").trim();
+    // Try multiple patterns to catch mood tag reliably
+    const moodMatch = raw.match(/\[MOOD:\s*(\w+)\s*\]/i) 
+      || raw.match(/MOOD:\s*(\w+)/i)
+      || raw.match(/\(MOOD:\s*(\w+)\)/i);
+    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+    const detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
+    const mood = validMoods.includes(detectedMood) ? detectedMood : "neutral";
+    const reply = raw.replace(/\[MOOD:\s*\w+\s*\]/gi, "").replace(/\(MOOD:\s*\w+\)/gi, "").trim();
 
     return Response.json({ reply, mood });
   } catch (error) {
