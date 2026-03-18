@@ -20,7 +20,7 @@ import GuidedMeditation from "@/components/meditation/GuidedMeditation";
 import MiniGames from "@/components/games/MiniGames";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import ParallaxBackground from "@/components/chat/ParallaxBackground";
-import LiveBackgroundEffects from "@/components/chat/LiveBackgroundEffects";
+
 import { COMPANIONS } from "@/components/companionData";
 
 const VIBES_SUFFIX = {
@@ -465,7 +465,6 @@ export default function ChatPage() {
       }}>
         {/* ── Background image (3D parallax) ── */}
         <ParallaxBackground imageUrl={environment.bg} />
-        <LiveBackgroundEffects backgroundId={environment.id} />
         <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.6) 75%, rgba(6,2,15,0.9) 100%)" }} />
 
         <style>{`
