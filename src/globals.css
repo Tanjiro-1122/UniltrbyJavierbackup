@@ -135,8 +135,8 @@ body {
   overscroll-behavior: none;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-  background: #1a0533;
-  background-color: #1a0533;
+  background: #06020f;
+  background-color: #06020f;
   z-index: 1;
 }
 
