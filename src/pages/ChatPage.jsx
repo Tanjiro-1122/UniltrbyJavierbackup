@@ -310,6 +310,15 @@ export default function ChatPage() {
     if (loading) return;
     if (isAtLimit) { setShowPaywall(true); return; }
 
+    // Warm iOS audio on user gesture (send button tap is a direct gesture)
+    if (!isAudioUnlocked()) {
+      try {
+        const silentAudio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+        silentAudio.volume = 0;
+        await silentAudio.play().then(() => silentAudio.pause());
+      } catch {}
+    }
+
     const userMsg = pendingImage
       ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview, quoteReply: quoteReply || undefined }
       : { role: "user", content: text, quoteReply: quoteReply || undefined };

@@ -85,6 +85,10 @@ export default function Layout({ children }) {
       document.head.appendChild(manifest);
     }
 
+    // Fix: background color in Layout matches index.html
+    document.body.style.backgroundColor = '#06020f';
+    document.documentElement.style.backgroundColor = '#06020f';
+
     // CSS custom props for safe-area accessible in JS
     document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top)');
     document.documentElement.style.setProperty('--sab', 'env(safe-area-inset-bottom)');
