@@ -462,13 +462,8 @@ export default function ChatPage() {
         zIndex: 1,
         background: "#1a0533",
       }}>
-        {/* ── Background image (fills entire screen) ── */}
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          backgroundImage: `url(${environment.bg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center center",
-        }} />
+        {/* ── Background image (3D parallax) ── */}
+        <ParallaxBackground imageUrl={environment.bg} />
         <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.6) 75%, rgba(6,2,15,0.9) 100%)" }} />
 
         <style>{`
