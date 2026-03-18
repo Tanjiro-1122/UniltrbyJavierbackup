@@ -1,85 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
-import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
+import { BACKGROUNDS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
-import { getOnboardingStore, updateOnboardingStore, resetOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
 export default function OnboardingBackground() {
   const navigate = useNavigate();
   const store = getOnboardingStore();
   const [selected, setSelected] = useState(store.selectedBackground);
-  const [loading, setLoading] = useState(false);
+
 
   if (!store.selectedCompanion) {
     navigate("/onboarding/companion", { replace: true });
     return null;
   }
 
-  const handleFinish = async () => {
+  const handleNext = () => {
     if (!selected) return;
-    setLoading(true);
-    try {
-      const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
-      const companion = await base44.entities.Companion.create({
-        name: companionData.name,
-        avatar_url: companionData.avatar,
-        mood_mode: "neutral",
-        personality: companionData.tagline,
-      });
-
-      const profileData = {
-        display_name: store.displayName,
-        companion_id: companion.id,
-        background_id: selected,
-        premium: store.isTesterAccount,
-        is_premium: store.isTesterAccount,
-        session_memory: store.isTesterAccount ? [{
-          date: "Mar 14, 2026",
-          summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
-        }] : [],
-      };
-
-      let userProfile;
-      if (store.pendingProfileId) {
-        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-      } else {
-        userProfile = await base44.entities.UserProfile.create(profileData);
-      }
-
-      localStorage.setItem("userProfileId", userProfile.id);
-      localStorage.setItem("companionId", companion.id);
-
-      const finalName = store.companionNickname.trim() || companionData.name;
-      localStorage.setItem("unfiltr_companion_nickname", store.companionNickname.trim());
-      localStorage.setItem("unfiltr_companion", JSON.stringify({
-        id: companionData.id,
-        name: companionData.name,
-        displayName: finalName,
-        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
-      }));
-
-      const bg = BACKGROUNDS.find(b => b.id === selected);
-      localStorage.setItem("unfiltr_env", JSON.stringify({
-        id: bg.id, label: bg.label, bg: bg.url,
-      }));
-
-      resetOnboardingStore();
-      navigate("/vibe");
-    } finally {
-      setLoading(false);
-    }
+    updateOnboardingStore({ selectedBackground: selected });
+    navigate("/onboarding/consent");
   };
 
   return (
     <OnboardingLayout
       step={4}
       onBack={() => navigate("/onboarding/nickname")}
-      onNext={handleFinish}
+      onNext={handleNext}
       canAdvance={!!selected}
-      loading={loading}
-      nextLabel={loading ? "Setting up…" : "Enter this world →"}
     >
       <div style={{ padding: "0 20px 20px", width: "100%", maxWidth: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", flex: 1 }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)", flexShrink: 0 }}>

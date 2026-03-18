@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const GRADIENT = "linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 70%, #0d0220 100%)";
 
-export default function OnboardingLayout({ step, totalSteps = 4, onBack, onNext, canAdvance, loading, nextLabel, children }) {
+export default function OnboardingLayout({ step, totalSteps = 5, onBack, onNext, canAdvance, loading, nextLabel, children }) {
   return (
     <div style={{
       position: "fixed",

@@ -15,6 +15,7 @@ import OnboardingName from './pages/onboarding/OnboardingName';
 import OnboardingCompanion from './pages/onboarding/OnboardingCompanion';
 import OnboardingNickname from './pages/onboarding/OnboardingNickname';
 import OnboardingBackground from './pages/onboarding/OnboardingBackground';
+import OnboardingConsent from './pages/onboarding/OnboardingConsent';
 import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
         <Route path="/onboarding/companion" element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname" element={<OnboardingNickname />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
+        <Route path="/onboarding/consent" element={<OnboardingConsent />} />
         <Route path="/vibe" element={<VibePage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings" element={<Settings />} />
