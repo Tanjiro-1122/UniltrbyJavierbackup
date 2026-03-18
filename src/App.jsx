@@ -9,7 +9,7 @@ import TopTabs from '@/components/TopTabs';
 import Layout from '@/Layout';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
-import ChatPage from './pages/ChatPage.jsx';
+import ChatPage from './pages/ChatPage';
 import Onboarding from './pages/Onboarding';
 import OnboardingName from './pages/onboarding/OnboardingName';
 import OnboardingCompanion from './pages/onboarding/OnboardingCompanion';
