@@ -358,6 +358,7 @@ export default function ChatPage() {
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
+      console.log("[Mood] detected:", res.data?.mood, "→ applied:", newMood);
       setCompanionMood(newMood);
       if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
 
