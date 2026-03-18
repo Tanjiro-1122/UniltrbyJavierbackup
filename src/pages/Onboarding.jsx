@@ -9,5 +9,5 @@ export default function Onboarding() {
     return <OnboardingTutorial profileId={null} onComplete={() => setShowTutorial(false)} />;
   }
 
-  return <Navigate to="/onboarding/name" replace />;
+  return <Navigate to="/onboarding/vibe" replace />;
 }
