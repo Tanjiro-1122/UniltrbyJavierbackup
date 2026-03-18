@@ -249,9 +249,11 @@ export default function ChatPage() {
     try {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const res = await base44.functions.invoke("tts", { text, companionId, voiceGender, voicePersonality });
+      const cleanText = text.replace(/[\*\_\~\#\>\`]/g, "").slice(0, 400);
+      if (!cleanText.trim()) { setIsSpeaking(false); setAvatarState("idle"); return; }
+      const res = await base44.functions.invoke("tts", { text: cleanText, companionId, voiceGender, voicePersonality });
       const base64 = res.data?.audio;
-      if (!base64) throw new Error("no audio");
+      if (!base64) { console.warn("TTS: no audio returned"); setIsSpeaking(false); setAvatarState("idle"); return; }
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
       if (audioRef.current) { audioRef.current.pause(); URL.revokeObjectURL(audioRef.current.src); }
@@ -259,7 +261,7 @@ export default function ChatPage() {
       audioRef.current = audio;
       audio.onended = audio.onerror = () => { setIsSpeaking(false); setAvatarState("idle"); URL.revokeObjectURL(url); };
       await audio.play();
-    } catch { setIsSpeaking(false); setAvatarState("idle"); }
+    } catch (e) { console.warn("TTS failed:", e?.message); setIsSpeaking(false); setAvatarState("idle"); }
   };
 
   /* ─── PHOTO ─── */
