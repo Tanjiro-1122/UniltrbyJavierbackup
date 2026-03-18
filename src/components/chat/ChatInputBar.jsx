@@ -13,7 +13,7 @@ export default function ChatInputBar({
       flexShrink: 0,
       width: "100%",
       padding: "6px 12px calc(8px + env(safe-area-inset-bottom, 8px))",
-      background: "#1a0533",
+      background: "#06020f",
       boxSizing: "border-box",
     }}>
       {/* Pending image preview */}

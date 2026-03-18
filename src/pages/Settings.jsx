@@ -206,21 +206,21 @@ export default function Settings() {
   };
 
   if (!userProfile || !companion) return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f" }}>
+    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
       <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
     </div>
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#1a0533', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#06020f', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         display: "flex", alignItems: "center", gap: 12,
         padding: "max(12px, env(safe-area-inset-top)) 16px 14px",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        background: '#0d0118',
+        background: '#06020f',
       }}>
         <button
           onClick={() => navigate("/chat")}

@@ -31,8 +31,8 @@ export default function HomePage() {
   return (
     <AppShell
       tabs={false}
-      bg="#1a0533"
-      style={{ alignItems: "center", justifyContent: "center", overflow: "hidden", background: "linear-gradient(180deg, #1a0533 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}>
+      bg="#06020f"
+      style={{ alignItems: "center", justifyContent: "center", overflow: "hidden", background: "linear-gradient(180deg, #0d0420 0%, #120626 40%, #1a0535 70%, #0d0220 100%)" }}>
 
       {/* Stars background */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
