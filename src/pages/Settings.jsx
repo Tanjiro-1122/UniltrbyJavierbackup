@@ -115,28 +115,30 @@ export default function Settings() {
   }, []);
 
   const handleChangeVoiceGender = async (newGender) => {
-    if (savingVoice || !userProfile || !companion) return;
+    if (savingVoice || !userProfile?.companion_id || !companion) return;
+    setVoiceGender(newGender);
     setSavingVoice(true);
     try {
       await base44.entities.Companion.update(userProfile.companion_id, { voice_gender: newGender });
-      setVoiceGender(newGender);
       setCompanion(prev => ({ ...prev, voice_gender: newGender }));
     } catch (e) {
       console.error("Voice gender save error:", e);
+      setVoiceGender(companion.voice_gender || "female");
     } finally {
       setSavingVoice(false);
     }
   };
 
   const handleChangeVoicePersonality = async (newPersonality) => {
-    if (savingPersonality || !userProfile || !companion) return;
+    if (savingPersonality || !userProfile?.companion_id || !companion) return;
+    setVoicePersonality(newPersonality);
     setSavingPersonality(true);
     try {
       await base44.entities.Companion.update(userProfile.companion_id, { voice_personality: newPersonality });
-      setVoicePersonality(newPersonality);
       setCompanion(prev => ({ ...prev, voice_personality: newPersonality }));
     } catch (e) {
       console.error("Voice personality save error:", e);
+      setVoicePersonality(companion.voice_personality || "cheerful");
     } finally {
       setSavingPersonality(false);
     }
