@@ -20,6 +20,7 @@ import GuidedMeditation from "@/components/meditation/GuidedMeditation";
 import MiniGames from "@/components/games/MiniGames";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import ParallaxBackground from "@/components/chat/ParallaxBackground";
+import LiveBackgroundEffects from "@/components/chat/LiveBackgroundEffects";
 import { COMPANIONS } from "@/components/companionData";
 
 const VIBES_SUFFIX = {
