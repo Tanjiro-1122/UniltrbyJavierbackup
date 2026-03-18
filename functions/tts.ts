@@ -1,4 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import OpenAI from 'npm:openai';
 
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
@@ -31,7 +30,6 @@ Deno.serve(async (req) => {
     const config = PERSONALITY_CONFIG[personality] || PERSONALITY_CONFIG.cheerful;
 
     const voiceList = VOICE_BY_GENDER[gender] || VOICE_BY_GENDER.female;
-    // Use voiceIndex from personality config, fallback to first voice
     const voice = voiceList[Math.min(config.voiceIndex, voiceList.length - 1)];
 
     const mp3 = await openai.audio.speech.create({
