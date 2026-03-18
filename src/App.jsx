@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import TopTabs from '@/components/TopTabs';
 import Layout from '@/Layout';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/HomePage.jsx';
 import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
 import Onboarding from './pages/Onboarding';
