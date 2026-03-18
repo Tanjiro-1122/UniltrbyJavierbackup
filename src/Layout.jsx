@@ -75,7 +75,7 @@ export default function Layout({ children }) {
       themeColor.name = 'theme-color';
       document.head.appendChild(themeColor);
     }
-    themeColor.content = '#1a0533';
+    themeColor.content = '#06020f';
 
     // Manifest
     if (!document.querySelector('link[rel="manifest"]')) {
