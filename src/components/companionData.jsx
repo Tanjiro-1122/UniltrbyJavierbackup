@@ -78,9 +78,9 @@ export const COMPANIONS = [
     name: "Ash",
     emoji: "🌫️",
     tagline: "Chill & Laid-Back",
-    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/5f22c58eb_ash_happy_nobg.png",
+    avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/a8e79ed38_ash_happy_nobg.png",
     poses: {
-      happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/5f22c58eb_ash_happy_nobg.png",
+      happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/a8e79ed38_ash_happy_nobg.png",
       neutral:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/b556fc5e1_ash_neutral_nobg.png",
       sad:         "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/fd18299a5_ash_sad_nobg.png",
       fear:        "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/f96c7524d_ash_fear_nobg.png",
