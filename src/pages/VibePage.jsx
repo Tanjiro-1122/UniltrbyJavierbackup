@@ -137,7 +137,6 @@ export default function VibePage() {
         display: "flex", flexDirection: "column", gap: 10,
         padding: "4px 20px 20px",
         position: "relative", zIndex: 1,
-        justifyContent: "center",
       }}>
         {VIBES.map(v => (
           <motion.button
