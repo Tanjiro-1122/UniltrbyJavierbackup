@@ -61,58 +61,50 @@ export async function resumeAudioContext() {
 
 /**
  * Play MP3 audio from a base64 string using Web Audio API (ArrayBuffer path).
- * Returns a Promise that resolves when playback ends.
- * Retries once on failure (iOS sometimes needs a second attempt).
+ * Falls back to HTML5 Audio if Web Audio API fails (iOS compatibility).
  */
 export async function playAudioFromBase64(base64Audio) {
-  const ctx = await resumeAudioContext();
-
   // Decode base64 → ArrayBuffer
   const binaryStr = atob(base64Audio);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
     bytes[i] = binaryStr.charCodeAt(i);
   }
-  const arrayBuffer = bytes.buffer;
+  const audioBuffer = bytes.buffer;
 
-  const tryPlay = async (buffer) => {
+  try {
+    const ctx = getAudioContext();
+    await ctx.resume();
+
     // Stop any currently playing source
     if (currentSource) {
       try { currentSource.stop(); } catch {}
       currentSource = null;
     }
 
-    const audioBuffer = await ctx.decodeAudioData(buffer);
+    const buffer = await ctx.decodeAudioData(audioBuffer.slice(0));
     const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
+    source.buffer = buffer;
     source.connect(ctx.destination);
     currentSource = source;
+    source.start(0);
 
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       source.onended = () => { currentSource = null; resolve(); };
-      try {
-        source.start(0);
-      } catch (e) {
-        currentSource = null;
-        reject(e);
-      }
     });
-  };
-
-  // First attempt
-  try {
-    await tryPlay(arrayBuffer.slice(0));
-  } catch (e) {
-    console.warn("TTS playback failed, retrying:", e?.message);
-    // Retry once — re-resume context and try again
-    await ctx.resume();
-    await new Promise(r => setTimeout(r, 100));
-    try {
-      await tryPlay(arrayBuffer.slice(0));
-    } catch (e2) {
-      console.warn("TTS retry also failed:", e2?.message);
-      throw e2;
-    }
+  } catch (error) {
+    console.error('Audio playback failed, falling back to HTML5 Audio:', error);
+    currentSource = null;
+    // Fallback to HTML5 audio
+    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.playsInline = true;
+    audio.setAttribute('playsinline', '');
+    await audio.play();
+    await new Promise((resolve) => {
+      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+    });
   }
 }
 
