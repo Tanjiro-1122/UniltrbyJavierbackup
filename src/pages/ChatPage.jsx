@@ -102,7 +102,7 @@ export default function ChatPage() {
   const stateTimeout   = useRef(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
-  const audioRef       = useRef(null);
+  // audioRef removed — using shared AudioContext via audioUnlock module
   const fileInputRef   = useRef(null);
 
   const [pendingImage, setPendingImage]               = useState(null);
