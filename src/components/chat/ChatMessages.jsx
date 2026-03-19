@@ -3,10 +3,11 @@ import { Share2 } from "lucide-react";
 import { hapticLight } from "@/components/utils/haptics";
 import { soundReceive } from "@/components/utils/sounds";
 import SwipeableMessage from "./SwipeableMessage";
+import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply }) {
+export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry }) {
   const [reactions, setReactions] = useState({});
   const [pickerIdx, setPickerIdx] = useState(null);
 
@@ -92,7 +93,11 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
                     </p>
                   </div>
                 )}
-                {msg.content}
+                {msg.content === "__ERROR__" ? (
+                  <ChatErrorMessage onRetry={onRetry} />
+                ) : (
+                  msg.content
+                )}
               </div>
 
               {/* Reactions display */}
