@@ -81,11 +81,26 @@ DO NOT default to neutral. Read the emotional context carefully. This tag MUST b
       || raw.match(/MOOD:\s*(\w+)/i)
       || raw.match(/\(MOOD:\s*(\w+)\)/i);
     const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
-    const detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
-    const mood = validMoods.includes(detectedMood) ? detectedMood : "neutral";
+    let detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
+    
+    // If the AI defaulted to neutral, infer mood from reply content
+    if (detectedMood === "neutral" || !validMoods.includes(detectedMood)) {
+      const reply_lower = raw.toLowerCase();
+      if (/🔥|🎉|!!|let'?s go|hype|amazing|awesome|excited|wooo|yay|hell yeah/i.test(reply_lower)) detectedMood = "happy";
+      else if (/😌|chill|relax|peaceful|calm|cozy|nice|glad|good vibes|warm/i.test(reply_lower)) detectedMood = "contentment";
+      else if (/😢|sorry to hear|that's tough|hard time|difficult|loss|grief|miss/i.test(reply_lower)) detectedMood = "sad";
+      else if (/😰|anxious|worried|nervous|scared|stress|overwhelm/i.test(reply_lower)) detectedMood = "fear";
+      else if (/😡|frustrat|angry|mad|annoying|ugh/i.test(reply_lower)) detectedMood = "anger";
+      else if (/😮|wow|whoa|no way|really\?|surprised|unexpected/i.test(reply_lower)) detectedMood = "surprise";
+      else if (/tired|exhausted|sleepy|drained|burnt out|long day/i.test(reply_lower)) detectedMood = "fatigue";
+      else if (/😊|💜|❤️|love|sweet|appreciate|grateful|thankful|happy|glad|great/i.test(reply_lower)) detectedMood = "happy";
+      else detectedMood = "contentment"; // Default to contentment instead of neutral
+    }
+    
+    const mood = validMoods.includes(detectedMood) ? detectedMood : "contentment";
     const reply = raw.replace(/\[MOOD:\s*\w+\s*\]/gi, "").replace(/\(MOOD:\s*\w+\)/gi, "").replace(/MOOD:\s*\w+/gi, "").trim();
 
-    console.log("[Chat] mood:", detectedMood, "→", mood);
+    console.log("[Chat] raw mood tag:", moodMatch?.[1], "→ final:", mood);
 
     return Response.json({ reply, mood });
   } catch (error) {
