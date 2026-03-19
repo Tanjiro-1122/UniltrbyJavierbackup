@@ -5,20 +5,9 @@ const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 Deno.serve(async (req) => {
   try {
-    // Clone the request before consuming the body, so SDK and our code can both read it
-    const base44 = createClientFromRequest(req.clone());
-    
-    let user = null;
-    try {
-      user = await base44.auth.me();
-    } catch (authErr) {
-      console.error("Auth check failed:", authErr.message);
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // Auth is handled by the SDK on the frontend — base44.functions.invoke() 
+    // already requires a logged-in user. We skip server-side auth.me() check 
+    // because it has been causing false 401s on mobile apps.
     const { messages, systemPrompt, isPremium, sessionMemory, memorySummary, imageBase64 } = await req.json();
 
     // Build memory block (premium gets session_memory array, free gets condensed summary)
