@@ -463,6 +463,13 @@ export default function ChatPage() {
     handleSend(moodText);
   };
 
+  const handleRetry = () => {
+    if (!lastFailedText) return;
+    // Remove the error message
+    setMessages(m => m.filter(msg => msg.content !== "__ERROR__"));
+    handleSend(lastFailedText);
+  };
+
   const handleSubscribe = () => subscribeToPlan("monthly");
   const handleRestore = () => restorePurchases();
 
@@ -636,6 +643,7 @@ export default function ChatPage() {
               setShareCard={setShareCard}
               messagesEndRef={messagesEndRef}
               onSwipeReply={(text) => setQuoteReply(text)}
+              onRetry={handleRetry}
             />
           </div>
 
