@@ -86,13 +86,14 @@ DO NOT default to neutral. Read the emotional context carefully. This tag MUST b
     // If the AI defaulted to neutral, infer mood from reply content
     if (detectedMood === "neutral" || !validMoods.includes(detectedMood)) {
       const reply_lower = raw.toLowerCase();
-      if (/🔥|🎉|!!|let'?s go|hype|amazing|awesome|excited|wooo|yay|hell yeah/i.test(reply_lower)) detectedMood = "happy";
-      else if (/😌|chill|relax|peaceful|calm|cozy|nice|glad|good vibes|warm/i.test(reply_lower)) detectedMood = "contentment";
+      if (/🤢|🤮|disgust|gross|nasty|vile|repuls|sicken|eww|yuck|revolting|disturbing|appalling/i.test(reply_lower)) detectedMood = "disgust";
+      else if (/😮|wow|whoa|no way|really\?!|surprised|unexpected|unbelievable|can't believe|shocking|insane|what\?!/i.test(reply_lower)) detectedMood = "surprise";
+      else if (/🔥|🎉|!!|let'?s go|hype|amazing|awesome|excited|wooo|yay|hell yeah/i.test(reply_lower)) detectedMood = "happy";
+      else if (/😡|frustrat|angry|mad|annoying|ugh|furious|rage|infuriat/i.test(reply_lower)) detectedMood = "anger";
       else if (/😢|sorry to hear|that's tough|hard time|difficult|loss|grief|miss/i.test(reply_lower)) detectedMood = "sad";
-      else if (/😰|anxious|worried|nervous|scared|stress|overwhelm/i.test(reply_lower)) detectedMood = "fear";
-      else if (/😡|frustrat|angry|mad|annoying|ugh/i.test(reply_lower)) detectedMood = "anger";
-      else if (/😮|wow|whoa|no way|really\?|surprised|unexpected/i.test(reply_lower)) detectedMood = "surprise";
+      else if (/😰|anxious|worried|nervous|scared|stress|overwhelm|terrif|frighten/i.test(reply_lower)) detectedMood = "fear";
       else if (/tired|exhausted|sleepy|drained|burnt out|long day/i.test(reply_lower)) detectedMood = "fatigue";
+      else if (/😌|chill|relax|peaceful|calm|cozy|nice|glad|good vibes|warm/i.test(reply_lower)) detectedMood = "contentment";
       else if (/😊|💜|❤️|love|sweet|appreciate|grateful|thankful|happy|glad|great/i.test(reply_lower)) detectedMood = "happy";
       else detectedMood = "contentment"; // Default to contentment instead of neutral
     }
