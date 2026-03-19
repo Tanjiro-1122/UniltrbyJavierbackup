@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
 import { base44 } from '@/api/base44Client';
-import { Check, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2 } from 'lucide-react';
+import { Check, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2, ChevronLeft } from 'lucide-react';
 import AppShell from '@/components/shell/AppShell';
 
 const PERKS = [
@@ -43,7 +43,21 @@ export default function Pricing() {
 
   return (
     <AppShell tabs={false} bg="radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)"  >
-      <div className="scroll-area" style={{ padding: '24px 20px', paddingBottom: 100 }}>
+      {/* Back button */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 0' }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12, padding: '8px 14px', cursor: 'pointer', color: 'white', fontSize: 14, fontWeight: 600,
+          }}
+        >
+          <ChevronLeft size={18} /> Back
+        </button>
+      </div>
+
+      <div className="scroll-area" style={{ padding: '16px 20px', paddingBottom: 100 }}>
         <div style={{ width: '100%' }}>
 
         {/* Header */}

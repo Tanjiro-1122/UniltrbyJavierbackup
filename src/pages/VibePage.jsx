@@ -144,7 +144,7 @@ export default function VibePage() {
             whileTap={{ scale: 0.96 }}
             onClick={() => setSelected(v.id)}
             style={{
-              width: "100%", borderRadius: 18, padding: "18px",
+              width: "100%", borderRadius: 16, padding: "12px 16px",
               border: `2px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
               background: `linear-gradient(135deg, ${v.gradientFrom} 0%, ${v.gradientTo} 100%)`,
               backdropFilter: "blur(12px)",
@@ -161,11 +161,11 @@ export default function VibePage() {
               background: selected === v.id ? "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)" : "transparent",
               pointerEvents: "none",
             }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1, minHeight: 64 }}>
-              <span style={{ fontSize: 44, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>{v.emoji}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+              <span style={{ fontSize: 36, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>{v.emoji}</span>
               <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 18, margin: 0 }}>{v.label}</p>
-                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, margin: "4px 0 0", lineHeight: 1.5 }}>{v.desc}</p>
+                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 16, margin: 0 }}>{v.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, margin: "2px 0 0", lineHeight: 1.4 }}>{v.desc}</p>
               </div>
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
