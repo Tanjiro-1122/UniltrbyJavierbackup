@@ -116,7 +116,7 @@ export default function ChatPage() {
       const c = localStorage.getItem("unfiltr_companion");
       const e = localStorage.getItem("unfiltr_env");
       const v = localStorage.getItem("unfiltr_vibe");
-      if (!c || !e) { navigate("/"); return; }
+      if (!c || !e) { navigate("/onboarding", { replace: true }); return; }
 
       const parsedCompanion = JSON.parse(c);
       const parsedEnv       = JSON.parse(e);
