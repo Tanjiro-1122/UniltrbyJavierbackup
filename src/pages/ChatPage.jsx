@@ -333,8 +333,9 @@ export default function ChatPage() {
     // Safety timeout — if anything hangs, force-clear loading after 30s
     const safetyTimer = setTimeout(() => {
       setLoading(false);
+      setLastFailedText(text);
       setMessages(m => {
-        if (m[m.length - 1]?.role === "user") return [...m, { role: "assistant", content: "Hmm, that took too long. Try again? 🌙" }];
+        if (m[m.length - 1]?.role === "user") return [...m, { role: "assistant", content: "__ERROR__" }];
         return m;
       });
     }, 30000);
