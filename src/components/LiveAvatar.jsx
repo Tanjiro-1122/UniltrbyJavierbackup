@@ -40,6 +40,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
 
       <div
         onClick={onClick}
+        onContextMenu={(e) => e.preventDefault()}
         style={{
           cursor: "pointer",
           position: "relative",
@@ -47,6 +48,9 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           alignItems: "flex-end",
           justifyContent: "center",
           background: "none",
+          WebkitTouchCallout: "none",
+          WebkitUserSelect: "none",
+          userSelect: "none",
         }}
       >
         {isSpeaking && (
@@ -65,7 +69,10 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           alt={companionId}
           key={`${companionId}-${mood}`}
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
           style={{
+            WebkitTouchCallout: "none",
+            pointerEvents: "none",
             height: "clamp(312px, 54dvh, 468px)",
             width: "auto",
             maxWidth: "100%",
