@@ -506,6 +506,8 @@ export default function ChatPage() {
         flexDirection: "column",
         zIndex: 1,
         background: "#06020f",
+        backgroundColor: "#06020f",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}>
         {/* ── Background image (3D parallax) ── */}
         <ParallaxBackground imageUrl={environment.bg} />
