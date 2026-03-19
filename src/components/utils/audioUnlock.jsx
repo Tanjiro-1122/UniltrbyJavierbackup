@@ -64,47 +64,84 @@ export async function resumeAudioContext() {
  * Falls back to HTML5 Audio if Web Audio API fails (iOS compatibility).
  */
 export async function playAudioFromBase64(base64Audio) {
+  console.log('[TTS] playAudioFromBase64 called, base64 length:', base64Audio?.length);
+  
+  if (!base64Audio || base64Audio.length === 0) {
+    console.error('[TTS] No base64 audio data provided');
+    return;
+  }
+
   // Decode base64 → ArrayBuffer
+  console.log('[TTS] Decoding base64 to ArrayBuffer...');
   const binaryStr = atob(base64Audio);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
     bytes[i] = binaryStr.charCodeAt(i);
   }
   const audioBuffer = bytes.buffer;
+  console.log('[TTS] ArrayBuffer created, size:', audioBuffer.byteLength, 'bytes');
+
+  // Stop any currently playing source
+  if (currentSource) {
+    console.log('[TTS] Stopping previous audio source');
+    try { currentSource.stop(); } catch {}
+    currentSource = null;
+  }
 
   try {
     const ctx = getAudioContext();
+    console.log('[TTS] AudioContext state before resume:', ctx.state);
     await ctx.resume();
+    console.log('[TTS] AudioContext state after resume:', ctx.state);
 
-    // Stop any currently playing source
-    if (currentSource) {
-      try { currentSource.stop(); } catch {}
-      currentSource = null;
-    }
-
+    console.log('[TTS] Calling decodeAudioData...');
     const buffer = await ctx.decodeAudioData(audioBuffer.slice(0));
+    console.log('[TTS] decodeAudioData success — duration:', buffer.duration, 's, channels:', buffer.numberOfChannels, ', sampleRate:', buffer.sampleRate);
+
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
     currentSource = source;
+    
+    console.log('[TTS] Starting Web Audio playback...');
     source.start(0);
+    console.log('[TTS] Web Audio source.start(0) called successfully');
 
     await new Promise((resolve) => {
-      source.onended = () => { currentSource = null; resolve(); };
+      source.onended = () => {
+        console.log('[TTS] Web Audio playback ended normally');
+        currentSource = null;
+        resolve();
+      };
     });
   } catch (error) {
-    console.error('Audio playback failed, falling back to HTML5 Audio:', error);
+    console.error('[TTS] Web Audio API failed:', error?.message || error);
+    console.log('[TTS] Falling back to HTML5 Audio...');
     currentSource = null;
-    // Fallback to HTML5 audio
-    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.playsInline = true;
-    audio.setAttribute('playsinline', '');
-    await audio.play();
-    await new Promise((resolve) => {
-      audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-    });
+
+    try {
+      const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      console.log('[TTS] HTML5 Audio blob URL created:', url);
+      
+      const audio = new Audio(url);
+      audio.playsInline = true;
+      audio.setAttribute('playsinline', '');
+      
+      console.log('[TTS] Calling HTML5 audio.play()...');
+      await audio.play();
+      console.log('[TTS] HTML5 Audio playing');
+
+      await new Promise((resolve) => {
+        audio.onended = () => {
+          console.log('[TTS] HTML5 Audio playback ended');
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+      });
+    } catch (fallbackError) {
+      console.error('[TTS] HTML5 Audio fallback also failed:', fallbackError?.message || fallbackError);
+    }
   }
 }
 
