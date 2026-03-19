@@ -77,7 +77,7 @@ NEVER skip this tag. It must always be the very last line.`;
     const mood = validMoods.includes(detectedMood) ? detectedMood : "neutral";
     const reply = raw.replace(/\[MOOD:\s*\w+\s*\]/gi, "").replace(/\(MOOD:\s*\w+\)/gi, "").replace(/MOOD:\s*\w+/gi, "").trim();
 
-    console.log("[Chat] user:", user.email, "mood:", detectedMood, "→", mood);
+    console.log("[Chat] mood:", detectedMood, "→", mood);
 
     return Response.json({ reply, mood });
   } catch (error) {
