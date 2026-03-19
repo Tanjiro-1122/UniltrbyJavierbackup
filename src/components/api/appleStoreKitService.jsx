@@ -1,7 +1,5 @@
 /**
- * Service to communicate with Apple StoreKit for subscriptions
- * Works when app is wrapped in native iOS container
- * Falls back to mock data when running as web
+ * Unified IAP Service — supports iOS StoreKit, Android Google Play Billing, and web mock
  */
 
 const PRODUCT_IDS = [
@@ -31,29 +29,51 @@ const MOCK_PRODUCTS = [
 ];
 
 export class AppleStoreKitService {
-  static isNative() {
-    return (
-      typeof window !== 'undefined' && (
+
+  // ── Platform detection ──────────────────────────────────────────────
+  static getPlatform() {
+    if (typeof window !== 'undefined') {
+      if (
         (window.WTN && typeof window.WTN.inAppPurchase === 'function') ||
-        (window.webkit?.messageHandlers?.storekit) ||
-        (window.webkit?.messageHandlers?.iap)
-      )
-    );
+        window.webkit?.messageHandlers?.storekit ||
+        window.webkit?.messageHandlers?.iap
+      ) {
+        return 'ios';
+      }
+      if (window.Android || window.AndroidIAP || window.PlayBilling) {
+        return 'android';
+      }
+    }
+    return 'web';
   }
 
+  static isNative() {
+    return this.getPlatform() !== 'web';
+  }
+
+  // ── Products ────────────────────────────────────────────────────────
   static async getProducts() {
-    if (!this.isNative()) {
-      console.log('[StoreKit] Running in web mode — returning mock products');
-      return MOCK_PRODUCTS;
+    const platform = this.getPlatform();
+
+    if (platform === 'ios') {
+      return this._getProductsIOS();
     }
+    if (platform === 'android') {
+      return this._getProductsAndroid();
+    }
+    console.log('[IAP] Web mode — returning mock products');
+    return MOCK_PRODUCTS;
+  }
+
+  static _getProductsIOS() {
     return new Promise((resolve) => {
       try {
-        if (typeof window.WTN.getProducts === 'function') {
+        if (window.WTN && typeof window.WTN.getProducts === 'function') {
           window.WTN.getProducts({ productIds: PRODUCT_IDS }, (result) => {
-            if (result && result.products && result.products.length > 0) {
+            if (result?.products?.length > 0) {
               resolve(result.products);
             } else {
-              console.warn('[StoreKit] No products returned, using mock');
+              console.warn('[IAP/iOS] No products returned, using mock');
               resolve(MOCK_PRODUCTS);
             }
           });
@@ -61,29 +81,52 @@ export class AppleStoreKitService {
           resolve(MOCK_PRODUCTS);
         }
       } catch (e) {
-        console.error('[StoreKit] getProducts error:', e);
+        console.error('[IAP/iOS] getProducts error:', e);
         resolve(MOCK_PRODUCTS);
       }
     });
   }
 
+  static async _getProductsAndroid() {
+    try {
+      if (window.Android?.getProducts) {
+        const result = window.Android.getProducts(JSON.stringify(PRODUCT_IDS));
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      if (window.PlayBilling?.getProducts) {
+        const result = await window.PlayBilling.getProducts(PRODUCT_IDS);
+        if (Array.isArray(result) && result.length > 0) return result;
+      }
+    } catch (e) {
+      console.error('[IAP/Android] getProducts error:', e);
+    }
+    console.warn('[IAP/Android] No products returned, using mock');
+    return MOCK_PRODUCTS;
+  }
+
+  // ── Purchase ────────────────────────────────────────────────────────
   static async purchase(productId) {
-    if (!this.isNative()) {
-      console.log('[StoreKit] Web mode — simulating purchase for:', productId);
-      return {
-        isSuccess: true,
-        productId,
-        receiptData: 'MOCK_RECEIPT_DATA',
-        isMock: true,
-      };
+    const platform = this.getPlatform();
+
+    if (platform === 'ios') {
+      return this._purchaseIOS(productId);
+    }
+    if (platform === 'android') {
+      return this._purchaseAndroid(productId);
     }
 
+    // Web mock
+    console.log('[IAP] Web mode — simulating purchase for:', productId);
+    return { isSuccess: true, productId, receiptData: 'MOCK_RECEIPT_DATA', isMock: true };
+  }
+
+  static _purchaseIOS(productId) {
     return new Promise((resolve) => {
       try {
-        // Primary: WTN bridge
         if (window.WTN && typeof window.WTN.inAppPurchase === 'function') {
           window.WTN.inAppPurchase({ productId }, (result) => {
-            console.log('[StoreKit] Purchase result:', JSON.stringify(result));
+            console.log('[IAP/iOS] Purchase result:', JSON.stringify(result));
 
             if (!result.isSuccess && !result.receiptData) {
               const errorStr = (result.error || '').toLowerCase();
@@ -94,48 +137,76 @@ export class AppleStoreKitService {
                 errorStr.includes('user') ||
                 errorStr === '' ||
                 result.error === undefined;
-
               if (isCancelled) {
                 resolve({ isSuccess: false, isCancelled: true });
                 return;
               }
             }
-
             resolve(result);
           });
-        }
-        // Fallback: webkit message handlers
-        else if (window.webkit?.messageHandlers?.storekit) {
-          console.log('[StoreKit] Using webkit storekit handler for:', productId);
+        } else if (window.webkit?.messageHandlers?.storekit) {
+          console.log('[IAP/iOS] Using webkit storekit handler for:', productId);
           window.webkit.messageHandlers.storekit.postMessage({ action: 'purchase', productId });
-          // Webkit handlers are fire-and-forget; native side should call back via global
           resolve({ isSuccess: true, productId, pendingNativeCallback: true });
         } else if (window.webkit?.messageHandlers?.iap) {
-          console.log('[StoreKit] Using webkit iap handler for:', productId);
+          console.log('[IAP/iOS] Using webkit iap handler for:', productId);
           window.webkit.messageHandlers.iap.postMessage({ action: 'purchase', productId });
           resolve({ isSuccess: true, productId, pendingNativeCallback: true });
         } else {
-          resolve({ isSuccess: false, error: 'No native purchase handler available' });
+          resolve({ isSuccess: false, error: 'No iOS purchase handler available' });
         }
       } catch (e) {
-        console.error('[StoreKit] purchase error:', e);
+        console.error('[IAP/iOS] purchase error:', e);
         resolve({ isSuccess: false, error: e.message });
       }
     });
   }
 
+  static async _purchaseAndroid(productId) {
+    try {
+      if (window.Android?.launchBillingFlow) {
+        console.log('[IAP/Android] Using Android.launchBillingFlow for:', productId);
+        const result = window.Android.launchBillingFlow(productId);
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        return parsed || { isSuccess: false, error: 'No response from Android billing' };
+      }
+      if (window.PlayBilling?.purchase) {
+        console.log('[IAP/Android] Using PlayBilling.purchase for:', productId);
+        const result = await window.PlayBilling.purchase(productId);
+        return result || { isSuccess: false, error: 'No response from PlayBilling' };
+      }
+      if (window.AndroidIAP?.purchase) {
+        console.log('[IAP/Android] Using AndroidIAP.purchase for:', productId);
+        const result = await window.AndroidIAP.purchase(productId);
+        return result || { isSuccess: false, error: 'No response from AndroidIAP' };
+      }
+    } catch (e) {
+      console.error('[IAP/Android] purchase error:', e);
+      return { isSuccess: false, error: e.message };
+    }
+    return { isSuccess: false, error: 'Android billing not available' };
+  }
+
+  // ── Restore ─────────────────────────────────────────────────────────
   static async restorePurchases() {
-    if (!this.isNative()) {
-      console.log('[StoreKit] Web mode — mock restore');
-      return { isSuccess: false, message: 'No purchases to restore (web mode)' };
+    const platform = this.getPlatform();
+
+    if (platform === 'ios') {
+      return this._restoreIOS();
+    }
+    if (platform === 'android') {
+      return this._restoreAndroid();
     }
 
+    console.log('[IAP] Web mode — mock restore');
+    return { isSuccess: false, message: 'No purchases to restore (web mode)' };
+  }
+
+  static _restoreIOS() {
     return new Promise((resolve) => {
       try {
-        if (typeof window.WTN.restorePurchases === 'function') {
-          window.WTN.restorePurchases((result) => {
-            resolve(result);
-          });
+        if (window.WTN && typeof window.WTN.restorePurchases === 'function') {
+          window.WTN.restorePurchases((result) => resolve(result));
         } else if (window.webkit?.messageHandlers?.storekit) {
           window.webkit.messageHandlers.storekit.postMessage({ action: 'restore' });
           resolve({ isSuccess: true, message: 'Restore triggered' });
@@ -146,5 +217,25 @@ export class AppleStoreKitService {
         resolve({ isSuccess: false, error: e.message });
       }
     });
+  }
+
+  static async _restoreAndroid() {
+    try {
+      if (window.Android?.restorePurchases) {
+        const result = window.Android.restorePurchases();
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        return parsed || { isSuccess: false, message: 'No response from Android restore' };
+      }
+      if (window.PlayBilling?.restore) {
+        return await window.PlayBilling.restore();
+      }
+      if (window.AndroidIAP?.restore) {
+        return await window.AndroidIAP.restore();
+      }
+    } catch (e) {
+      console.error('[IAP/Android] restore error:', e);
+      return { isSuccess: false, error: e.message };
+    }
+    return { isSuccess: false, message: 'Android restore not available' };
   }
 }
