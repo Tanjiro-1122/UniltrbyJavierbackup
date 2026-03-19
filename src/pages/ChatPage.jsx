@@ -23,6 +23,7 @@ import ParallaxBackground from "@/components/chat/ParallaxBackground";
 import BackgroundEffect from "@/components/chat/BackgroundEffect";
 import { isAudioUnlocked } from "@/components/utils/audioUnlock";
 
+import ChatErrorMessage from "@/components/chat/ChatErrorMessage";
 import { COMPANIONS } from "@/components/companionData";
 
 const VIBES_SUFFIX = {
@@ -66,6 +67,7 @@ export default function ChatPage() {
   const [showGames, setShowGames] = useState(false);
   const [showCompanionCard, setShowCompanionCard] = useState(false);
   const [quoteReply, setQuoteReply] = useState(null);
+  const [lastFailedText, setLastFailedText] = useState(null);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -308,6 +310,7 @@ export default function ChatPage() {
     const text = (textOverride || input).trim();
     if (!text && !pendingImage) return;
     if (loading) return;
+    setLastFailedText(null);
     if (isAtLimit) { setShowPaywall(true); return; }
 
     // Warm iOS audio on user gesture (send button tap is a direct gesture)
@@ -427,8 +430,8 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error("Chat send failed:", error?.message || error, error?.response?.data);
-      const fallbackText = error?.response?.data?.error || error?.message || "Hmm, lost the signal. Try again? 🌙";
-      setMessages(m => [...m, { role: "assistant", content: fallbackText }]);
+      setLastFailedText(text);
+      setMessages(m => [...m, { role: "assistant", content: "__ERROR__" }]);
       setIsSpeaking(false); setAvatarState("idle");
     } finally { clearTimeout(safetyTimer); setLoading(false); }
   };
