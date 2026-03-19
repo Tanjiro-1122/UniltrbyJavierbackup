@@ -26,8 +26,8 @@ export default function OnboardingCompanion() {
 
   return (
     <OnboardingLayout
-      step={2}
-      onBack={() => navigate("/onboarding")}
+      step={3}
+      onBack={() => navigate("/onboarding/name")}
       canAdvance={false}
     >
       <div style={{ flexShrink: 0, padding: "0 16px 10px" }}>

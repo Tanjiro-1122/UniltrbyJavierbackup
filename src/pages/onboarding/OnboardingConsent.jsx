@@ -1,87 +1,26 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { base44 } from "@/api/base44Client";
-import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
-import { getOnboardingStore, resetOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 import { ShieldCheck, Lock, ExternalLink } from "lucide-react";
 
 export default function OnboardingConsent() {
   const navigate = useNavigate();
-  const store = getOnboardingStore();
   const [agreed, setAgreed] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  if (!store.selectedBackground) {
-    navigate("/onboarding/background", { replace: true });
-    return null;
-  }
-
-  const handleFinish = async () => {
+  const handleNext = () => {
     if (!agreed) return;
-    setLoading(true);
-    try {
-      const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
-      const companion = await base44.entities.Companion.create({
-        name: companionData.name,
-        avatar_url: companionData.avatar,
-        mood_mode: "neutral",
-        personality: companionData.tagline,
-      });
-
-      const profileData = {
-        display_name: store.displayName,
-        companion_id: companion.id,
-        background_id: store.selectedBackground,
-        premium: store.isTesterAccount,
-        is_premium: store.isTesterAccount,
-        session_memory: store.isTesterAccount ? [{
-          date: "Mar 14, 2026",
-          summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
-        }] : [],
-      };
-
-      let userProfile;
-      if (store.pendingProfileId) {
-        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-      } else {
-        userProfile = await base44.entities.UserProfile.create(profileData);
-      }
-
-      localStorage.setItem("userProfileId", userProfile.id);
-      localStorage.setItem("companionId", companion.id);
-
-      const finalName = store.companionNickname.trim() || companionData.name;
-      localStorage.setItem("unfiltr_companion_nickname", store.companionNickname.trim());
-      localStorage.setItem("unfiltr_companion", JSON.stringify({
-        id: companionData.id,
-        name: companionData.name,
-        displayName: finalName,
-        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
-      }));
-
-      const bg = BACKGROUNDS.find(b => b.id === store.selectedBackground);
-      localStorage.setItem("unfiltr_env", JSON.stringify({
-        id: bg.id, label: bg.label, bg: bg.url,
-      }));
-
-      localStorage.setItem("unfiltr_consent_accepted", "true");
-      resetOnboardingStore();
-      navigate("/vibe");
-    } finally {
-      setLoading(false);
-    }
+    localStorage.setItem("unfiltr_consent_accepted", "true");
+    navigate("/onboarding/name");
   };
 
   return (
     <OnboardingLayout
-      step={5}
-      onBack={() => navigate("/onboarding/background")}
-      onNext={handleFinish}
+      step={1}
+      onBack={() => navigate("/onboarding")}
+      onNext={handleNext}
       canAdvance={agreed}
-      loading={loading}
-      nextLabel={loading ? "Setting up…" : "Enter this world →"}
+      nextLabel="I agree — let's go →"
     >
       <div style={{ padding: "0 20px 20px", width: "100%", maxWidth: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
@@ -93,7 +32,6 @@ export default function OnboardingConsent() {
           </p>
         </div>
 
-        {/* Card 1 — OpenAI processing */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           style={{
@@ -119,7 +57,6 @@ export default function OnboardingConsent() {
           </div>
         </motion.div>
 
-        {/* Card 2 — Data privacy */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{
@@ -145,7 +82,6 @@ export default function OnboardingConsent() {
           </div>
         </motion.div>
 
-        {/* Links */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           style={{ display: "flex", gap: 10 }}
@@ -180,7 +116,6 @@ export default function OnboardingConsent() {
           </a>
         </motion.div>
 
-        {/* Checkbox */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
         >

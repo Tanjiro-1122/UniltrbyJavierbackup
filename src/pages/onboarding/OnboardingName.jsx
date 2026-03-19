@@ -13,6 +13,12 @@ export default function OnboardingName() {
   const [displayName, setDisplayName] = useState(store.displayName);
   const [isTester, setIsTester] = useState(store.isTesterAccount);
 
+  // Must consent before entering name
+  if (!localStorage.getItem("unfiltr_consent_accepted")) {
+    navigate("/onboarding/consent", { replace: true });
+    return null;
+  }
+
   const handleNameChange = (val) => {
     setDisplayName(val);
     const normalized = val.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -44,8 +50,8 @@ export default function OnboardingName() {
 
   return (
     <OnboardingLayout
-      step={1}
-      onBack={() => navigate("/")}
+      step={2}
+      onBack={() => navigate("/onboarding/consent")}
       onNext={handleNext}
       canAdvance={displayName.trim().length > 0}
     >
