@@ -66,6 +66,7 @@ export default function OnboardingConsent() {
         id: bg.id, label: bg.label, bg: bg.url,
       }));
 
+      localStorage.setItem("unfiltr_consent_accepted", "true");
       resetOnboardingStore();
       navigate("/vibe");
     } finally {
