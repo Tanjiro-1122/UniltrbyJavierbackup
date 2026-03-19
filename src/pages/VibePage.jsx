@@ -71,12 +71,7 @@ export default function VibePage() {
   const navigate  = useNavigate();
   const [selected, setSelected] = useState(null);
 
-  // Block access if user hasn't accepted consent
-  React.useEffect(() => {
-    if (!localStorage.getItem("unfiltr_consent_accepted")) {
-      navigate("/onboarding", { replace: true });
-    }
-  }, []);
+
 
   const handleContinue = () => {
     if (!selected) return;
