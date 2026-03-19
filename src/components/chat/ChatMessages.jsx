@@ -46,7 +46,17 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
         <div onClick={() => setPickerIdx(null)} style={{ position: "fixed", inset: 0, zIndex: 48 }} />
       )}
 
-      {messages.map((msg, i) => (
+      {messages.map((msg, i) => {
+        // Error message — render standalone retry UI
+        if (msg.content === "__ERROR__" && msg.role === "assistant") {
+          return (
+            <div key={i} style={{ display: "flex", justifyContent: "flex-start" }}>
+              <ChatErrorMessage onRetry={onRetry} />
+            </div>
+          );
+        }
+
+        return (
         <SwipeableMessage key={i} message={msg} onSwipeReply={onSwipeReply || (() => {})}>
           <div style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 5, position: "relative" }}>
             <div style={{ position: "relative", maxWidth: "82%" }}>
@@ -93,11 +103,7 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
                     </p>
                   </div>
                 )}
-                {msg.content === "__ERROR__" ? (
-                  <ChatErrorMessage onRetry={onRetry} />
-                ) : (
-                  msg.content
-                )}
+                {msg.content}
               </div>
 
               {/* Reactions display */}
@@ -121,7 +127,8 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
             )}
           </div>
         </SwipeableMessage>
-      ))}
+        );
+      })}
       {loading && (
         <div style={{ display: "flex", justifyContent: "flex-start" }}>
           <div style={{
