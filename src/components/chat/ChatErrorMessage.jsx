@@ -1,5 +1,5 @@
 import React from "react";
-import { WifiOff, RefreshCw } from "lucide-react";
+import { Zap, RefreshCw } from "lucide-react";
 
 export default function ChatErrorMessage({ onRetry }) {
   return (
@@ -10,15 +10,15 @@ export default function ChatErrorMessage({ onRetry }) {
       gap: 8,
       padding: "10px 14px",
       maxWidth: "80%",
-      background: "rgba(239,68,68,0.1)",
-      border: "1px solid rgba(239,68,68,0.25)",
+      background: "rgba(139,92,246,0.1)",
+      border: "1px solid rgba(139,92,246,0.25)",
       borderRadius: 16,
       borderTopLeftRadius: 4,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <WifiOff style={{ width: 14, height: 14, color: "rgba(248,113,113,0.9)" }} />
+        <Zap style={{ width: 14, height: 14, color: "rgba(196,180,252,0.9)" }} />
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>
-          Couldn't connect. Check your signal and try again.
+          My brain is disconnected 🧠 please plug it in again!
         </span>
       </div>
       <button
