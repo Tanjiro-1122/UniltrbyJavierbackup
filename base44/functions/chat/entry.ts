@@ -5,13 +5,15 @@ const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
+    // Clone the request before consuming the body, so SDK and our code can both read it
+    const base44 = createClientFromRequest(req.clone());
     
     let user = null;
     try {
       user = await base44.auth.me();
     } catch (authErr) {
       console.error("Auth check failed:", authErr.message);
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -38,7 +40,7 @@ Example: If the user is scared, end with [MOOD:fear]
 Example: If the user is happy, end with [MOOD:happy]
 NEVER skip this tag. It must always be the very last line.`;
 
-    // Build messages array — if image is attached, use vision-capable model
+    // Build messages array
     const chatMessages = [
       { role: "system", content: systemPrompt + memoryBlock + moodInstruction },
     ];
@@ -62,8 +64,7 @@ NEVER skip this tag. It must always be the very last line.`;
       chatMessages.push({ role: lastMsg.role, content: lastMsg.content });
     }
 
-    const useVision = !!imageBase64;
-    const model = useVision ? "gpt-4o-mini" : "gpt-4o-mini";
+    const model = "gpt-4o-mini";
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -87,7 +88,7 @@ NEVER skip this tag. It must always be the very last line.`;
     const mood = validMoods.includes(detectedMood) ? detectedMood : "neutral";
     const reply = raw.replace(/\[MOOD:\s*\w+\s*\]/gi, "").replace(/\(MOOD:\s*\w+\)/gi, "").replace(/MOOD:\s*\w+/gi, "").trim();
 
-    console.log("[Chat] mood detected:", detectedMood, "→ applied:", mood);
+    console.log("[Chat] user:", user.email, "mood:", detectedMood, "→", mood);
 
     return Response.json({ reply, mood });
   } catch (error) {
