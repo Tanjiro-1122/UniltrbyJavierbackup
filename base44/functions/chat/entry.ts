@@ -21,13 +21,21 @@ Deno.serve(async (req) => {
 
     const moodInstruction = `
 
-CRITICAL INSTRUCTION - MOOD TAG:
-You MUST end EVERY single response with a mood tag on its own line.
+=== MANDATORY MOOD TAG (DO NOT SKIP) ===
+At the END of every response, you MUST include a mood tag reflecting the EMOTIONAL TONE of the conversation.
 Format: [MOOD:value]
-Allowed values: happy, neutral, sad, fear, disgust, surprise, anger, contentment, fatigue
-Example: If the user is scared, end with [MOOD:fear]
-Example: If the user is happy, end with [MOOD:happy]
-NEVER skip this tag. It must always be the very last line.`;
+Allowed values ONLY: happy, neutral, sad, fear, disgust, surprise, anger, contentment, fatigue
+- If the conversation is fun/playful/excited → [MOOD:happy]
+- If the user is sad/down/upset → [MOOD:sad]
+- If the user is anxious/scared → [MOOD:fear]
+- If calm/peaceful/relaxed → [MOOD:contentment]
+- If the user is tired/exhausted → [MOOD:fatigue]
+- If the user is frustrated/mad → [MOOD:anger]
+- If something shocking/unexpected → [MOOD:surprise]
+- Default to [MOOD:contentment] for normal positive chat, NOT neutral
+- Only use [MOOD:neutral] if the conversation is truly flat/emotionless
+DO NOT default to neutral. Read the emotional context carefully. This tag MUST be the last line.
+=== END MOOD INSTRUCTIONS ===`;
 
     // Build messages array
     const chatMessages = [
