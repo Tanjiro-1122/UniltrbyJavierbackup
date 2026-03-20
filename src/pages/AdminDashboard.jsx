@@ -32,24 +32,23 @@ export default function AdminDashboard() {
       return;
     }
 
-    const [users, profiles, messages] = await Promise.all([
+    // Load lightweight data — avoid fetching ALL messages (too slow)
+    const [users, profiles, recentMessages] = await Promise.all([
       base44.entities.User.list(),
       base44.entities.UserProfile.list(),
-      base44.entities.Message.list(),
+      base44.entities.Message.list('-created_date', 50),
     ]);
 
-    const premiumCount = profiles.filter(p => p.premium).length;
+    const premiumCount = profiles.filter(p => p.premium || p.is_premium).length;
     const today = new Date().toISOString().split("T")[0];
-    const todayMessages = messages.filter(m => m.created_date?.startsWith(today));
-    const userMessages = messages.filter(m => m.role === "user");
+    const todayMessages = recentMessages.filter(m => m.created_date?.startsWith(today));
 
     setStats({
       totalUsers: users.length,
       totalProfiles: profiles.length,
       premiumUsers: premiumCount,
-      totalMessages: messages.length,
+      recentMessageCount: recentMessages.length,
       todayMessages: todayMessages.length,
-      userMessages: userMessages.length,
       recentUsers: [...users].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 8),
     });
 
