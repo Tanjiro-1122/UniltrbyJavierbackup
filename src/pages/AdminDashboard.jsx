@@ -76,7 +76,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <StatCard icon={<Users className="w-5 h-5 text-purple-400" />} label="Total Users" value={stats.totalUsers} />
           <StatCard icon={<Crown className="w-5 h-5 text-yellow-400" />} label="Premium Users" value={stats.premiumUsers} sub={`${stats.totalUsers > 0 ? Math.round((stats.premiumUsers / stats.totalUsers) * 100) : 0}% of users`} />
-          <StatCard icon={<MessageSquare className="w-5 h-5 text-blue-400" />} label="Total Profiles" value={stats.totalProfiles} />
+          <StatCard icon={<MessageSquare className="w-5 h-5 text-blue-400" />} label="Profiles" value={stats.totalProfiles} />
           <StatCard icon={<MessageSquare className="w-5 h-5 text-green-400" />} label="Today's Messages" value={stats.todayMessages} />
         </div>
 
