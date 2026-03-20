@@ -38,6 +38,7 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Admin load error:", err);
       setUnauthorized(true);
+      if (code) setPasscodeError(true);
     }
     setLoading(false);
   };
