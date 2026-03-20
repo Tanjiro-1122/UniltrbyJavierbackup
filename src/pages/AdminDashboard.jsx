@@ -15,19 +15,24 @@ export default function AdminDashboard() {
 
   const loadData = async () => {
     setLoading(true);
-    const me = await base44.auth.me();
-    setUser(me);
+    try {
+      const me = await base44.auth.me();
+      setUser(me);
 
-    const response = await base44.functions.invoke('adminStats', {});
-    const data = response.data;
+      const response = await base44.functions.invoke('adminStats', {});
+      const data = response.data;
 
-    if (data?.error) {
+      if (data?.error) {
+        setUnauthorized(true);
+        setLoading(false);
+        return;
+      }
+
+      setStats(data);
+    } catch (err) {
+      console.error("Admin load error:", err);
       setUnauthorized(true);
-      setLoading(false);
-      return;
     }
-
-    setStats(data);
     setLoading(false);
   };
 
