@@ -8,6 +8,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [unauthorized, setUnauthorized] = useState(false);
+  const [passcode, setPasscode] = useState("");
+  const [passcodeError, setPasscodeError] = useState(false);
 
   useEffect(() => {
     loadData();
