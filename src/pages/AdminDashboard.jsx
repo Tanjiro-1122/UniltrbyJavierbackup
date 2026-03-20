@@ -38,12 +38,19 @@ export default function AdminDashboard() {
       setStats(data);
       if (code) localStorage.setItem("unfiltr_admin_code", code);
     } catch (err) {
-      console.error("Admin load error:", err);
+      console.error("Admin load error:", err?.response?.status, err?.message);
       const status = err?.response?.status || err?.status;
-      setUnauthorized(true);
-      // Only show passcode error if user actually submitted a code
-      if (code && status === 403) {
-        setPasscodeError(true);
+      if (status === 403 || status === 401) {
+        // Expected: user is not admin and no/wrong passcode
+        setUnauthorized(true);
+        if (code) {
+          // User submitted a passcode but it was wrong
+          setPasscodeError(true);
+          localStorage.removeItem("unfiltr_admin_code");
+        }
+      } else {
+        // Unexpected error (network, server crash, etc.)
+        setUnauthorized(true);
       }
     }
     setLoading(false);
