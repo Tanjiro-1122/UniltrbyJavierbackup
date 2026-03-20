@@ -678,6 +678,7 @@ export default function ChatPage() {
               messagesEndRef={messagesEndRef}
               onSwipeReply={(text) => setQuoteReply(text)}
               onRetry={handleRetry}
+              companionName={companionDisplayName}
             />
           </div>
 
@@ -685,6 +686,7 @@ export default function ChatPage() {
           <ConversationStarters
             visible={messages.filter(m => m.role === "user").length === 0}
             onSelect={(text) => handleSend(text)}
+            isReturning={!!localStorage.getItem("unfiltr_chat_history")}
           />
 
           {/* Quote reply bar */}
