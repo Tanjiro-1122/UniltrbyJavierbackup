@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const loadData = async (code) => {
     setLoading(true);
     setUnauthorized(false);
+    setPasscodeError(false);
     try {
       const me = await base44.auth.me();
       setUser(me);
@@ -27,8 +28,9 @@ export default function AdminDashboard() {
       const response = await base44.functions.invoke('adminStats', payload);
       const data = response.data;
 
-      if (data?.error) {
+      if (data?.error || data?.needsPasscode) {
         setUnauthorized(true);
+        if (code) setPasscodeError(true);
         setLoading(false);
         return;
       }
@@ -37,8 +39,12 @@ export default function AdminDashboard() {
       if (code) localStorage.setItem("unfiltr_admin_code", code);
     } catch (err) {
       console.error("Admin load error:", err);
+      const status = err?.response?.status || err?.status;
       setUnauthorized(true);
-      if (code) setPasscodeError(true);
+      // Only show passcode error if user actually submitted a code
+      if (code && status === 403) {
+        setPasscodeError(true);
+      }
     }
     setLoading(false);
   };
