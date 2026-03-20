@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
+const ADMIN_PASSCODE = 'unfiltr1122';
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -9,20 +11,30 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check admin by role or by display name
+    const body = await req.json().catch(() => ({}));
+
+    // Check admin by role, display name, or passcode
     let isAdmin = user.role === 'admin';
 
+    if (!isAdmin && body.passcode === ADMIN_PASSCODE) {
+      isAdmin = true;
+    }
+
     if (!isAdmin) {
-      // Check UserProfile display_name using service role to avoid auth issues
-      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-      const profile = profiles?.[0];
-      if (profile?.display_name === 'Javier 1122') {
-        isAdmin = true;
+      // Check UserProfile display_name as fallback
+      try {
+        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
+        const profile = profiles?.[0];
+        if (profile?.display_name === 'Javier 1122') {
+          isAdmin = true;
+        }
+      } catch (e) {
+        // If profile check fails, continue with other checks
       }
     }
 
     if (!isAdmin) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      return Response.json({ error: 'Forbidden', needsPasscode: true }, { status: 403 });
     }
 
     // Use service role to access User entity (requires admin privileges)
