@@ -15,13 +15,15 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (code) => {
     setLoading(true);
+    setUnauthorized(false);
     try {
       const me = await base44.auth.me();
       setUser(me);
 
-      const response = await base44.functions.invoke('adminStats', {});
+      const payload = code ? { passcode: code } : {};
+      const response = await base44.functions.invoke('adminStats', payload);
       const data = response.data;
 
       if (data?.error) {
@@ -31,11 +33,18 @@ export default function AdminDashboard() {
       }
 
       setStats(data);
+      if (code) localStorage.setItem("unfiltr_admin_code", code);
     } catch (err) {
       console.error("Admin load error:", err);
       setUnauthorized(true);
     }
     setLoading(false);
+  };
+
+  const handlePasscodeSubmit = () => {
+    if (!passcode.trim()) return;
+    setPasscodeError(false);
+    loadData(passcode.trim());
   };
 
   if (loading) {
