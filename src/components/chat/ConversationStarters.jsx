@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 
-const STARTERS = [
+const NEW_USER_STARTERS = [
   { emoji: "✨", text: "How's my day looking?" },
   { emoji: "🧠", text: "Tell me something cool" },
   { emoji: "😤", text: "I need to vent" },
@@ -8,9 +8,44 @@ const STARTERS = [
   { emoji: "💭", text: "Ask me something deep" },
 ];
 
-export default function ConversationStarters({ onSelect, visible }) {
+const RETURNING_STARTERS = [
+  { emoji: "💬", text: "Let's pick up where we left off" },
+  { emoji: "✨", text: "What should I do today?" },
+  { emoji: "😤", text: "I need to vent about something" },
+  { emoji: "🧠", text: "Tell me something I don't know" },
+  { emoji: "💜", text: "I just wanted to say hi" },
+];
+
+const TIME_STARTERS = {
+  morning: [
+    { emoji: "☀️", text: "Help me start my day right" },
+    { emoji: "📋", text: "What should I focus on today?" },
+  ],
+  evening: [
+    { emoji: "🌙", text: "How was my day? Let me tell you" },
+    { emoji: "😴", text: "Help me wind down" },
+  ],
+};
+
+export default function ConversationStarters({ onSelect, visible, isReturning }) {
   if (!visible) return null;
-  
+
+  const starters = useMemo(() => {
+    const hour = new Date().getHours();
+    const base = isReturning ? RETURNING_STARTERS : NEW_USER_STARTERS;
+    
+    // Mix in a time-appropriate starter
+    let timeStarter = null;
+    if (hour < 11) timeStarter = TIME_STARTERS.morning[Math.floor(Math.random() * TIME_STARTERS.morning.length)];
+    else if (hour >= 20) timeStarter = TIME_STARTERS.evening[Math.floor(Math.random() * TIME_STARTERS.evening.length)];
+    
+    if (timeStarter) {
+      // Replace the last item with a time-based one
+      return [...base.slice(0, 4), timeStarter];
+    }
+    return base;
+  }, [isReturning]);
+
   return (
     <div style={{
       display: "flex", gap: 6, overflowX: "auto",
@@ -18,7 +53,7 @@ export default function ConversationStarters({ onSelect, visible }) {
       scrollbarWidth: "none", msOverflowStyle: "none",
       WebkitOverflowScrolling: "touch",
     }}>
-      {STARTERS.map((s, i) => (
+      {starters.map((s, i) => (
         <button key={i} onClick={() => onSelect(s.text)}
           style={{
             flexShrink: 0, padding: "7px 14px",

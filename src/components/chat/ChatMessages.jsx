@@ -7,7 +7,7 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry }) {
+export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry, companionName }) {
   const [reactions, setReactions] = useState({});
   const [pickerIdx, setPickerIdx] = useState(null);
 
@@ -130,20 +130,23 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
         );
       })}
       {loading && (
-        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 8 }}>
           <div style={{
-            padding: "12px 18px", borderRadius: "20px 20px 20px 6px",
+            padding: "10px 16px", borderRadius: "20px 20px 20px 6px",
             background: "linear-gradient(135deg, rgba(88,28,135,0.5), rgba(139,92,246,0.2))",
             border: "1px solid rgba(168,85,247,0.2)",
-            display: "flex", alignItems: "center", gap: 6,
+            display: "flex", alignItems: "center", gap: 8,
             boxShadow: "0 2px 12px rgba(168,85,247,0.1)",
           }}>
             <style>{`
               @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.3} 30%{transform:translateY(-6px) scale(1.2);opacity:1} }
             `}</style>
+            {companionName && (
+              <span style={{ color: "rgba(196,180,252,0.6)", fontSize: 11, fontWeight: 600 }}>{companionName}</span>
+            )}
             {[0, 1, 2].map(d => (
               <div key={d} style={{
-                width: 7, height: 7, borderRadius: "50%",
+                width: 6, height: 6, borderRadius: "50%",
                 background: "linear-gradient(135deg, #a855f7, #db2777)",
                 animation: `typingWave 1.4s ease-in-out infinite`,
                 animationDelay: `${d * 0.18}s`,
