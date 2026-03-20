@@ -103,8 +103,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none" }}>
-      <div className="scroll-area p-4 pb-10">
+    <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none", overflow: "auto" }}>
+      <div className="scroll-area p-4 pb-10" style={{ overflow: "auto" }}>
         <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 pt-4">

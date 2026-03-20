@@ -44,7 +44,16 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Message.list('-created_date', 50),
     ]);
 
-    const premiumCount = allProfiles.filter(p => p.premium || p.is_premium).length;
+    // Count unique premium users (by created_by email, not duplicate profiles)
+    const seenEmails = new Set();
+    const uniqueProfiles = [];
+    for (const p of allProfiles) {
+      if (p.created_by && !seenEmails.has(p.created_by)) {
+        seenEmails.add(p.created_by);
+        uniqueProfiles.push(p);
+      }
+    }
+    const premiumCount = uniqueProfiles.filter(p => p.premium || p.is_premium).length;
     const today = new Date().toISOString().split('T')[0];
     const todayMessages = recentMessages.filter(m => m.created_date?.startsWith(today));
 
@@ -55,7 +64,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       totalUsers: users.length,
-      totalProfiles: allProfiles.length,
+      totalProfiles: uniqueProfiles.length,
       premiumUsers: premiumCount,
       todayMessages: todayMessages.length,
       recentUsers,
