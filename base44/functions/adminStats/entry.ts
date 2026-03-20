@@ -13,15 +13,15 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
 
-    // Check admin by role, display name, or passcode
-    let isAdmin = user.role === 'admin';
+    // Check admin access: passcode or display name "Javier 1122"
+    let isAdmin = false;
 
-    if (!isAdmin && body.passcode === ADMIN_PASSCODE) {
+    if (body.passcode === ADMIN_PASSCODE) {
       isAdmin = true;
     }
 
     if (!isAdmin) {
-      // Check UserProfile display_name as fallback
+      // Check UserProfile display_name
       try {
         const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
         const profile = profiles?.[0];
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
           isAdmin = true;
         }
       } catch (e) {
-        // If profile check fails, continue with other checks
+        // If profile check fails, continue
       }
     }
 

@@ -1,5 +1,3 @@
-export const TESTER_ONLY_COMPANIONS = [];
-
 export const COMPANIONS = [
   {
     id: "luna",
