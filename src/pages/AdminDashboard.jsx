@@ -19,8 +19,13 @@ export default function AdminDashboard() {
     setUser(me);
 
     // Allow admin role OR recognized admin display name from published app
-    const storedName = localStorage.getItem("unfiltr_display_name");
-    const isAdminUser = me?.role === "admin" || storedName === "Javier 1122";
+    const profileId = localStorage.getItem("userProfileId");
+    let displayName = "";
+    if (profileId) {
+      const profile = await base44.entities.UserProfile.get(profileId);
+      displayName = profile?.display_name || "";
+    }
+    const isAdminUser = me?.role === "admin" || displayName === "Javier 1122";
     if (!isAdminUser) {
       setUnauthorized(true);
       setLoading(false);
