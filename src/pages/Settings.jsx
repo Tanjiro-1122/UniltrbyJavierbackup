@@ -108,10 +108,13 @@ export default function Settings() {
 
     loadData();
 
-    // Check admin role
+    // Check admin role — also check display name for TestFlight/published app
     base44.auth.me().then(me => {
       if (me?.role === "admin") setIsAdmin(true);
     }).catch(() => {});
+    // Also check by display name for published app where auth is anonymous
+    const storedName = localStorage.getItem("unfiltr_display_name");
+    if (storedName === "Javier 1122") setIsAdmin(true);
   }, []);
 
   const handleChangeVoiceGender = async (newGender) => {

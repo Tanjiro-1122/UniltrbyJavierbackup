@@ -18,7 +18,10 @@ export default function AdminDashboard() {
     const me = await base44.auth.me();
     setUser(me);
 
-    if (me?.role !== "admin") {
+    // Allow admin role OR recognized admin display name from published app
+    const storedName = localStorage.getItem("unfiltr_display_name");
+    const isAdminUser = me?.role === "admin" || storedName === "Javier 1122";
+    if (!isAdminUser) {
       setUnauthorized(true);
       setLoading(false);
       return;
