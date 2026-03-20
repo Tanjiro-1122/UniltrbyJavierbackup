@@ -59,11 +59,30 @@ export default function AdminDashboard() {
   if (unauthorized) {
     return (
       <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none", alignItems: "center", justifyContent: "center" }}>
-        <div className="text-center">
-          <ShieldAlert className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-gray-400 mb-6">Admin access required.</p>
-          <Link to="/" className="text-purple-400 hover:text-purple-300">← Go Home</Link>
+        <div className="text-center" style={{ padding: "0 32px", width: "100%", maxWidth: 360 }}>
+          <ShieldAlert className="w-14 h-14 text-purple-400 mx-auto mb-4" />
+          <h1 className="text-xl font-bold mb-2">Admin Access</h1>
+          <p className="text-gray-400 mb-6 text-sm">Enter your admin passcode to continue.</p>
+          <input
+            type="password"
+            value={passcode}
+            onChange={(e) => { setPasscode(e.target.value); setPasscodeError(false); }}
+            onKeyDown={(e) => e.key === "Enter" && handlePasscodeSubmit()}
+            placeholder="Enter passcode"
+            className="w-full px-4 py-3 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none mb-3"
+            style={{ background: "rgba(139,92,246,0.1)", border: passcodeError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(139,92,246,0.3)" }}
+            autoFocus
+          />
+          {passcodeError && <p className="text-red-400 text-xs mb-3">Wrong passcode. Try again.</p>}
+          <button
+            onClick={handlePasscodeSubmit}
+            disabled={!passcode.trim()}
+            className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-30"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", cursor: "pointer" }}
+          >
+            Unlock
+          </button>
+          <Link to="/" className="text-purple-400 hover:text-purple-300 text-sm block mt-4">← Go Home</Link>
         </div>
       </div>
     );
