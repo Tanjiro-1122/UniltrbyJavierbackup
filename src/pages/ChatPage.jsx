@@ -189,21 +189,43 @@ export default function ChatPage() {
     if (!companion) return;
     const name = companion.displayName || companion.name;
     const userName = localStorage.getItem("unfiltr_user_display_name") || "";
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
     const saved = localStorage.getItem("unfiltr_chat_history");
     let history = [];
     try { history = saved ? JSON.parse(saved) : []; } catch {}
 
     if (history.length > 0) {
-      // Returning user — personalized welcome back
-      const lastUserMsg = [...history].reverse().find(m => m.role === "user");
-      const lastTopic = lastUserMsg ? ` How did everything go since last time?` : "";
-      const hi = userName ? `Hey ${userName}` : "Hey";
-      const welcomeMsg = {
-        role: "assistant",
-        content: `${hi}, welcome back! 💜${lastTopic} I'm here whenever you're ready to chat.`,
-      };
-      setMessages([welcomeMsg]);
+      // Returning user — personalized welcome back with memory context
+      const hi = userName ? `${timeGreeting}, ${userName}` : `${timeGreeting}`;
+      
+      // Try to use memory summary for a personal touch
+      const pid = localStorage.getItem("userProfileId");
+      if (pid) {
+        base44.entities.UserProfile.get(pid).then(profile => {
+          const mem = profile?.memory_summary;
+          let followUp = "How have you been?";
+          if (mem) {
+            // Extract a conversational hook from the memory
+            followUp = "I've been thinking about our last chat. How's everything going?";
+          }
+          setMessages([{
+            role: "assistant",
+            content: `${hi}! 💜 ${followUp} I'm right here whenever you want to talk.`,
+          }]);
+        }).catch(() => {
+          setMessages([{
+            role: "assistant",
+            content: `${hi}! 💜 How have you been? I'm right here whenever you want to talk.`,
+          }]);
+        });
+      } else {
+        setMessages([{
+          role: "assistant",
+          content: `${hi}! 💜 How have you been? I'm right here whenever you want to talk.`,
+        }]);
+      }
       return;
     }
 
