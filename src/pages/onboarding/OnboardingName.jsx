@@ -22,7 +22,10 @@ export default function OnboardingName() {
 
   const handleNext = async () => {
     if (!displayName.trim()) return;
-    updateOnboardingStore({ displayName });
+
+    // "demo" name = Apple/Google review tester account (gets premium)
+    const isTester = displayName.trim().toLowerCase() === "demo";
+    updateOnboardingStore({ displayName, isTesterAccount: isTester });
 
     try {
       if (store.pendingProfileId) {

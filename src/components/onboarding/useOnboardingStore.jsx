@@ -4,6 +4,7 @@ const store = {
   selectedCompanion: null,
   companionNickname: "",
   selectedBackground: null,
+  isTesterAccount: false,
   pendingProfileId: null,
 };
 
@@ -20,5 +21,6 @@ export function resetOnboardingStore() {
   store.selectedCompanion = null;
   store.companionNickname = "";
   store.selectedBackground = null;
+  store.isTesterAccount = false;
   store.pendingProfileId = null;
 }
