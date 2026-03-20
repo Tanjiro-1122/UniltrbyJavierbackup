@@ -72,18 +72,7 @@ export default function OnboardingName() {
           onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
           onBlur={e => e.target.style.borderColor = "rgba(139,92,246,0.2)"}
         />
-        {isTester && (
-          <div style={{
-            marginTop: 10, padding: "8px 14px", borderRadius: 12,
-            background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span style={{ fontSize: 16 }}>✨</span>
-            <span style={{ color: "rgba(196,180,252,0.9)", fontSize: 13 }}>
-              <strong style={{ color: "#c084fc" }}>Premium Demo Account</strong> — full access enabled
-            </span>
-          </div>
-        )}
+
       </div>
     </OnboardingLayout>
   );
