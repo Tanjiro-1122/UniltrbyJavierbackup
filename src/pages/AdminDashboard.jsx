@@ -12,7 +12,8 @@ export default function AdminDashboard() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const savedCode = localStorage.getItem("unfiltr_admin_code");
+    loadData(savedCode || undefined);
   }, []);
 
   const loadData = async (code) => {
