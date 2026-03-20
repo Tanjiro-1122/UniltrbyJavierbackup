@@ -34,12 +34,6 @@ export default function OnboardingBackground() {
         display_name: store.displayName,
         companion_id: companion.id,
         background_id: selected,
-        premium: store.isTesterAccount,
-        is_premium: store.isTesterAccount,
-        session_memory: store.isTesterAccount ? [{
-          date: "Mar 14, 2026",
-          summary: "This is a demo account for app review. The user wanted to explore all premium features including companion memory, unlimited messages, and voice responses.",
-        }] : [],
       };
 
       let userProfile;
