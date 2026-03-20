@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
     let isAdmin = user.role === 'admin';
 
     if (!isAdmin) {
-      // Check UserProfile display_name
-      const profiles = await base44.entities.UserProfile.filter({ created_by: user.email });
+      // Check UserProfile display_name using service role to avoid auth issues
+      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
       const profile = profiles?.[0];
       if (profile?.display_name === 'Javier 1122') {
         isAdmin = true;
