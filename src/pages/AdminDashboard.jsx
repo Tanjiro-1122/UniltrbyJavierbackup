@@ -110,7 +110,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500">Unfiltr App</p>
             </div>
           </div>
-          <button onClick={loadData} className="text-gray-400 hover:text-white p-2">
+          <button onClick={() => loadData(localStorage.getItem("unfiltr_admin_code") || undefined)} className="text-gray-400 hover:text-white p-2">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
