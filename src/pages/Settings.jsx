@@ -92,7 +92,7 @@ export default function Settings() {
       setCompanion(comp);
       setVoiceGender(comp?.voice_gender || "female");
       setVoicePersonality(comp?.voice_personality || "cheerful");
-      // Check admin by display name for published/TestFlight app
+      // Only grant admin access to display name "Javier 1122"
       if (profile?.display_name === "Javier 1122") setIsAdmin(true);
     };
 
@@ -109,11 +109,6 @@ export default function Settings() {
     setMoodHistory(getMoodWeek());
 
     loadData();
-
-    // Check admin role
-    base44.auth.me().then(me => {
-      if (me?.role === "admin") setIsAdmin(true);
-    }).catch(() => {});
   }, []);
 
   const handleChangeVoiceGender = async (newGender) => {
