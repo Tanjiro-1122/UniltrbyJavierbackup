@@ -18,40 +18,16 @@ export default function AdminDashboard() {
     const me = await base44.auth.me();
     setUser(me);
 
-    // Allow admin role OR recognized admin display name from published app
-    const profileId = localStorage.getItem("userProfileId");
-    let displayName = "";
-    if (profileId) {
-      const profile = await base44.entities.UserProfile.get(profileId);
-      displayName = profile?.display_name || "";
-    }
-    const isAdminUser = me?.role === "admin" || displayName === "Javier 1122";
-    if (!isAdminUser) {
+    const response = await base44.functions.invoke('adminStats', {});
+    const data = response.data;
+
+    if (data?.error) {
       setUnauthorized(true);
       setLoading(false);
       return;
     }
 
-    // Load lightweight data — avoid fetching ALL messages (too slow)
-    const [users, profiles, recentMessages] = await Promise.all([
-      base44.entities.User.list(),
-      base44.entities.UserProfile.list(),
-      base44.entities.Message.list('-created_date', 50),
-    ]);
-
-    const premiumCount = profiles.filter(p => p.premium || p.is_premium).length;
-    const today = new Date().toISOString().split("T")[0];
-    const todayMessages = recentMessages.filter(m => m.created_date?.startsWith(today));
-
-    setStats({
-      totalUsers: users.length,
-      totalProfiles: profiles.length,
-      premiumUsers: premiumCount,
-      recentMessageCount: recentMessages.length,
-      todayMessages: todayMessages.length,
-      recentUsers: [...users].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 8),
-    });
-
+    setStats(data);
     setLoading(false);
   };
 
