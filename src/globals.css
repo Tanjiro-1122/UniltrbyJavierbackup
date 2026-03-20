@@ -16,7 +16,7 @@ html, body, #root {
   background-color: #06020f !important;
   margin: 0 !important;
   padding: 0 !important;
-  min-height: 100vh;
+  min-height: 100dvh;
   overscroll-behavior: none;
 }
 
@@ -33,7 +33,7 @@ html, body, #root {
 html {
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
   background: #06020f !important;
   background-color: #06020f !important;
   color-scheme: dark;
@@ -47,8 +47,7 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: visible;
-  overflow-x: visible;
+  overflow: hidden;
   background: #06020f !important;
   background-color: #06020f !important;
   color-scheme: dark;
@@ -57,11 +56,10 @@ body {
 }
 
 #root {
-  position: relative;
   width: 100%;
-  max-width: 100vw;
+  height: 100dvh;
   min-height: 100dvh;
-  overflow: visible !important;
+  overflow: hidden;
   background: #06020f !important;
   background-color: #06020f !important;
   display: flex;
