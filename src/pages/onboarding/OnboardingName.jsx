@@ -17,10 +17,7 @@ export default function OnboardingName() {
 
   const handleNameChange = (val) => {
     setDisplayName(val);
-    const normalized = val.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-    const tester = TESTER_NAMES.includes(normalized) || normalized === TESTER_CODE;
-    setIsTester(tester);
-    updateOnboardingStore({ displayName: val, isTesterAccount: tester });
+    updateOnboardingStore({ displayName: val });
   };
 
   const handleNext = async () => {
