@@ -59,7 +59,7 @@ export default function AdminDashboard() {
 
   if (unauthorized) {
     return (
-      <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none", alignItems: "center", justifyContent: "center" }}>
+      <div className="text-white" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
         <div className="text-center" style={{ padding: "0 32px", width: "100%", maxWidth: 360 }}>
           <ShieldAlert className="w-14 h-14 text-purple-400 mx-auto mb-4" />
           <h1 className="text-xl font-bold mb-2">Admin Access</h1>
