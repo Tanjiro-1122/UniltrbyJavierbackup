@@ -20,12 +20,8 @@ const PERSONALITY_CONFIG = {
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // Skip server-side auth.me() check — base44.functions.invoke() on frontend
+    // already requires a logged-in user, and auth.me() causes false 401s on mobile.
     const { text, companionId, voiceGender, voicePersonality } = await req.json();
 
     if (!text || text.trim().length === 0) {
