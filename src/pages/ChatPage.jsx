@@ -187,6 +187,26 @@ export default function ChatPage() {
   useEffect(() => {
     if (!companion) return;
     const name = companion.displayName || companion.name;
+    const userName = localStorage.getItem("unfiltr_user_display_name") || "";
+
+    const saved = localStorage.getItem("unfiltr_chat_history");
+    let history = [];
+    try { history = saved ? JSON.parse(saved) : []; } catch {}
+
+    if (history.length > 0) {
+      // Returning user — personalized welcome back
+      const lastUserMsg = [...history].reverse().find(m => m.role === "user");
+      const lastTopic = lastUserMsg ? ` How did everything go since last time?` : "";
+      const hi = userName ? `Hey ${userName}` : "Hey";
+      const welcomeMsg = {
+        role: "assistant",
+        content: `${hi}, welcome back! 💜${lastTopic} I'm here whenever you're ready to chat.`,
+      };
+      setMessages([welcomeMsg]);
+      return;
+    }
+
+    // Brand new conversation
     const greeting = {
       role: "assistant",
       content: `Hey! I'm ${name} 👋 ${
@@ -196,25 +216,6 @@ export default function ChatPage() {
         "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
       }`,
     };
-
-    const welcomeBack = localStorage.getItem("unfiltr_welcome_back");
-    if (welcomeBack) {
-      localStorage.removeItem("unfiltr_welcome_back");
-      const saved = localStorage.getItem("unfiltr_chat_history");
-      let history = [];
-      try { history = saved ? JSON.parse(saved) : []; } catch {}
-      const welcomeMsg = { role: "assistant", content: `Hey, welcome back! 💜 I remember our last chat. Ready to pick up where we left off?` };
-      setMessages(history.length > 0 ? [welcomeMsg, ...history] : [welcomeMsg]);
-      return;
-    }
-
-    const saved = localStorage.getItem("unfiltr_chat_history");
-    if (saved) {
-      try {
-        const history = JSON.parse(saved);
-        if (history.length > 0) { setMessages([greeting, ...history]); return; }
-      } catch {}
-    }
     setMessages([greeting]);
   }, [companion]);
 
