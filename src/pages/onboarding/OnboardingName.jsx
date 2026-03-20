@@ -4,14 +4,10 @@ import { base44 } from "@/api/base44Client";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
-const TESTER_NAMES = ["demo", "appreviewer", "applereviewer", "googlereviewer", "tester", "javier1122"];
-const TESTER_CODE = "unfiltr2026demo";
-
 export default function OnboardingName() {
   const navigate = useNavigate();
   const store = getOnboardingStore();
   const [displayName, setDisplayName] = useState(store.displayName);
-  const [isTester, setIsTester] = useState(store.isTesterAccount);
 
   // Must consent before entering name
   if (!localStorage.getItem("unfiltr_consent_accepted")) {
