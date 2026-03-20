@@ -4,7 +4,6 @@ const store = {
   selectedCompanion: null,
   companionNickname: "",
   selectedBackground: null,
-  isTesterAccount: false,
   pendingProfileId: null,
 };
 
