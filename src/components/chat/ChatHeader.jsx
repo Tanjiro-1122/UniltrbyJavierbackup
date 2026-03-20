@@ -37,10 +37,28 @@ export default function ChatHeader({
     setSaving(false);
     navigate("/journal");
   };
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    // Save current messages to Message entity before clearing
+    const profileId = localStorage.getItem("userProfileId");
+    const userMessages = messages.filter(m => m.role === "user" && m.content);
+    if (profileId && userMessages.length > 0) {
+      const companionId = companion?.id || "";
+      const toSave = messages.filter(m => m.content && m.content !== "__ERROR__").slice(0, 20);
+      // Fire and forget — don't block the new chat
+      Promise.all(toSave.map(m =>
+        base44.entities.Message.create({
+          user_profile_id: profileId,
+          companion_id: companionId,
+          role: m.role,
+          content: m.content,
+        })
+      )).catch(() => {});
+    }
     localStorage.removeItem("unfiltr_chat_history");
     const name = companion.displayName || companion.name;
-    setMessages([{ role: "assistant", content: `Fresh start! Hey, I'm ${name} 👋 What's up?` }]);
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Hey";
+    setMessages([{ role: "assistant", content: `Fresh start! ${timeGreeting} 👋 What's on your mind?` }]);
   };
 
   const handleExport = () => {
