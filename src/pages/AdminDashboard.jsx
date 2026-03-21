@@ -33,36 +33,33 @@ export default function AdminDashboard() {
 
     try {
       const response = await base44.functions.invoke('adminStats', { passcode: code });
-      const data = response.data;
+      const data = response?.data;
 
-      if (data?.totalUsers !== undefined) {
+      if (data && data.totalUsers !== undefined) {
         setStats(data);
-        if (code) localStorage.setItem("unfiltr_admin_code", code);
+        localStorage.setItem("unfiltr_admin_code", code);
         setLoading(false);
         return;
       }
 
-      // Got a response but it's an error shape
       setUnauthorized(true);
-      if (code) setPasscodeError(true);
+      setPasscodeError(true);
+      setErrorDetail("Unexpected response format");
     } catch (err) {
-      const status = err?.response?.status;
       const responseData = err?.response?.data;
       
-      // Sometimes valid data comes back wrapped in an error
-      if (responseData?.totalUsers !== undefined) {
+      if (responseData && responseData.totalUsers !== undefined) {
         setStats(responseData);
-        if (code) localStorage.setItem("unfiltr_admin_code", code);
+        localStorage.setItem("unfiltr_admin_code", code);
         setLoading(false);
         return;
       }
       
       setUnauthorized(true);
-      if (code) {
-        setPasscodeError(true);
-        localStorage.removeItem("unfiltr_admin_code");
-      }
-      setErrorDetail("Status " + (status || "?") + ": " + (responseData?.error || err?.message || "unknown"));
+      setPasscodeError(true);
+      localStorage.removeItem("unfiltr_admin_code");
+      const msg = responseData?.error || err?.message || "Unknown error";
+      setErrorDetail(msg);
     }
     setLoading(false);
   };
