@@ -85,7 +85,7 @@ export default function AdminDashboard() {
         <div className="text-center" style={{ padding: "0 32px", width: "100%", maxWidth: 360 }}>
           <ShieldAlert className="w-14 h-14 text-purple-400 mx-auto mb-4" />
           <h1 className="text-xl font-bold mb-2">Admin Access</h1>
-          <p className="text-gray-400 mb-6 text-sm">Enter your admin passcode to continue.</p>
+          <p className="text-gray-400 mb-6 text-sm">Enter your admin passcode to continue</p>
           <input
             type="password"
             value={passcode}
