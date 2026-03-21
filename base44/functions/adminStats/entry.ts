@@ -5,31 +5,28 @@ const ADMIN_PASSCODE = 'unfiltr1122';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await req.json().catch(() => ({}));
 
-    // Check admin access: passcode or display name "Javier 1122"
+    // Check admin access via passcode first (doesn't require auth)
     let isAdmin = false;
 
     if (body.passcode && body.passcode.toLowerCase() === ADMIN_PASSCODE.toLowerCase()) {
       isAdmin = true;
     }
 
+    // If no passcode, try auth-based check
     if (!isAdmin) {
-      // Check UserProfile display_name
       try {
-        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-        const profile = profiles?.[0];
-        if (profile?.display_name === 'Javier 1122') {
-          isAdmin = true;
+        const user = await base44.auth.me();
+        if (user) {
+          const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
+          const profile = profiles?.[0];
+          if (profile?.display_name === 'Javier 1122') {
+            isAdmin = true;
+          }
         }
       } catch (e) {
-        // If profile check fails, continue
+        // Auth not available — that's fine if passcode wasn't provided either
       }
     }
 
