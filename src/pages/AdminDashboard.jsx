@@ -22,26 +22,17 @@ export default function AdminDashboard() {
   }, []);
 
   const loadData = async (code) => {
+    if (!code) {
+      setUnauthorized(true);
+      return;
+    }
     setLoading(true);
     setUnauthorized(false);
     setPasscodeError(false);
     setErrorDetail("");
 
-    let me = null;
     try {
-      me = await base44.auth.me();
-      setUser(me);
-    } catch (authErr) {
-      setErrorDetail("Auth failed: " + (authErr?.message || "unknown"));
-      setUnauthorized(true);
-      setLoading(false);
-      return;
-    }
-
-    const payload = code ? { passcode: code } : {};
-    
-    try {
-      const response = await base44.functions.invoke('adminStats', payload);
+      const response = await base44.functions.invoke('adminStats', { passcode: code });
       const data = response.data;
 
       if (data?.totalUsers !== undefined) {
