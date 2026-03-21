@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     // Check admin access: passcode or display name "Javier 1122"
     let isAdmin = false;
 
-    if (body.passcode === ADMIN_PASSCODE) {
+    if (body.passcode && body.passcode.toLowerCase() === ADMIN_PASSCODE.toLowerCase()) {
       isAdmin = true;
     }
 
