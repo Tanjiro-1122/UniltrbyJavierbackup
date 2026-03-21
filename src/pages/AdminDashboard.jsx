@@ -67,6 +67,7 @@ export default function AdminDashboard() {
   const handlePasscodeSubmit = () => {
     if (!passcode.trim()) return;
     setPasscodeError(false);
+    localStorage.removeItem("unfiltr_admin_code");
     loadData(passcode.trim());
   };
 
