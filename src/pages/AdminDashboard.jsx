@@ -91,6 +91,11 @@ export default function AdminDashboard() {
     );
   }
 
+  if (!stats && !unauthorized && !loading) {
+    // Initial state or no data yet — show passcode screen
+    setUnauthorized(true);
+  }
+
   if (unauthorized) {
     return (
       <div className="text-white" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
