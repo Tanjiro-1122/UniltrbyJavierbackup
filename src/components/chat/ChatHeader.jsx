@@ -13,8 +13,6 @@ export default function ChatHeader({
 
   const handleSaveJournal = async () => {
     if (saving) return;
-    const profileId = localStorage.getItem("userProfileId");
-    if (!profileId) return;
     setSaving(true);
     const convo = messages.filter(m => m.content).map(m => `${m.role === "user" ? "Me" : companion.displayName || companion.name}: ${m.content}`).join("\n");
     const res = await base44.integrations.Core.InvokeLLM({
@@ -28,13 +26,18 @@ export default function ChatHeader({
         },
       },
     });
-    await base44.entities.JournalEntry.create({
-      user_profile_id: profileId,
+    // Save to localStorage only — never to the cloud
+    const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
+    const entry = {
+      id: Date.now().toString(),
       title: res.title || "Journal Entry",
       content: res.content || convo,
       mood: res.mood || "reflective",
       companion_name: companion.displayName || companion.name,
-    });
+      created_date: new Date().toISOString(),
+    };
+    existing.unshift(entry);
+    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(existing));
     setSaving(false);
     toast.success("Journal entry saved ✨");
     navigate("/journal");
