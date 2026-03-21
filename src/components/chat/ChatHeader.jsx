@@ -43,21 +43,21 @@ export default function ChatHeader({
     navigate("/journal");
   };
   const handleNewChat = async () => {
-    // Save current messages to Message entity before clearing
-    const profileId = localStorage.getItem("userProfileId");
+    // Save current messages to localStorage only — never to the cloud
     const userMessages = messages.filter(m => m.role === "user" && m.content);
-    if (profileId && userMessages.length > 0) {
-      const companionId = companion?.id || "";
+    if (userMessages.length > 0) {
       const toSave = messages.filter(m => m.content && m.content !== "__ERROR__").slice(0, 20);
-      // Fire and forget — don't block the new chat
-      Promise.all(toSave.map(m =>
-        base44.entities.Message.create({
-          user_profile_id: profileId,
-          companion_id: companionId,
-          role: m.role,
-          content: m.content,
-        })
-      )).catch(() => {});
+      const session = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        companion_id: companion?.id || "",
+        companion_name: companion.displayName || companion.name,
+        messages: toSave.map(m => ({ role: m.role, content: m.content })),
+      };
+      const history = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
+      history.unshift(session);
+      // Keep last 50 sessions
+      localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(history.slice(0, 50)));
     }
     localStorage.removeItem("unfiltr_chat_history");
     const name = companion.displayName || companion.name;
