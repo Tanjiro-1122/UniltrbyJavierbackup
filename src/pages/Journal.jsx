@@ -13,14 +13,11 @@ export default function Journal() {
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState(null);
 
-  const profileId = localStorage.getItem("userProfileId");
-
   useEffect(() => {
-    if (!profileId) { setLoading(false); return; }
-    base44.entities.JournalEntry.filter({ user_profile_id: profileId }, "-created_date", 100)
-      .then(setEntries)
-      .finally(() => setLoading(false));
-  }, [profileId]);
+    const stored = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
+    setEntries(stored);
+    setLoading(false);
+  }, []);
 
   const handleDelete = async (id) => {
     await base44.entities.JournalEntry.delete(id);
