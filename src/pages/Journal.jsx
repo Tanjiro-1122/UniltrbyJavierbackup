@@ -19,9 +19,10 @@ export default function Journal() {
     setLoading(false);
   }, []);
 
-  const handleDelete = async (id) => {
-    await base44.entities.JournalEntry.delete(id);
-    setEntries(e => e.filter(x => x.id !== id));
+  const handleDelete = (id) => {
+    const updated = entries.filter(x => x.id !== id);
+    setEntries(updated);
+    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
     if (selectedEntry?.id === id) setSelectedEntry(null);
   };
 
