@@ -1,47 +1,40 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-const ADMIN_PASSCODE = 'unfiltr1122';
+const ADMIN_DISPLAY_NAME = 'Javier 1122';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const body = await req.json().catch(() => ({}));
 
-    // Check admin access via passcode first (doesn't require auth)
+    // Auth: verify the caller is the admin by display name
     let isAdmin = false;
-
-    if (body.passcode && body.passcode.toLowerCase() === ADMIN_PASSCODE.toLowerCase()) {
-      isAdmin = true;
-    }
-
-    // If no passcode, try auth-based check
-    if (!isAdmin) {
-      try {
-        const user = await base44.auth.me();
-        if (user) {
-          const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-          const profile = profiles?.[0];
-          if (profile?.display_name === 'Javier 1122') {
-            isAdmin = true;
-          }
+    try {
+      const user = await base44.auth.me();
+      if (user) {
+        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
+        const profile = profiles?.[0];
+        if (profile?.display_name === ADMIN_DISPLAY_NAME) {
+          isAdmin = true;
         }
-      } catch (e) {
-        // Auth not available — that's fine if passcode wasn't provided either
       }
+    } catch (e) {
+      // Auth not available
     }
 
     if (!isAdmin) {
-      return Response.json({ error: 'Forbidden', needsPasscode: true }, { status: 403 });
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Use service role to access User entity (requires admin privileges)
-    const [users, allProfiles, recentMessages] = await Promise.all([
+    // Fetch all data in parallel
+    const [users, allProfiles, recentMessages, journalEntries, errorLogs] = await Promise.all([
       base44.asServiceRole.entities.User.list(),
       base44.asServiceRole.entities.UserProfile.list(),
       base44.asServiceRole.entities.Message.list('-created_date', 50),
+      base44.asServiceRole.entities.JournalEntry.list('-created_date', 50),
+      base44.asServiceRole.entities.ErrorLog.list('-created_date', 20),
     ]);
 
-    // Count unique premium users (by created_by email, not duplicate profiles)
+    // Deduplicate profiles by email
     const seenEmails = new Set();
     const uniqueProfiles = [];
     for (const p of allProfiles) {
@@ -50,6 +43,7 @@ Deno.serve(async (req) => {
         uniqueProfiles.push(p);
       }
     }
+
     const premiumCount = uniqueProfiles.filter(p => p.premium || p.is_premium).length;
     const today = new Date().toISOString().split('T')[0];
     const todayMessages = recentMessages.filter(m => m.created_date?.startsWith(today));
@@ -59,12 +53,24 @@ Deno.serve(async (req) => {
       .slice(0, 8)
       .map(u => ({ id: u.id, full_name: u.full_name, email: u.email, created_date: u.created_date }));
 
+    // Format error logs for display
+    const recentErrors = errorLogs.map(e => ({
+      id: e.id,
+      type: e.error_type,
+      severity: e.severity,
+      source: e.function_name,
+      message: e.error_message?.slice(0, 200),
+      date: e.created_date,
+    }));
+
     return Response.json({
       totalUsers: users.length,
       totalProfiles: uniqueProfiles.length,
       premiumUsers: premiumCount,
       todayMessages: todayMessages.length,
+      totalJournalEntries: journalEntries.length,
       recentUsers,
+      recentErrors,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
