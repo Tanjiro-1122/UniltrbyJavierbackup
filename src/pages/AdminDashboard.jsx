@@ -1,123 +1,97 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Users, MessageSquare, Crown, ShieldAlert, Phone, Heart, ArrowLeft, RefreshCw } from "lucide-react";
+import { Users, MessageSquare, Crown, ShieldAlert, Phone, Heart, ArrowLeft, RefreshCw, BookOpen, AlertTriangle, MessageSquareMore } from "lucide-react";
+
+const ADMIN_DISPLAY_NAME = "Javier 1122";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
-  const [passcode, setPasscode] = useState("");
-  const [passcodeError, setPasscodeError] = useState(false);
   const [errorDetail, setErrorDetail] = useState("");
 
   useEffect(() => {
-    const savedCode = localStorage.getItem("unfiltr_admin_code");
-    if (savedCode) {
-      loadData(savedCode);
-    } else {
-      setUnauthorized(true);
-    }
+    checkAccessAndLoad();
   }, []);
 
-  const loadData = async (code) => {
-    if (!code) {
-      setUnauthorized(true);
-      return;
-    }
+  const checkAccessAndLoad = async () => {
     setLoading(true);
     setUnauthorized(false);
-    setPasscodeError(false);
     setErrorDetail("");
 
-    try {
-      const response = await base44.functions.invoke('adminStats', { passcode: code });
-      const data = response?.data;
+    // Check display name from localStorage profile
+    const profileId = localStorage.getItem("userProfileId");
+    if (!profileId) {
+      setUnauthorized(true);
+      setLoading(false);
+      return;
+    }
 
+    try {
+      const profile = await base44.entities.UserProfile.get(profileId);
+      if (profile?.display_name !== ADMIN_DISPLAY_NAME) {
+        setUnauthorized(true);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      setUnauthorized(true);
+      setLoading(false);
+      return;
+    }
+
+    // Display name matches — load admin stats
+    loadData();
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    setErrorDetail("");
+    try {
+      const response = await base44.functions.invoke('adminStats', {});
+      const data = response?.data;
       if (data && data.totalUsers !== undefined) {
         setStats(data);
-        localStorage.setItem("unfiltr_admin_code", code);
-        setLoading(false);
-        return;
-      }
-
-      // Check if data came back in an unexpected shape but is still valid
-      if (data && typeof data === 'object') {
-        setUnauthorized(true);
-        setPasscodeError(true);
-        setErrorDetail("Unexpected response: " + JSON.stringify(data).slice(0, 100));
       } else {
-        setUnauthorized(true);
-        setPasscodeError(true);
-        setErrorDetail("Empty response from server");
+        setErrorDetail("Unexpected response format");
       }
     } catch (err) {
-      // Axios errors put the response in err.response
-      const responseData = err?.response?.data;
-      const status = err?.response?.status;
-      
-      // Sometimes the data comes back inside the error response
-      if (responseData && responseData.totalUsers !== undefined) {
-        setStats(responseData);
-        localStorage.setItem("unfiltr_admin_code", code);
-        setLoading(false);
-        return;
-      }
-      
-      setUnauthorized(true);
-      setPasscodeError(true);
-      localStorage.removeItem("unfiltr_admin_code");
-      const msg = responseData?.error || err?.message || "Unknown error";
-      setErrorDetail(`[${status || 'no-status'}] ${msg}`);
+      const msg = err?.response?.data?.error || err?.message || "Unknown error";
+      setErrorDetail(msg);
     }
     setLoading(false);
   };
 
-  const handlePasscodeSubmit = () => {
-    if (!passcode.trim()) return;
-    setPasscodeError(false);
-    localStorage.removeItem("unfiltr_admin_code");
-    loadData(passcode.trim());
-  };
-
   if (loading) {
     return (
-      <div className="screen no-tabs" style={{ maxWidth: "100%", left: 0, transform: "none", alignItems: "center", justifyContent: "center" }}>
+      <div className="screen no-tabs" style={{ alignItems: "center", justifyContent: "center" }}>
         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (unauthorized || (!stats && !loading)) {
+  if (unauthorized) {
     return (
       <div className="text-white" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
-        <div className="text-center" style={{ padding: "0 32px", width: "100%", maxWidth: 360 }}>
+        <div className="text-center" style={{ padding: "0 32px" }}>
           <ShieldAlert className="w-14 h-14 text-purple-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold mb-2">Admin Access</h1>
-          <p className="text-gray-400 mb-6 text-sm">Enter your admin passcode to continue</p>
-          <input
-            type="password"
-            value={passcode}
-            onChange={(e) => { setPasscode(e.target.value); setPasscodeError(false); }}
-            onKeyDown={(e) => e.key === "Enter" && handlePasscodeSubmit()}
-            placeholder="Enter passcode"
-            className="w-full px-4 py-3 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none mb-3"
-            style={{ background: "rgba(139,92,246,0.1)", border: passcodeError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(139,92,246,0.3)" }}
-            autoFocus
-          />
-          {passcodeError && <p className="text-red-400 text-xs mb-3">Access denied. Check passcode.</p>}
-          {errorDetail && <p className="text-yellow-400 text-xs mb-3 break-all">{errorDetail}</p>}
-          <p className="text-gray-700 text-[9px] mb-1">v3</p>
-          <button
-            onClick={handlePasscodeSubmit}
-            disabled={!passcode.trim()}
-            className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-30"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", cursor: "pointer" }}
-          >
-            Unlock
-          </button>
-          <Link to="/" className="text-purple-400 hover:text-purple-300 text-sm block mt-4">← Go Home</Link>
+          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
+          <p className="text-gray-400 mb-6 text-sm">You don't have admin access.</p>
+          <Link to="/chat" className="text-purple-400 hover:text-purple-300 text-sm">← Go Back</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-white" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
+        <div className="text-center" style={{ padding: "0 32px" }}>
+          <ShieldAlert className="w-14 h-14 text-red-400 mx-auto mb-4" />
+          <h1 className="text-xl font-bold mb-2">Error</h1>
+          <p className="text-gray-400 mb-4 text-sm">{errorDetail || "Failed to load stats"}</p>
+          <button onClick={loadData} className="text-purple-400 hover:text-purple-300 text-sm">Retry</button>
         </div>
       </div>
     );
@@ -127,10 +101,11 @@ export default function AdminDashboard() {
     <div className="screen no-tabs text-white" style={{ maxWidth: "100%", left: 0, transform: "none", overflow: "auto" }}>
       <div className="scroll-area p-4 pb-10" style={{ overflow: "auto" }}>
         <div className="max-w-2xl mx-auto">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6 pt-4">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-gray-400 hover:text-white">
+            <Link to="/settings" className="text-gray-400 hover:text-white">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
@@ -138,7 +113,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500">Unfiltr App</p>
             </div>
           </div>
-          <button onClick={() => loadData(localStorage.getItem("unfiltr_admin_code") || undefined)} className="text-gray-400 hover:text-white p-2">
+          <button onClick={loadData} className="text-gray-400 hover:text-white p-2">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
@@ -147,8 +122,20 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <StatCard icon={<Users className="w-5 h-5 text-purple-400" />} label="Total Users" value={stats.totalUsers} />
           <StatCard icon={<Crown className="w-5 h-5 text-yellow-400" />} label="Premium Users" value={stats.premiumUsers} sub={`${stats.totalUsers > 0 ? Math.round((stats.premiumUsers / stats.totalUsers) * 100) : 0}% of users`} />
-          <StatCard icon={<MessageSquare className="w-5 h-5 text-blue-400" />} label="Profiles" value={stats.totalProfiles} />
           <StatCard icon={<MessageSquare className="w-5 h-5 text-green-400" />} label="Today's Messages" value={stats.todayMessages} />
+          <StatCard icon={<BookOpen className="w-5 h-5 text-blue-400" />} label="Journal Entries" value={stats.totalJournalEntries} />
+        </div>
+
+        {/* Quick Links */}
+        <div className="bg-gray-900 rounded-2xl p-4 mb-6 border border-gray-800">
+          <h2 className="text-sm font-semibold text-gray-300 mb-3">Quick Links</h2>
+          <Link to="/admin/feedback" className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors">
+            <span className="flex items-center gap-2 text-sm">
+              <MessageSquareMore className="w-4 h-4 text-purple-400" />
+              Feedback Manager
+            </span>
+            <span className="text-xs text-gray-500">→</span>
+          </Link>
         </div>
 
         {/* Recent Users */}
@@ -165,6 +152,37 @@ export default function AdminDashboard() {
                     <p className="text-xs text-gray-500">{u.email}</p>
                   </div>
                   <span className="text-xs text-gray-600">{u.created_date ? new Date(u.created_date).toLocaleDateString() : ""}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Error Logs */}
+        <div className="bg-gray-900 rounded-2xl p-4 mb-6 border border-gray-800">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <h2 className="text-sm font-semibold text-gray-300">Recent Errors</h2>
+          </div>
+          {(!stats.recentErrors || stats.recentErrors.length === 0) ? (
+            <p className="text-gray-500 text-sm">No errors logged yet. 🎉</p>
+          ) : (
+            <div className="space-y-2">
+              {stats.recentErrors.map(e => (
+                <div key={e.id} className="p-3 rounded-xl border border-gray-800" style={{ background: "rgba(239,68,68,0.05)" }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{
+                      background: e.severity === "error" ? "rgba(239,68,68,0.2)" : "rgba(234,179,8,0.2)",
+                      color: e.severity === "error" ? "#f87171" : "#facc15"
+                    }}>
+                      {e.severity?.toUpperCase()}
+                    </span>
+                    <span className="text-[10px] text-gray-500">{e.source}</span>
+                    <span className="text-[10px] text-gray-600 ml-auto">
+                      {e.date ? new Date(e.date).toLocaleString() : ""}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 break-all">{e.message}</p>
                 </div>
               ))}
             </div>
@@ -195,7 +213,7 @@ export default function AdminDashboard() {
             <h2 className="text-sm font-semibold text-orange-300">Emergency Contact</h2>
           </div>
           <p className="text-xs text-gray-400 mb-3">
-            In cases of immediate danger, users can contact emergency services directly. This is legal and encouraged in all countries.
+            In cases of immediate danger, users can contact emergency services directly.
           </p>
           <div className="space-y-2">
             <HelpLine label="🇺🇸 US — Police / Fire / Medical" number="911" desc="Immediate life-threatening emergencies" color="text-orange-300" />
@@ -207,7 +225,6 @@ export default function AdminDashboard() {
             ⚠️ Contacting emergency services is always legal and appropriate when someone's life is at risk. Never hesitate to call.
           </div>
         </div>
-
 
         </div>
       </div>
