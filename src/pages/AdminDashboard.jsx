@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const [unauthorized, setUnauthorized] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState("");
 
   useEffect(() => {
     const savedCode = localStorage.getItem("unfiltr_admin_code");
@@ -20,46 +21,53 @@ export default function AdminDashboard() {
     setLoading(true);
     setUnauthorized(false);
     setPasscodeError(false);
-    try {
-      const me = await base44.auth.me();
-      setUser(me);
+    setErrorDetail("");
 
-      const payload = code ? { passcode: code } : {};
+    let me = null;
+    try {
+      me = await base44.auth.me();
+      setUser(me);
+    } catch (authErr) {
+      setErrorDetail("Auth failed: " + (authErr?.message || "unknown"));
+      setUnauthorized(true);
+      setLoading(false);
+      return;
+    }
+
+    const payload = code ? { passcode: code } : {};
+    
+    try {
       const response = await base44.functions.invoke('adminStats', payload);
       const data = response.data;
 
-      if (data?.error || data?.needsPasscode) {
-        setUnauthorized(true);
-        if (code) setPasscodeError(true);
+      if (data?.totalUsers !== undefined) {
+        setStats(data);
+        if (code) localStorage.setItem("unfiltr_admin_code", code);
         setLoading(false);
         return;
       }
 
-      setStats(data);
-      if (code) localStorage.setItem("unfiltr_admin_code", code);
+      // Got a response but it's an error shape
+      setUnauthorized(true);
+      if (code) setPasscodeError(true);
     } catch (err) {
-      console.error("Admin load error:", err?.response?.status, err?.response?.data, err?.message);
-      const status = err?.response?.status || err?.status;
+      const status = err?.response?.status;
       const responseData = err?.response?.data;
       
-      // Check if the response actually contains valid stats (200-level data in error wrapper)
+      // Sometimes valid data comes back wrapped in an error
       if (responseData?.totalUsers !== undefined) {
         setStats(responseData);
         if (code) localStorage.setItem("unfiltr_admin_code", code);
-        setUnauthorized(false);
         setLoading(false);
         return;
       }
       
-      if (status === 403 || status === 401) {
-        setUnauthorized(true);
-        if (code) {
-          setPasscodeError(true);
-          localStorage.removeItem("unfiltr_admin_code");
-        }
-      } else {
-        setUnauthorized(true);
+      setUnauthorized(true);
+      if (code) {
+        setPasscodeError(true);
+        localStorage.removeItem("unfiltr_admin_code");
       }
+      setErrorDetail("Status " + (status || "?") + ": " + (responseData?.error || err?.message || "unknown"));
     }
     setLoading(false);
   };
@@ -97,6 +105,7 @@ export default function AdminDashboard() {
             autoFocus
           />
           {passcodeError && <p className="text-red-400 text-xs mb-3">Wrong passcode. Try again.</p>}
+          {errorDetail && <p className="text-yellow-400 text-xs mb-3 break-all">{errorDetail}</p>}
           <button
             onClick={handlePasscodeSubmit}
             disabled={!passcode.trim()}
