@@ -42,12 +42,22 @@ export default function AdminDashboard() {
         return;
       }
 
-      setUnauthorized(true);
-      setPasscodeError(true);
-      setErrorDetail("Unexpected response format");
+      // Check if data came back in an unexpected shape but is still valid
+      if (data && typeof data === 'object') {
+        setUnauthorized(true);
+        setPasscodeError(true);
+        setErrorDetail("Unexpected response: " + JSON.stringify(data).slice(0, 100));
+      } else {
+        setUnauthorized(true);
+        setPasscodeError(true);
+        setErrorDetail("Empty response from server");
+      }
     } catch (err) {
+      // Axios errors put the response in err.response
       const responseData = err?.response?.data;
+      const status = err?.response?.status;
       
+      // Sometimes the data comes back inside the error response
       if (responseData && responseData.totalUsers !== undefined) {
         setStats(responseData);
         localStorage.setItem("unfiltr_admin_code", code);
@@ -59,7 +69,7 @@ export default function AdminDashboard() {
       setPasscodeError(true);
       localStorage.removeItem("unfiltr_admin_code");
       const msg = responseData?.error || err?.message || "Unknown error";
-      setErrorDetail(msg);
+      setErrorDetail(`[${status || 'no-status'}] ${msg}`);
     }
     setLoading(false);
   };
