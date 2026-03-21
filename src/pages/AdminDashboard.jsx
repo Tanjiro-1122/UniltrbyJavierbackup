@@ -208,14 +208,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Admin Tools */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <h2 className="text-sm font-semibold text-gray-300 mb-3">Admin Tools</h2>
-          <Link to="/admin/avatar-processor" className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors">
-            <span className="text-sm">🖼️ Avatar Processor</span>
-            <span className="text-xs text-gray-500">→</span>
-          </Link>
-        </div>
+
         </div>
       </div>
     </div>
