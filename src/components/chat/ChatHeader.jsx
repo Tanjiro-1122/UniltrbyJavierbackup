@@ -36,6 +36,7 @@ export default function ChatHeader({
       companion_name: companion.displayName || companion.name,
     });
     setSaving(false);
+    toast.success("Journal entry saved ✨");
     navigate("/journal");
   };
   const handleNewChat = async () => {
