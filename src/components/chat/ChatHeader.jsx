@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
