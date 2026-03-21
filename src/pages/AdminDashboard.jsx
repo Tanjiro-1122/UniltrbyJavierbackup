@@ -5,7 +5,7 @@ import { Users, MessageSquare, Crown, ShieldAlert, Phone, Heart, ArrowLeft, Refr
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [unauthorized, setUnauthorized] = useState(false);
   const [passcode, setPasscode] = useState("");
@@ -14,7 +14,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const savedCode = localStorage.getItem("unfiltr_admin_code");
-    loadData(savedCode || undefined);
+    if (savedCode) {
+      loadData(savedCode);
+    } else {
+      setUnauthorized(true);
+    }
   }, []);
 
   const loadData = async (code) => {
