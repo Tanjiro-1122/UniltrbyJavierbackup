@@ -106,8 +106,9 @@ export default function AdminDashboard() {
             style={{ background: "rgba(139,92,246,0.1)", border: passcodeError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(139,92,246,0.3)" }}
             autoFocus
           />
-          {passcodeError && <p className="text-red-400 text-xs mb-3">Wrong passcode. Try again.</p>}
+          {passcodeError && <p className="text-red-400 text-xs mb-3">Access denied. Check passcode.</p>}
           {errorDetail && <p className="text-yellow-400 text-xs mb-3 break-all">{errorDetail}</p>}
+          <p className="text-gray-700 text-[9px] mb-1">v3</p>
           <button
             onClick={handlePasscodeSubmit}
             disabled={!passcode.trim()}
