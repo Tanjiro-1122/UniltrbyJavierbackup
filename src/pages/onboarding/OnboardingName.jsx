@@ -23,8 +23,9 @@ export default function OnboardingName() {
   const handleNext = async () => {
     if (!displayName.trim()) return;
 
-    // "demo" name = Apple/Google review tester account (gets premium)
-    const isTester = displayName.trim().toLowerCase() === "demo";
+    // Tester accounts — Apple/Google review + admin
+    const trimmedLower = displayName.trim().toLowerCase();
+    const isTester = trimmedLower === "demo" || trimmedLower === "javier 1122";
     updateOnboardingStore({ displayName, isTesterAccount: isTester });
 
     try {
