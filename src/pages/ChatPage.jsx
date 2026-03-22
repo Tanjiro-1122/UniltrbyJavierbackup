@@ -706,7 +706,7 @@ export default function ChatPage() {
             )}
 
             {/* Streak banner */}
-            {showStreakBanner && (
+            {showStreakBanner && !showStreakReward && (
               <div style={{
                 position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
                 background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
@@ -718,6 +718,8 @@ export default function ChatPage() {
                 <span style={{ color: "white", fontWeight: 700, fontSize: 11 }}>🔥 {streak} day streak!</span>
               </div>
             )}
+            {/* Streak reward milestone */}
+            <StreakRewardBanner streak={streak} visible={showStreakReward} />
             {showAnniversary && anniversary && (
               <div style={{
                 position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
@@ -751,6 +753,9 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* Crisis resources banner */}
+          <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
+
           {/* ▓▓ 3. CHAT MESSAGES — scrollable middle section ▓▓ */}
           <div style={{
             flex: 1, minHeight: 0,
@@ -768,6 +773,7 @@ export default function ChatPage() {
               onSwipeReply={(text) => setQuoteReply(text)}
               onRetry={handleRetry}
               companionName={companionDisplayName}
+              onBookmark={(content) => { addBookmark(content, companionDisplayName); }}
             />
           </div>
 
@@ -866,6 +872,9 @@ export default function ChatPage() {
 
       {/* Conversation Topics */}
       <ConversationTopics visible={showTopics} onClose={() => setShowTopics(false)} onSelect={(text) => handleSend(text)} />
+
+      {/* Bookmarks */}
+      <BookmarksModal visible={showBookmarks} onClose={() => setShowBookmarks(false)} />
 
       {/* Companion Share Card */}
       <CompanionShareCard
