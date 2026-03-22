@@ -94,12 +94,8 @@ export default function ChatPage() {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data.action === 'purchase_success' || data.action === 'restore_success') {
           const { platform, receiptData, productId, purchaseToken } = data;
-          const res = await fetch('/functions/verifyPurchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ platform, receiptData, productId, purchaseToken })
-          });
-          const result = await res.json();
+          const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
+          const result = res.data;
           if (result.valid && profileId) {
             await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: result.plan === 'annual' });
             setIsPremium(true);

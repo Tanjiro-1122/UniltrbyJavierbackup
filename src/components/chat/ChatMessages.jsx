@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Share2 } from "lucide-react";
 import { hapticLight } from "@/components/utils/haptics";
 import { soundReceive } from "@/components/utils/sounds";
@@ -103,7 +104,21 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
                     </p>
                   </div>
                 )}
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <span style={{ display: "inline" }}>{children}</span>,
+                      strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+                      em: ({ children }) => <em>{children}</em>,
+                      ul: ({ children }) => <ul style={{ margin: "4px 0", paddingLeft: 16 }}>{children}</ul>,
+                      ol: ({ children }) => <ol style={{ margin: "4px 0", paddingLeft: 16 }}>{children}</ol>,
+                      li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+                      a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "#c4b5fd", textDecoration: "underline" }}>{children}</a>,
+                    }}
+                  >{msg.content}</ReactMarkdown>
+                ) : (
+                  msg.content
+                )}
               </div>
 
               {/* Reactions display */}
