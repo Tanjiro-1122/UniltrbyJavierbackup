@@ -122,6 +122,42 @@ const TUTORIAL_SLIDES = [
       </div>
     ),
   },
+  {
+    title: "Your Privacy Matters",
+    description: "Everything you share stays private. Your conversations are yours — we never sell your data.",
+    color: "#22c55e",
+    screen: (
+      <div style={{
+        background: "linear-gradient(180deg, #06020f 0%, #0a2010 100%)",
+        borderRadius: 16, padding: "20px 16px", border: "1px solid rgba(34,197,94,0.3)",
+        display: "flex", flexDirection: "column", gap: 10,
+      }}>
+        <div style={{ textAlign: "center", marginBottom: 4 }}>
+          <span style={{ fontSize: 36 }}>🔒</span>
+        </div>
+        {[
+          { icon: "✅", label: "End-to-end encrypted chats" },
+          { icon: "✅", label: "No data sold to third parties" },
+          { icon: "✅", label: "AI responses via OpenAI API only" },
+          { icon: "✅", label: "Delete your data anytime in Settings" },
+          { icon: "✅", label: "You own your journal entries" },
+        ].map((item, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 12px", borderRadius: 12,
+            background: "rgba(34,197,94,0.07)",
+            border: "1px solid rgba(34,197,94,0.15)",
+          }}>
+            <span style={{ fontSize: 15 }}>{item.icon}</span>
+            <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 500 }}>{item.label}</span>
+          </div>
+        ))}
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textAlign: "center", margin: "4px 0 0" }}>
+          Full policy at unfiltrbyjavier2.vercel.app/PrivacyPolicy
+        </p>
+      </div>
+    ),
+  },
 ];
 
 function TutorialModal({ onClose }) {
