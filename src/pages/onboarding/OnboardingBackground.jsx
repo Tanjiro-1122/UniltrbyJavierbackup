@@ -66,8 +66,13 @@ export default function OnboardingBackground() {
         id: bg.id, label: bg.label, bg: bg.url,
       }));
 
+      // Store the vibe if it was set
+      if (store.selectedVibe) {
+        localStorage.setItem("unfiltr_vibe", store.selectedVibe);
+      }
+
       resetOnboardingStore();
-      navigate("/vibe");
+      navigate("/chat");
     } finally {
       setLoading(false);
     }
@@ -75,18 +80,19 @@ export default function OnboardingBackground() {
 
   return (
     <OnboardingLayout
-      step={5}
-      onBack={() => navigate("/onboarding/nickname")}
+      step={6}
+      totalSteps={6}
+      onBack={() => navigate("/onboarding/vibe")}
       onNext={handleFinish}
       canAdvance={!!selected}
       loading={loading}
       nextLabel={loading ? "Setting up…" : "Enter this world →"}
     >
       <div style={{ padding: "0 20px 20px", width: "100%", maxWidth: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", flex: 1 }}>
-        <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)", flexShrink: 0 }}>
+        <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
           Pick your space
         </h2>
-        <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 16px", flexShrink: 0 }}>
+        <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 13, margin: "0 0 16px" }}>
           Where do you want to hang out?
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, paddingBottom: 16 }}>
