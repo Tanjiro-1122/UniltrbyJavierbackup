@@ -241,10 +241,24 @@ export const BACKGROUNDS = [
     style: "anime",
   },
   {
-    id: "space",
-    label: "Outer Space",
-    emoji: "🚀",
-    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/ba89824d4_generated_image.png",
+    id: "underwater",
+    label: "Underwater World",
+    emoji: "🌊",
+    url: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/4ce6f31bd_generated_image.png",
+    style: "anime",
+  },
+  {
+    id: "blossom",
+    label: "Cherry Blossom",
+    emoji: "🌸",
+    url: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/1eeb22f0d_generated_image.png",
+    style: "anime",
+  },
+  {
+    id: "skyislands",
+    label: "Sky Islands",
+    emoji: "☁️",
+    url: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/674e0af13_generated_image.png",
     style: "anime",
   },
   {
@@ -268,13 +282,7 @@ export const BACKGROUNDS = [
     url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/0bc454f5e_generated_image.png",
     style: "anime",
   },
-  {
-    id: "ocean",
-    label: "Deep Ocean",
-    emoji: "🐠",
-    url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/03957184c_generated_image.png",
-    style: "anime",
-  },
+
   {
     id: "cabin",
     label: "Winter Cabin",
