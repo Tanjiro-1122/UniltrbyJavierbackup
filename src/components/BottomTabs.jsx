@@ -1,10 +1,11 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Settings, Star } from "lucide-react";
+import { Home, MessageSquare, Settings, Star, BookOpen } from "lucide-react";
 
 const TABS = [
-  { path: "/",        label: "Home",    icon: Home },
+  { path: "/",         label: "Home",    icon: Home },
   { path: "/chat",     label: "Chat",    icon: MessageSquare },
+  { path: "/journal",  label: "Journal", icon: BookOpen },
   { path: "/Pricing",  label: "Premium", icon: Star },
   { path: "/settings", label: "Settings",icon: Settings },
 ];
