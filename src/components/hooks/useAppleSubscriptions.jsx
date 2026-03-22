@@ -56,9 +56,11 @@ export function useAppleSubscriptions() {
       }
 
       setStatusMessage('Verifying purchase...');
+      const profileId = localStorage.getItem("userProfileId");
       const response = await base44.functions.invoke('handleAppleIAP', {
         receipt: result.receiptData,
         productId,
+        profileId,
       });
 
       if (response?.data?.success) {

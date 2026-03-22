@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       const isAnnual = productId?.includes("annual") || productId?.includes("yearly");
       await supabase
         .from("user_profile")
-        .update({ is_premium: true, annual_plan: isAnnual, updated_at: new Date().toISOString() })
+        .update({ is_premium: true, annual_plan: isAnnual, updated_date: new Date().toISOString() })
         .eq("id", profileId);
     }
 
