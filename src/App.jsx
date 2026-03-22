@@ -25,6 +25,7 @@ import TermsOfUse from './pages/TermsOfUse';
 import FeedbackPage from './pages/FeedbackPage';
 import FeedbackAdmin from './pages/admin/FeedbackAdmin';
 import Pricing from './pages/Pricing';
+import BackgroundSelect from './pages/BackgroundSelect';
 import FeedbackButton from './components/FeedbackButton';
 import Journal from './pages/Journal';
 import ChatHistory from './pages/ChatHistory';
@@ -39,6 +40,7 @@ const HIDE_TABS_ON = [
   "/Pricing",
   "/chat",
   "/vibe",
+  "/background",
   "/journal",
   "/ChatHistory",
   "/PersonalityQuiz"
@@ -97,6 +99,7 @@ const AuthenticatedApp = () => {
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
         <Route path="/onboarding/consent" element={<OnboardingConsent />} />
         <Route path="/vibe" element={<VibePage />} />
+        <Route path="/background" element={<BackgroundSelect />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/AdminAvatarProcessor" element={<AdminAvatarProcessor />} />

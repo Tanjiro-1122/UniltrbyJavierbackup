@@ -53,7 +53,7 @@ export default function VibePage() {
       return;
     }
     localStorage.setItem("unfiltr_vibe", selected);
-    navigate("/chat");
+    navigate("/background");
   };
 
   return (
