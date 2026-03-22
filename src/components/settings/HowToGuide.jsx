@@ -79,7 +79,7 @@ const GUIDES = [
     title: "Mood Check-Ins & Insights",
     steps: [
       "When your companion asks how you're feeling, tap a mood emoji to log it.",
-      "Your mood history shows up as the "Mood This Week" bar in Settings.",
+      'Your mood history shows up as the "Mood This Week" bar in Settings.',
       "Tap the 📈 trend icon in the chat toolbar to view Mood Insights over time.",
     ],
   },
@@ -88,7 +88,7 @@ const GUIDES = [
     emoji: "🐾",
     title: "Changing Your Companion",
     steps: [
-      "Go to Settings and scroll to "Your Companion."",
+      'Go to Settings and scroll to "Your Companion."',
       "Tap any character to switch — your chat personality will update.",
       'Give them a custom nickname in the "Companion Nickname" field above.',
       "Choose their voice (Male, Female, Neutral) and personality (Cheerful, Calm, etc.).",
@@ -99,7 +99,7 @@ const GUIDES = [
     emoji: "🎨",
     title: "Changing Your Background",
     steps: [
-      "In Settings, scroll down to "Background."",
+      'In Settings, scroll down to "Background."',
       "Tap any scene to switch your chat environment instantly.",
       "There are anime-style and realistic backgrounds to choose from.",
     ],
