@@ -6,12 +6,15 @@ const RECAP_KEY = "unfiltr_weekly_recap_shown";
 
 export function shouldShowWeeklyRecap() {
   const last = localStorage.getItem(RECAP_KEY);
-  if (!last) return false;
   const now = new Date();
   const day = now.getDay();
   // Show on Sunday
   if (day !== 0) return false;
   const today = now.toDateString();
+  if (!last) {
+    // First time — mark and show
+    return true;
+  }
   return last !== today;
 }
 
