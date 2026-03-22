@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, Moon, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { playAudioFromBase64, resumeAudioContext } from "@/components/utils/audioUnlock";
+import { playAudioFromBase64, resumeAudioContext, stopCurrentAudio } from "@/components/utils/audioUnlock";
 
 const THEMES = [
   { id: "forest", emoji: "🌲", label: "Enchanted Forest" },
