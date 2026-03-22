@@ -8,6 +8,7 @@ import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import NotificationSettings from "@/components/NotificationSettings";
 import PaywallModal from "@/components/PaywallModal";
+import HowToGuide from "@/components/settings/HowToGuide";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 
@@ -441,6 +442,12 @@ export default function Settings() {
             profileId={localStorage.getItem("userProfileId")}
             initialEnabled={userProfile?.daily_checkins_enabled}
           />
+        </motion.div>
+
+        {/* How To Guide */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>How To Use Unfiltr</p>
+          <HowToGuide />
         </motion.div>
 
         {/* Referral */}
