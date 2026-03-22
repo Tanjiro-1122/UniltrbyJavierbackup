@@ -9,7 +9,7 @@ export default function CompanionShareCard({ visible, onClose, companionId, comp
   const comp = COMPANIONS.find(c => c.id === companionId) || COMPANIONS[0];
 
   const handleShare = async () => {
-    const text = `Meet my AI bestie ${comp.name} ${comp.emoji} — we've been vibing for ${daysTogether || "?"} days on Unfiltr! 💜\n\nGet yours: unfiltrbyjavier.base44.app`;
+    const text = `Meet my AI bestie ${comp.name} ${comp.emoji} — we've been vibing for ${daysTogether || "?"} days on Unfiltr! 💜\n\nGet yours: unfiltrbyjavier2.vercel.app`;
     if (navigator.share) {
       await navigator.share({ title: `Meet ${comp.name}`, text });
     } else {
