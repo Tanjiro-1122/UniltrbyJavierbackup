@@ -128,7 +128,7 @@ const GUIDES = [
     emoji: "✨",
     title: "Personality Quiz",
     steps: [
-      "Go to Settings → Fun Stuff → "Which companion are you?"",
+      "Go to Settings → Fun Stuff → Which companion are you?",
       "Answer 5 quick questions and discover your perfect companion match.",
       "Share your result with friends!",
     ],
