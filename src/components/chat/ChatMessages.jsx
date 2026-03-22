@@ -11,6 +11,7 @@ const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry, companionName }) {
   const [reactions, setReactions] = useState({});
   const [pickerIdx, setPickerIdx] = useState(null);
+  const [showTyping, setShowTyping] = useState(false);
 
   const lastMsg = messages[messages.length - 1];
   useEffect(() => {
@@ -19,6 +20,16 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
       hapticLight();
     }
   }, [messages.length]);
+
+  // Delay typing indicator by 500ms to avoid flash on fast responses
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setShowTyping(true), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setShowTyping(false);
+    }
+  }, [loading]);
 
   const handleLongPress = (idx) => {
     hapticLight();
@@ -144,7 +155,7 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
         </SwipeableMessage>
         );
       })}
-      {loading && (
+      {loading && showTyping && (
         <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 8 }}>
           <div style={{
             padding: "10px 16px", borderRadius: "20px 20px 20px 6px",
