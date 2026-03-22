@@ -59,7 +59,8 @@ export class AppleStoreKitService {
   }
 
   static isNative() {
-    return this.getPlatform() !== 'web';
+    const p = this.getPlatform();
+    return p === 'ios' || p === 'android';
   }
 
   // ── Products ────────────────────────────────────────────────────────
