@@ -20,7 +20,7 @@ export default function ReferralSection({ profileId }) {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [profileId]);
 
-  const shareMessage = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\nunfiltrbyjavier.base44.app`;
+  const shareMessage = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\nunfiltrbyjavier2.vercel.app`;
 
   const handleCopy = async () => {
     // Try native share first (mobile), fallback to clipboard
