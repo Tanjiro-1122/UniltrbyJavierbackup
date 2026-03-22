@@ -83,7 +83,7 @@ export function useAppleSubscriptions() {
       const result = await AppleStoreKitService.restorePurchases();
 
       if (result.isSuccess) {
-        // ✅ Update DB so premium is actually unlocked after restore
+        // Update DB so premium is actually unlocked
         const profileId = localStorage.getItem("userProfileId");
         if (profileId) {
           try {
@@ -99,19 +99,18 @@ export function useAppleSubscriptions() {
           }
         }
         setStatusMessage('✅ Purchases restored! Premium unlocked.');
-        setTimeout(() => {
-          setStatusMessage('');
-          // Reload so UI reflects premium status
-          window.location.reload();
-        }, 2000);
+        setTimeout(() => setStatusMessage(''), 3000);
+        return { success: true };
       } else {
-        setStatusMessage('Nothing to restore.');
+        setStatusMessage('No previous purchases found.');
         setTimeout(() => setStatusMessage(''), 4000);
+        return { success: false };
       }
     } catch (e) {
       console.error('[Restore] Error:', e);
       setStatusMessage('Restore failed. Please try again.');
       setTimeout(() => setStatusMessage(''), 4000);
+      return { success: false };
     }
   };
 
