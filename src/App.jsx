@@ -33,6 +33,8 @@ import JournalEntry from './pages/JournalEntry';
 import JournalList from './pages/JournalList';
 import ChatHistory from './pages/ChatHistory';
 import PersonalityQuiz from './pages/PersonalityQuiz';
+import PinSetup from './pages/PinSetup';
+import PinLock from './pages/PinLock';
 
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = [
@@ -50,12 +52,14 @@ const HIDE_TABS_ON = [
   "/journal-entry",
   "/journal-list",
   "/ChatHistory",
-  "/PersonalityQuiz"
+  "/PersonalityQuiz",
+  "/pin-setup",
+  "/pin-lock"
 ];
 
 // Pages where the floating feedback button should NOT appear
 const HIDE_FEEDBACK_BTN_ON = [
-  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/", "/journal-splash", "/journal", "/journal-entry", "/journal-list", "/ChatHistory", "/PersonalityQuiz"
+  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/", "/journal-splash", "/journal", "/journal-entry", "/journal-list", "/ChatHistory", "/PersonalityQuiz", "/pin-setup", "/pin-lock"
 ];
 
 const AuthenticatedApp = () => {
@@ -93,6 +97,33 @@ const AuthenticatedApp = () => {
     if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
+  // ── PIN LOCK CHECK ──
+  const savedPin = localStorage.getItem("unfiltr_pin");
+  const lastActive = localStorage.getItem("unfiltr_last_active");
+  const isPinPage = location.pathname === "/pin-lock" || location.pathname === "/pin-setup";
+  const isLocked = (() => {
+    if (!savedPin || isPinPage) return false;
+    if (!lastActive) return true;
+    const minutesInactive = (Date.now() - parseInt(lastActive)) / 1000 / 60;
+    return minutesInactive > 5;
+  })();
+
+  React.useEffect(() => {
+    if (!savedPin) return;
+    const interval = setInterval(() => {
+      localStorage.setItem("unfiltr_last_active", Date.now().toString());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [savedPin]);
+
+  if (isLocked) {
+    return (
+      <Routes>
+        <Route path="*" element={<PinLock />} />
+      </Routes>
+    );
+  }
+
   return (
     <>
       <Routes>
@@ -121,6 +152,8 @@ const AuthenticatedApp = () => {
         <Route path="/journal-list" element={<JournalList />} />
         <Route path="/ChatHistory" element={<ChatHistory />} />
         <Route path="/PersonalityQuiz" element={<PersonalityQuiz />} />
+        <Route path="/pin-setup" element={<PinSetup />} />
+        <Route path="/pin-lock" element={<PinLock />} />
         <Route path="/admin/feedback" element={<FeedbackAdmin />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>

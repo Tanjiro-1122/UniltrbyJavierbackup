@@ -536,6 +536,17 @@ export default function Settings() {
           style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>Account Management</p>
         <button
+          onClick={() => {
+            localStorage.removeItem("unfiltr_pin");
+            localStorage.removeItem("unfiltr_last_active");
+            navigate("/pin-setup");
+          }}
+          style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
+        >
+          <span style={{ fontSize: 20 }}>🔐</span>
+          <span>Change PIN</span>
+        </button>
+        <button
           onClick={handleSignOut}
           style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, color: "rgba(255,255,255,0.55)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
