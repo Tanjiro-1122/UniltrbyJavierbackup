@@ -34,6 +34,7 @@ import PersonalityQuiz from './pages/PersonalityQuiz';
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = [
   "/onboarding",
+  "/background",
   "/HomePage", "/",
   "/AdminAvatarProcessor", "/AdminDashboard",
   "/PrivacyPolicy", "/TermsOfUse", "/admin/feedback", "/feedback",
