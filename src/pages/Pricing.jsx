@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
 import { base44 } from '@/api/base44Client';
 import { Check, X, RotateCcw, Sparkles, MessageCircle, Mic, Zap, Loader2, ChevronLeft, Lock, BookOpen, Brain, Heart, Volume2, History } from 'lucide-react';
@@ -46,7 +46,24 @@ export default function Pricing() {
   const selectedProduct = selectedPlan === 'annual' ? annualProduct : monthlyProduct;
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [upgraded, setUpgraded] = useState(false);
+  const [restoreSuccess, setRestoreSuccess] = useState(false);
+
+  // Auto-trigger restore if coming from Support page
+  React.useEffect(() => {
+    if (searchParams.get('restore') === 'true') {
+      setTimeout(() => handleRestore(), 500);
+    }
+  }, []);
+
+  const handleRestore = async () => {
+    const result = await restore();
+    if (result?.success) {
+      setRestoreSuccess(true);
+      setUpgraded(true);
+    }
+  };
 
   const handleSubscribe = async () => {
     if (!selectedProduct) return;
@@ -272,19 +289,32 @@ export default function Pricing() {
             🔒 7-day free trial · Cancel anytime · No commitment
           </p>
 
-          {/* Upgraded success */}
+          {/* Upgraded / Restored success */}
           {upgraded && (
-            <button
-              onClick={() => navigate('/chat')}
-              style={{
-                width: '100%', padding: '14px',
-                background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)',
-                borderRadius: 16, color: 'white', fontWeight: 700, fontSize: 15,
-                cursor: 'pointer', marginBottom: 12,
-              }}
-            >
-              🎉 You're Premium! Start Chatting →
-            </button>
+            <div style={{
+              background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.4)',
+              borderRadius: 18, padding: '20px', marginBottom: 12, textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 36, margin: '0 0 8px' }}>🎉</p>
+              <p style={{ color: 'white', fontWeight: 800, fontSize: 18, margin: '0 0 4px' }}>
+                {restoreSuccess ? 'Purchases Restored!' : "You're Premium!"}
+              </p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, margin: '0 0 16px' }}>
+                {restoreSuccess ? 'Your premium access has been restored and unlocked.' : 'Welcome to Unfiltr Premium 💜'}
+              </p>
+              <button
+                onClick={() => navigate('/chat')}
+                style={{
+                  width: '100%', padding: '14px',
+                  background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+                  border: 'none', borderRadius: 14,
+                  color: 'white', fontWeight: 800, fontSize: 16,
+                  cursor: 'pointer',
+                }}
+              >
+                Start Chatting →
+              </button>
+            </div>
           )}
 
           {/* Feature Comparison Toggle */}
@@ -352,7 +382,7 @@ export default function Pricing() {
 
           {/* Restore purchases */}
           <button
-            onClick={restore}
+            onClick={handleRestore}
             style={{
               width: '100%', padding: '13px',
               background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',
