@@ -65,12 +65,18 @@ export class AppleStoreKitService {
   // ── Products ────────────────────────────────────────────────────────
   static async getProducts() {
     const platform = this.getPlatform();
+    console.log('[IAP] Detected platform:', platform);
 
     if (platform === 'ios') {
       return this._getProductsIOS();
     }
     if (platform === 'android') {
       return this._getProductsAndroid();
+    }
+    // On native device without bridge, still show products (prices) but purchase will inform user
+    if (platform === 'ios_no_bridge' || platform === 'android_no_bridge') {
+      console.warn('[IAP] Native device detected but no billing bridge available. Showing products with default prices.');
+      return MOCK_PRODUCTS;
     }
     console.log('[IAP] Web mode — returning mock products');
     return MOCK_PRODUCTS;
@@ -119,6 +125,7 @@ export class AppleStoreKitService {
   // ── Purchase ────────────────────────────────────────────────────────
   static async purchase(productId) {
     const platform = this.getPlatform();
+    console.log('[IAP] Purchase requested on platform:', platform, 'product:', productId);
 
     if (platform === 'ios') {
       return this._purchaseIOS(productId);
@@ -126,8 +133,16 @@ export class AppleStoreKitService {
     if (platform === 'android') {
       return this._purchaseAndroid(productId);
     }
+    if (platform === 'ios_no_bridge') {
+      console.error('[IAP] iOS device detected but StoreKit bridge not available. The native app wrapper must inject the WTN or webkit.messageHandlers bridge.');
+      return { isSuccess: false, error: 'In-app purchases are not available right now. Please update the app and try again.' };
+    }
+    if (platform === 'android_no_bridge') {
+      console.error('[IAP] Android device detected but billing bridge not available.');
+      return { isSuccess: false, error: 'In-app purchases are not available right now. Please update the app and try again.' };
+    }
 
-    // Web mock
+    // Web mock — only in browser
     console.log('[IAP] Web mode — simulating purchase for:', productId);
     return { isSuccess: true, productId, receiptData: 'MOCK_RECEIPT_DATA', isMock: true };
   }
