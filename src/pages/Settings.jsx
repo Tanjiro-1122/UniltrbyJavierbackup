@@ -439,7 +439,6 @@ export default function Settings() {
               { id: "vent", emoji: "💨", label: "Vent" },
               { id: "hype", emoji: "🔥", label: "Hype" },
               { id: "deep", emoji: "🌙", label: "Deep Talk" },
-              { id: "journal", emoji: "📓", label: "Journal" },
             ].map(v => {
               const currentVibe = localStorage.getItem("unfiltr_vibe") || "chill";
               const isSelected = currentVibe === v.id;
