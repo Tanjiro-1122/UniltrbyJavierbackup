@@ -166,7 +166,10 @@ export default function VibePage() {
           <motion.button
             key={v.id}
             whileTap={{ scale: 0.96 }}
-            onClick={() => setSelected(v.id)}
+            onClick={() => {
+              if (v.id === "journal") { navigate("/journal"); return; }
+              setSelected(v.id);
+            }}
             style={{
               width: "100%", borderRadius: 16, padding: "12px 16px",
               border: `2px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
