@@ -73,6 +73,11 @@ export default function OnboardingBackground() {
 
       resetOnboardingStore();
       navigate("/chat");
+    } catch (err) {
+      console.error("Onboarding DB error (non-blocking):", err);
+      // Still navigate even if DB fails — don't block the user
+      resetOnboardingStore();
+      navigate("/chat");
     } finally {
       setLoading(false);
     }
