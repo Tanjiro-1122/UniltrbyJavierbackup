@@ -53,7 +53,7 @@ export default function PinLock() {
   const handleReset = () => {
     localStorage.removeItem("unfiltr_pin");
     localStorage.removeItem("unfiltr_last_active");
-    navigate("/pin-setup", { replace: true });
+    navigate("/PinSetup", { replace: true });
   };
 
   return (
