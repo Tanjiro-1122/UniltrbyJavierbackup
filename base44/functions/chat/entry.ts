@@ -104,7 +104,12 @@ DO NOT default to neutral. Read the emotional context carefully. This tag MUST b
 
     console.log("[Chat] raw mood tag:", moodMatch?.[1], "→ final:", mood);
 
-    return Response.json({ reply, mood });
+    // Server-side crisis detection — flag if user messages contain distress signals
+    const crisisKeywords = ["kill myself", "want to die", "end my life", "suicide", "suicidal", "self harm", "self-harm", "hurt myself", "no reason to live", "don't want to be alive", "better off dead"];
+    const lastUserMsg = messages.filter(m => m.role === "user").pop();
+    const isCrisis = lastUserMsg && crisisKeywords.some(kw => lastUserMsg.content.toLowerCase().includes(kw));
+
+    return Response.json({ reply, mood, crisis: isCrisis || false });
   } catch (error) {
     console.error('Chat function error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
