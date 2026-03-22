@@ -50,7 +50,7 @@ export default function JournalHome() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          onClick={() => navigate("/journal-entry")}
+          onClick={() => navigate("/journal/entry")}
           whileTap={{ scale: 0.97 }}
           className="w-full rounded-2xl p-5 flex items-center gap-4 text-left transition-all active:scale-95"
           style={{
@@ -75,7 +75,7 @@ export default function JournalHome() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          onClick={() => navigate("/journal-list")}
+          onClick={() => navigate("/journal/list")}
           whileTap={{ scale: 0.97 }}
           className="w-full rounded-2xl p-5 flex items-center gap-4 text-left transition-all active:scale-95"
           style={{
