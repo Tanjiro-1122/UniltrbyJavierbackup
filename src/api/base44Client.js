@@ -1,14 +1,8 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+import { createClient } from "@base44/sdk";
 
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
-
-//Create a client with authentication required
 export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: '',
+  appId: import.meta.env.VITE_BASE44_APP_ID || "69b22f8b58e45d23cafd78d2",
   requiresAuth: false,
-  appBaseUrl
+  appBaseUrl: import.meta.env.VITE_BASE44_APP_BASE_URL || "https://unfiltrbyjavier.base44.app",
+  functionsVersion: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION || "prod",
 });
