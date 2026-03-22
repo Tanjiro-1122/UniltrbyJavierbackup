@@ -278,6 +278,25 @@ export default function ChatPage() {
   /* ─── AUTO-SCROLL ─── */
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  /* ─── AUTO-SAVE chat history on every message update ─── */
+  useEffect(() => {
+    if (messages.length > 1) {
+      const toSave = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
+      localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
+    }
+  }, [messages]);
+
+  /* ─── PRELOAD all mood poses for current companion ─── */
+  useEffect(() => {
+    if (!companion) return;
+    const data = COMPANIONS.find(c => c.id === companion.id);
+    if (!data?.poses) return;
+    Object.values(data.poses).forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
+  }, [companion?.id]);
+
   /* ─── IDLE ANIM ─── */
   useEffect(() => {
     const iv = setInterval(() => {
