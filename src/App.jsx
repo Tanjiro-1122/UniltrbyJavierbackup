@@ -151,17 +151,29 @@ const AuthenticatedApp = () => {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashDone, setSplashDone] = useState(false);
+  const [ageVerified, setAgeVerified] = useState(
+    () => !!localStorage.getItem("unfiltr_age_verified")
+  );
 
   const handleSplashComplete = () => {
     setShowSplash(false);
     setSplashDone(true);
+    // Re-check age verification when splash ends
+    setAgeVerified(!!localStorage.getItem("unfiltr_age_verified"));
   };
 
-  // After splash, check if age verified — if not, redirect to age verification
-  const getInitialRoute = () => {
-    const ageVerified = localStorage.getItem("unfiltr_age_verified");
-    return ageVerified ? null : "/age-verification";
-  };
+  // Listen for age verification being set (from AgeVerification page)
+  useEffect(() => {
+    const onStorage = () => {
+      setAgeVerified(!!localStorage.getItem("unfiltr_age_verified"));
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("unfiltr_age_verified", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("unfiltr_age_verified", onStorage);
+    };
+  }, []);
 
   return (
     <AuthProvider>
@@ -169,7 +181,7 @@ function App() {
         <Router>
           <SafeAreaFix />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-          {splashDone && !localStorage.getItem("unfiltr_age_verified") && (
+          {splashDone && !ageVerified && (
             <Navigate to="/age-verification" replace />
           )}
           <AuthenticatedApp />
