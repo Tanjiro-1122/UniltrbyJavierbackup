@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Trash2, Sparkles, Plus } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 import JournalEntryDetail from "@/components/journal/JournalEntryDetail";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import JournalEmptyState from "@/components/journal/JournalEmptyState";
+import JournalWriter from "@/components/journal/JournalWriter";
 
 export default function Journal() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [writing, setWriting] = useState(false);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
@@ -35,6 +37,21 @@ export default function Journal() {
     grouped[key].entries.push(entry);
   });
   const sortedGroups = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a));
+
+  const handleSaveNewEntry = (entry) => {
+    const updated = [entry, ...entries];
+    setEntries(updated);
+    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
+    setWriting(false);
+  };
+
+  if (writing) {
+    return (
+      <AppShell tabs={false} bg="#06020f">
+        <JournalWriter onSave={handleSaveNewEntry} onBack={() => setWriting(false)} />
+      </AppShell>
+    );
+  }
 
   if (selectedEntry) {
     return (
@@ -62,6 +79,12 @@ export default function Journal() {
               </p>
             )}
           </div>
+          <button onClick={() => setWriting(true)} style={{
+            background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)",
+            borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+          }}>
+            <Plus size={18} color="#c084fc" />
+          </button>
         </div>
 
         {/* Content */}

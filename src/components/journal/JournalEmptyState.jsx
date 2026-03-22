@@ -16,11 +16,10 @@ export default function JournalEmptyState({ onStartJournal }) {
         Your journal is empty
       </h2>
       <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.6, margin: "0 0 6px" }}>
-        Journal entries are created from your chats.
+        Write freely, speak your thoughts, or just reflect.
       </p>
       <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, lineHeight: 1.5, margin: "0 0 28px" }}>
-        Switch to <strong style={{ color: "rgba(168,85,247,0.7)" }}>Journal mode</strong> in Chat, 
-        have a meaningful conversation, then tap <strong style={{ color: "rgba(74,222,128,0.7)" }}>Save Entry</strong>.
+        Your journal is a private space — type or use your voice to capture what's on your mind.
       </p>
       <button
         onClick={onStartJournal}
