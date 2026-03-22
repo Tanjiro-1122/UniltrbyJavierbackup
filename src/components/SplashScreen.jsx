@@ -1,123 +1,138 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useState } from 'react';
 
-export default function SplashScreen() {
-  const particlesRef = useRef(null);
+const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
+
+export default function SplashScreen({ onComplete }) {
+  const [phase, setPhase] = useState('enter'); // enter → hold → pulse → exit
 
   useEffect(() => {
-    const container = particlesRef.current;
-    if (!container) return;
-    for (let i = 0; i < 40; i++) {
-      const p = document.createElement("div");
-      p.style.cssText = `
-        position: absolute;
-        border-radius: 50%;
-        width: ${1 + Math.random() * 3}px;
-        height: ${1 + Math.random() * 3}px;
-        left: ${Math.random() * 100}vw;
-        background: ${Math.random() > 0.5 ? "rgba(168,85,247,0.7)" : "rgba(219,39,119,0.5)"};
-        animation: floatUp ${4 + Math.random() * 8}s linear ${Math.random() * 8}s infinite;
-      `;
-      container.appendChild(p);
-    }
+    // Phase timeline
+    const t1 = setTimeout(() => setPhase('hold'),  600);   // fade in done
+    const t2 = setTimeout(() => setPhase('pulse'), 1400);  // start pulse
+    const t3 = setTimeout(() => setPhase('exit'),  2400);  // start fade out
+    const t4 = setTimeout(() => onComplete?.(),    3000);  // done
+
+    return () => [t1, t2, t3, t4].forEach(clearTimeout);
   }, []);
 
   return (
     <div style={{
-      position: "fixed",
+      position: 'fixed',
       inset: 0,
-      background: "radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 9999,
-      overflow: "hidden",
+      zIndex: 99999,
+      background: '#06020f',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      transition: phase === 'exit' ? 'opacity 0.6s ease-in-out' : 'opacity 0.6s ease-in-out',
+      opacity: phase === 'exit' ? 0 : 1,
     }}>
 
-      <div ref={particlesRef} style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }} />
-
-      <style>{`
-        @keyframes floatUp {
-          0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-          10%  { opacity: 1; }
-          90%  { opacity: 1; }
-          100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-        }
-        @keyframes spin360 {
-          0%   { transform: rotateY(0deg); }
-          100% { transform: rotateY(360deg); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { transform: scale(1); opacity: 0.6; }
-          50%       { transform: scale(1.15); opacity: 1; }
-        }
-        @keyframes shineSwipe {
-          0%   { left: -100%; }
-          100% { left: 200%; }
-        }
-        @keyframes loadFill {
-          0%   { width: 0%; }
-          70%  { width: 100%; }
-          100% { width: 100%; }
-        }
-      `}</style>
-
+      {/* Ambient glow orb behind everything */}
       <div style={{
-        position: "absolute",
-        width: 320,
-        height: 320,
-        borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(139,92,246,0.25) 0%, transparent 70%)",
-        animation: "pulseGlow 2.5s ease-in-out infinite",
-        zIndex: 1,
+        position: 'absolute',
+        width: '500px',
+        height: '500px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(168,85,247,0.18) 0%, rgba(109,40,217,0.08) 40%, transparent 70%)',
+        animation: 'ambientPulse 2s ease-in-out infinite',
+        pointerEvents: 'none',
       }} />
 
+      {/* Rotating outer ring */}
       <div style={{
-        position: "relative",
-        width: 220,
-        height: 220,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        animation: "spin360 4s linear infinite",
-        filter: "drop-shadow(0 0 30px rgba(168,85,247,0.8)) drop-shadow(0 0 60px rgba(139,92,246,0.5))",
-        zIndex: 2,
+        position: 'absolute',
+        width: '340px',
+        height: '340px',
+        borderRadius: '50%',
+        border: '1px solid rgba(168,85,247,0.15)',
+        animation: 'slowSpin 8s linear infinite',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute',
+        width: '380px',
+        height: '380px',
+        borderRadius: '50%',
+        border: '1px solid rgba(168,85,247,0.08)',
+        animation: 'slowSpinReverse 12s linear infinite',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Main splash image */}
+      <div style={{
+        position: 'relative',
+        width: '320px',
+        height: '320px',
+        animation: phase === 'pulse'
+          ? 'triquetraPulse 0.9s ease-in-out infinite alternate'
+          : phase === 'enter'
+          ? 'triquetralFadeIn 0.6s ease-out forwards'
+          : 'none',
+        filter: phase === 'pulse'
+          ? 'drop-shadow(0 0 40px rgba(168,85,247,0.9)) drop-shadow(0 0 80px rgba(109,40,217,0.6)) brightness(1.15)'
+          : 'drop-shadow(0 0 24px rgba(168,85,247,0.6)) drop-shadow(0 0 48px rgba(109,40,217,0.3))',
+        transition: 'filter 0.4s ease',
       }}>
         <img
-          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/df8a8b3a0_newappicon.png"
+          src={SPLASH_IMAGE}
           alt="Unfiltr"
-          style={{ width: 200, height: 200, borderRadius: 36, objectFit: "cover" }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            borderRadius: '24px',
+          }}
         />
-        <div style={{
-          position: "absolute",
-          top: 0,
-          left: "-100%",
-          width: "60%",
-          height: "100%",
-          background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
-          animation: "shineSwipe 4s linear infinite",
-          borderRadius: 36,
-          pointerEvents: "none",
-        }} />
       </div>
 
-      <div style={{
-        marginTop: 40,
-        width: 160,
-        height: 3,
-        background: "rgba(255,255,255,0.1)",
-        borderRadius: 999,
-        overflow: "hidden",
-        zIndex: 2,
-      }}>
-        <div style={{
-          height: "100%",
-          background: "linear-gradient(90deg, #7c3aed, #a855f7, #db2777)",
-          borderRadius: 999,
-          animation: "loadFill 2.5s ease-in-out infinite",
+      {/* Floating particles */}
+      {[...Array(20)].map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: `${2 + Math.random() * 3}px`,
+          height: `${2 + Math.random() * 3}px`,
+          borderRadius: '50%',
+          background: `rgba(${168 + Math.floor(Math.random()*40)}, ${85 + Math.floor(Math.random()*40)}, 247, ${0.4 + Math.random()*0.6})`,
+          left: `${10 + Math.random() * 80}%`,
+          top: `${10 + Math.random() * 80}%`,
+          animation: `floatParticle ${2 + Math.random() * 3}s ease-in-out infinite`,
+          animationDelay: `${Math.random() * 2}s`,
+          pointerEvents: 'none',
         }} />
-      </div>
+      ))}
 
+      {/* CSS keyframes injected inline */}
+      <style>{`
+        @keyframes ambientPulse {
+          0%   { transform: scale(1);    opacity: 0.6; }
+          50%  { transform: scale(1.15); opacity: 1;   }
+          100% { transform: scale(1);    opacity: 0.6; }
+        }
+        @keyframes slowSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes slowSpinReverse {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(-360deg); }
+        }
+        @keyframes triquetraPulse {
+          0%   { transform: scale(1);    filter: drop-shadow(0 0 30px rgba(168,85,247,0.7)) drop-shadow(0 0 60px rgba(109,40,217,0.4)) brightness(1.05); }
+          100% { transform: scale(1.06); filter: drop-shadow(0 0 60px rgba(168,85,247,1.0)) drop-shadow(0 0 120px rgba(109,40,217,0.8)) brightness(1.25); }
+        }
+        @keyframes triquetralFadeIn {
+          from { opacity: 0; transform: scale(0.88); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes floatParticle {
+          0%   { transform: translateY(0px)   scale(1);    opacity: 0; }
+          30%  { opacity: 1; }
+          70%  { opacity: 0.8; }
+          100% { transform: translateY(-60px) scale(0.5);  opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
