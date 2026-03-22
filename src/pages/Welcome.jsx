@@ -5,31 +5,122 @@ import { ChevronRight, ChevronLeft, X } from "lucide-react";
 
 const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
 
-// Tutorial slides — screenshots of the onboarding flow with captions
+// Tutorial slides — show what each onboarding step looks like
 const TUTORIAL_SLIDES = [
   {
-    emoji: "👤",
-    title: "Choose Your Name",
-    description: "Start by telling us what you'd like to be called. Your companion will always know you by name.",
+    title: "Give It a Name",
+    description: "Pick a name for your companion — something that feels personal to you.",
     color: "#7c3aed",
+    screen: (
+      <div style={{
+        background: "linear-gradient(180deg, #06020f 0%, #1a0535 100%)",
+        borderRadius: 16, padding: "24px 20px", border: "1px solid rgba(168,85,247,0.3)",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+      }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: 0, letterSpacing: 2 }}>STEP 2 OF 5</p>
+        <h3 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: 0, textAlign: "center" }}>Give your companion a name</h3>
+        <div style={{
+          width: "100%", padding: "14px 16px",
+          background: "rgba(168,85,247,0.1)", border: "2px solid rgba(168,85,247,0.5)",
+          borderRadius: 14, color: "white", fontSize: 16, textAlign: "center",
+        }}>Luna ✨</div>
+        <div style={{
+          width: "100%", padding: "14px",
+          background: "linear-gradient(135deg, #7c3aed, #db2777)",
+          borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, textAlign: "center",
+        }}>Next →</div>
+      </div>
+    ),
   },
   {
-    emoji: "💜",
-    title: "Pick Your Companion",
-    description: "Browse 12 unique AI companions — each with their own personality, style, and energy. Find the one that feels right.",
+    title: "Pick a Background",
+    description: "Choose the world your companion lives in — cozy cabin, cyberpunk city, enchanted forest and more.",
     color: "#a855f7",
+    screen: (
+      <div style={{
+        background: "linear-gradient(180deg, #06020f 0%, #1a0535 100%)",
+        borderRadius: 16, padding: "20px 16px", border: "1px solid rgba(168,85,247,0.3)",
+      }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "0 0 10px", letterSpacing: 2, textAlign: "center" }}>STEP 3 OF 5</p>
+        <p style={{ color: "white", fontWeight: 800, fontSize: 16, margin: "0 0 12px", textAlign: "center" }}>Choose a background</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          {["🏠 Cozy", "🌆 City", "🌲 Forest", "🏖️ Beach", "🚀 Space", "☕ Café"].map((bg, i) => (
+            <div key={i} style={{
+              padding: "10px 4px", borderRadius: 10, textAlign: "center",
+              background: i === 0 ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.05)",
+              border: `1px solid ${i === 0 ? "rgba(168,85,247,0.6)" : "rgba(255,255,255,0.1)"}`,
+              color: "white", fontSize: 11, fontWeight: 600,
+            }}>{bg}</div>
+          ))}
+        </div>
+      </div>
+    ),
   },
   {
-    emoji: "🌈",
-    title: "Set Your Vibe",
-    description: "Choose the mood that fits how you're feeling. Unfiltr adapts to your emotional state in real time.",
+    title: "Set Your Mood",
+    description: "Tell your companion how you're feeling. They'll match your energy every time.",
     color: "#db2777",
+    screen: (
+      <div style={{
+        background: "linear-gradient(180deg, #06020f 0%, #1a0535 100%)",
+        borderRadius: 16, padding: "20px 16px", border: "1px solid rgba(168,85,247,0.3)",
+      }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "0 0 10px", letterSpacing: 2, textAlign: "center" }}>STEP 5 OF 5</p>
+        <p style={{ color: "white", fontWeight: 800, fontSize: 16, margin: "0 0 14px", textAlign: "center" }}>What's your vibe today?</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { emoji: "😊", label: "Happy", color: "#22c55e", active: false },
+            { emoji: "😌", label: "Chill", color: "#a855f7", active: true },
+            { emoji: "😔", label: "Sad", color: "#3b82f6", active: false },
+          ].map((v, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+              borderRadius: 14,
+              background: v.active ? `${v.color}22` : "rgba(255,255,255,0.04)",
+              border: `2px solid ${v.active ? v.color : "rgba(255,255,255,0.08)"}`,
+            }}>
+              <span style={{ fontSize: 22 }}>{v.emoji}</span>
+              <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>{v.label}</span>
+              {v.active && <span style={{ marginLeft: "auto", color: v.color, fontWeight: 800 }}>✓</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
   },
   {
-    emoji: "💬",
     title: "Start Chatting",
-    description: "Your companion is ready. No scripts, no filters — just real, honest conversation whenever you need it.",
+    description: "Your companion is ready. Real conversations, no filters — whenever you need them.",
     color: "#7c3aed",
+    screen: (
+      <div style={{
+        background: "linear-gradient(180deg, #06020f 0%, #1a0535 100%)",
+        borderRadius: 16, padding: "20px 16px", border: "1px solid rgba(168,85,247,0.3)",
+        display: "flex", flexDirection: "column", gap: 10,
+      }}>
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <div style={{
+            background: "rgba(168,85,247,0.2)", border: "1px solid rgba(168,85,247,0.3)",
+            borderRadius: "16px 16px 16px 4px", padding: "10px 14px",
+            color: "white", fontSize: 13, maxWidth: "80%",
+          }}>Hey! I'm Luna 🌙 — what's on your mind?</div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{
+            background: "rgba(219,39,119,0.2)", border: "1px solid rgba(219,39,119,0.3)",
+            borderRadius: "16px 16px 4px 16px", padding: "10px 14px",
+            color: "white", fontSize: 13, maxWidth: "80%",
+          }}>I just needed someone to talk to 💜</div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <div style={{
+            background: "rgba(168,85,247,0.2)", border: "1px solid rgba(168,85,247,0.3)",
+            borderRadius: "16px 16px 16px 4px", padding: "10px 14px",
+            color: "white", fontSize: 13, maxWidth: "80%",
+          }}>I'm here. Always. Tell me everything 💜</div>
+        </div>
+      </div>
+    ),
   },
 ];
 
@@ -91,27 +182,21 @@ function TutorialModal({ onClose }) {
           ))}
         </div>
 
-        {/* Emoji */}
-        <div style={{
-          width: 90, height: 90, borderRadius: 24,
-          background: `${current.color}22`,
-          border: `2px solid ${current.color}55`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 44, margin: "0 auto 24px",
-        }}>
-          {current.emoji}
+        {/* Screen preview */}
+        <div style={{ marginBottom: 16 }}>
+          {current.screen}
         </div>
 
         {/* Content */}
         <h2 style={{
-          color: "white", fontWeight: 800, fontSize: 22,
-          textAlign: "center", margin: "0 0 12px",
+          color: "white", fontWeight: 800, fontSize: 20,
+          textAlign: "center", margin: "0 0 8px",
         }}>
           {current.title}
         </h2>
         <p style={{
-          color: "rgba(255,255,255,0.6)", fontSize: 14,
-          textAlign: "center", lineHeight: 1.6, margin: "0 0 32px",
+          color: "rgba(255,255,255,0.6)", fontSize: 13,
+          textAlign: "center", lineHeight: 1.6, margin: "0 0 24px",
         }}>
           {current.description}
         </p>
@@ -161,7 +246,7 @@ export default function Welcome() {
   const [showTutorial, setShowTutorial] = useState(false);
 
   const handleGetStarted = () => {
-    navigate("/onboarding");
+    navigate("/onboarding/consent");
   };
 
   return (
