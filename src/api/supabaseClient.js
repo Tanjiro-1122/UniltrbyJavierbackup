@@ -1,0 +1,100 @@
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qphizjwoijvjoygihkle.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwaGl6andvaWp2am95Z2loa2xlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODUzOTgsImV4cCI6MjA4OTM2MTM5OH0.EbskqMiKsJ2npZj7hSWUOIvmJaro4mmeaC_2rNxD40Q";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
+
+// ─── Auth helpers ───────────────────────────────────────────────────────────
+
+export const signUp = (email, password) =>
+  supabase.auth.signUp({ email, password });
+
+export const signIn = (email, password) =>
+  supabase.auth.signInWithPassword({ email, password });
+
+export const signOut = () => supabase.auth.signOut();
+
+export const getUser = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+};
+
+export const onAuthStateChange = (callback) =>
+  supabase.auth.onAuthStateChange(callback);
+
+// ─── Generic entity helpers (mirrors Base44 API shape) ──────────────────────
+
+const makeEntity = (tableName) => ({
+  async list(query = {}) {
+    let q = supabase.from(tableName).select("*");
+    Object.entries(query).forEach(([k, v]) => { q = q.eq(k, v); });
+    const { data, error } = await q.order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async get(id) {
+    const { data, error } = await supabase.from(tableName).select("*").eq("id", id).single();
+    if (error) throw error;
+    return data;
+  },
+
+  async create(payload) {
+    const { data, error } = await supabase.from(tableName).insert(payload).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id, payload) {
+    const { data, error } = await supabase.from(tableName).update({ ...payload, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await supabase.from(tableName).delete().eq("id", id);
+    if (error) throw error;
+    return true;
+  },
+
+  async filter(params = {}) {
+    let q = supabase.from(tableName).select("*");
+    Object.entries(params).forEach(([k, v]) => { q = q.eq(k, v); });
+    const { data, error } = await q.order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+});
+
+// ─── Entities ────────────────────────────────────────────────────────────────
+
+export const entities = {
+  Companion:   makeEntity("companion"),
+  Message:     makeEntity("message"),
+  UserProfile: makeEntity("user_profile"),
+  Feedback:    makeEntity("feedback"),
+  JournalEntry: makeEntity("journal_entry"),
+};
+
+// ─── Drop-in replacement for base44.entities ─────────────────────────────────
+// So existing code using base44.entities.X.create() still works
+
+export const base44 = {
+  entities,
+  auth: {
+    getUser,
+    signUp,
+    signIn,
+    signOut,
+    onAuthStateChange,
+  },
+};
+
+export default supabase;
