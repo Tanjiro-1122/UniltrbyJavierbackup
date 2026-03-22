@@ -47,6 +47,7 @@ const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/PinLock", "/PinSetup",
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/welcome", "/age-verification", "/support",
+  "/BackgroundSelect", "/journal/entry", "/journal/list", "/journal/splash",
 ];
 
 // Force black background into safe areas
