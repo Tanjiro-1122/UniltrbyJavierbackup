@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Share2 } from "lucide-react";
+import { Share2, Bookmark } from "lucide-react";
+import { toast } from "sonner";
 import { hapticLight } from "@/components/utils/haptics";
 import { soundReceive } from "@/components/utils/sounds";
 import SwipeableMessage from "./SwipeableMessage";
@@ -8,7 +9,7 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry, companionName }) {
+export default function ChatMessages({ messages, loading, companionMood, setShareCard, messagesEndRef, onSwipeReply, onRetry, companionName, onBookmark }) {
   const [reactions, setReactions] = useState({});
   const [pickerIdx, setPickerIdx] = useState(null);
   const [showTyping, setShowTyping] = useState(false);
@@ -146,10 +147,18 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
             </div>
 
             {msg.role === "assistant" && (
-              <button onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
-                style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <Share2 size={10} color="rgba(255,255,255,0.3)" />
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+                <button onClick={() => setShareCard({ message: msg.content, mood: companionMood })}
+                  style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <Share2 size={10} color="rgba(255,255,255,0.3)" />
+                </button>
+                {onBookmark && (
+                  <button onClick={() => { onBookmark(msg.content); toast.success("Moment saved 📌"); }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <Bookmark size={10} color="rgba(255,255,255,0.3)" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </SwipeableMessage>

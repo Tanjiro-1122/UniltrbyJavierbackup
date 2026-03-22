@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy, Moon, Sparkles, TrendingUp, Clock } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -8,7 +8,7 @@ export default function ChatHeader({
   isPremium, messages, companion, navigate,
   setMessages, vibe,
   onShowGames, onShowMeditation, onShowAchievements,
-  onShowBreathing, onShowSleepStory, onShowTopics, onShowMoodInsights, onShowTimeCapsule,
+  onShowBreathing, onShowSleepStory, onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -111,6 +111,7 @@ export default function ChatHeader({
         <HeaderIconBtn onClick={onShowTimeCapsule} icon={<Clock size={13} />} title="Capsule" />
         <HeaderIconBtn onClick={onShowGames} icon={<Gamepad2 size={13} />} title="Games" />
         <HeaderIconBtn onClick={onShowAchievements} icon={<Trophy size={13} />} title="Badges" />
+        <HeaderIconBtn onClick={onShowBookmarks} icon={<Bookmark size={13} />} title="Saved" />
       </div>
 
       {/* Right side: actions */}

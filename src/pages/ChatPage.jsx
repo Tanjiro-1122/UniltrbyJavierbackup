@@ -657,6 +657,7 @@ export default function ChatPage() {
             onShowTopics={() => setShowTopics(true)}
             onShowMoodInsights={() => setShowMoodInsights(true)}
             onShowTimeCapsule={() => setShowTimeCapsule(true)}
+            onShowBookmarks={() => setShowBookmarks(true)}
           />
 
           {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
