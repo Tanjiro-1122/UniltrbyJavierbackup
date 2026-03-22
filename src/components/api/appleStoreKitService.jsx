@@ -33,6 +33,7 @@ export class AppleStoreKitService {
   // ── Platform detection ──────────────────────────────────────────────
   static getPlatform() {
     if (typeof window !== 'undefined') {
+      // Check for native IAP bridges
       if (
         (window.WTN && typeof window.WTN.inAppPurchase === 'function') ||
         window.webkit?.messageHandlers?.storekit ||
@@ -42,6 +43,16 @@ export class AppleStoreKitService {
       }
       if (window.Android || window.AndroidIAP || window.PlayBilling) {
         return 'android';
+      }
+      // Detect iOS device even without native bridge (TestFlight / WKWebView)
+      const ua = navigator.userAgent || '';
+      const isIOSDevice = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOSDevice) {
+        return 'ios_no_bridge';
+      }
+      // Detect Android device without native bridge
+      if (/Android/.test(ua)) {
+        return 'android_no_bridge';
       }
     }
     return 'web';
