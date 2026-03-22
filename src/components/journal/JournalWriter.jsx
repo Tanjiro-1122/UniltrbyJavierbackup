@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Mic, MicOff, Save, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, Save, Sparkles, Loader2, Image, Smile, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import StickerPicker from "./StickerPicker";
 
 const MOODS = [
   { id: "happy", emoji: "😊", label: "Happy" },
@@ -27,9 +28,14 @@ export default function JournalWriter({ onSave, onBack }) {
   const [mood, setMood] = useState(null);
   const [listening, setListening] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [images, setImages] = useState([]);
+  const [stickers, setStickers] = useState([]);
+  const [showStickers, setShowStickers] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Auto-focus textarea
   useEffect(() => {
@@ -74,22 +80,38 @@ export default function JournalWriter({ onSave, onBack }) {
     setListening(true);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setImages(prev => [...prev, file_url]);
+    setUploadingImage(false);
+    e.target.value = "";
+  };
+
+  const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
+  const removeSticker = (idx) => setStickers(prev => prev.filter((_, i) => i !== idx));
+
   const handleSave = async () => {
-    if (!content.trim()) return;
+    if (!content.trim() && images.length === 0 && stickers.length === 0) return;
     setSaving(true);
 
-    // Generate a title using LLM
     let title = "Untitled Entry";
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Generate a short, poetic journal entry title (3-6 words max) for this text. Return ONLY the title, nothing else:\n\n${content.slice(0, 300)}`,
-    });
-    if (res && typeof res === "string") title = res.trim().replace(/^["']|["']$/g, "");
+    if (content.trim()) {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a short, poetic journal entry title (3-6 words max) for this text. Return ONLY the title, nothing else:\n\n${content.slice(0, 300)}`,
+      });
+      if (res && typeof res === "string") title = res.trim().replace(/^["']|["']$/g, "");
+    }
 
     const entry = {
       id: Date.now().toString(),
       title,
       content: content.trim(),
       mood: mood || "reflective",
+      images,
+      stickers,
       created_date: new Date().toISOString(),
     };
 
@@ -98,6 +120,7 @@ export default function JournalWriter({ onSave, onBack }) {
   };
 
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const hasContent = content.trim() || images.length > 0 || stickers.length > 0;
 
   return (
     <div style={{
@@ -122,13 +145,13 @@ export default function JournalWriter({ onSave, onBack }) {
           </span>
           <button
             onClick={handleSave}
-            disabled={!content.trim() || saving}
+            disabled={!hasContent || saving}
             style={{
               display: "flex", alignItems: "center", gap: 6,
-              background: content.trim() ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.05)",
-              border: content.trim() ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 20, padding: "8px 16px", cursor: content.trim() ? "pointer" : "default",
-              opacity: content.trim() ? 1 : 0.4,
+              background: hasContent ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.05)",
+              border: hasContent ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 20, padding: "8px 16px", cursor: hasContent ? "pointer" : "default",
+              opacity: hasContent ? 1 : 0.4,
             }}
           >
             {saving ? (
@@ -187,7 +210,7 @@ export default function JournalWriter({ onSave, onBack }) {
           onChange={(e) => setContent(e.target.value)}
           placeholder="Start writing..."
           style={{
-            width: "100%", minHeight: 300, background: "transparent", border: "none",
+            width: "100%", minHeight: 200, background: "transparent", border: "none",
             outline: "none", resize: "none",
             color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.9,
             fontFamily: "Georgia, 'Times New Roman', serif",
@@ -195,43 +218,104 @@ export default function JournalWriter({ onSave, onBack }) {
             caretColor: "#a855f7",
           }}
         />
+
+        {/* Stickers inline */}
+        {stickers.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {stickers.map((s, i) => (
+              <div key={i} style={{ position: "relative", display: "inline-flex" }}>
+                <span style={{ fontSize: 40 }}>{s}</span>
+                <button onClick={() => removeSticker(i)} style={{
+                  position: "absolute", top: -4, right: -4,
+                  background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%",
+                  width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                }}>
+                  <X size={10} color="white" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Uploaded images */}
+        {(images.length > 0 || uploadingImage) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+            {images.map((url, i) => (
+              <div key={i} style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+                <img src={url} alt="" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)" }} />
+                <button onClick={() => removeImage(i)} style={{
+                  position: "absolute", top: 4, right: 4,
+                  background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "50%",
+                  width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                }}>
+                  <X size={12} color="white" />
+                </button>
+              </div>
+            ))}
+            {uploadingImage && (
+              <div style={{
+                width: 100, height: 100, borderRadius: 12, background: "rgba(168,85,247,0.1)",
+                border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Loader2 size={20} color="#a855f7" style={{ animation: "spin 0.8s linear infinite" }} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Voice Button */}
+      {/* Bottom toolbar */}
       <div style={{
-        flexShrink: 0, display: "flex", justifyContent: "center",
-        padding: "12px 16px 16px",
+        flexShrink: 0, padding: "8px 16px 16px", position: "relative",
       }}>
-        <button
-          onClick={toggleVoice}
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "12px 28px", borderRadius: 28, cursor: "pointer",
-            background: listening
-              ? "rgba(239,68,68,0.15)"
-              : "rgba(168,85,247,0.1)",
-            border: listening
-              ? "1px solid rgba(239,68,68,0.3)"
-              : "1px solid rgba(168,85,247,0.25)",
-            transition: "all 0.2s",
-          }}
-        >
-          {listening ? (
-            <>
-              <MicOff size={18} color="#ef4444" />
-              <span style={{ color: "#ef4444", fontSize: 13, fontWeight: 600 }}>Stop Recording</span>
-              <span style={{
-                width: 8, height: 8, borderRadius: "50%", background: "#ef4444",
-                animation: "pulse 1s ease-in-out infinite",
-              }} />
-            </>
-          ) : (
-            <>
-              <Mic size={18} color="#a855f7" />
-              <span style={{ color: "#c084fc", fontSize: 13, fontWeight: 600 }}>Speak your thoughts</span>
-            </>
-          )}
-        </button>
+        {showStickers && (
+          <StickerPicker
+            onSelect={(s) => { setStickers(prev => [...prev, s]); setShowStickers(false); }}
+            onClose={() => setShowStickers(false)}
+          />
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          {/* Photo upload */}
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} />
+          <button onClick={() => fileInputRef.current?.click()} style={{
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Image size={16} color="rgba(255,255,255,0.5)" />
+            <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 500 }}>Photo</span>
+          </button>
+
+          {/* Sticker picker */}
+          <button onClick={() => setShowStickers(!showStickers)} style={{
+            background: showStickers ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.06)",
+            border: showStickers ? "1px solid rgba(168,85,247,0.3)" : "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Smile size={16} color={showStickers ? "#c084fc" : "rgba(255,255,255,0.5)"} />
+            <span style={{ color: showStickers ? "#c084fc" : "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 500 }}>Stickers</span>
+          </button>
+
+          {/* Voice */}
+          <button onClick={toggleVoice} style={{
+            background: listening ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)",
+            border: listening ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          }}>
+            {listening ? (
+              <>
+                <MicOff size={16} color="#ef4444" />
+                <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 500 }}>Stop</span>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", animation: "pulse 1s ease-in-out infinite" }} />
+              </>
+            ) : (
+              <>
+                <Mic size={16} color="rgba(255,255,255,0.5)" />
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 500 }}>Voice</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <style>{`
