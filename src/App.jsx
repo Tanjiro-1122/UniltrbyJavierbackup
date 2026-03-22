@@ -44,6 +44,7 @@ const HIDE_TABS_ON = [
   "/vibe",
   "/background",
   "/journal",
+  "/journal-list",
   "/ChatHistory",
   "/PersonalityQuiz"
 ];
