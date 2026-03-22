@@ -36,17 +36,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
       <style>{`
         @keyframes speakRing { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.06)} }
         @keyframes spin       { to { transform:rotate(360deg) } }
-        @keyframes mouthMove {
-          0%   { clip-path: inset(22% 28% 62% 28%); transform: scaleY(1); }
-          12%  { clip-path: inset(20% 27% 60% 27%); transform: scaleY(1.06); }
-          24%  { clip-path: inset(22% 28% 62% 28%); transform: scaleY(1); }
-          36%  { clip-path: inset(19% 26% 59% 26%); transform: scaleY(1.08); }
-          48%  { clip-path: inset(21% 28% 61% 28%); transform: scaleY(1.02); }
-          60%  { clip-path: inset(20% 27% 60% 27%); transform: scaleY(1.05); }
-          72%  { clip-path: inset(22% 28% 62% 28%); transform: scaleY(1); }
-          84%  { clip-path: inset(20% 26% 60% 26%); transform: scaleY(1.07); }
-          100% { clip-path: inset(22% 28% 62% 28%); transform: scaleY(1); }
-        }
+
       `}</style>
 
       <div
