@@ -140,13 +140,16 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
           }}>
             <style>{`
               @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.3} 30%{transform:translateY(-6px) scale(1.2);opacity:1} }
+              @keyframes textPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
             `}</style>
             {companionName && (
-              <span style={{ color: "rgba(196,180,252,0.6)", fontSize: 11, fontWeight: 600 }}>{companionName}</span>
+              <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 11, fontWeight: 600, animation: "textPulse 2s ease-in-out infinite" }}>
+                {companionName} is thinking
+              </span>
             )}
             {[0, 1, 2].map(d => (
               <div key={d} style={{
-                width: 6, height: 6, borderRadius: "50%",
+                width: 5, height: 5, borderRadius: "50%",
                 background: "linear-gradient(135deg, #a855f7, #db2777)",
                 animation: `typingWave 1.4s ease-in-out infinite`,
                 animationDelay: `${d * 0.18}s`,

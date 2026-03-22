@@ -1,8 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
+
+const DAILY_QUOTES = [
+  "You're allowed to grow at your own pace 🌱",
+  "Today is a good day to be kind to yourself ✨",
+  "Your feelings matter. All of them 💜",
+  "Small moments of joy add up to big happiness 🦋",
+  "It's okay to choose yourself today 🫶",
+  "You don't have to have it all figured out 🌊",
+  "Rest is not a reward — it's a necessity 🌙",
+  "You are exactly where you need to be right now 💫",
+];
 
 const VIBES = [
   {
@@ -71,7 +82,10 @@ export default function VibePage() {
   const navigate  = useNavigate();
   const [selected, setSelected] = useState(null);
 
-
+  const dailyQuote = useMemo(() => {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+  }, []);
 
   const handleContinue = () => {
     if (!selected) return;
@@ -108,6 +122,16 @@ export default function VibePage() {
             {Math.floor(Math.random() * 8) + 2} friends are chatting right now
           </span>
           <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+        </div>
+
+        {/* Daily quote */}
+        <div style={{
+          padding: "8px 14px", borderRadius: 12, marginBottom: 10,
+          background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.1)",
+        }}>
+          <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 12, margin: 0, textAlign: "center", fontStyle: "italic", lineHeight: 1.5 }}>
+            {dailyQuote}
+          </p>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

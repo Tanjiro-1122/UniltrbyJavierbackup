@@ -263,7 +263,10 @@ export default function ChatPage() {
       return;
     }
 
-    // Brand new conversation
+    // Brand new conversation — with late-night awareness
+    const isLateNight = hour >= 23 || hour < 5;
+    const lateNightSuffix = isLateNight ? "\n\nIt's late — I'm glad you're here though. Take it easy tonight 🌙" : "";
+
     const greeting = {
       role: "assistant",
       content: `Hey! I'm ${name} 👋 ${
@@ -271,7 +274,7 @@ export default function ChatPage() {
         vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
         vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
         "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-      }`,
+      }${lateNightSuffix}`,
     };
     setMessages([greeting]);
   }, [companion]);
