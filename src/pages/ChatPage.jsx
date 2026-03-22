@@ -286,6 +286,11 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  /* ─── CLEANUP: stop audio on unmount ─── */
+  useEffect(() => {
+    return () => { stopCurrentAudio(); };
+  }, []);
+
   /* ─── PRELOAD all mood poses for current companion ─── */
   useEffect(() => {
     if (!companion) return;
@@ -401,6 +406,8 @@ export default function ChatPage() {
 
     // Resume shared AudioContext on every user gesture (critical for iOS)
     resumeAudioContext().catch(() => {});
+    // Stop any playing TTS to prevent overlap
+    stopCurrentAudio();
 
     const userMsg = pendingImage
       ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview, quoteReply: quoteReply || undefined }
@@ -450,12 +457,7 @@ export default function ChatPage() {
       });
 
       const replyText = res.data?.reply || "...";
-      setMessages(m => {
-        const updated = [...m, { role: "assistant", content: replyText }];
-        const toSave = updated.slice(1).slice(-50).map(msg => ({ role: msg.role, content: msg.content }));
-        localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
-        return updated;
-      });
+      setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";

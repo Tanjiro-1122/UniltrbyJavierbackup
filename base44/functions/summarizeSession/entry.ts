@@ -12,6 +12,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Skip summarization for very short conversations
+    const userMessages = messages.filter(m => m.role === "user");
+    if (userMessages.length < 3) {
+      return Response.json({ ok: true, skipped: true });
+    }
+
     // Summarize the session
     const transcript = messages.map(m => `${m.role === "user" ? "User" : companionName}: ${m.content}`).join("\n");
 

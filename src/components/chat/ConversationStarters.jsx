@@ -51,7 +51,7 @@ export default function ConversationStarters({ onSelect, visible, isReturning })
       display: "flex", gap: 6, overflowX: "auto",
       padding: "6px 12px", flexShrink: 0,
       scrollbarWidth: "none", msOverflowStyle: "none",
-      WebkitOverflowScrolling: "touch",
+      WebkitOverflowScrolling: "touch", touchAction: "pan-x",
     }}>
       {starters.map((s, i) => (
         <button key={i} onClick={() => onSelect(s.text)}
