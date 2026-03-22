@@ -85,7 +85,7 @@ function PlacedSticker({ sticker, onRemove, constraintsRef }) {
     <>
       <style>{def.keyframes}</style>
       <motion.div
-        drag dragConstraints={constraintsRef} dragElastic={0.1} dragMomentum={false}
+        drag dragConstraints={constraintsRef} dragElastic={0.05} dragMomentum={false}
         initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
         style={{ position: "absolute", left: sticker.x, top: sticker.y, zIndex: showConfirm ? 50 : 10, cursor: "grab", userSelect: "none", touchAction: "none" }}
         onClick={handleTap}
@@ -149,8 +149,8 @@ export default function JournalEntry() {
   };
 
   const placeSticker = (def) => {
-    const x = 55 + Math.random() * 35;
-    const y = 15 + Math.random() * 30;
+    const x = 10 + Math.random() * 70;
+    const y = 10 + Math.random() * 60;
     setPlacedStickers((prev) => [...prev, { id: stickerIdRef.current++, type: def.id, x: `${x}%`, y: `${y}%` }]);
     setShowStickers(false);
   };
@@ -189,7 +189,7 @@ export default function JournalEntry() {
       <div className="flex-1 px-4 pb-2 overflow-hidden flex flex-col min-h-0">
         <motion.div ref={journalRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="flex-1 rounded-2xl flex flex-col min-h-0"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 0 60px rgba(120,80,200,0.12)", position: "relative", overflow: "hidden" }}>
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 0 60px rgba(120,80,200,0.12)", position: "relative", overflow: "clip" }}>
 
           {placedStickers.map((s) => (
             <PlacedSticker key={s.id} sticker={s} onRemove={removeSticker} constraintsRef={journalRef} />
