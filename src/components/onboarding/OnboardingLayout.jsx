@@ -87,8 +87,8 @@ export default function OnboardingLayout({ step, totalSteps = 5, onBack, onNext,
         </div>
       </div>
 
-      {/* Content — scrollable, takes remaining space */}
-      <div className="scroll-area" style={{
+      {/* Content + Next Button together — scroll area contains everything */}
+      <div style={{
         flex: 1,
         minHeight: 0,
         width: "100%",
@@ -96,36 +96,42 @@ export default function OnboardingLayout({ step, totalSteps = 5, onBack, onNext,
         zIndex: 1,
         overflowY: "auto",
         overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        display: "flex",
+        flexDirection: "column",
       }}>
-        {children}
-      </div>
-
-      {/* Next Button */}
-      {onNext && (
-        <div style={{
-          flexShrink: 0,
-          width: "100%",
-          maxWidth: "100%",
-          padding: "12px 24px",
-          paddingBottom: "max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px))",
-          background: "linear-gradient(180deg, rgba(6,2,15,0.0) 0%, #0d0220 30%)",
-          position: "relative",
-          zIndex: 10,
-          boxSizing: "border-box",
-        }}>
-          <button onClick={onNext} disabled={!canAdvance || loading} style={{
-            width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
-            color: "white", fontWeight: 900, fontSize: 17,
-            cursor: canAdvance && !loading ? "pointer" : "default",
-            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-            boxShadow: "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)",
-            transition: "opacity 0.2s",
-            opacity: canAdvance && !loading ? 1 : 0.6,
-          }}>
-            {loading ? "…" : (nextLabel || <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>)}
-          </button>
+        {/* Scrollable content */}
+        <div style={{ flex: 1 }}>
+          {children}
         </div>
-      )}
+
+        {/* Next Button — always at bottom of scroll, never hidden */}
+        {onNext && (
+          <div style={{
+            flexShrink: 0,
+            width: "100%",
+            padding: "8px 24px",
+            paddingBottom: "max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px))",
+            background: "linear-gradient(180deg, transparent 0%, rgba(13,2,32,0.95) 30%)",
+            position: "sticky",
+            bottom: 0,
+            boxSizing: "border-box",
+            zIndex: 10,
+          }}>
+            <button onClick={onNext} disabled={!canAdvance || loading} style={{
+              width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
+              color: "white", fontWeight: 900, fontSize: 17,
+              cursor: canAdvance && !loading ? "pointer" : "default",
+              background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
+              boxShadow: "0 0 24px rgba(168,85,247,0.45), 0 4px 16px rgba(0,0,0,0.4)",
+              transition: "opacity 0.2s",
+              opacity: canAdvance && !loading ? 1 : 0.6,
+            }}>
+              {loading ? "…" : (nextLabel || <span>Next <ChevronRight size={16} style={{ display: "inline", verticalAlign: "middle" }} /></span>)}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
