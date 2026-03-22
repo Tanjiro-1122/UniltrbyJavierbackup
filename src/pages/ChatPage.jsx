@@ -482,9 +482,9 @@ export default function ChatPage() {
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
-      // Crisis detection — check user message for distress signals
+      // Crisis detection — check both client-side and server-side
       const lowerText = text.toLowerCase();
-      const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw));
+      const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw)) || res.data?.crisis;
       if (isCrisis) setShowCrisisBanner(true);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
