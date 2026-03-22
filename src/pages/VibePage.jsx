@@ -17,18 +17,6 @@ const DAILY_QUOTES = [
 
 const VIBES = [
   {
-    id: "journal",
-    emoji: "📓",
-    label: "Journal",
-    desc: "Speak your thoughts. I'll write them down for you.",
-    gradientFrom: "#1a3a2a",
-    gradientTo: "#0d2418",
-    borderColor: "rgba(74,222,128,0.35)",
-    activeBorder: "rgba(74,222,128,0.85)",
-    labelColor: "#4ade80",
-    glow: "rgba(74,222,128,0.25)",
-  },
-  {
     id: "chill",
     emoji: "😌",
     label: "Chill",
@@ -154,7 +142,7 @@ export default function VibePage() {
         </div>
       </div>
 
-      {/* ── SCROLLABLE VIBE CARDS ── */}
+      {/* ── SCROLLABLE CONTENT ── */}
       <div className="scroll-area" style={{
         flex: 1, minHeight: 0,
         overflowY: "auto", overflowX: "hidden",
@@ -162,14 +150,48 @@ export default function VibePage() {
         padding: "4px 20px 20px",
         position: "relative", zIndex: 1,
       }}>
+        {/* ── JOURNAL CARD (before vibes) ── */}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={() => navigate("/journal")}
+          style={{
+            width: "100%", borderRadius: 18, padding: "16px 18px",
+            border: "2px solid rgba(74,222,128,0.35)",
+            background: "linear-gradient(135deg, #1a3a2a 0%, #0d2418 100%)",
+            cursor: "pointer", flexShrink: 0, position: "relative", overflow: "hidden",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 38, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>📓</span>
+            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+              <p style={{ color: "#4ade80", fontWeight: 800, fontSize: 17, margin: 0 }}>Journal</p>
+              <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "3px 0 0", lineHeight: 1.4 }}>
+                Write freely, speak your thoughts, add stickers & photos.
+              </p>
+            </div>
+            <div style={{
+              flexShrink: 0, width: 32, height: 32, borderRadius: "50%",
+              background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+          </div>
+        </motion.button>
+
+        {/* ── Divider ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.12)" }} />
+          <span style={{ color: "rgba(196,180,252,0.35)", fontSize: 11, fontWeight: 600, letterSpacing: 0.5 }}>OR CHAT</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.12)" }} />
+        </div>
+
         {VIBES.map(v => (
           <motion.button
             key={v.id}
             whileTap={{ scale: 0.96 }}
-            onClick={() => {
-              if (v.id === "journal") { navigate("/journal"); return; }
-              setSelected(v.id);
-            }}
+            onClick={() => setSelected(v.id)}
             style={{
               width: "100%", borderRadius: 16, padding: "12px 16px",
               border: `2px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
