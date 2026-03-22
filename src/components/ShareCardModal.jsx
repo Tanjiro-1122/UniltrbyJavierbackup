@@ -20,7 +20,7 @@ export default function ShareCardModal({ visible, onClose, message, companionNam
   const gradient = moodGradients[mood] || moodGradients.neutral;
 
   const handleShare = async () => {
-    const text = `"${message}"\n\n— ${companionName} on Unfiltr\n\nYour private AI companion 💜\nunfiltrbyjavier.base44.app`;
+    const text = `"${message}"\n\n— ${companionName} on Unfiltr\n\nYour private AI companion 💜\nunfiltrbyjavier2.vercel.app`;
     if (navigator.share) {
       await navigator.share({ title: "Unfiltr", text });
     } else {
