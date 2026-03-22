@@ -159,11 +159,11 @@ export const base44 = {
     onAuthStateChange,
     logout: (redirectUrl) => {
       signOut().then(() => {
-        window.location.href = redirectUrl || "/welcome";
+        window.location.replace(redirectUrl || "/welcome");
       });
     },
     redirectToLogin: () => {
-      window.location.href = "/onboarding/consent";
+      window.location.replace("/onboarding/consent");
     },
   },
 };

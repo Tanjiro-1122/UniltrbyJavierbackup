@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = "/welcome";
+    window.location.replace("/welcome");
   };
 
   const navigateToLogin = () => {
