@@ -52,9 +52,33 @@ export default function JournalEntryDetail({ entry, onBack, onDelete }) {
 
         {/* Content */}
         <div className="scroll-area" style={{ flex: 1, padding: "12px 20px 32px", overflowY: "auto" }}>
-          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, lineHeight: 1.85, whiteSpace: "pre-wrap" }}>
-            {entry.content}
-          </p>
+          {entry.content && (
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, lineHeight: 1.85, whiteSpace: "pre-wrap" }}>
+              {entry.content}
+            </p>
+          )}
+
+          {/* Stickers */}
+          {entry.stickers?.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+              {entry.stickers.map((s, i) => (
+                <span key={i} style={{ fontSize: 40 }}>{s}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Images */}
+          {entry.images?.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 }}>
+              {entry.images.map((url, i) => (
+                <img key={i} src={url} alt="" style={{
+                  width: "100%", maxWidth: 280, borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }} />
+              ))}
+            </div>
+          )}
+
           {entry.companion_name && (
             <p style={{ color: "rgba(168,85,247,0.45)", fontSize: 11, marginTop: 28, fontStyle: "italic" }}>
               Written with {entry.companion_name}
