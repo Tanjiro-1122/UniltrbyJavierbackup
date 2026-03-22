@@ -35,7 +35,7 @@ export default function FeedbackButton() {
     <>
       {/* Floating Button */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen(true); }}
         style={{
           position: "fixed",
           bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
@@ -49,7 +49,7 @@ export default function FeedbackButton() {
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          zIndex: 90,
+          zIndex: 9999,
           boxShadow: "0 4px 20px rgba(124,58,237,0.5)",
         }}
       >

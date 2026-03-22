@@ -220,7 +220,7 @@ export default function Settings() {
         background: '#06020f',
       }}>
         <button
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate(-1)}
           style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
           <ChevronLeft size={20} color="white" />

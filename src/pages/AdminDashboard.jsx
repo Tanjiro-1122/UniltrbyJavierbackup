@@ -49,7 +49,8 @@ export default function AdminDashboard() {
     setLoading(true);
     setErrorDetail("");
     try {
-      const response = await base44.functions.invoke('adminStats', {});
+      const profileId = localStorage.getItem("userProfileId");
+      const response = await base44.functions.invoke('adminStats', { profileId });
       const data = response?.data;
       if (data && data.totalUsers !== undefined) {
         setStats(data);
