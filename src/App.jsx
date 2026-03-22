@@ -9,7 +9,6 @@ import BottomTabs from "@/components/BottomTabs";
 import SplashScreen from "@/components/SplashScreen";
 import { useEffect, useState } from "react";
 
-// Pages
 import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
 import ChatPage               from "./pages/ChatPage";
@@ -49,6 +48,11 @@ const HIDE_TABS_ON = [
   "/BackgroundSelect", "/journal/entry", "/journal/list", "/journal/splash",
 ];
 
+const PUBLIC_PATHS = [
+  "/age-verification", "/welcome", "/PrivacyPolicy",
+  "/TermsOfUse", "/support", "/Pricing", "/onboarding",
+];
+
 function SafeAreaFix() {
   useEffect(() => {
     const color = "#06020f";
@@ -59,10 +63,6 @@ function SafeAreaFix() {
     document.documentElement.style.backgroundColor = color;
     document.body.style.background = color;
     document.body.style.backgroundColor = color;
-    let viewport = document.querySelector("meta[name=viewport]");
-    if (viewport && !viewport.content.includes("viewport-fit=cover")) {
-      viewport.content += ", viewport-fit=cover";
-    }
   }, []);
   return null;
 }
@@ -72,31 +72,31 @@ const AuthenticatedApp = ({ splashDone }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
+  const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
 
-  // Age gate — only runs ONCE after splash finishes
+  // Step 1: Age gate — fires once after splash
   useEffect(() => {
     if (!splashDone) return;
-    const skipPaths = ["/PrivacyPolicy", "/TermsOfUse", "/support", "/age-verification", "/welcome"];
-    if (skipPaths.some(p => location.pathname.startsWith(p))) return;
+    if (isPublicPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) {
       navigate("/age-verification", { replace: true });
     }
   }, [splashDone]); // eslint-disable-line
 
-  // Auth gate — only runs ONCE after splash + auth both done
+  // Step 2: Auth gate — fires once after splash + auth done, handles logout too
   useEffect(() => {
-    if (!splashDone) return;
-    if (isLoadingAuth) return;
-    const skipPaths = ["/PrivacyPolicy", "/TermsOfUse", "/support", "/age-verification", "/welcome", "/Pricing",
-      "/onboarding"];
-    if (skipPaths.some(p => location.pathname.startsWith(p))) return;
+    if (!splashDone || isLoadingAuth) return;
+    if (isPublicPath) return;
     if (authError?.type === "auth_required") {
       navigate("/onboarding/consent", { replace: true });
     }
-  }, [splashDone, isLoadingAuth]); // eslint-disable-line
+    if (authError?.type === "logged_out") {
+      navigate("/welcome", { replace: true });
+    }
+  }, [splashDone, isLoadingAuth, authError?.type]); // eslint-disable-line
 
-  // While splash is showing OR auth is loading — render nothing (splash covers it)
+  // Don't render anything until splash is done AND auth check is complete
   if (!splashDone || isLoadingAuth) return null;
 
   if (authError?.type === "user_not_registered") return <UserNotRegisteredError />;
@@ -147,17 +147,17 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashDone, setSplashDone] = useState(false);
 
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-    setSplashDone(true);
-  };
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <SafeAreaFix />
-          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          {showSplash && (
+            <SplashScreen onComplete={() => {
+              setShowSplash(false);
+              setSplashDone(true);
+            }} />
+          )}
           <AuthenticatedApp splashDone={splashDone} />
         </Router>
         <Toaster />

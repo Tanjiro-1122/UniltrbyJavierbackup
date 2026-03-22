@@ -157,13 +157,12 @@ export const base44 = {
     signIn,
     signOut,
     onAuthStateChange,
-    logout: (redirectUrl) => {
-      signOut().then(() => {
-        window.location.replace(redirectUrl || "/welcome");
-      });
+    logout: async () => {
+      await signOut().catch(() => {});
     },
     redirectToLogin: () => {
-      window.location.replace("/onboarding/consent");
+      // Navigation handled by AuthContext/App.jsx — no hard redirects
+      console.log("redirectToLogin called");
     },
   },
 };
