@@ -131,7 +131,7 @@ export default function ChatHeader({
             <Save size={14} color="#a855f7" />
           </button>
         )}
-        <button onClick={() => navigate("/ChatHistory")}
+        <button onClick={() => navigate("/chat-history")}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
           title="Chat history">
           <History size={14} color="white" />
