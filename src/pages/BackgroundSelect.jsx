@@ -11,9 +11,11 @@ export default function BackgroundSelect() {
   const handleContinue = () => {
     if (!selected) return;
     const bg = BACKGROUNDS.find(b => b.id === selected);
-    if (bg) {
-      localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    }
+    // Save background — always navigate even if bg lookup fails
+    const envData = bg
+      ? { id: bg.id, label: bg.label, bg: bg.url }
+      : { id: selected, label: selected, bg: "" };
+    localStorage.setItem("unfiltr_env", JSON.stringify(envData));
     navigate("/chat");
   };
 
