@@ -18,7 +18,7 @@ export default function OnboardingNickname() {
 
   const handleNext = () => {
     updateOnboardingStore({ companionNickname: nickname });
-    navigate("/onboarding/background");
+    navigate("/onboarding/vibe");
   };
 
   return (

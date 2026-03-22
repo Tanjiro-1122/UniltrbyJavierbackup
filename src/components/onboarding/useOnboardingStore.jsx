@@ -4,6 +4,7 @@ const store = {
   selectedCompanion: null,
   companionNickname: "",
   selectedBackground: null,
+  selectedVibe: null,
   isTesterAccount: false,
   pendingProfileId: null,
 };
@@ -21,6 +22,7 @@ export function resetOnboardingStore() {
   store.selectedCompanion = null;
   store.companionNickname = "";
   store.selectedBackground = null;
+  store.selectedVibe = null;
   store.isTesterAccount = false;
   store.pendingProfileId = null;
 }
