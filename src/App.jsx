@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
@@ -39,7 +39,7 @@ import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
 import AgeVerification        from "./pages/AgeVerification";
-import Support                 from "./pages/Support";
+import Support                from "./pages/Support";
 import Welcome                from "./pages/Welcome";
 
 // Pages where bottom tabs should NOT appear
@@ -69,12 +69,22 @@ function SafeAreaFix() {
   return null;
 }
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+const AuthenticatedApp = ({ splashDone }) => {
+  const { isLoadingAuth, authError, navigateToLogin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  // Handle age verification redirect inside router context
+  useEffect(() => {
+    if (!splashDone) return;
+    const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
+    if (!ageVerified && location.pathname !== "/age-verification") {
+      navigate("/age-verification", { replace: true });
+    }
+  }, [splashDone, location.pathname]);
+
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#06020f" }}>
         <div className="w-8 h-8 border-4 border-purple-900 border-t-purple-500 rounded-full animate-spin" />
@@ -87,17 +97,15 @@ const AuthenticatedApp = () => {
     p => location.pathname === p || location.pathname.startsWith(p)
   );
 
-  if (!isPublicRoute) {
-    if (authError) {
-      if (authError.type === "user_not_registered") return <UserNotRegisteredError />;
-      if (authError.type === "auth_required") { navigateToLogin(); return null; }
-    }
+  if (!isPublicRoute && authError) {
+    if (authError.type === "user_not_registered") return <UserNotRegisteredError />;
+    if (authError.type === "auth_required") { navigateToLogin(); return null; }
   }
 
   return (
     <>
       <Routes>
-        {/* Pre-auth public pages — no login required */}
+        {/* Pre-auth public pages */}
         <Route path="/age-verification"      element={<AgeVerification />} />
         <Route path="/welcome"               element={<Welcome />} />
 
@@ -114,7 +122,7 @@ const AuthenticatedApp = () => {
         <Route path="/PinLock"               element={<PinLock />} />
         <Route path="/PinSetup"              element={<PinSetup />} />
 
-        {/* Onboarding - main + sub-steps */}
+        {/* Onboarding */}
         <Route path="/onboarding"            element={<Onboarding />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
@@ -151,29 +159,11 @@ const AuthenticatedApp = () => {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashDone, setSplashDone] = useState(false);
-  const [ageVerified, setAgeVerified] = useState(
-    () => !!localStorage.getItem("unfiltr_age_verified")
-  );
 
   const handleSplashComplete = () => {
     setShowSplash(false);
     setSplashDone(true);
-    // Re-check age verification when splash ends
-    setAgeVerified(!!localStorage.getItem("unfiltr_age_verified"));
   };
-
-  // Listen for age verification being set (from AgeVerification page)
-  useEffect(() => {
-    const onStorage = () => {
-      setAgeVerified(!!localStorage.getItem("unfiltr_age_verified"));
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("unfiltr_age_verified", onStorage);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("unfiltr_age_verified", onStorage);
-    };
-  }, []);
 
   return (
     <AuthProvider>
@@ -181,10 +171,7 @@ function App() {
         <Router>
           <SafeAreaFix />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-          {splashDone && !ageVerified && (
-            <Navigate to="/age-verification" replace />
-          )}
-          <AuthenticatedApp />
+          <AuthenticatedApp splashDone={splashDone} />
         </Router>
         <Toaster />
       </QueryClientProvider>
