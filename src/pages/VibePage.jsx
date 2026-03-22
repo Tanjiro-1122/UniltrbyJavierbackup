@@ -1,19 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
-
-const DAILY_QUOTES = [
-  "You're allowed to grow at your own pace 🌱",
-  "Today is a good day to be kind to yourself ✨",
-  "Your feelings matter. All of them 💜",
-  "Small moments of joy add up to big happiness 🦋",
-  "It's okay to choose yourself today 🫶",
-  "You don't have to have it all figured out 🌊",
-  "Rest is not a reward — it's a necessity 🌙",
-  "You are exactly where you need to be right now 💫",
-];
+import { ChevronLeft } from "lucide-react";
 
 const VIBES = [
   {
@@ -21,244 +9,140 @@ const VIBES = [
     emoji: "😌",
     label: "Chill",
     desc: "Just hanging out. No agenda, no pressure.",
-    gradientFrom: "#0d4f4f",
-    gradientTo: "#0a3a3a",
-    borderColor: "rgba(45,212,191,0.35)",
-    activeBorder: "rgba(45,212,191,0.85)",
-    labelColor: "#2dd4bf",
-    glow: "rgba(45,212,191,0.25)",
+    color: "from-teal-500 to-cyan-400",
+    bg: "bg-teal-900/30",
+    border: "border-teal-400/40",
   },
   {
     id: "vent",
     emoji: "💨",
     label: "Vent",
     desc: "Need to let it all out? I'm here, no judgement.",
-    gradientFrom: "#1a2a5e",
-    gradientTo: "#111a40",
-    borderColor: "rgba(99,102,241,0.35)",
-    activeBorder: "rgba(99,102,241,0.85)",
-    labelColor: "#818cf8",
-    glow: "rgba(99,102,241,0.25)",
+    color: "from-blue-500 to-indigo-500",
+    bg: "bg-blue-900/30",
+    border: "border-blue-400/40",
   },
   {
     id: "hype",
     emoji: "🔥",
     label: "Hype",
     desc: "Big moment coming up? Let's get you READY.",
-    gradientFrom: "#5c2a00",
-    gradientTo: "#3d1a00",
-    borderColor: "rgba(251,146,60,0.35)",
-    activeBorder: "rgba(251,146,60,0.85)",
-    labelColor: "#fb923c",
-    glow: "rgba(251,146,60,0.25)",
+    color: "from-orange-500 to-yellow-400",
+    bg: "bg-orange-900/30",
+    border: "border-orange-400/40",
   },
   {
     id: "deep",
     emoji: "🌙",
     label: "Deep Talk",
     desc: "2am thoughts, existential questions, real talk.",
-    gradientFrom: "#2d1254",
-    gradientTo: "#1a0a35",
-    borderColor: "rgba(168,85,247,0.35)",
-    activeBorder: "rgba(168,85,247,0.9)",
-    labelColor: "#c084fc",
-    glow: "rgba(168,85,247,0.25)",
+    color: "from-purple-600 to-pink-500",
+    bg: "bg-purple-900/30",
+    border: "border-purple-400/40",
   },
 ];
 
 export default function VibePage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
-
-  const dailyQuote = useMemo(() => {
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
-  }, []);
 
   const handleContinue = () => {
     if (!selected) return;
+    if (selected === "journal") {
+      navigate("/journal");
+      return;
+    }
     localStorage.setItem("unfiltr_vibe", selected);
     navigate("/chat");
   };
 
   return (
-    <AppShell
-      tabs={false}
-      bg="linear-gradient(180deg, #06020f 0%, #120626 40%, #1a0535 100%)"
-    >
-      {/* Ambient glow */}
-      <div style={{
-        position: "absolute", top: -100, left: "50%", transform: "translateX(-50%)",
-        width: 300, height: 300, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
-        pointerEvents: "none", zIndex: 0,
-      }} />
-
-      {/* ── FIXED HEADER ── */}
-      <div style={{
-        flexShrink: 0, padding: "12px 20px 12px",
-        position: "relative", zIndex: 1,
-      }}>
-        {/* Friend activity indicator */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
-          padding: "5px 10px", borderRadius: 999, width: "fit-content",
-          background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.15)",
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", animation: "pulse 2s infinite" }} />
-          <span style={{ color: "rgba(74,222,128,0.7)", fontSize: 11, fontWeight: 500 }}>
-            {Math.floor(Math.random() * 8) + 2} friends are chatting right now
-          </span>
-          <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
-        </div>
-
-        {/* Daily quote */}
-        <div style={{
-          padding: "8px 14px", borderRadius: 12, marginBottom: 10,
-          background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.1)",
-        }}>
-          <p style={{ color: "rgba(196,180,252,0.7)", fontSize: 12, margin: 0, textAlign: "center", fontStyle: "italic", lineHeight: 1.5 }}>
-            {dailyQuote}
-          </p>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h1 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>Set the vibe</h1>
-            <p style={{ color: "rgba(196,180,252,0.5)", fontSize: 12, margin: "2px 0 0" }}>How do you want to roll today?</p>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => navigate("/PersonalityQuiz")}
-              style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 12, padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontSize: 12 }}>🧪</span>
-              <span style={{ color: "#c084fc", fontSize: 11, fontWeight: 700 }}>Quiz</span>
-            </button>
-            <button onClick={() => navigate("/journal")}
-              style={{ background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 12, padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-              <BookOpen size={14} color="#4ade80" />
-              <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>Journal</span>
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden pb-20">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pb-3" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+          <ChevronLeft className="w-5 h-5 text-white" />
+        </button>
+        <div>
+          <h1 className="text-white font-bold text-xl">Set the vibe</h1>
+          <p className="text-white/40 text-xs">How do you want to roll today?</p>
         </div>
       </div>
 
-      {/* ── SCROLLABLE CONTENT ── */}
-      <div className="scroll-area" style={{
-        flex: 1, minHeight: 0,
-        overflowY: "auto", overflowX: "hidden",
-        display: "flex", flexDirection: "column", gap: 10,
-        padding: "4px 20px 20px",
-        position: "relative", zIndex: 1,
-      }}>
-        {/* ── JOURNAL CARD (before vibes) ── */}
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={() => navigate("/journal")}
-          style={{
-            width: "100%", borderRadius: 18, padding: "16px 18px",
-            border: "2px solid rgba(74,222,128,0.35)",
-            background: "linear-gradient(135deg, #1a3a2a 0%, #0d2418 100%)",
-            cursor: "pointer", flexShrink: 0, position: "relative", overflow: "hidden",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 38, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>📓</span>
-            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-              <p style={{ color: "#4ade80", fontWeight: 800, fontSize: 17, margin: 0 }}>Journal</p>
-              <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "3px 0 0", lineHeight: 1.4 }}>
-                Write freely, speak your thoughts, add stickers & photos.
-              </p>
-            </div>
-            <div style={{
-              flexShrink: 0, width: 32, height: 32, borderRadius: "50%",
-              background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </div>
-          </div>
-        </motion.button>
+      <div className="flex-1 px-4 space-y-3 overflow-y-auto pb-4">
 
-        {/* ── Divider ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.12)" }} />
-          <span style={{ color: "rgba(196,180,252,0.35)", fontSize: 11, fontWeight: 600, letterSpacing: 0.5 }}>OR CHAT</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(168,85,247,0.12)" }} />
+        {/* Journal Option — top, special styling */}
+        <motion.div
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setSelected("journal")}
+          className={`rounded-2xl border p-4 cursor-pointer transition-all bg-emerald-900/30 border-emerald-400/40 ${
+            selected === "journal" ? "ring-2 ring-white/50" : ""
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">📓</span>
+            <div>
+              <p className="font-bold text-base bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                Journal
+              </p>
+              <p className="text-white/60 text-sm">Write freely. Speak your thoughts. Save them.</p>
+            </div>
+            {selected === "journal" && (
+              <div className="ml-auto w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
+                <div className="w-3 h-3 rounded-full bg-emerald-600" />
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 py-1">
+          <div className="flex-1 h-px bg-white/10" />
+          <p className="text-white/30 text-xs uppercase tracking-widest">or chat</p>
+          <div className="flex-1 h-px bg-white/10" />
         </div>
 
-        {VIBES.map(v => (
-          <motion.button
+        {/* Chat Vibes */}
+        {VIBES.map((v) => (
+          <motion.div
             key={v.id}
-            whileTap={{ scale: 0.96 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => setSelected(v.id)}
-            style={{
-              width: "100%", borderRadius: 16, padding: "12px 16px",
-              border: `2px solid ${selected === v.id ? v.activeBorder : v.borderColor}`,
-              background: `linear-gradient(135deg, ${v.gradientFrom} 0%, ${v.gradientTo} 100%)`,
-              backdropFilter: "blur(12px)",
-              boxShadow: selected === v.id ? `0 8px 32px ${v.glow}, inset 0 1px 0 rgba(255,255,255,0.1)` : `inset 0 1px 0 rgba(255,255,255,0.05)`,
-              cursor: "pointer",
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              flexShrink: 0,
-              position: "relative",
-              overflow: "hidden",
-            }}
+            className={`rounded-2xl border p-4 cursor-pointer transition-all ${v.bg} ${v.border} ${
+              selected === v.id ? "ring-2 ring-white/50" : ""
+            }`}
           >
-            <div style={{
-              position: "absolute", inset: 0,
-              background: selected === v.id ? "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%)" : "transparent",
-              pointerEvents: "none",
-            }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
-              <span style={{ fontSize: 36, flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", lineHeight: 1 }}>{v.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <p style={{ color: v.labelColor, fontWeight: 800, fontSize: 16, margin: 0 }}>{v.label}</p>
-                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, margin: "2px 0 0", lineHeight: 1.4 }}>{v.desc}</p>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{v.emoji}</span>
+              <div>
+                <p className={`font-bold text-base bg-gradient-to-r ${v.color} bg-clip-text text-transparent`}>
+                  {v.label}
+                </p>
+                <p className="text-white/60 text-sm">{v.desc}</p>
               </div>
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: selected === v.id ? 1 : 0, opacity: selected === v.id ? 1 : 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                style={{ flexShrink: 0 }}
-              >
-                <div style={{
-                  width: 32, height: 32, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: `0 0 16px ${v.glow}`,
-                }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              {selected === v.id && (
+                <div className="ml-auto w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
+                  <div className="w-3 h-3 rounded-full bg-purple-600" />
                 </div>
-              </motion.div>
+              )}
             </div>
-          </motion.button>
+          </motion.div>
         ))}
       </div>
 
-      {/* ── FIXED CTA AT BOTTOM ── */}
-      <div style={{
-        flexShrink: 0, padding: "12px 20px",
-        paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
-        position: "relative", zIndex: 2,
-        background: "linear-gradient(to top, rgba(18,6,38,1) 60%, rgba(18,6,38,0.95) 80%, transparent 100%)",
-      }}>
+      <div className="px-4 pt-2" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
         <button
           onClick={handleContinue}
           disabled={!selected}
-          style={{
-            width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
-            color: "white", fontWeight: 900, fontSize: 18, letterSpacing: "0.5px",
-            cursor: selected ? "pointer" : "default",
-            opacity: selected ? 1 : 0.5,
-            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%)",
-            boxShadow: "0 8px 32px rgba(168,85,247,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-          }}
+          className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
+            selected
+              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/30 active:scale-95"
+              : "bg-white/10 text-white/30 cursor-not-allowed"
+          }`}
         >
           Let's go →
         </button>
       </div>
-    </AppShell>
+    </div>
   );
 }
