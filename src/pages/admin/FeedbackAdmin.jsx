@@ -27,7 +27,7 @@ export default function FeedbackAdmin() {
 
   useEffect(() => {
     const load = async () => {
-      const user = await base44.auth.me().catch(() => null);
+      const user = { id: localStorage.getItem("userProfileId") || "anonymous" };
       if (!user || user.role !== "admin") { navigate("/"); return; }
       setAuthorized(true);
       const data = await base44.entities.Feedback.list("-created_date", 100);

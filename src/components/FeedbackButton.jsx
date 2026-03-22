@@ -15,7 +15,7 @@ export default function FeedbackButton() {
     if (!message.trim()) return;
     setSubmitting(true);
     try {
-      const user = await base44.auth.me().catch(() => null);
+      const user = { id: localStorage.getItem("userProfileId") || "anonymous" };
       await base44.entities.Feedback.create({
         user_id: user?.id || "anonymous",
         display_name: user?.full_name || "Anonymous",

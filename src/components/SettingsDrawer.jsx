@@ -9,8 +9,7 @@ export default function SettingsDrawer({ open, onClose, userProfile }) {
 
   const handleSignOut = async () => {
     localStorage.clear();
-    await base44.auth.logout();
-    navigate("/");
+    await base44.auth.logout(); // redirects to /welcome
   };
 
   return (
