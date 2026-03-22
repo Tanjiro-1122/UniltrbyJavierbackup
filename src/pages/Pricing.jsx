@@ -367,7 +367,7 @@ export default function Pricing() {
           {/* Gift */}
           <button
             onClick={async () => {
-              const text = "🎁 Gift a friend Unfiltr Premium!\n\nGive someone you love unlimited access to their personal AI companion 💜\n\nunfiltrbyjavier.base44.app";
+              const text = "🎁 Gift a friend Unfiltr Premium!\n\nGive someone you love unlimited access to their personal AI companion 💜\n\nunfiltrbyjavier2.vercel.app";
               if (navigator.share) {
                 await navigator.share({ title: "Gift Unfiltr Premium", text });
               } else {
