@@ -20,13 +20,13 @@ const GUIDES = [
     emoji: "📓",
     title: "Journal — Writing & Decorating",
     steps: [
-      "Tap "Set the vibe" → Journal to enter the journal section.",
-      "Tap "New Entry" (the ✏️ button) to start writing.",
+      'Tap "Set the vibe" → Journal to enter the journal section.',
+      'Tap "New Entry" (the ✏️ button) to start writing.',
       "Tap the 📷 Photo button at the bottom to add pictures from your camera or gallery.",
       "Tap the 😊 Stickers button to open the sticker tray, then tap any sticker to place it on your page.",
       "Drag placed stickers anywhere you like. Double-tap a sticker to remove it.",
       "When you're done, tap Save in the top-right corner.",
-      "View all your past entries from the journal list screen.",
+      "View all past entries from the journal list screen.",
     ],
   },
   {
@@ -90,7 +90,7 @@ const GUIDES = [
     steps: [
       "Go to Settings and scroll to "Your Companion."",
       "Tap any character to switch — your chat personality will update.",
-      "Give them a custom nickname in the "Companion Nickname" field above.",
+      'Give them a custom nickname in the "Companion Nickname" field above.',
       "Choose their voice (Male, Female, Neutral) and personality (Cheerful, Calm, etc.).",
     ],
   },
@@ -150,8 +150,8 @@ const GUIDES = [
     steps: [
       "Free users get 20 messages per day. Premium unlocks unlimited messages.",
       "Premium also includes companion memory, voice replies, sleep stories, and more.",
-      "Tap "View Premium Plans" in Settings or the ✨ Upgrade button to subscribe.",
-      "Already purchased? Use "Restore Purchase" on the upgrade screen.",
+      'Tap "View Premium Plans" in Settings or the ✨ Upgrade button to subscribe.',
+      'Already purchased? Use "Restore Purchase" on the upgrade screen.',
     ],
   },
 ];
