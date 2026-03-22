@@ -22,13 +22,19 @@ export default function AgeVerification() {
       return;
     }
     const birthYear = parseInt(year);
-    const birthMonth = months.indexOf(month);
+    const birthMonthIndex = months.indexOf(month); // 0-based (Jan=0)
     const today = new Date();
-    let age = today.getFullYear() - birthYear;
-    if (today.getMonth() < birthMonth) age--;
+    // Build an exact birthdate (use day 1 as safe default)
+    const birthDate = new Date(birthYear, birthMonthIndex, 1);
+    // Calculate age properly
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
 
     if (age < 18) {
-      navigate("/");
+      setError("You must be 18 or older to use this app.");
       return;
     }
     localStorage.setItem("unfiltr_age_verified", "true");
