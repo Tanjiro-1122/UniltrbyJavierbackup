@@ -44,7 +44,7 @@ export default function Pricing() {
   return (
     <AppShell tabs={false} bg="radial-gradient(ellipse at center, #1a0533 0%, #0d0520 50%, #06020f 100%)"  >
       {/* Back button */}
-      <div style={{ flexShrink: 0, padding: '12px 16px 0' }}>
+      <div style={{ flexShrink: 0, padding: 'max(16px, env(safe-area-inset-top)) 16px 0' }}>
         <button
           onClick={() => navigate(-1)}
           style={{
