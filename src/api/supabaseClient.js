@@ -11,10 +11,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
-// ─── Auth helpers ───────────────────────────────────────────────────────────
+// ─── Auth helpers ────────────────────────────────────────────────────────────
 
-export const signUp = (email, password) =>
-  supabase.auth.signUp({ email, password });
+export const signUp = (email, password, metadata = {}) =>
+  supabase.auth.signUp({ email, password, options: { data: metadata } });
 
 export const signIn = (email, password) =>
   supabase.auth.signInWithPassword({ email, password });
@@ -29,7 +29,29 @@ export const getUser = async () => {
 export const onAuthStateChange = (callback) =>
   supabase.auth.onAuthStateChange(callback);
 
-// ─── Generic entity helpers (mirrors Base44 API shape) ──────────────────────
+// ─── Functions — calls Vercel /api/* routes ──────────────────────────────────
+
+const API_BASE = import.meta.env.VITE_API_BASE || "";
+
+const functions = {
+  async invoke(name, body = {}) {
+    try {
+      const res = await fetch(`${API_BASE}/api/${name}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) return { data: null, error: json.error || "API error" };
+      return { data: json.data ?? json, error: null };
+    } catch (err) {
+      console.error(`Function ${name} failed:`, err);
+      return { data: null, error: err.message };
+    }
+  },
+};
+
+// ─── Generic entity helpers (mirrors Base44 API shape) ───────────────────────
 
 const makeEntity = (tableName) => ({
   async list(query = {}) {
@@ -37,7 +59,7 @@ const makeEntity = (tableName) => ({
     Object.entries(query).forEach(([k, v]) => { q = q.eq(k, v); });
     const { data, error } = await q.order("created_at", { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   async get(id) {
@@ -53,7 +75,12 @@ const makeEntity = (tableName) => ({
   },
 
   async update(id, payload) {
-    const { data, error } = await supabase.from(tableName).update({ ...payload, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    const { data, error } = await supabase
+      .from(tableName)
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
@@ -69,31 +96,40 @@ const makeEntity = (tableName) => ({
     Object.entries(params).forEach(([k, v]) => { q = q.eq(k, v); });
     const { data, error } = await q.order("created_at", { ascending: false });
     if (error) throw error;
-    return data;
+    return data || [];
   },
 });
 
-// ─── Entities ────────────────────────────────────────────────────────────────
+// ─── Entities ─────────────────────────────────────────────────────────────────
 
 export const entities = {
-  Companion:   makeEntity("companion"),
-  Message:     makeEntity("message"),
-  UserProfile: makeEntity("user_profile"),
-  Feedback:    makeEntity("feedback"),
+  Companion:    makeEntity("companion"),
+  Message:      makeEntity("message"),
+  UserProfile:  makeEntity("user_profile"),
+  Feedback:     makeEntity("feedback"),
   JournalEntry: makeEntity("journal_entry"),
 };
 
-// ─── Drop-in replacement for base44.entities ─────────────────────────────────
-// So existing code using base44.entities.X.create() still works
+// ─── Drop-in replacement for base44 ──────────────────────────────────────────
 
 export const base44 = {
   entities,
+  functions,
   auth: {
     getUser,
     signUp,
     signIn,
     signOut,
     onAuthStateChange,
+    logout: (redirectUrl) => {
+      signOut().then(() => {
+        if (redirectUrl) window.location.href = redirectUrl;
+        else window.location.href = "/welcome";
+      });
+    },
+    redirectToLogin: (returnUrl) => {
+      window.location.href = "/onboarding/consent";
+    },
   },
 };
 
