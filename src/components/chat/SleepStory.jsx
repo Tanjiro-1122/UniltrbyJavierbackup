@@ -100,14 +100,23 @@ export default function SleepStory({ visible, onClose, companionName }) {
               {story.text}
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
-              <button onClick={playStory} disabled={playing} style={{
-                flex: 1, padding: "14px", borderRadius: 14, border: "none",
-                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
-                opacity: playing ? 0.6 : 1,
-              }}>
-                {playing ? "Playing..." : "🔊 Listen"}
-              </button>
+              {playing ? (
+                <button onClick={stopStory} style={{
+                  flex: 1, padding: "14px", borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+                  color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+                }}>
+                  ⏹ Stop
+                </button>
+              ) : (
+                <button onClick={playStory} style={{
+                  flex: 1, padding: "14px", borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+                }}>
+                  🔊 Listen
+                </button>
+              )}
               <button onClick={() => setStory(null)} style={{
                 flex: 1, padding: "14px", borderRadius: 14,
                 background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
