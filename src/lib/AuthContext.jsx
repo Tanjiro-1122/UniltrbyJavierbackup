@@ -38,7 +38,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    window.location.href = "/onboarding/consent";
+    // Use sessionStorage flag — React Router picks this up to avoid hard reload loop in WKWebView
+    sessionStorage.setItem("redirect_to_login", "1");
+    window.location.replace("/onboarding/consent");
   };
 
   return (

@@ -78,11 +78,14 @@ const AuthenticatedApp = ({ splashDone }) => {
   // Handle age verification redirect inside router context
   useEffect(() => {
     if (!splashDone) return;
+    // Skip age gate on legal/public routes
+    const skipPaths = ["/PrivacyPolicy", "/TermsOfUse", "/support", "/age-verification", "/welcome"];
+    if (skipPaths.some(p => location.pathname.startsWith(p))) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
-    if (!ageVerified && location.pathname !== "/age-verification") {
+    if (!ageVerified) {
       navigate("/age-verification", { replace: true });
     }
-  }, [splashDone, location.pathname]);
+  }, [splashDone]);
 
   if (isLoadingAuth) {
     return (
