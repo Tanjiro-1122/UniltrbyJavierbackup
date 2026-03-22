@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
-import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
@@ -38,12 +38,14 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
+import AgeVerification        from "./pages/AgeVerification";
+import Welcome                from "./pages/Welcome";
 
 // Pages where bottom tabs should NOT appear
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/PinLock", "/PinSetup",
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
-  "/PrivacyPolicy", "/TermsOfUse",
+  "/PrivacyPolicy", "/TermsOfUse", "/welcome", "/age-verification",
 ];
 
 // Force black background into safe areas
@@ -86,6 +88,10 @@ const AuthenticatedApp = () => {
   return (
     <>
       <Routes>
+        {/* Pre-auth public pages — no login required */}
+        <Route path="/age-verification"      element={<AgeVerification />} />
+        <Route path="/welcome"               element={<Welcome />} />
+
         {/* Core */}
         <Route path="/"                      element={<HomePage />} />
         <Route path="/chat"                  element={<ChatPage />} />
@@ -134,13 +140,28 @@ const AuthenticatedApp = () => {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [splashDone, setSplashDone] = useState(false);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    setSplashDone(true);
+  };
+
+  // After splash, check if age verified — if not, redirect to age verification
+  const getInitialRoute = () => {
+    const ageVerified = localStorage.getItem("unfiltr_age_verified");
+    return ageVerified ? null : "/age-verification";
+  };
 
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <SafeAreaFix />
-          {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          {splashDone && !localStorage.getItem("unfiltr_age_verified") && (
+            <Navigate to="/age-verification" replace />
+          )}
           <AuthenticatedApp />
         </Router>
         <Toaster />
