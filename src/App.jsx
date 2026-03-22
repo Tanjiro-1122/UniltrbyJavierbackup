@@ -39,13 +39,14 @@ import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
 import AgeVerification        from "./pages/AgeVerification";
+import Support                 from "./pages/Support";
 import Welcome                from "./pages/Welcome";
 
 // Pages where bottom tabs should NOT appear
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/PinLock", "/PinSetup",
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
-  "/PrivacyPolicy", "/TermsOfUse", "/welcome", "/age-verification",
+  "/PrivacyPolicy", "/TermsOfUse", "/welcome", "/age-verification", "/support",
 ];
 
 // Force black background into safe areas
@@ -124,6 +125,7 @@ const AuthenticatedApp = () => {
 
         {/* Legal */}
         <Route path="/PrivacyPolicy"         element={<PrivacyPolicy />} />
+        <Route path="/support"               element={<Support />} />
         <Route path="/TermsOfUse"            element={<TermsOfUse />} />
 
         {/* Admin */}
