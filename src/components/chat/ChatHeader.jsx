@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy, Moon, Sparkles, TrendingUp, Clock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ export default function ChatHeader({
   isPremium, messages, companion, navigate,
   setMessages, vibe,
   onShowGames, onShowMeditation, onShowAchievements,
+  onShowBreathing, onShowSleepStory, onShowTopics, onShowMoodInsights, onShowTimeCapsule,
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -101,22 +102,15 @@ export default function ChatHeader({
       </div>
 
       {/* Center: feature icons */}
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        <button onClick={onShowMeditation}
-          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          title="Breathe">
-          <Wind size={13} color="rgba(255,255,255,0.5)" />
-        </button>
-        <button onClick={onShowGames}
-          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          title="Games">
-          <Gamepad2 size={13} color="rgba(255,255,255,0.5)" />
-        </button>
-        <button onClick={onShowAchievements}
-          style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-          title="Achievements">
-          <Trophy size={13} color="rgba(255,255,255,0.5)" />
-        </button>
+      <div style={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", scrollbarWidth: "none" }}>
+        <HeaderIconBtn onClick={onShowBreathing} icon={<Wind size={13} />} title="Breathe" />
+        <HeaderIconBtn onClick={onShowMeditation} icon={<Moon size={13} />} title="Meditate" />
+        <HeaderIconBtn onClick={onShowSleepStory} icon={<span style={{ fontSize: 13 }}>🌙</span>} title="Sleep Story" />
+        <HeaderIconBtn onClick={onShowTopics} icon={<Sparkles size={13} />} title="Topics" />
+        <HeaderIconBtn onClick={onShowMoodInsights} icon={<TrendingUp size={13} />} title="Mood" />
+        <HeaderIconBtn onClick={onShowTimeCapsule} icon={<Clock size={13} />} title="Capsule" />
+        <HeaderIconBtn onClick={onShowGames} icon={<Gamepad2 size={13} />} title="Games" />
+        <HeaderIconBtn onClick={onShowAchievements} icon={<Trophy size={13} />} title="Badges" />
       </div>
 
       {/* Right side: actions */}
@@ -152,5 +146,15 @@ export default function ChatHeader({
         </button>
       </div>
     </div>
+  );
+}
+
+function HeaderIconBtn({ onClick, icon, title }) {
+  return (
+    <button onClick={onClick}
+      style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: "rgba(255,255,255,0.5)" }}
+      title={title}>
+      {icon}
+    </button>
   );
 }
