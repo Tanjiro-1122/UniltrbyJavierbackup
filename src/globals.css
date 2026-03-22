@@ -1,23 +1,11 @@
 /* ══════════════════════════════════════════════════════════
-   UNFILTR — GLOBAL MOBILE CSS (FIXED)
+   UNFILTR — GLOBAL MOBILE CSS
    ══════════════════════════════════════════════════════════ */
 
 /* ── 0. Override Tailwind white background — must come first ── */
 :root {
-  --background: 264 87% 3%; /* #06020f in HSL */
-  --border: 0 0% 18%;
+  --background: 6 2 15;        /* #06020f in RGB */
   color-scheme: dark;
-}
-
-html, body, #root {
-  border: none !important;
-  outline: none !important;
-  background: #06020f !important;
-  background-color: #06020f !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  min-height: 100dvh;
-  overscroll-behavior: none;
 }
 
 /* ── 1. Base reset ── */
@@ -31,67 +19,75 @@ html, body, #root {
 }
 
 html {
-  width: 100%;
   height: 100%;
-  overflow: hidden;
+  height: 100dvh;
+  height: -webkit-fill-available;
   background: #06020f !important;
   background-color: #06020f !important;
-  color-scheme: dark;
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
+  /* Fill behind status bar and home indicator */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 body {
   width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #06020f !important;
-  background-color: #06020f !important;
-  color-scheme: dark;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-}
-
-#root {
-  width: 100%;
-  height: 100dvh;
+  min-height: 100%;
   min-height: 100dvh;
-  overflow: hidden;
+  min-height: -webkit-fill-available;
   background: #06020f !important;
   background-color: #06020f !important;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── 2. .screen — outermost wrapper for every page ── */
-/* Background fills edge-to-edge (including behind safe areas).
-   Content is inset by safe areas via padding. */
-.screen {
+  overflow: hidden;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  overscroll-behavior: none;
+  color-scheme: dark;
+  /* Extend bg color into safe areas */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+#root {
   width: 100%;
-  max-width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #06020f;
+  display: flex;
+  flex-direction: column;
+  /* Pull content back to fill the full screen edge to edge */
+  margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+  margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  /* But pad internal content so it isn't behind notch/home bar */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── 2. .screen — outermost wrapper for every page ── */
+.screen {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  overscroll-behavior: none;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Account for bottom tab bar (64px) + safe area */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   background: #06020f;
-  background-color: #06020f;
-  z-index: 1;
+  /* Fill status bar area */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Pages that have NO top tabs */
-.screen.no-tabs,
-.app-shell.no-tabs {
-  padding-top: env(safe-area-inset-top, 0px);
+/* Pages that have NO bottom tabs */
+.screen.no-tabs {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -102,48 +98,21 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  overscroll-behavior-x: none;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  will-change: scroll-position;
 }
+.scroll-area::-webkit-scrollbar { display: none; }
 
-.scroll-area::-webkit-scrollbar { 
-  display: none; 
-}
-
-/* Ensure content inside scroll-area flows properly */
-.scroll-area > * {
+/* ── 4. .sticky-bottom ── */
+.sticky-bottom {
+  flex-shrink: 0;
   width: 100%;
+  padding: 0.75rem 1rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
 }
 
-/* ── Legacy .app-shell support ── */
-.app-shell {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  overscroll-behavior: none;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-  background: #06020f;
-  background-color: #06020f;
-  z-index: 1;
-}
-
-.app-shell.no-tabs {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* ── Text selection ── */
+/* ── 5. Text selection ── */
 * {
   -webkit-user-select: none;
   user-select: none;
@@ -154,12 +123,12 @@ input, textarea, p, span, [contenteditable], [data-selectable] {
   user-select: text;
 }
 
-/* ── Prevent iOS zoom on input focus ── */
+/* ── 6. Prevent iOS zoom on input focus ── */
 input, textarea, select {
   font-size: 16px !important;
 }
 
-/* ── Safe area utilities ── */
+/* ── 7. Safe area utilities ── */
 @supports (padding: max(0px)) {
   .safe-top    { padding-top:    max(0px, env(safe-area-inset-top)); }
   .safe-bottom { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
@@ -167,18 +136,44 @@ input, textarea, select {
   .safe-right  { padding-right:  max(0px, env(safe-area-inset-right)); }
 }
 
-/* ── Smooth scroll ── */
+/* ── 8. Native smooth scroll ── */
 .overflow-y-auto, [class*="scroll"] {
   -webkit-overflow-scrolling: touch;
 }
 
-/* ── Animations ── */
+/* ── 9. Dark mode ── */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+}
+
+/* ── 10. Utility animations ── */
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ── 11. Force black into ALL safe area zones ── */
+html::before,
+html::after {
+  content: '';
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: #06020f;
+  z-index: 9999;
+  pointer-events: none;
+}
+html::before {
+  top: 0;
+  height: env(safe-area-inset-top, 0px);
+}
+html::after {
+  bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
 }
