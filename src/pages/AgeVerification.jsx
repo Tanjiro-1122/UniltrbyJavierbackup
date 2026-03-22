@@ -38,6 +38,8 @@ export default function AgeVerification() {
       return;
     }
     localStorage.setItem("unfiltr_age_verified", "true");
+    // Fire event so App.jsx re-checks state immediately
+    window.dispatchEvent(new Event("unfiltr_age_verified"));
     navigate("/welcome");
   };
 
