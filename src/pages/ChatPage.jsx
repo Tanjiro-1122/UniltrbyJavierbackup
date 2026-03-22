@@ -24,6 +24,13 @@ import BackgroundEffect from "@/components/chat/BackgroundEffect";
 import { isAudioUnlocked, resumeAudioContext, playAudioFromBase64, stopCurrentAudio } from "@/components/utils/audioUnlock";
 
 import ChatErrorMessage from "@/components/chat/ChatErrorMessage";
+import BreathingExercise from "@/components/chat/BreathingExercise";
+import SleepStory from "@/components/chat/SleepStory";
+import TimeCapsule, { getDeliverableCapsules } from "@/components/chat/TimeCapsule";
+import WeeklyRecap, { shouldShowWeeklyRecap, markRecapShown } from "@/components/chat/WeeklyRecap";
+import MoodInsights from "@/components/chat/MoodInsights";
+import DailyAffirmation from "@/components/chat/DailyAffirmation";
+import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
 
 const VIBES_SUFFIX = {
@@ -68,6 +75,13 @@ export default function ChatPage() {
   const [showCompanionCard, setShowCompanionCard] = useState(false);
   const [quoteReply, setQuoteReply] = useState(null);
   const [lastFailedText, setLastFailedText] = useState(null);
+  const [showBreathing, setShowBreathing] = useState(false);
+  const [showSleepStory, setShowSleepStory] = useState(false);
+  const [showTimeCapsule, setShowTimeCapsule] = useState(false);
+  const [showWeeklyRecap, setShowWeeklyRecap] = useState(false);
+  const [showMoodInsights, setShowMoodInsights] = useState(false);
+  const [showTopics, setShowTopics] = useState(false);
+  const [showAffirmation, setShowAffirmation] = useState(false);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -170,6 +184,26 @@ export default function ChatPage() {
       // Mood check-in (once per day)
       const moodToday = localStorage.getItem("unfiltr_mood_checkin_date");
       if (moodToday !== todayStr) setShowMoodCheckIn(true);
+
+      // Show daily affirmation
+      setShowAffirmation(true);
+
+      // Check for deliverable time capsules
+      const capsules = getDeliverableCapsules();
+      if (capsules.length > 0) {
+        const capsuleText = capsules.map(c => c.text).join("\n\n");
+        setTimeout(() => {
+          setMessages(m => [...m, {
+            role: "assistant",
+            content: `💌 **Time Capsule Delivered!**\n\nYou wrote this to your future self:\n\n_"${capsuleText}"_\n\nHow does reading that make you feel? 💜`,
+          }]);
+        }, 3000);
+      }
+
+      // Weekly recap check
+      if (shouldShowWeeklyRecap()) {
+        setTimeout(() => setShowWeeklyRecap(true), 2000);
+      }
 
       // Anniversary
       const createdDate = localStorage.getItem("unfiltr_companion_created");
@@ -571,6 +605,11 @@ export default function ChatPage() {
             onShowGames={() => setShowGames(true)}
             onShowMeditation={() => setShowMeditation(true)}
             onShowAchievements={() => setShowAchievements(true)}
+            onShowBreathing={() => setShowBreathing(true)}
+            onShowSleepStory={() => setShowSleepStory(true)}
+            onShowTopics={() => setShowTopics(true)}
+            onShowMoodInsights={() => setShowMoodInsights(true)}
+            onShowTimeCapsule={() => setShowTimeCapsule(true)}
           />
 
           {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
@@ -646,6 +685,9 @@ export default function ChatPage() {
               </div>
             )}
           </div>
+
+          {/* Daily affirmation */}
+          <DailyAffirmation visible={showAffirmation} />
 
           {/* Memory banner */}
           {showMemoryBanner && !isPremium && (
@@ -759,6 +801,24 @@ export default function ChatPage() {
       {/* Mini Games */}
       <MiniGames visible={showGames} onClose={() => setShowGames(false)}
         onSendMessage={(text) => handleSend(text)} />
+
+      {/* Breathing Exercise */}
+      <BreathingExercise visible={showBreathing} onClose={() => setShowBreathing(false)} />
+
+      {/* Sleep Story */}
+      <SleepStory visible={showSleepStory} onClose={() => setShowSleepStory(false)} companionName={companionDisplayName} />
+
+      {/* Time Capsule */}
+      <TimeCapsule visible={showTimeCapsule} onClose={() => setShowTimeCapsule(false)} companionName={companionDisplayName} />
+
+      {/* Weekly Recap */}
+      <WeeklyRecap visible={showWeeklyRecap} onClose={() => { markRecapShown(); setShowWeeklyRecap(false); }} companionName={companionDisplayName} />
+
+      {/* Mood Insights */}
+      <MoodInsights visible={showMoodInsights} onClose={() => setShowMoodInsights(false)} />
+
+      {/* Conversation Topics */}
+      <ConversationTopics visible={showTopics} onClose={() => setShowTopics(false)} onSelect={(text) => handleSend(text)} />
 
       {/* Companion Share Card */}
       <CompanionShareCard
