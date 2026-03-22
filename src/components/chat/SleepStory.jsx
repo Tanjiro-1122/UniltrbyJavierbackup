@@ -39,6 +39,11 @@ export default function SleepStory({ visible, onClose, companionName }) {
     setPlaying(false);
   };
 
+  const stopStory = () => {
+    stopCurrentAudio();
+    setPlaying(false);
+  };
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 300,
