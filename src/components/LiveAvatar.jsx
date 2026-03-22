@@ -88,29 +88,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           }}
         />
 
-        {/* Mouth movement overlay — clipped to lower-face region, animated while speaking */}
-        {isSpeaking && (
-          <img
-            src={imageUrl}
-            alt=""
-            draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "clamp(312px, 54dvh, 468px)",
-              objectFit: "contain",
-              pointerEvents: "none",
-              WebkitTouchCallout: "none",
-              animation: "mouthMove 0.35s steps(2, jump-none) infinite",
-              transformOrigin: "center 30%",
-              opacity: 0.92,
-              mixBlendMode: "normal",
-            }}
-          />
-        )}
+
       </div>
     </>
   );
