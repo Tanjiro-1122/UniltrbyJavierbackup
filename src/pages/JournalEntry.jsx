@@ -145,7 +145,7 @@ export default function JournalEntry() {
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify([newEntry, ...existing]));
     setSaving(false);
     setSaved(true);
-    setTimeout(() => { setSaved(false); navigate("/journal-list"); }, 1500);
+    setTimeout(() => { setSaved(false); navigate("/journal/list"); }, 1500);
   };
 
   const placeSticker = (def) => {
