@@ -81,10 +81,37 @@ export function useAppleSubscriptions() {
     try {
       setStatusMessage('Restoring purchases...');
       const result = await AppleStoreKitService.restorePurchases();
-      setStatusMessage(result.isSuccess ? '✅ Purchases restored!' : 'Nothing to restore.');
-      setTimeout(() => setStatusMessage(''), 4000);
+
+      if (result.isSuccess) {
+        // ✅ Update DB so premium is actually unlocked after restore
+        const profileId = localStorage.getItem("userProfileId");
+        if (profileId) {
+          try {
+            const isAnnual = result.productId?.includes('annual') ?? false;
+            await base44.entities.UserProfile.update(profileId, {
+              is_premium: true,
+              premium: true,
+              annual_plan: isAnnual,
+            });
+            localStorage.setItem("unfiltr_is_premium", "true");
+          } catch (dbErr) {
+            console.error('[Restore] DB update failed:', dbErr);
+          }
+        }
+        setStatusMessage('✅ Purchases restored! Premium unlocked.');
+        setTimeout(() => {
+          setStatusMessage('');
+          // Reload so UI reflects premium status
+          window.location.reload();
+        }, 2000);
+      } else {
+        setStatusMessage('Nothing to restore.');
+        setTimeout(() => setStatusMessage(''), 4000);
+      }
     } catch (e) {
+      console.error('[Restore] Error:', e);
       setStatusMessage('Restore failed. Please try again.');
+      setTimeout(() => setStatusMessage(''), 4000);
     }
   };
 
