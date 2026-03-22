@@ -26,7 +26,7 @@ export default function OnboardingConsent() {
   return (
     <OnboardingLayout
       step={1}
-      onBack={() => navigate("/onboarding")}
+      onBack={() => navigate("/welcome")}
       onNext={handleNext}
       canAdvance={allAgreed}
       nextLabel="I agree — let's go →"
@@ -195,6 +195,17 @@ export default function OnboardingConsent() {
             <b style={{ color: "#fbbf24" }}>Mental health emergency?</b> Call or text <b style={{ color: "white" }}>988</b> anytime. This app is not a substitute for professional help.
           </p>
         </motion.div>
+
+        {/* Nudge if not all agreed yet */}
+        {!allAgreed && (
+          <p style={{
+            color: "rgba(168,85,247,0.7)", fontSize: 12,
+            textAlign: "center", margin: "4px 0 0",
+            fontWeight: 600,
+          }}>
+            ☝️ Check both boxes above to continue
+          </p>
+        )}
 
       </div>
     </OnboardingLayout>
