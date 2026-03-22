@@ -51,7 +51,7 @@ export default function JournalList() {
           <div className="flex flex-col items-center justify-center pt-24 gap-4">
             <span style={{ fontSize: 56 }}>📭</span>
             <p className="text-white/30 text-center text-sm">No entries yet.<br />Start writing something beautiful.</p>
-            <button onClick={() => navigate("/journal-entry")}
+            <button onClick={() => navigate("/journal/entry")}
               className="mt-4 px-6 py-3 rounded-2xl bg-purple-600/60 text-white text-sm font-semibold flex items-center gap-2">
               <PenLine className="w-4 h-4" />Write your first entry
             </button>
@@ -90,7 +90,7 @@ export default function JournalList() {
       {/* FAB — new entry */}
       <motion.button
         initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 }}
-        onClick={() => navigate("/journal-entry")}
+        onClick={() => navigate("/journal/entry")}
         className="absolute bottom-8 right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-xl"
         style={{ background: "linear-gradient(135deg, #7c3aed, #10b981)" }}>
         <PenLine className="w-6 h-6 text-white" />
