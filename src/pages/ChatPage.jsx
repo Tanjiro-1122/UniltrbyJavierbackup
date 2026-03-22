@@ -32,6 +32,10 @@ import MoodInsights from "@/components/chat/MoodInsights";
 import DailyAffirmation from "@/components/chat/DailyAffirmation";
 import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
+import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion/companionPersonalities";
+import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
+import CrisisBanner from "@/components/chat/CrisisBanner";
+import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRewardBanner";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -82,6 +86,9 @@ export default function ChatPage() {
   const [showMoodInsights, setShowMoodInsights] = useState(false);
   const [showTopics, setShowTopics] = useState(false);
   const [showAffirmation, setShowAffirmation] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [showCrisisBanner, setShowCrisisBanner] = useState(false);
+  const [showStreakReward, setShowStreakReward] = useState(false);
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -173,8 +180,15 @@ export default function ChatPage() {
       else if (streakData.date === todayStr) newStreak = streakData.count;
       if (streakData.date !== todayStr) {
         localStorage.setItem("unfiltr_streak", JSON.stringify({ date: todayStr, count: newStreak }));
-        if (newStreak > 1) { setStreak(newStreak); setShowStreakBanner(true); setTimeout(() => setShowStreakBanner(false), 4000); }
-        else setStreak(newStreak);
+        if (newStreak > 1) {
+          setStreak(newStreak);
+          // Show streak reward if it's a milestone, otherwise just show streak banner
+          if (getStreakReward(newStreak)) {
+            setShowStreakReward(true); setTimeout(() => setShowStreakReward(false), 5000);
+          } else {
+            setShowStreakBanner(true); setTimeout(() => setShowStreakBanner(false), 4000);
+          }
+        } else setStreak(newStreak);
       } else { setStreak(streakData.count); }
 
       // Mood check-in (once per day)
@@ -259,18 +273,24 @@ export default function ChatPage() {
       return;
     }
 
-    // Brand new conversation — with late-night awareness
+    // Brand new conversation — use personality-specific greetings
     const isLateNight = hour >= 23 || hour < 5;
     const lateNightSuffix = isLateNight ? "\n\nIt's late — I'm glad you're here though. Take it easy tonight 🌙" : "";
+    
+    const personality = COMPANION_PERSONALITIES[companion.id];
+    const vibeGreeting = personality?.vibeGreetings?.[vibe];
+    const defaultGreeting = personality?.greeting;
+    
+    const greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
+      vibe === "chill" ? "What's good? Just vibing here 😌" :
+      vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
+      vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
+      "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
+    }`;
 
     const greeting = {
       role: "assistant",
-      content: `Hey! I'm ${name} 👋 ${
-        vibe === "chill" ? "What's good? Just vibing here 😌" :
-        vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
-        vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
-        "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-      }${lateNightSuffix}`,
+      content: `${greetingText}${lateNightSuffix}`,
     };
     setMessages([greeting]);
   }, [companion]);
@@ -434,7 +454,10 @@ export default function ChatPage() {
         const pid2 = localStorage.getItem("userProfileId");
         if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); memorySummary = prof?.memory_summary || ""; }
       } catch {}
-      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
+      // Use distinct companion personality if available
+      const personality = COMPANION_PERSONALITIES[companion.id];
+      const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
+      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
 
@@ -458,6 +481,11 @@ export default function ChatPage() {
 
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
+
+      // Crisis detection — check user message for distress signals
+      const lowerText = text.toLowerCase();
+      const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw));
+      if (isCrisis) setShowCrisisBanner(true);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
