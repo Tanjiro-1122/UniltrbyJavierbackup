@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, PenLine } from "lucide-react";
+import { ChevronLeft, PenLine, Trash2 } from "lucide-react";
 
 export default function JournalList() {
   const navigate = useNavigate();
@@ -20,6 +20,12 @@ export default function JournalList() {
   };
 
   const preview = (text) => text?.length > 120 ? text.slice(0, 120) + "..." : text;
+
+  const deleteEntry = (id) => {
+    const updated = entries.filter((e) => e.id !== id);
+    setEntries(updated);
+    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
+  };
 
   return (
     <div className="fixed inset-0 flex flex-col"
@@ -61,10 +67,20 @@ export default function JournalList() {
                 transition={{ delay: i * 0.05 }}
                 className="rounded-2xl p-4"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <p className="text-purple-400/70 text-xs uppercase tracking-widest mb-2">{formatDate(e.created_date)}</p>
-                <p className="text-white/70 text-sm leading-relaxed" style={{ fontFamily: "'Georgia', serif" }}>
-                  {preview(e.content)}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-purple-400/70 text-xs uppercase tracking-widest mb-2">{formatDate(e.created_date)}</p>
+                    <p className="text-white/70 text-sm leading-relaxed" style={{ fontFamily: "'Georgia', serif" }}>
+                      {preview(e.content)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { if (window.confirm("Delete this journal entry?")) deleteEntry(e.id); }}
+                    className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-90 transition-transform"
+                  >
+                    <Trash2 className="w-4 h-4 text-white/30" />
+                  </button>
+                </div>
               </motion.div>
             ))}
           </div>
