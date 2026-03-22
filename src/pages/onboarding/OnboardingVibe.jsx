@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
-import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+import { getOnboardingStore, updateOnboardingStore, resetOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
 const VIBES = [
   {
@@ -61,80 +63,77 @@ export default function OnboardingVibe() {
   const navigate = useNavigate();
   const store = getOnboardingStore();
   const [selected, setSelected] = useState(store.selectedVibe || null);
+  const [loading, setLoading] = useState(false);
 
   if (!store.selectedCompanion) {
     navigate("/onboarding/companion", { replace: true });
     return null;
   }
 
+  const finishOnboardingForJournal = async () => {
+    setLoading(true);
+    try {
+      const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
+      const companion = await base44.entities.Companion.create({
+        name: companionData.name,
+        avatar_url: companionData.avatar,
+        mood_mode: "neutral",
+        personality: companionData.tagline,
+      });
+
+      const defaultBg = BACKGROUNDS[0];
+      const profileData = {
+        display_name: store.displayName,
+        companion_id: companion.id,
+        background_id: defaultBg.id,
+        premium: store.isTesterAccount,
+        is_premium: store.isTesterAccount,
+        session_memory: store.isTesterAccount ? [{
+          date: new Date().toLocaleDateString(),
+          summary: "This is a demo account for app review.",
+        }] : [],
+      };
+
+      let userProfile;
+      if (store.pendingProfileId) {
+        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+      } else {
+        userProfile = await base44.entities.UserProfile.create(profileData);
+      }
+
+      localStorage.setItem("userProfileId", userProfile.id);
+      localStorage.setItem("companionId", companion.id);
+
+      const finalName = store.companionNickname.trim() || companionData.name;
+      localStorage.setItem("unfiltr_companion_nickname", store.companionNickname.trim());
+      localStorage.setItem("unfiltr_companion", JSON.stringify({
+        id: companionData.id,
+        name: companionData.name,
+        displayName: finalName,
+        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
+      }));
+
+      localStorage.setItem("unfiltr_env", JSON.stringify({
+        id: defaultBg.id, label: defaultBg.label, bg: defaultBg.url,
+      }));
+
+      resetOnboardingStore();
+      navigate("/journal");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNext = () => {
     if (!selected) return;
     updateOnboardingStore({ selectedVibe: selected });
 
     if (selected === "journal") {
-      // Finish onboarding without background, go to journal
-      finishOnboarding(null);
+      finishOnboardingForJournal();
     } else {
-      // Go to background selection (step 6)
       navigate("/onboarding/background");
     }
   };
-
-  const finishOnboarding = async (backgroundId) => {
-    const { COMPANIONS, BACKGROUNDS } = await import("@/components/companionData");
-    const { base44 } = await import("@/api/base44Client");
-
-    const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
-    const companion = await base44.entities.Companion.create({
-      name: companionData.name,
-      avatar_url: companionData.avatar,
-      mood_mode: "neutral",
-      personality: companionData.tagline,
-    });
-
-    const profileData = {
-      display_name: store.displayName,
-      companion_id: companion.id,
-      background_id: backgroundId || "living_room",
-      premium: store.isTesterAccount,
-      is_premium: store.isTesterAccount,
-      session_memory: store.isTesterAccount ? [{
-        date: new Date().toLocaleDateString(),
-        summary: "This is a demo account for app review.",
-      }] : [],
-    };
-
-    let userProfile;
-    if (store.pendingProfileId) {
-      userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-    } else {
-      userProfile = await base44.entities.UserProfile.create(profileData);
-    }
-
-    localStorage.setItem("userProfileId", userProfile.id);
-    localStorage.setItem("companionId", companion.id);
-
-    const finalName = store.companionNickname.trim() || companionData.name;
-    localStorage.setItem("unfiltr_companion_nickname", store.companionNickname.trim());
-    localStorage.setItem("unfiltr_companion", JSON.stringify({
-      id: companionData.id,
-      name: companionData.name,
-      displayName: finalName,
-      systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
-    }));
-
-    const bg = BACKGROUNDS.find(b => b.id === (backgroundId || "living_room"));
-    if (bg) {
-      localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    }
-
-    const { resetOnboardingStore } = await import("@/components/onboarding/useOnboardingStore");
-    resetOnboardingStore();
-    navigate("/journal");
-  };
-
-  // Expose finishOnboarding for background page to use
-  window.__onboardingFinishFromVibe = finishOnboarding;
 
   return (
     <OnboardingLayout
@@ -142,8 +141,9 @@ export default function OnboardingVibe() {
       totalSteps={6}
       onBack={() => navigate("/onboarding/nickname")}
       onNext={handleNext}
-      canAdvance={!!selected}
-      nextLabel={selected === "journal" ? "Start journaling →" : "Pick your world →"}
+      canAdvance={!!selected && !loading}
+      loading={loading}
+      nextLabel={selected === "journal" ? (loading ? "Setting up…" : "Start journaling →") : "Pick your world →"}
     >
       <div style={{ padding: "0 20px 20px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
