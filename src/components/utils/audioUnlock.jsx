@@ -6,6 +6,10 @@
  * 2. The hardware mute/silent switch silences Web Audio API because
  *    WKWebView defaults to AVAudioSessionCategoryAmbient.
  *
+ * Fix for #1: On the very first touchend/click anywhere on the page,
+ * create the AudioContext, resume it, and play a silent buffer. This
+ * "primes" the context so subsequent programmatic play() calls work.
+ *
  * Fix for #2: Play a looping silent HTML5 <audio> element. This forces
  * WKWebView to switch to AVAudioSessionCategoryPlayback, which ignores
  * the mute switch. This is a well-known workaround (iOS 11–17+).
@@ -24,16 +28,6 @@ const SILENT_MP3 = "data:audio/mp3;base64,//tAxAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA
 export const audioReady = new Promise((resolve) => {
   unlockPromiseResolve = resolve;
   if (typeof window === "undefined") { resolve(); return; }
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === "running") {
-      unlocked = true;
-      sharedAudioContext = ctx;
-      resolve();
-      return;
-    }
-    ctx.close();
-  } catch {}
 });
 
 export function isAudioUnlocked() {
@@ -47,6 +41,7 @@ export function isAudioUnlocked() {
 export function getAudioContext() {
   if (!sharedAudioContext) {
     sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("[Audio] AudioContext created, state:", sharedAudioContext.state);
   }
   return sharedAudioContext;
 }
@@ -57,15 +52,22 @@ export function getAudioContext() {
  * which ignores the iOS hardware mute/silent switch.
  */
 function startSilentAudioLoop() {
-  if (silentAudioElement) return; // already running
+  if (silentAudioElement) {
+    // Already exists — just make sure it's playing
+    if (silentAudioElement.paused) {
+      silentAudioElement.play().catch(() => {});
+    }
+    return;
+  }
   try {
     const audio = document.createElement("audio");
-    audio.setAttribute("x-webkit-airplay", "deny"); // hide from AirPlay/control center
+    audio.setAttribute("x-webkit-airplay", "deny");
+    audio.setAttribute("playsinline", "");
     audio.preload = "auto";
     audio.loop = true;
     audio.src = SILENT_MP3;
-    audio.volume = 0.01; // near-silent but nonzero to keep session active
-    audio.play().catch(() => {}); // may fail if not in gesture — that's fine, we retry
+    audio.volume = 0.01;
+    audio.play().catch(() => {});
     silentAudioElement = audio;
     console.log("[Audio] Silent loop started for mute-switch bypass");
   } catch (e) {
@@ -79,16 +81,27 @@ function startSilentAudioLoop() {
  */
 export async function resumeAudioContext() {
   const ctx = getAudioContext();
+
+  // Always attempt to resume — iOS can re-suspend it at any time
   if (ctx.state === "suspended") {
-    await ctx.resume();
+    try { await ctx.resume(); } catch {}
   }
-  // (Re)start the silent loop on every gesture — iOS may have killed it
+
+  // Play a silent buffer to "warm" the context (critical on iOS first-use)
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch {}
+
+  // Start/resume the HTML5 silent loop for mute-switch bypass
   startSilentAudioLoop();
-  if (silentAudioElement && silentAudioElement.paused) {
-    silentAudioElement.play().catch(() => {});
-  }
+
   if (!unlocked) {
     unlocked = true;
+    console.log("[Audio] Audio fully unlocked");
     if (unlockPromiseResolve) unlockPromiseResolve();
   }
   return ctx;
@@ -200,35 +213,62 @@ export function stopCurrentAudio() {
   }
 }
 
-// ── First-gesture unlock ──
+/**
+ * ── First-gesture unlock ──
+ * iOS WKWebView REQUIRES a real user gesture (touchend or click) to
+ * create/resume an AudioContext. touchstart is NOT reliable.
+ * We listen at the document level with capture to catch the very first tap.
+ */
 function doUnlock() {
   if (unlocked) return;
-  unlocked = true;
+  console.log("[Audio] First user gesture detected — unlocking audio");
 
-  // Create + resume the shared AudioContext
-  try {
-    const ctx = getAudioContext();
-    if (ctx.state === "suspended") ctx.resume();
-    // Play a silent buffer to fully unlock Web Audio API
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-  } catch {}
+  // 1. Create and immediately resume the AudioContext
+  const ctx = getAudioContext();
+  const resumePromise = ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
 
-  // Start the silent HTML5 loop for mute-switch bypass
+  resumePromise.then(() => {
+    console.log("[Audio] AudioContext resumed, state:", ctx.state);
+    // 2. Play a silent buffer to fully prime the audio pipeline
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      console.log("[Audio] Silent buffer played — Web Audio unlocked");
+    } catch (e) {
+      console.warn("[Audio] Silent buffer play failed:", e?.message);
+    }
+  }).catch((e) => {
+    console.warn("[Audio] AudioContext resume failed:", e?.message);
+  });
+
+  // 3. Start the silent HTML5 loop for mute-switch bypass
   startSilentAudioLoop();
 
+  unlocked = true;
   if (unlockPromiseResolve) unlockPromiseResolve();
 }
 
-// Auto-attach listeners on import
+// Auto-attach listeners on import — use touchend + click for maximum compatibility
+// touchend is the reliable gesture event on iOS WKWebView
 if (typeof window !== "undefined") {
-  const events = ["touchstart", "touchend", "click", "keydown"];
-  const handler = () => {
+  const unlockEvents = ["touchend", "click"];
+  const unlockHandler = () => {
     doUnlock();
-    events.forEach(e => document.removeEventListener(e, handler, true));
+    // Remove all listeners after first successful unlock
+    unlockEvents.forEach(e => document.removeEventListener(e, unlockHandler, true));
   };
-  events.forEach(e => document.addEventListener(e, handler, { capture: true, passive: true }));
+  unlockEvents.forEach(e => document.addEventListener(e, unlockHandler, { capture: true, passive: true }));
+
+  // Also re-warm the context on every subsequent tap (iOS can re-suspend)
+  document.addEventListener("touchend", () => {
+    if (unlocked && sharedAudioContext && sharedAudioContext.state === "suspended") {
+      sharedAudioContext.resume().catch(() => {});
+    }
+    if (silentAudioElement && silentAudioElement.paused) {
+      silentAudioElement.play().catch(() => {});
+    }
+  }, { capture: true, passive: true });
 }
