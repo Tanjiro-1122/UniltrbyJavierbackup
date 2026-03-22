@@ -42,7 +42,6 @@ import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
 import Welcome                from "./pages/Welcome";
 
-// Pages where bottom tabs should NOT appear
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/PinLock", "/PinSetup",
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -50,7 +49,6 @@ const HIDE_TABS_ON = [
   "/BackgroundSelect", "/journal/entry", "/journal/list", "/journal/splash",
 ];
 
-// Force black background into safe areas
 function SafeAreaFix() {
   useEffect(() => {
     const color = "#06020f";
@@ -70,49 +68,44 @@ function SafeAreaFix() {
 }
 
 const AuthenticatedApp = ({ splashDone }) => {
-  const { isLoadingAuth, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
 
-  // Handle age verification redirect inside router context
+  // Age gate — only runs ONCE after splash finishes
   useEffect(() => {
     if (!splashDone) return;
-    // Skip age gate on legal/public routes
     const skipPaths = ["/PrivacyPolicy", "/TermsOfUse", "/support", "/age-verification", "/welcome"];
     if (skipPaths.some(p => location.pathname.startsWith(p))) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) {
       navigate("/age-verification", { replace: true });
     }
-  }, [splashDone]);
+  }, [splashDone]); // eslint-disable-line
 
-  if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#06020f" }}>
-        <div className="w-8 h-8 border-4 border-purple-900 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  // Auth gate — only runs ONCE after splash + auth both done
+  useEffect(() => {
+    if (!splashDone) return;
+    if (isLoadingAuth) return;
+    const skipPaths = ["/PrivacyPolicy", "/TermsOfUse", "/support", "/age-verification", "/welcome", "/Pricing",
+      "/onboarding"];
+    if (skipPaths.some(p => location.pathname.startsWith(p))) return;
+    if (authError?.type === "auth_required") {
+      navigate("/onboarding/consent", { replace: true });
+    }
+  }, [splashDone, isLoadingAuth]); // eslint-disable-line
 
-  // Public routes bypass auth entirely
-  const isPublicRoute = ["/age-verification", "/welcome", "/PrivacyPolicy", "/TermsOfUse", "/support", "/Pricing"].some(
-    p => location.pathname === p || location.pathname.startsWith(p)
-  );
+  // While splash is showing OR auth is loading — render nothing (splash covers it)
+  if (!splashDone || isLoadingAuth) return null;
 
-  if (!isPublicRoute && authError) {
-    if (authError.type === "user_not_registered") return <UserNotRegisteredError />;
-    if (authError.type === "auth_required") { navigateToLogin(); return null; }
-  }
+  if (authError?.type === "user_not_registered") return <UserNotRegisteredError />;
 
   return (
     <>
       <Routes>
-        {/* Pre-auth public pages */}
         <Route path="/age-verification"      element={<AgeVerification />} />
         <Route path="/welcome"               element={<Welcome />} />
-
-        {/* Core */}
         <Route path="/"                      element={<HomePage />} />
         <Route path="/chat"                  element={<ChatPage />} />
         <Route path="/chat-history"          element={<ChatHistory />} />
@@ -124,8 +117,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/PersonalityQuiz"       element={<PersonalityQuiz />} />
         <Route path="/PinLock"               element={<PinLock />} />
         <Route path="/PinSetup"              element={<PinSetup />} />
-
-        {/* Onboarding */}
         <Route path="/onboarding"            element={<Onboarding />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
@@ -133,25 +124,18 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
         <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
-
-        {/* Journal */}
         <Route path="/journal"               element={<Journal />} />
         <Route path="/journal/home"          element={<JournalHome />} />
         <Route path="/journal/splash"        element={<JournalSplash />} />
         <Route path="/journal/list"          element={<JournalList />} />
         <Route path="/journal/entry"         element={<JournalEntry />} />
         <Route path="/journal/entry/:id"     element={<JournalEntry />} />
-
-        {/* Legal */}
         <Route path="/PrivacyPolicy"         element={<PrivacyPolicy />} />
         <Route path="/support"               element={<Support />} />
         <Route path="/TermsOfUse"            element={<TermsOfUse />} />
-
-        {/* Admin */}
         <Route path="/AdminAvatarProcessor"  element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard"        element={<AdminDashboard />} />
         <Route path="/FeedbackAdmin"         element={<FeedbackAdmin />} />
-
         <Route path="*"                      element={<PageNotFound />} />
       </Routes>
       {showTabs && <BottomTabs />}
