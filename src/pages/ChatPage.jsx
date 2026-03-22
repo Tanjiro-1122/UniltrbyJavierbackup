@@ -318,24 +318,23 @@ export default function ChatPage() {
       const cleanText = text.replace(/[\*\_\~\#\>\`]/g, "").slice(0, 400);
       if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
       
-      const audioUnlocked = isAudioUnlocked();
-      console.log("[TTS] Audio unlocked:", audioUnlocked);
-      if (!audioUnlocked) {
-        console.warn("[TTS] Audio not yet unlocked — attempting resume anyway");
-        try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
-      }
+      // Always try to resume AudioContext before TTS — critical on iOS
+      try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
+      console.log("[TTS] Audio unlocked:", isAudioUnlocked());
       
       console.log("[TTS] Invoking TTS function with voice:", voiceGender, voicePersonality);
       const res = await base44.functions.invoke("tts", { text: cleanText, companionId, voiceGender, voicePersonality });
       console.log("[TTS] Response received, status:", res.status);
-      console.log("[TTS] Response data keys:", res.data ? Object.keys(res.data) : "no data");
       
       const base64 = res.data?.audio;
       if (!base64) { 
-        console.warn("[TTS] No audio in response. Full response:", JSON.stringify(res.data).slice(0, 200)); 
+        console.warn("[TTS] No audio in response"); 
         setIsSpeaking(false); setAvatarState("idle"); return; 
       }
-      console.log("[TTS] Got base64 audio, length:", base64.length, "chars, first 20:", base64.slice(0, 20));
+      console.log("[TTS] Got base64 audio, length:", base64.length);
+      
+      // Resume again right before playback (iOS may have re-suspended during the API call)
+      try { await resumeAudioContext(); } catch {}
       
       await playAudioFromBase64(base64);
       console.log("[TTS] Playback complete");
