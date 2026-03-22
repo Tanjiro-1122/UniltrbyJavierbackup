@@ -1,5 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+// Import audioUnlock so its auto-attach listeners run at app startup
+import '@/components/utils/audioUnlock';
 
 // ─── Full-screen loader ────────────────────────────────────────────────────
 const FullScreenLoader = () => (
