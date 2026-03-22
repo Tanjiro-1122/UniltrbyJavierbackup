@@ -55,7 +55,7 @@ export default function ChatInputBar({
           enterKeyHint="send"
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 16, minWidth: 0, caretColor: "#a855f7", WebkitAppearance: "none" }}
         />
-        <button onClick={() => { hapticMedium(); soundSend(); handleSend(); }} disabled={loading || (!input.trim() && !pendingImage)}
+        <button onClick={() => { if (loading || (!input.trim() && !pendingImage)) return; hapticMedium(); soundSend(); handleSend(); }} disabled={loading || (!input.trim() && !pendingImage)}
           style={{
             width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",

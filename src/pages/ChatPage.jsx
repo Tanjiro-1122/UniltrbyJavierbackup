@@ -490,7 +490,7 @@ export default function ChatPage() {
         }).catch(() => {});
       }
 
-      const totalMsgs = [...messages, { role: "user" }].filter(m => m.role === "user").length;
+      const totalMsgs = messages.filter(m => m.role === "user").length + 1;
       if (totalMsgs === 10) {
         const pid = localStorage.getItem("userProfileId");
         if (pid) base44.functions.invoke("ratingPrompt", { profileId: pid }).then(r => { if (r.data?.should_prompt) setShowRatingPrompt(true); }).catch(() => {});
@@ -499,8 +499,8 @@ export default function ChatPage() {
       const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-      const summarizeInterval = isPremium ? 10 : 5;
-      if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
+      const summarizeInterval = isPremium ? 10 : 8;
+      if (profileId2 && userMsgCount >= 4 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         base44.functions.invoke("summarizeSession", {
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
