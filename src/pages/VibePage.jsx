@@ -9,36 +9,40 @@ const VIBES = [
     emoji: "😌",
     label: "Chill",
     desc: "Just hanging out. No agenda, no pressure.",
-    color: "from-teal-500 to-cyan-400",
-    bg: "bg-teal-900/30",
-    border: "border-teal-400/40",
+    gradient: "linear-gradient(135deg, #0d9488, #06b6d4)",
+    bg: "rgba(13,148,136,0.12)",
+    border: "rgba(13,148,136,0.35)",
+    glow: "rgba(13,148,136,0.3)",
   },
   {
     id: "vent",
     emoji: "💨",
     label: "Vent",
     desc: "Need to let it all out? I'm here, no judgement.",
-    color: "from-blue-500 to-indigo-500",
-    bg: "bg-blue-900/30",
-    border: "border-blue-400/40",
+    gradient: "linear-gradient(135deg, #3b82f6, #6366f1)",
+    bg: "rgba(59,130,246,0.12)",
+    border: "rgba(59,130,246,0.35)",
+    glow: "rgba(59,130,246,0.3)",
   },
   {
     id: "hype",
     emoji: "🔥",
     label: "Hype",
     desc: "Big moment coming up? Let's get you READY.",
-    color: "from-orange-500 to-yellow-400",
-    bg: "bg-orange-900/30",
-    border: "border-orange-400/40",
+    gradient: "linear-gradient(135deg, #f97316, #eab308)",
+    bg: "rgba(249,115,22,0.12)",
+    border: "rgba(249,115,22,0.35)",
+    glow: "rgba(249,115,22,0.3)",
   },
   {
     id: "deep",
     emoji: "🌙",
     label: "Deep Talk",
     desc: "2am thoughts, existential questions, real talk.",
-    color: "from-purple-600 to-pink-500",
-    bg: "bg-purple-900/30",
-    border: "border-purple-400/40",
+    gradient: "linear-gradient(135deg, #7c3aed, #db2777)",
+    bg: "rgba(124,58,237,0.12)",
+    border: "rgba(124,58,237,0.35)",
+    glow: "rgba(124,58,237,0.3)",
   },
 ];
 
@@ -57,72 +61,113 @@ export default function VibePage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-[#0d0520] to-[#1a0a35] flex flex-col overflow-hidden pb-20">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 pb-3" style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-          <ChevronLeft className="w-5 h-5 text-white" />
+    <div style={{
+      position: "fixed", inset: 0,
+      background: "linear-gradient(180deg, #0d0520 0%, #06020f 100%)",
+      display: "flex", flexDirection: "column", overflow: "hidden",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "max(1.5rem, env(safe-area-inset-top)) 16px 16px",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)", border: "none",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <ChevronLeft size={20} color="white" />
         </button>
         <div>
-          <h1 className="text-white font-bold text-xl">Set the vibe</h1>
-          <p className="text-white/40 text-xs">How do you want to roll today?</p>
+          <h1 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: 0 }}>Set the vibe</h1>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: 0 }}>How do you want to roll today?</p>
         </div>
       </div>
 
-      <div className="flex-1 px-4 space-y-3 overflow-y-auto pb-4">
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-        {/* Journal Option — top, special styling */}
         <motion.div
           whileTap={{ scale: 0.97 }}
           onClick={() => setSelected("journal")}
-          className={`rounded-2xl border p-4 cursor-pointer transition-all bg-emerald-900/30 border-emerald-400/40 ${
-            selected === "journal" ? "ring-2 ring-white/50" : ""
-          }`}
+          style={{
+            borderRadius: 18, padding: "16px",
+            background: selected === "journal" ? "rgba(16,185,129,0.18)" : "rgba(16,185,129,0.08)",
+            border: `1.5px solid ${selected === "journal" ? "rgba(16,185,129,0.7)" : "rgba(16,185,129,0.25)"}`,
+            cursor: "pointer",
+            boxShadow: selected === "journal" ? "0 0 20px rgba(16,185,129,0.2)" : "none",
+            transition: "all 0.2s",
+          }}
         >
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">📓</span>
-            <div>
-              <p className="font-bold text-base bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                Journal
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 30, flexShrink: 0 }}>📓</span>
+            <div style={{ flex: 1 }}>
+              <p style={{
+                fontWeight: 700, fontSize: 16, margin: "0 0 2px",
+                background: "linear-gradient(135deg, #34d399, #06b6d4)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              }}>Journal</p>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, margin: 0 }}>
+                Write freely. Speak your thoughts. Save them.
               </p>
-              <p className="text-white/60 text-sm">Write freely. Speak your thoughts. Save them.</p>
             </div>
             {selected === "journal" && (
-              <div className="ml-auto w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
-                <div className="w-3 h-3 rounded-full bg-emerald-600" />
+              <div style={{
+                width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg, #34d399, #06b6d4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 py-1">
-          <div className="flex-1 h-px bg-white/10" />
-          <p className="text-white/30 text-xs uppercase tracking-widest">or chat</p>
-          <div className="flex-1 h-px bg-white/10" />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0" }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
+          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, fontWeight: 600, letterSpacing: 2, margin: 0 }}>OR CHAT</p>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
         </div>
 
-        {/* Chat Vibes */}
         {VIBES.map((v) => (
           <motion.div
             key={v.id}
             whileTap={{ scale: 0.97 }}
             onClick={() => setSelected(v.id)}
-            className={`rounded-2xl border p-4 cursor-pointer transition-all ${v.bg} ${v.border} ${
-              selected === v.id ? "ring-2 ring-white/50" : ""
-            }`}
+            style={{
+              borderRadius: 18, padding: "16px",
+              background: selected === v.id ? v.bg : "rgba(255,255,255,0.04)",
+              border: `1.5px solid ${selected === v.id ? v.border : "rgba(255,255,255,0.08)"}`,
+              cursor: "pointer",
+              boxShadow: selected === v.id ? `0 0 20px ${v.glow}` : "none",
+              transition: "all 0.2s",
+            }}
           >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{v.emoji}</span>
-              <div>
-                <p className={`font-bold text-base bg-gradient-to-r ${v.color} bg-clip-text text-transparent`}>
-                  {v.label}
-                </p>
-                <p className="text-white/60 text-sm">{v.desc}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ fontSize: 28, flexShrink: 0 }}>{v.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{
+                  fontWeight: 700, fontSize: 16, margin: "0 0 2px",
+                  background: v.gradient,
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                }}>{v.label}</p>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, margin: 0 }}>{v.desc}</p>
               </div>
               {selected === v.id && (
-                <div className="ml-auto w-6 h-6 rounded-full bg-white flex items-center justify-center shrink-0">
-                  <div className="w-3 h-3 rounded-full bg-purple-600" />
+                <div style={{
+                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                  background: v.gradient,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
               )}
             </div>
@@ -130,18 +175,30 @@ export default function VibePage() {
         ))}
       </div>
 
-      <div className="px-4 pt-2" style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))" }}>
-        <button
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        padding: "16px 16px max(24px, env(safe-area-inset-bottom))",
+        background: "linear-gradient(to top, #06020f 60%, transparent)",
+      }}>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={handleContinue}
           disabled={!selected}
-          className={`w-full py-4 rounded-2xl font-bold text-lg transition-all ${
-            selected
-              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl shadow-purple-500/30 active:scale-95"
-              : "bg-white/10 text-white/30 cursor-not-allowed"
-          }`}
+          style={{
+            width: "100%", padding: "17px",
+            background: selected
+              ? "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)"
+              : "rgba(255,255,255,0.07)",
+            border: "none", borderRadius: 18,
+            color: selected ? "white" : "rgba(255,255,255,0.3)",
+            fontWeight: 800, fontSize: 17,
+            cursor: selected ? "pointer" : "not-allowed",
+            boxShadow: selected ? "0 0 28px rgba(168,85,247,0.4)" : "none",
+            transition: "all 0.3s",
+          }}
         >
           Let's go →
-        </button>
+        </motion.button>
       </div>
     </div>
   );
