@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock } from "lucide-react";
-import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
+import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock, Loader2 } from "lucide-react";
+import { useAppleSubscriptions } from "@/components/hooks/useAppleSubscriptions";
+import { base44 } from "@/api/base44Client";
 
 const PERKS = [
   { icon: MessageCircle, label: "Unlimited messages, every day" },
@@ -21,10 +22,11 @@ function getMidnightCountdown() {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading, isAndroid }) {
+export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading: externalLoading, isAndroid }) {
   const [tab, setTab] = useState("upgrade");
   const [countdown, setCountdown] = useState(getMidnightCountdown());
   const [planType, setPlanType] = useState("annual");
+  const { products, loading: productsLoading, purchasing, error, statusMessage, purchase, restore } = useAppleSubscriptions();
 
   useEffect(() => {
     if (!visible) return;
@@ -33,7 +35,38 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
     return () => clearInterval(timer);
   }, [visible]);
 
-  const handleSubscribe = () => subscribeToPlan(planType);
+  const isLoading = externalLoading || purchasing;
+
+  const handleSubscribe = async () => {
+    const productId = planType === "annual"
+      ? "com.huertas.unfiltr.premium.annual"
+      : "com.huertas.unfiltr.premium.monthly";
+    const result = await purchase(productId);
+    if (result?.success) {
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        await base44.entities.UserProfile.update(profileId, {
+          is_premium: true,
+          premium: true,
+          annual_plan: planType === "annual",
+        });
+      }
+      if (onSubscribe) onSubscribe();
+      onClose();
+    }
+  };
+
+  const handleRestore = async () => {
+    await restore();
+    const profileId = localStorage.getItem("userProfileId");
+    if (profileId) {
+      const profile = await base44.entities.UserProfile.get(profileId);
+      if (profile?.is_premium || profile?.premium) {
+        if (onRestore) onRestore();
+        onClose();
+      }
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -151,6 +184,10 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   </button>
                 </div>
 
+                {/* Status / Error */}
+                {error && <p style={{ color: "#f87171", fontSize: 13, textAlign: "center", marginBottom: 8 }}>{error}</p>}
+                {statusMessage && <p style={{ color: "#a78bfa", fontSize: 13, textAlign: "center", marginBottom: 8 }}>{statusMessage}</p>}
+
                 <button
                   onClick={handleSubscribe}
                   disabled={isLoading}
@@ -160,10 +197,15 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                     boxShadow: "0 0 24px rgba(168,85,247,0.4)",
                   }}
                 >
-                  {isLoading ? "Loading..." : "Subscribe Now →"}
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                      Processing...
+                    </span>
+                  ) : "Subscribe Now →"}
                 </button>
 
-                <button onClick={restorePurchases} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
+                <button onClick={handleRestore} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
                   <RotateCcw className="w-3 h-3" />
                   Restore Purchase
                 </button>
