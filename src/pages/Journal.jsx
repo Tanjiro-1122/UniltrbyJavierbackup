@@ -68,7 +68,7 @@ export default function Journal() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header */}
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px" }}>
-          <button onClick={() => navigate("/vibe")} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <button onClick={() => navigate(-1)} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <ArrowLeft size={18} color="white" />
           </button>
           <div style={{ flex: 1 }}>
@@ -94,7 +94,7 @@ export default function Journal() {
               <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
             </div>
           ) : entries.length === 0 ? (
-            <JournalEmptyState onStartJournal={() => navigate("/chat")} />
+            <JournalEmptyState onStartJournal={() => setWriting(true)} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {sortedGroups.map(([key, group]) => (
