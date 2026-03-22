@@ -67,19 +67,35 @@ const STICKER_DEFS = [
 ];
 
 function PlacedSticker({ sticker, onRemove, constraintsRef }) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const def = STICKER_DEFS.find((d) => d.id === sticker.type);
   if (!def) return null;
   return (
     <>
       <style>{def.keyframes}</style>
       <motion.div
-        drag dragConstraints={constraintsRef} dragElastic={0.1} dragMomentum={false}
+        drag={!showConfirm} dragConstraints={constraintsRef} dragElastic={0.1} dragMomentum={false}
         initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
-        style={{ position: "absolute", left: sticker.x, top: sticker.y, zIndex: 10, cursor: "grab", userSelect: "none", touchAction: "none" }}
-        onDoubleClick={() => onRemove(sticker.id)}
+        style={{ position: "absolute", left: sticker.x, top: sticker.y, zIndex: showConfirm ? 50 : 10, cursor: "grab", userSelect: "none", touchAction: "none" }}
+        onDoubleClick={() => setShowConfirm(true)}
         title="Double-tap to remove"
       >
         <span style={{ fontSize: 36, ...def.style }}>{def.emoji}</span>
+        {showConfirm && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+            className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5 whitespace-nowrap"
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(sticker.id); }}
+              className="px-2.5 py-1 rounded-lg bg-red-600/90 text-white text-xs font-semibold active:scale-95"
+            >Remove</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
+              className="px-2.5 py-1 rounded-lg bg-white/20 text-white text-xs font-semibold active:scale-95"
+            >Keep</button>
+          </motion.div>
+        )}
       </motion.div>
     </>
   );
