@@ -31,7 +31,7 @@ export default function BackgroundSelect() {
       </div>
 
       {/* Background Grid */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 scroll-area">
         <div className="grid grid-cols-2 gap-3">
           {BACKGROUNDS.map(bg => (
             <motion.button
