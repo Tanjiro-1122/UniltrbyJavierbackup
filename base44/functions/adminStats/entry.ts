@@ -6,26 +6,21 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Auth: verify the caller is the admin by display name
-    let isAdmin = false;
-    try {
-      const user = await base44.auth.me();
-      if (user) {
-        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-        const profile = profiles?.[0];
-        if (profile?.display_name === ADMIN_DISPLAY_NAME) {
-          isAdmin = true;
-        }
-      }
-    } catch (e) {
-      // Auth not available
+    // Parse the profileId from the request body
+    const body = await req.json().catch(() => ({}));
+    const profileId = body.profileId;
+
+    if (!profileId) {
+      return Response.json({ error: 'Missing profileId' }, { status: 400 });
     }
 
-    if (!isAdmin) {
+    // Verify admin by checking the profile display name using service role
+    const profile = await base44.asServiceRole.entities.UserProfile.get(profileId);
+    if (!profile || profile.display_name !== ADMIN_DISPLAY_NAME) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel using service role
     const [users, allProfiles, recentMessages, journalEntries, errorLogs] = await Promise.all([
       base44.asServiceRole.entities.User.list(),
       base44.asServiceRole.entities.UserProfile.list(),
@@ -53,7 +48,6 @@ Deno.serve(async (req) => {
       .slice(0, 8)
       .map(u => ({ id: u.id, full_name: u.full_name, email: u.email, created_date: u.created_date }));
 
-    // Format error logs for display
     const recentErrors = errorLogs.map(e => ({
       id: e.id,
       type: e.error_type,
