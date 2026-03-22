@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import BottomTabs from '@/components/BottomTabs';
+import SplashScreen from '@/components/SplashScreen';
 import HomePage from './pages/HomePage';
 import VibePage from './pages/VibePage';
 import ChatPage from './pages/ChatPage';
@@ -14,17 +15,15 @@ import Settings from './pages/Settings';
 import AdminAvatarProcessor from './pages/AdminAvatarProcessor';
 import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Pages where the bottom tab bar should NOT appear
 const HIDE_TABS_ON = ["/onboarding", "/vibe", "/AdminAvatarProcessor", "/AdminDashboard", "/PrivacyPolicy"];
 
-// ── Force black background into safe areas (status bar + home indicator) ──────
+// ── Force black background into safe areas ────────────────────────────────────
 function SafeAreaFix() {
   useEffect(() => {
     const color = '#06020f';
-
-    // Set meta theme-color (affects status bar on Chrome/Android)
     let meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
       meta = document.createElement('meta');
@@ -32,27 +31,21 @@ function SafeAreaFix() {
       document.head.appendChild(meta);
     }
     meta.content = color;
-
-    // Force document & body background
     document.documentElement.style.background = color;
     document.documentElement.style.backgroundColor = color;
     document.body.style.background = color;
     document.body.style.backgroundColor = color;
-
-    // Ensure viewport-fit=cover is set
     let viewport = document.querySelector('meta[name="viewport"]');
     if (viewport && !viewport.content.includes('viewport-fit=cover')) {
       viewport.content += ', viewport-fit=cover';
     }
   }, []);
-
   return null;
 }
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
-
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -85,18 +78,22 @@ const AuthenticatedApp = () => {
         <Route path="/PrivacyPolicy"        element={<PrivacyPolicy />} />
         <Route path="*"                     element={<PageNotFound />} />
       </Routes>
-
       {showTabs && <BottomTabs />}
     </>
   );
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <SafeAreaFix />
+          {showSplash && (
+            <SplashScreen onComplete={() => setShowSplash(false)} />
+          )}
           <AuthenticatedApp />
         </Router>
         <Toaster />
