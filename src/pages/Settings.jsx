@@ -575,18 +575,12 @@ export default function Settings() {
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
         onSubscribe={() => {
-          if (window.webkit?.messageHandlers?.storekit) {
-            window.webkit.messageHandlers.storekit.postMessage({ action: "subscribe", productId: "com.unfiltr.premium.monthly" });
-          } else {
-            alert("In-app purchase: com.unfiltr.premium.monthly ($9.99/month)");
-          }
+          setUserProfile(prev => ({ ...prev, is_premium: true, premium: true }));
+          setShowPaywall(false);
         }}
         onRestore={() => {
-          if (window.webkit?.messageHandlers?.storekit) {
-            window.webkit.messageHandlers.storekit.postMessage({ action: "restore" });
-          } else {
-            alert("Restore purchases — handled by Apple StoreKit.");
-          }
+          setUserProfile(prev => ({ ...prev, is_premium: true, premium: true }));
+          setShowPaywall(false);
         }}
       />
 
