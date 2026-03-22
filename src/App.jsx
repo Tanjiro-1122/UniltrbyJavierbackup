@@ -81,9 +81,16 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === "user_not_registered") return <UserNotRegisteredError />;
-    if (authError.type === "auth_required") { navigateToLogin(); return null; }
+  // Public routes bypass auth entirely
+  const isPublicRoute = ["/age-verification", "/welcome", "/PrivacyPolicy", "/TermsOfUse", "/support", "/Pricing"].some(
+    p => location.pathname === p || location.pathname.startsWith(p)
+  );
+
+  if (!isPublicRoute) {
+    if (authError) {
+      if (authError.type === "user_not_registered") return <UserNotRegisteredError />;
+      if (authError.type === "auth_required") { navigateToLogin(); return null; }
+    }
   }
 
   return (
