@@ -49,7 +49,7 @@ export default function VibePage() {
   const handleContinue = () => {
     if (!selected) return;
     if (selected === "journal") {
-      navigate("/journal");
+      navigate("/journal-splash");
       return;
     }
     localStorage.setItem("unfiltr_vibe", selected);

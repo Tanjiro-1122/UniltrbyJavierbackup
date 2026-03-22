@@ -27,8 +27,10 @@ import FeedbackAdmin from './pages/admin/FeedbackAdmin';
 import Pricing from './pages/Pricing';
 import BackgroundSelect from './pages/BackgroundSelect';
 import FeedbackButton from './components/FeedbackButton';
-import Journal from './pages/Journal';
-import JournalPage from './pages/JournalPage';
+import JournalSplash from './pages/JournalSplash';
+import JournalHome from './pages/JournalHome';
+import JournalEntry from './pages/JournalEntry';
+import JournalList from './pages/JournalList';
 import ChatHistory from './pages/ChatHistory';
 import PersonalityQuiz from './pages/PersonalityQuiz';
 
@@ -43,7 +45,9 @@ const HIDE_TABS_ON = [
   "/chat",
   "/vibe",
   "/background",
+  "/journal-splash",
   "/journal",
+  "/journal-entry",
   "/journal-list",
   "/ChatHistory",
   "/PersonalityQuiz"
@@ -51,7 +55,7 @@ const HIDE_TABS_ON = [
 
 // Pages where the floating feedback button should NOT appear
 const HIDE_FEEDBACK_BTN_ON = [
-  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/", "/journal", "/journal-list", "/ChatHistory", "/PersonalityQuiz"
+  "/feedback", "/admin/feedback", "/onboarding", "/vibe", "/chat", "/HomePage", "/", "/journal-splash", "/journal", "/journal-entry", "/journal-list", "/ChatHistory", "/PersonalityQuiz"
 ];
 
 const AuthenticatedApp = () => {
@@ -111,8 +115,10 @@ const AuthenticatedApp = () => {
         <Route path="/TermsOfUse" element={<TermsOfUse />} />
         <Route path="/Pricing" element={<Pricing />} />
         <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/journal" element={<JournalPage />} />
-        <Route path="/journal-list" element={<Journal />} />
+        <Route path="/journal-splash" element={<JournalSplash />} />
+        <Route path="/journal" element={<JournalHome />} />
+        <Route path="/journal-entry" element={<JournalEntry />} />
+        <Route path="/journal-list" element={<JournalList />} />
         <Route path="/ChatHistory" element={<ChatHistory />} />
         <Route path="/PersonalityQuiz" element={<PersonalityQuiz />} />
         <Route path="/admin/feedback" element={<FeedbackAdmin />} />
