@@ -528,7 +528,7 @@ export default function Settings() {
                 Admin Dashboard
               </button>
               <button
-                onClick={() => navigate("/admin/feedback")}
+                onClick={() => navigate("/FeedbackAdmin")}
                 style={{ width: "100%", padding: "13px 16px", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}
               >
                 <MessageSquareMore size={16} color="#a855f7" />
@@ -546,7 +546,7 @@ export default function Settings() {
           onClick={() => {
             localStorage.removeItem("unfiltr_pin");
             localStorage.removeItem("unfiltr_last_active");
-            navigate("/pin-setup");
+            navigate("/PinSetup");
           }}
           style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
         >
