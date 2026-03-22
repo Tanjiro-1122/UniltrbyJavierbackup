@@ -177,3 +177,25 @@ html::after {
   bottom: 0;
   height: env(safe-area-inset-bottom, 0px);
 }
+
+/* ── 12. .app-shell — used by AppShell component ── */
+.app-shell {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  background: #06020f;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.app-shell.no-tabs {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
