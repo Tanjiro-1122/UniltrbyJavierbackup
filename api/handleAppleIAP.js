@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const RC_SECRET_KEY  = process.env.REVENUECAT_SECRET_KEY; // sk_vbJBTyJIbFmJCgZJhqdKybEVekzxl
 const RC_API_BASE    = "https://api.revenuecat.com/v1";
-const ENTITLEMENT_ID = "premium";
+const ENTITLEMENT_ID = "unfiltr by javier Pro";
 
 const PRODUCT_MAP = {
   "com.huertas.unfiltr.premium.monthly": "monthly",

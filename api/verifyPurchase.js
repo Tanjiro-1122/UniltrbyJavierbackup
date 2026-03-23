@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const RC_SECRET_KEY  = process.env.REVENUECAT_SECRET_KEY;
 const RC_API_BASE    = "https://api.revenuecat.com/v1";
-const ENTITLEMENT_ID = "premium";
+const ENTITLEMENT_ID = "unfiltr by javier Pro";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
