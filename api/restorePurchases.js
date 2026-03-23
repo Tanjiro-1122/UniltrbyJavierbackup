@@ -1,6 +1,6 @@
 /**
- * verifyPurchase — checks RevenueCat for active entitlement.
- * Called on app launch / resume to sync premium status.
+ * restorePurchases — checks RevenueCat for any active entitlement
+ * and syncs premium status back to Supabase.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -17,38 +17,17 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { profileId, userId, platform, receiptData, productId, purchaseToken } = req.body;
+    const { profileId, userId } = req.body;
     const appUserId = profileId || userId;
 
     if (!appUserId) return res.status(400).json({ error: "No user ID" });
 
-    // If receipt is provided (fresh purchase), post it first
-    if (receiptData && productId) {
-      await fetch(`${RC_API_BASE}/receipts`, {
-        method: "POST",
-        headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${RC_SECRET_KEY}`,
-          "X-Platform":    platform === "android" ? "android" : "ios",
-        },
-        body: JSON.stringify({
-          app_user_id: appUserId,
-          fetch_token: receiptData,
-          product_id:  productId,
-        }),
-      });
-    }
-
-    // Always fetch subscriber status from RevenueCat
     const rcRes = await fetch(`${RC_API_BASE}/subscribers/${encodeURIComponent(appUserId)}`, {
-      headers: {
-        "Authorization": `Bearer ${RC_SECRET_KEY}`,
-        "X-Platform":    "ios",
-      },
+      headers: { "Authorization": `Bearer ${RC_SECRET_KEY}` },
     });
 
     if (!rcRes.ok) {
-      return res.status(200).json({ data: { success: false, isPremium: false } });
+      return res.status(200).json({ data: { success: false, isPremium: false, message: "No purchases found" } });
     }
 
     const subscriberData = await rcRes.json();
@@ -57,25 +36,26 @@ export default async function handler(req, res) {
     const isActive       = premiumEnt && new Date(premiumEnt.expires_date) > new Date();
     const plan           = premiumEnt?.product_identifier?.includes("annual") ? "annual" : "monthly";
 
-    // Sync to Supabase
     if (isActive) {
       await supabase
         .from("user_profile")
         .update({ is_premium: true, annual_plan: plan === "annual", updated_date: new Date().toISOString() })
         .eq("id", appUserId);
+
+      localStorage?.setItem?.("unfiltr_is_premium", "true");
     }
 
     return res.status(200).json({
       data: {
-        success:     true,
-        isPremium:   isActive,
-        plan:        isActive ? plan : null,
-        expiresDate: premiumEnt?.expires_date || null,
+        success:   isActive,
+        isPremium: isActive,
+        plan:      isActive ? plan : null,
+        message:   isActive ? "Purchases restored successfully!" : "No active purchases found.",
       },
     });
 
   } catch (err) {
-    console.error("[verifyPurchase] error:", err);
+    console.error("[restorePurchases] error:", err);
     return res.status(500).json({ error: err.message });
   }
 }

@@ -1,32 +1,65 @@
 /**
- * Handles Apple StoreKit IAP receipt validation.
- * Validates with Apple servers, then marks user as premium in Supabase.
+ * Apple IAP handler — validates receipts via RevenueCat REST API
+ * then marks user as premium in Supabase.
  */
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const PRODUCTION_URL = "https://buy.itunes.apple.com/verifyReceipt";
-const SANDBOX_URL    = "https://sandbox.itunes.apple.com/verifyReceipt";
+const RC_SECRET_KEY  = process.env.REVENUECAT_SECRET_KEY; // sk_vbJBTyJIbFmJCgZJhqdKybEVekzxl
+const RC_API_BASE    = "https://api.revenuecat.com/v1";
+const ENTITLEMENT_ID = "premium";
 
 const PRODUCT_MAP = {
   "com.huertas.unfiltr.premium.monthly": "monthly",
   "com.huertas.unfiltr.premium.annual":  "annual",
 };
 
-async function validateWithApple(receiptData, url) {
-  const res = await fetch(url, {
+/**
+ * POST the receipt to RevenueCat and get entitlement status back.
+ * appUserId = Supabase user ID (used as RevenueCat App User ID)
+ */
+async function postReceiptToRevenueCat(receiptData, appUserId, productId) {
+  const res = await fetch(`${RC_API_BASE}/receipts`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type":  "application/json",
+      "Authorization": `Bearer ${RC_SECRET_KEY}`,
+      "X-Platform":    "ios",
+    },
     body: JSON.stringify({
-      "receipt-data": receiptData,
-      password: process.env.APPLE_SHARED_SECRET,
-      "exclude-old-transactions": true,
+      app_user_id:       appUserId,
+      fetch_token:       receiptData,   // base64 receipt from StoreKit
+      product_id:        productId,
+      price:             productId?.includes("annual") ? 59.99 : 9.99,
+      currency:          "USD",
+      payment_mode:      "IMMEDIATE_AND_AUTO_RENEWING",
     }),
   });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`RevenueCat receipt POST failed: ${res.status} — ${err}`);
+  }
+  return res.json();
+}
+
+/**
+ * Get subscriber info from RevenueCat to check entitlement status.
+ */
+async function getSubscriberInfo(appUserId) {
+  const res = await fetch(`${RC_API_BASE}/subscribers/${encodeURIComponent(appUserId)}`, {
+    headers: {
+      "Authorization": `Bearer ${RC_SECRET_KEY}`,
+      "X-Platform":    "ios",
+    },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`RevenueCat subscriber GET failed: ${res.status} — ${err}`);
+  }
   return res.json();
 }
 
@@ -34,58 +67,48 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { receipt, productId, profileId: bodyProfileId } = req.body;
-    const profileId = bodyProfileId || req.body.userId || null;
+    const { receipt, productId, profileId, userId } = req.body;
+    const appUserId = profileId || userId || null;
 
-    if (!receipt) {
-      return res.status(400).json({ error: "No receipt provided" });
-    }
+    if (!receipt) return res.status(400).json({ error: "No receipt provided" });
+    if (!appUserId) return res.status(400).json({ error: "No user ID provided" });
 
-    // Try production first, fall back to sandbox (required per Apple rules)
-    let appleResponse = await validateWithApple(receipt, PRODUCTION_URL);
-    if (appleResponse.status === 21007) {
-      // 21007 = sandbox receipt sent to production → retry with sandbox
-      appleResponse = await validateWithApple(receipt, SANDBOX_URL);
-    }
+    // 1. Post receipt to RevenueCat
+    await postReceiptToRevenueCat(receipt, appUserId, productId);
 
-    if (appleResponse.status !== 0) {
-      console.error("[IAP] Apple validation failed, status:", appleResponse.status);
-      return res.status(400).json({ error: "Receipt validation failed", appleStatus: appleResponse.status });
-    }
-
-    // Get the latest receipt info
-    const latestReceipts = appleResponse.latest_receipt_info || appleResponse.receipt?.in_app || [];
-    const sorted = [...latestReceipts].sort((a, b) =>
-      parseInt(b.purchase_date_ms || 0) - parseInt(a.purchase_date_ms || 0)
-    );
-    const latest = sorted[0];
-    const validatedProductId = latest?.product_id || productId;
-    const plan = PRODUCT_MAP[validatedProductId] || "monthly";
-    const expiresMs = latest?.expires_date_ms ? parseInt(latest.expires_date_ms) : null;
-    const isActive = !expiresMs || expiresMs > Date.now();
+    // 2. Fetch subscriber to confirm entitlement is active
+    const subscriberData = await getSubscriberInfo(appUserId);
+    const entitlements   = subscriberData?.subscriber?.entitlements || {};
+    const premiumEnt     = entitlements[ENTITLEMENT_ID];
+    const isActive       = premiumEnt && new Date(premiumEnt.expires_date) > new Date();
 
     if (!isActive) {
-      return res.status(400).json({ error: "Subscription expired" });
+      return res.status(400).json({ error: "Entitlement not active after receipt validation" });
     }
 
-    // Update Supabase if we have a profileId
-    if (profileId) {
-      await supabase
-        .from("user_profile")
-        .update({
-          is_premium: true,
-          annual_plan: plan === "annual",
-          updated_date: new Date().toISOString(),
-        })
-        .eq("id", profileId);
-    }
+    // 3. Get plan type
+    const activeProductId = premiumEnt.product_identifier || productId;
+    const plan            = PRODUCT_MAP[activeProductId] || "monthly";
+    const expiresDate     = premiumEnt.expires_date;
+
+    // 4. Update Supabase — mark user as premium
+    const { error: dbError } = await supabase
+      .from("user_profile")
+      .update({
+        is_premium:   true,
+        annual_plan:  plan === "annual",
+        updated_date: new Date().toISOString(),
+      })
+      .eq("id", appUserId);
+
+    if (dbError) console.error("[IAP] Supabase update error:", dbError);
 
     return res.status(200).json({
       data: {
-        success: true,
+        success:     true,
         plan,
-        expiresDate: expiresMs ? new Date(expiresMs).toISOString() : null,
-        productId: validatedProductId,
+        expiresDate,
+        productId:   activeProductId,
       },
     });
 
