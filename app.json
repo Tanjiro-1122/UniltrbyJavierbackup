@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "0b576781-9044-41d1-bd11-9db9883db20e"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.huertas.unfiltr",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
