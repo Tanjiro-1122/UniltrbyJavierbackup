@@ -10,23 +10,23 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError]             = useState(null);
 
   useEffect(() => {
-    // Use Base44 localStorage auth
-    const userId   = localStorage.getItem("unfiltr_user_id");
+    const userId    = localStorage.getItem("unfiltr_user_id");
     const authToken = localStorage.getItem("unfiltr_auth_token");
     const onboardingComplete = localStorage.getItem("unfiltr_onboarding_complete");
 
     if (userId && authToken) {
+      // Returning authenticated user — go straight to home
       setUser({ id: userId, email: localStorage.getItem("unfiltr_user_email") || "" });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } else if (onboardingComplete) {
-      // Onboarding done but token missing — treat as logged out
+      // Completed onboarding but lost token — send to welcome to re-auth
+      setIsLoadingAuth(false);
       setAuthError({ type: "logged_out" });
-      setIsLoadingAuth(false);
     } else {
-      // Brand new user — needs onboarding
-      setAuthError({ type: "auth_required" });
+      // Brand new user — send to welcome screen (not straight to onboarding)
       setIsLoadingAuth(false);
+      setAuthError({ type: "logged_out" });
     }
   }, []);
 
