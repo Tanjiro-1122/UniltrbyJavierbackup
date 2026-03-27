@@ -512,6 +512,52 @@ export default function Settings() {
           </div>
         </motion.div>
 
+        {/* Version — tap 5x to unlock admin */}
+        <div style={{ textAlign: "center", paddingBottom: 8 }}>
+          <span
+            onClick={handleTriquetraTap}
+            style={{ color: "rgba(255,255,255,0.15)", fontSize: 11, cursor: "default", userSelect: "none" }}
+          >
+            v1.2.0
+          </span>
+        </div>
+
+        {/* Code Modal */}
+        <AnimatePresence>
+          {showCodeModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+              onClick={() => { setShowCodeModal(false); setAdminCode(""); setCodeError(""); }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                style={{ background: "#1a0535", border: "1px solid rgba(168,85,247,0.4)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 320 }}
+              >
+                <p style={{ color: "white", fontWeight: 700, fontSize: 18, margin: "0 0 6px", textAlign: "center" }}>🔐 Admin Access</p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 18px", textAlign: "center" }}>Enter access code</p>
+                <input
+                  type="password"
+                  value={adminCode}
+                  onChange={e => { setAdminCode(e.target.value); setCodeError(""); }}
+                  onKeyDown={e => e.key === "Enter" && handleCodeSubmit()}
+                  placeholder="Enter code..."
+                  autoFocus
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                />
+                {codeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{codeError}</p>}
+                <button
+                  onClick={handleCodeSubmit}
+                  style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+                >
+                  Unlock
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Admin Section */}
         {isAdmin && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
