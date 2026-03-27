@@ -39,8 +39,8 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
 
   const handleSubscribe = async () => {
     const productId = planType === "annual"
-      ? "com.huertas.unfiltr.premium.annual"
-      : "com.huertas.unfiltr.premium.monthly";
+      ? "com.huertas.unfiltr.pro.annual"
+      : "com.huertas.unfiltr.pro.monthly";
     const result = await purchase(productId);
     if (result?.success) {
       const profileId = localStorage.getItem("userProfileId");
