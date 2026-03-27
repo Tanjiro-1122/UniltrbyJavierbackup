@@ -99,6 +99,11 @@ export default function MoodPicker() {
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
+  // Define goTo FIRST before any useEffect that references it
+  const goTo = useCallback((i) => {
+    setIdx(Math.max(0, Math.min(MOODS.length - 1, i)));
+  }, []);
+
   useEffect(() => { setTimeout(() => setReady(true), 60); }, []);
 
   // Keyboard + mouse drag support
@@ -121,10 +126,6 @@ export default function MoodPicker() {
   };
 
   const mood = MOODS[idx];
-
-  const goTo = useCallback((i) => {
-    setIdx(Math.max(0, Math.min(MOODS.length - 1, i)));
-  }, []);
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
