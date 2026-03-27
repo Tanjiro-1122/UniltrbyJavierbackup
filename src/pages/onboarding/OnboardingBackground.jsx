@@ -85,7 +85,7 @@ export default function OnboardingBackground() {
 
       // Navigate immediately — don't wait for DB
       setLoading(false);
-      navigate("/");
+      navigate("/mood?dest=chat");
 
       // Fire-and-forget DB calls in background
       (async () => {
@@ -126,7 +126,7 @@ export default function OnboardingBackground() {
       localStorage.setItem("unfiltr_onboarding_complete", "true");
       resetOnboardingStore();
       setLoading(false);
-      navigate("/");
+      navigate("/mood?dest=chat");
     }
   };
 
