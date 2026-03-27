@@ -195,9 +195,9 @@ export default function ChatPage() {
         } else setStreak(newStreak);
       } else { setStreak(streakData.count); }
 
-      // Mood check-in (once per day)
-      const moodToday = localStorage.getItem("unfiltr_mood_checkin_date");
-      if (moodToday !== todayStr) setShowMoodCheckIn(true);
+      // Mood check-in disabled — mood is set via MoodPicker before entering chat
+      // const moodToday = localStorage.getItem("unfiltr_mood_checkin_date");
+      // if (moodToday !== todayStr) setShowMoodCheckIn(true);
 
       // Show daily affirmation
       setShowAffirmation(true);
