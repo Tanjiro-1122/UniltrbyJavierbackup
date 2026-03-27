@@ -106,7 +106,7 @@ const AuthenticatedApp = ({ splashDone }) => {
     const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
     const isLanding = location.pathname === "/home-screen" || location.pathname === "/returning-screen";
 
-    if (authError?.type === "logged_out") {
+    if (authError?.type === "logged_out" || authError?.type === "new_user") {
       navigate("/home-screen", { replace: true });
       return;
     }
