@@ -100,43 +100,58 @@ export default function OnboardingVibe() {
     setLoading(true);
     try {
       const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
-      const companion = await base44.entities.Companion.create({
-        name: companionData.name,
-        avatar_url: companionData.avatar,
-        mood_mode: "neutral",
-        personality: companionData.tagline,
-      });
       const defaultBg = BACKGROUNDS[0];
-      const profileData = {
-        display_name: store.displayName,
-        companion_id: companion.id,
-        background_id: defaultBg.id,
-        is_premium: store.isTesterAccount || false,
-        session_memory: [],
-      };
-      let userProfile;
-      if (store.pendingProfileId) {
-        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-      } else {
-        userProfile = await base44.entities.UserProfile.create(profileData);
-      }
-      localStorage.setItem("userProfileId", userProfile.id);
-      localStorage.setItem("companionId", companion.id);
       const finalName = store.companionNickname?.trim() || companionData.name;
-      localStorage.setItem("unfiltr_companion_nickname", finalName);
+
+      // ✅ Set ALL localStorage keys FIRST — before any async DB calls
+      // This ensures ChatPage & JournalHome always have what they need
       localStorage.setItem("unfiltr_companion", JSON.stringify({
         id: companionData.id, name: companionData.name, displayName: finalName,
         systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
       }));
+      localStorage.setItem("unfiltr_companion_nickname", finalName);
       localStorage.setItem("unfiltr_env", JSON.stringify({
         id: defaultBg.id, label: defaultBg.label, bg: defaultBg.url,
       }));
-      resetOnboardingStore();
+      localStorage.setItem("unfiltr_vibe", "journal");
       localStorage.setItem("unfiltr_onboarding_complete", "true");
+
+      // Navigate immediately — don't wait for DB
+      setLoading(false);
+      navigate("/mood?dest=journal");
+
+      // Fire-and-forget DB calls in background
+      (async () => {
+        try {
+          const companion = await base44.entities.Companion.create({
+            name: companionData.name,
+            avatar_url: companionData.avatar,
+            mood_mode: "neutral",
+            personality: companionData.tagline,
+          });
+          const profileData = {
+            display_name: store.displayName,
+            companion_id: companion.id,
+            background_id: defaultBg.id,
+            is_premium: store.isTesterAccount || false,
+            session_memory: [],
+          };
+          let userProfile;
+          if (store.pendingProfileId) {
+            userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+          } else {
+            userProfile = await base44.entities.UserProfile.create(profileData);
+          }
+          localStorage.setItem("userProfileId", userProfile.id);
+          localStorage.setItem("companionId", companion.id);
+          resetOnboardingStore();
+        } catch (err) {
+          console.error("Journal onboarding DB error (non-blocking):", err);
+          resetOnboardingStore();
+        }
+      })();
     } catch (err) {
-      console.error("Journal onboarding error (non-blocking):", err);
-      resetOnboardingStore();
-    } finally {
+      console.error("Journal onboarding error:", err);
       setLoading(false);
       navigate("/mood?dest=journal");
     }
