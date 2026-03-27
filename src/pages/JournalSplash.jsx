@@ -7,7 +7,7 @@ export default function JournalSplash() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate("/journal", { replace: true });
+      navigate("/journal/home", { replace: true });
     }, 2800);
     return () => clearTimeout(timer);
   }, []);
@@ -17,9 +17,9 @@ export default function JournalSplash() {
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
         background: "linear-gradient(160deg, #060210 0%, #0f0525 50%, #0a1a10 100%)",
+        zIndex: 9999,
       }}
     >
-      {/* Animated book icon */}
       <motion.div
         initial={{ scale: 0.4, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -35,7 +35,6 @@ export default function JournalSplash() {
         </motion.div>
       </motion.div>
 
-      {/* Text */}
       <motion.p
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -65,7 +64,6 @@ export default function JournalSplash() {
         A private space, just for you 🌙
       </motion.p>
 
-      {/* Progress bar */}
       <motion.div
         className="absolute bottom-16 left-1/2 -translate-x-1/2"
         style={{ width: 120 }}
