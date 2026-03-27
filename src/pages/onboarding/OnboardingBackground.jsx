@@ -71,13 +71,15 @@ export default function OnboardingBackground() {
         localStorage.setItem("unfiltr_vibe", store.selectedVibe);
       }
 
+      localStorage.setItem("unfiltr_onboarding_complete", "true");
       resetOnboardingStore();
-      navigate("/vibe");
+      navigate("/");
     } catch (err) {
       console.error("Onboarding DB error (non-blocking):", err);
       // Still navigate even if DB fails — don't block the user
+      localStorage.setItem("unfiltr_onboarding_complete", "true");
       resetOnboardingStore();
-      navigate("/vibe");
+      navigate("/");
     } finally {
       setLoading(false);
     }
