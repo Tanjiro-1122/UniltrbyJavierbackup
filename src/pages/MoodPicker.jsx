@@ -152,7 +152,9 @@ export default function MoodPicker() {
     if (dest === "journal") {
       navigate("/journal-enter");
     } else {
-      navigate("/pin-gate?dest=chat");
+      // Only go to pin-gate if user has already set a PIN — otherwise go straight to chat
+      const hasPin = !!localStorage.getItem("unfiltr_pin");
+      navigate(hasPin ? "/pin-gate?dest=chat" : "/chat-enter");
     }
   };
 
