@@ -170,7 +170,7 @@ export default function HomePage() {
           {hasSession ? (
             /* Returning user — single "Continue" button goes straight to chat */
             <button
-              onClick={() => navigate("/chat")}
+              onClick={() => navigate("/vibe")}
               style={{
                 width: "100%", padding: "16px",
                 borderRadius: 18, border: "none",
