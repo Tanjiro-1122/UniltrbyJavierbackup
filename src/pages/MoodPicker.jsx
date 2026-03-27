@@ -291,7 +291,6 @@ export default function MoodPicker() {
           }}>
             <ChevronLeft size={22} color="white" />
           </button>
-        )}
         <button onClick={() => goTo(idx + 1)} disabled={idx === MOODS.length - 1} style={{
             position: "absolute", right: 14, zIndex: 20,
             width: 42, height: 42, borderRadius: "50%",
@@ -302,7 +301,6 @@ export default function MoodPicker() {
           }}>
             <ChevronRight size={22} color="white" />
           </button>
-        )}
       </div>
 
       {/* Dots */}
