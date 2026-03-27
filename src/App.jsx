@@ -92,14 +92,7 @@ const AuthenticatedApp = ({ splashDone }) => {
       navigate("/welcome", { replace: true });
       return;
     }
-    // Authenticated returning user — check PIN
-    if (!authError && !isLoadingAuth) {
-      const pin = localStorage.getItem("unfiltr_pin");
-      if (pin) {
-        navigate("/PinLock", { replace: true });
-      }
-      // No PIN → stay on current route (/ = HomePage)
-    }
+    // Authenticated returning user — no redirect needed, PIN is handled by SplashScreen
   }, [splashDone, isLoadingAuth, authError?.type]); // eslint-disable-line
 
   // Don't render anything until splash is done AND auth check is complete
