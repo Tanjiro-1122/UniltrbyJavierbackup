@@ -135,23 +135,33 @@ export default function ChatPage() {
       const v = localStorage.getItem("unfiltr_vibe");
       const consented = localStorage.getItem("unfiltr_consent_accepted") || localStorage.getItem("unfiltr_onboarding_complete");
       const hasProfile = localStorage.getItem("userProfileId");
-      if (!c || !e || !consented) {
-        if (hasProfile && c) {
-          // Has profile and companion but env is missing — use a safe default env
-          const defaultEnv = { id: "cozy", name: "Cozy Living Room", bg: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=80" };
-          localStorage.setItem("unfiltr_env", JSON.stringify(defaultEnv));
-          // Re-read e from the value we just set
-          const parsedCompanion2 = JSON.parse(c);
-          const savedNickname2 = localStorage.getItem("unfiltr_companion_nickname");
-          parsedCompanion2.displayName = (savedNickname2 && savedNickname2.trim()) ? savedNickname2.trim() : parsedCompanion2.name;
-          setCompanion(parsedCompanion2);
-          setEnvironment(defaultEnv);
-          const v2 = localStorage.getItem("unfiltr_vibe");
-          if (v2) setVibe(v2);
-          return; // continue init below
-        }
-        if (hasProfile) return; // has profile but no companion either — don't redirect, just wait
-        navigate("/onboarding", { replace: true }); return;
+      // If any required key is missing, try to recover gracefully
+      let effectiveC = c;
+      let effectiveE = e;
+
+      if (!effectiveE && hasProfile) {
+        // Env missing — use safe default
+        const defaultEnv = { id: "cozy", name: "Cozy Living Room", bg: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=80" };
+        localStorage.setItem("unfiltr_env", JSON.stringify(defaultEnv));
+        effectiveE = JSON.stringify(defaultEnv);
+      }
+      if (!effectiveC && hasProfile) {
+        // Companion missing but profile exists — try to get from DB below
+        // For now set a placeholder so we don't crash; greeting useEffect will handle display
+        const { COMPANIONS: COMP_LIST } = await import("@/components/companionData");
+        const fallback = COMP_LIST[0];
+        effectiveC = JSON.stringify(fallback);
+        localStorage.setItem("unfiltr_companion", effectiveC);
+      }
+      if (!consented && hasProfile) {
+        // Has profile but consent flag missing (old account) — treat as consented
+        localStorage.setItem("unfiltr_consent_accepted", "true");
+      }
+
+      if (!effectiveC || !effectiveE) {
+        // Truly new user with nothing set
+        if (!hasProfile) { navigate("/onboarding", { replace: true }); return; }
+        return; // wait for state to settle
       }
 
       const parsedCompanion = JSON.parse(c);
