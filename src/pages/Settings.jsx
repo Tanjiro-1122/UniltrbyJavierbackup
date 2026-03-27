@@ -81,6 +81,10 @@ export default function Settings() {
   const [savingVoice, setSavingVoice]     = useState(false);
   const [savingPersonality, setSavingPersonality] = useState(false);
   const [isAdmin, setIsAdmin]             = useState(false);
+  const [familyTapCount, setFamilyTapCount]     = useState(0);
+  const [showFamilyModal, setShowFamilyModal]   = useState(false);
+  const [familyCode, setFamilyCode]             = useState("");
+  const [familyCodeError, setFamilyCodeError]   = useState("");
   const [showCompanionCard, setShowCompanionCard] = useState(false);
 
   useEffect(() => {
