@@ -118,12 +118,12 @@ export default function OnboardingVibe() {
       }));
 
       resetOnboardingStore();
-      navigate("/journal");
+      navigate("/vibe");
     } catch (err) {
       console.error("Journal onboarding DB error (non-blocking):", err);
       // Always navigate even if DB fails
       resetOnboardingStore();
-      navigate("/journal");
+      navigate("/vibe");
     } finally {
       setLoading(false);
     }
