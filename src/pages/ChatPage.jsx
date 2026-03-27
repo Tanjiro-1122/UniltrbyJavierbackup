@@ -164,8 +164,8 @@ export default function ChatPage() {
         return; // wait for state to settle
       }
 
-      const parsedCompanion = JSON.parse(c);
-      const parsedEnv       = JSON.parse(e);
+      const parsedCompanion = JSON.parse(effectiveC);
+      const parsedEnv       = JSON.parse(effectiveE);
       const savedNickname = localStorage.getItem("unfiltr_companion_nickname");
       parsedCompanion.displayName = (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
 
