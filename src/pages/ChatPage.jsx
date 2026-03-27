@@ -664,11 +664,13 @@ export default function ChatPage() {
           <div style={{
             flexShrink: 0,
             display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-end",
             position: "relative",
             width: "100%",
+            height: "clamp(220px, 38dvh, 320px)",
             padding: "0 16px",
             boxSizing: "border-box",
+            overflow: "hidden",
           }}>
             {/* Speaking glow */}
             {isSpeaking && (
