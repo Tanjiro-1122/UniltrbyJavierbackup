@@ -117,7 +117,9 @@ export default function JournalEntry() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [today, setToday] = useState("");
-  const [currentMood, setCurrentMood] = useState("reflective");
+  const [currentMood, setCurrentMood] = useState("neutral");
+  const [companionData, setCompanionData] = useState(null);
+  const [companionMoodUrl, setCompanionMoodUrl] = useState(null);
   const [showStickers, setShowStickers] = useState(false);
   const [placedStickers, setPlacedStickers] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -129,8 +131,20 @@ export default function JournalEntry() {
     const now = new Date();
     setToday(now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }));
     // Load mood set from MoodPicker
-    const savedMood = localStorage.getItem("unfiltr_mood") || "reflective";
+    const savedMood = localStorage.getItem("unfiltr_mood") || "neutral";
     setCurrentMood(savedMood);
+    // Load companion with matching mood pose
+    try {
+      const raw = localStorage.getItem("unfiltr_companion");
+      if (raw) {
+        const c = JSON.parse(raw);
+        const found = COMPANIONS.find(x => x.id === c.id);
+        if (found) {
+          setCompanionData(found);
+          setCompanionMoodUrl(found.poses[savedMood] || found.poses.neutral || found.avatar);
+        }
+      }
+    } catch {}
   }, []);
 
   const handleSave = () => {
@@ -199,7 +213,17 @@ export default function JournalEntry() {
             <PlacedSticker key={s.id} sticker={s} onRemove={removeSticker} constraintsRef={journalRef} />
           ))}
 
-          <div className="px-5 pt-4 pb-3 border-b border-white/10 shrink-0">
+          <div className="px-5 pt-4 pb-3 border-b border-white/10 shrink-0 flex items-center gap-3">
+            {companionMoodUrl && (
+              <motion.img
+                src={companionMoodUrl}
+                alt={companionData?.name}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                style={{ width: 44, height: 44, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(168,85,247,0.5))", flexShrink: 0 }}
+              />
+            )}
             <p className="text-purple-400/80 text-xs uppercase tracking-widest font-medium">{today}</p>
           </div>
 
