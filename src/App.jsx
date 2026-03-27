@@ -145,6 +145,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Onboarding */}
         <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
+        <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
