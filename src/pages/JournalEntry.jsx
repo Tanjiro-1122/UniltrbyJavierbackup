@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X } from "lucide-react";
+import { COMPANIONS } from "@/components/companionData";
 
 const STICKER_DEFS = [
   {
