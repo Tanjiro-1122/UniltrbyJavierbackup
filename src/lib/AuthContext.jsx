@@ -15,18 +15,18 @@ export const AuthProvider = ({ children }) => {
     const onboardingComplete = localStorage.getItem("unfiltr_onboarding_complete");
 
     if (userId && authToken) {
-      // Returning authenticated user — go straight to home
+      // Returning authenticated user
       setUser({ id: userId, email: localStorage.getItem("unfiltr_user_email") || "" });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
     } else if (onboardingComplete) {
-      // Completed onboarding but lost token — send to welcome to re-auth
+      // Completed onboarding but lost token — send to home screen to re-auth
       setIsLoadingAuth(false);
       setAuthError({ type: "logged_out" });
     } else {
-      // Brand new user — send to welcome screen (not straight to onboarding)
+      // Brand new user — needs onboarding, not logged_out
       setIsLoadingAuth(false);
-      setAuthError({ type: "logged_out" });
+      setAuthError({ type: "new_user" });
     }
   }, []);
 
