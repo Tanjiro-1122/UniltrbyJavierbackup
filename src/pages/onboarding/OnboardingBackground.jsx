@@ -85,8 +85,8 @@ export default function OnboardingBackground() {
 
   return (
     <OnboardingLayout
-      step={6}
-      totalSteps={6}
+      step={7}
+      totalSteps={7}
       onBack={() => navigate("/onboarding/vibe")}
       onNext={handleFinish}
       canAdvance={!!selected}
