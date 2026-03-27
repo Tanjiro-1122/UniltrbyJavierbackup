@@ -47,6 +47,7 @@ export default function OnboardingName() {
 
   return (
     <OnboardingLayout
+      totalSteps={7}
       step={3}
       onBack={() => navigate("/onboarding/pin")}
       onNext={handleNext}
