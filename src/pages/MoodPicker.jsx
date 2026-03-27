@@ -138,9 +138,6 @@ export default function MoodPicker() {
 
   return (
     <div
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       style={{
         position: "fixed", inset: 0, overflow: "hidden",
         fontFamily: "'SF Pro Display',system-ui,-apple-system,sans-serif",
@@ -187,11 +184,15 @@ export default function MoodPicker() {
       </div>
 
       {/* Carousel */}
-      <div style={{
-        flex: 1, position: "relative", zIndex: 5,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        overflow: "hidden",
-      }}>
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          flex: 1, position: "relative", zIndex: 5,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden",
+        }}>
         {MOODS.map((m, i) => {
           const diff = i - idx;
           if (Math.abs(diff) > 1) return null;
