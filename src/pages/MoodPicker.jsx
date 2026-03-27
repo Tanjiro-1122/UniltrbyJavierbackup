@@ -101,6 +101,25 @@ export default function MoodPicker() {
 
   useEffect(() => { setTimeout(() => setReady(true), 60); }, []);
 
+  // Keyboard + mouse drag support
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "ArrowLeft") goTo(idx - 1);
+      if (e.key === "ArrowRight") goTo(idx + 1);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [idx, goTo]);
+
+  const mouseStartX = useRef(null);
+  const handleMouseDown = (e) => { mouseStartX.current = e.clientX; };
+  const handleMouseUp = (e) => {
+    if (mouseStartX.current === null) return;
+    const dx = e.clientX - mouseStartX.current;
+    if (Math.abs(dx) > 35) goTo(idx + (dx < 0 ? 1 : -1));
+    mouseStartX.current = null;
+  };
+
   const mood = MOODS[idx];
 
   const goTo = useCallback((i) => {
@@ -188,6 +207,8 @@ export default function MoodPicker() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         style={{
           flex: 1, position: "relative", zIndex: 5,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -260,8 +281,7 @@ export default function MoodPicker() {
           );
         })}
 
-        {idx > 0 && (
-          <button onClick={() => goTo(idx - 1)} style={{
+        <button onClick={() => goTo(idx - 1)} disabled={idx === 0} style={{
             position: "absolute", left: 14, zIndex: 20,
             width: 42, height: 42, borderRadius: "50%",
             background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)",
@@ -272,8 +292,7 @@ export default function MoodPicker() {
             <ChevronLeft size={22} color="white" />
           </button>
         )}
-        {idx < MOODS.length - 1 && (
-          <button onClick={() => goTo(idx + 1)} style={{
+        <button onClick={() => goTo(idx + 1)} disabled={idx === MOODS.length - 1} style={{
             position: "absolute", right: 14, zIndex: 20,
             width: 42, height: 42, borderRadius: "50%",
             background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)",
