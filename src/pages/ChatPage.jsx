@@ -134,7 +134,11 @@ export default function ChatPage() {
       const e = localStorage.getItem("unfiltr_env");
       const v = localStorage.getItem("unfiltr_vibe");
       const consented = localStorage.getItem("unfiltr_consent_accepted") || localStorage.getItem("unfiltr_onboarding_complete");
-      if (!c || !e || !consented) { navigate("/onboarding", { replace: true }); return; }
+      const hasProfile = localStorage.getItem("userProfileId");
+      if (!c || !e || !consented) {
+        if (hasProfile) return; // already onboarded, just missing cache — don't redirect
+        navigate("/onboarding", { replace: true }); return;
+      }
 
       const parsedCompanion = JSON.parse(c);
       const parsedEnv       = JSON.parse(e);
