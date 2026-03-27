@@ -1,197 +1,105 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, ShieldCheck, Phone, CheckCircle2 } from "lucide-react";
 
 export default function AgeVerification() {
   const navigate = useNavigate();
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
-  const [error, setError] = useState("");
 
-  const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
-
-  const handleVerify = () => {
-    if (!month || !year) {
-      setError("Please select your birth month and year.");
-      return;
-    }
-    const birthYear = parseInt(year);
-    const birthMonthIndex = months.indexOf(month);
-    const today = new Date();
-    const birthDate = new Date(birthYear, birthMonthIndex, 1);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-
-    if (age < 18) {
-      setError("You must be 18 or older to use this app.");
-      return;
-    }
+  const handleConfirm = () => {
     localStorage.setItem("unfiltr_age_verified", "true");
     window.dispatchEvent(new Event("unfiltr_age_verified"));
     navigate("/home-screen");
   };
 
   const handleExit = () => {
-    navigate("/");
+    // Close the app or go to a blank screen
+    window.location.href = "about:blank";
   };
 
   return (
     <div style={{
-      minHeight: "100dvh",
-      background: "#06020f",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px 20px",
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      position: "fixed", inset: 0,
+      background: "radial-gradient(ellipse at 50% 30%, rgba(124,58,237,0.3) 0%, #06020f 65%)",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      fontFamily: "'SF Pro Display',system-ui,-apple-system,sans-serif",
+      padding: "0 32px",
     }}>
+
+      {/* Glow orb */}
+      <div style={{
+        position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)",
+        width: 320, height: 320, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)",
+        filter: "blur(50px)", pointerEvents: "none",
+      }} />
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          borderRadius: 24,
-          overflow: "hidden",
-          boxShadow: "0 0 60px rgba(168,85,247,0.25)",
-        }}
+        transition={{ duration: 0.5 }}
+        style={{ width: "100%", maxWidth: 340, textAlign: "center", position: "relative", zIndex: 1 }}
       >
-        {/* Header */}
+        {/* Icon */}
         <div style={{
-          background: "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)",
-          padding: "32px 24px 28px",
-          textAlign: "center",
+          fontSize: 64, marginBottom: 24,
+          filter: "drop-shadow(0 0 20px rgba(168,85,247,0.5))",
+        }}>🔞</div>
+
+        {/* Title */}
+        <h1 style={{
+          color: "white", fontWeight: 900, fontSize: 28,
+          margin: "0 0 12px", letterSpacing: -0.5,
         }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: "50%",
-            background: "rgba(255,255,255,0.15)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 16px",
-          }}>
-            <AlertTriangle size={32} color="white" />
-          </div>
-          <h1 style={{ color: "white", fontWeight: 900, fontSize: 24, margin: 0, letterSpacing: 1 }}>
-            🔞 AGE VERIFICATION
-          </h1>
-        </div>
+          Are you 18 or older?
+        </h1>
+        <p style={{
+          color: "rgba(255,255,255,0.4)", fontSize: 15,
+          margin: "0 0 48px", lineHeight: 1.5,
+        }}>
+          This app contains mature themes and is intended for adults only.
+        </p>
 
-        {/* Body */}
-        <div style={{ background: "rgba(255,255,255,0.04)", padding: "24px 20px" }}>
+        {/* YES button */}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={handleConfirm}
+          style={{
+            width: "100%", padding: "18px 0",
+            background: "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)",
+            border: "none", borderRadius: 18,
+            color: "white", fontWeight: 800, fontSize: 18,
+            cursor: "pointer", marginBottom: 14,
+            boxShadow: "0 8px 32px rgba(124,58,237,0.45)",
+            letterSpacing: 0.2,
+          }}
+        >
+          Yes, I'm 18 or older →
+        </motion.button>
 
-          <div style={{
-            background: "rgba(245,158,11,0.12)",
-            border: "1px solid rgba(245,158,11,0.35)",
-            borderRadius: 12, padding: "12px 16px",
-            textAlign: "center", marginBottom: 20,
-          }}>
-            <p style={{ color: "#fbbf24", fontWeight: 700, fontSize: 15, margin: 0 }}>
-              You must be 18+ to use this app
-            </p>
-            <p style={{ color: "rgba(251,191,36,0.7)", fontSize: 12, margin: "4px 0 0" }}>
-              (21+ where required by law)
-            </p>
-          </div>
+        {/* NO button */}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={handleExit}
+          style={{
+            width: "100%", padding: "16px 0",
+            background: "transparent",
+            border: "1.5px solid rgba(255,255,255,0.1)", borderRadius: 18,
+            color: "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          No, I'm under 18
+        </motion.button>
 
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600, margin: "0 0 10px" }}>
-            📅 Enter your date of birth:
-          </p>
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <select
-              value={month}
-              onChange={e => { setMonth(e.target.value); setError(""); }}
-              style={{
-                flex: 1, padding: "12px", borderRadius: 12,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: month ? "white" : "rgba(255,255,255,0.35)",
-                fontSize: 14, outline: "none",
-              }}
-            >
-              <option value="" disabled>Month</option>
-              {months.map(m => <option key={m} value={m} style={{ background: "#1a0533" }}>{m}</option>)}
-            </select>
-            <select
-              value={year}
-              onChange={e => { setYear(e.target.value); setError(""); }}
-              style={{
-                flex: 1, padding: "12px", borderRadius: 12,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: year ? "white" : "rgba(255,255,255,0.35)",
-                fontSize: 14, outline: "none",
-              }}
-            >
-              <option value="" disabled>Year</option>
-              {years.map(y => <option key={y} value={y} style={{ background: "#1a0533" }}>{y}</option>)}
-            </select>
-          </div>
-
-          {error && (
-            <p style={{ color: "#f87171", fontSize: 13, textAlign: "center", marginBottom: 12 }}>{error}</p>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <ShieldCheck size={16} color="#a855f7" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-                <b style={{ color: "rgba(255,255,255,0.85)" }}>AI Conversations.</b> This app uses AI to generate responses. Conversations may be processed by OpenAI's API.
-              </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <AlertTriangle size={16} color="#fbbf24" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-                <b style={{ color: "rgba(255,255,255,0.85)" }}>Mental health concern?</b> Call <b style={{ color: "#fbbf24" }}>988</b> (Suicide & Crisis Lifeline) or text HOME to <b style={{ color: "#fbbf24" }}>741741</b>
-              </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <CheckCircle2 size={16} color="#22c55e" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>
-                By continuing, you certify you are of legal age and accept our <b style={{ color: "#a855f7" }}>Terms of Use</b> and <b style={{ color: "#a855f7" }}>Privacy Policy</b>.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleVerify}
-            style={{
-              width: "100%", padding: "16px",
-              background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-              border: "none", borderRadius: 14,
-              color: "white", fontWeight: 800, fontSize: 16,
-              cursor: "pointer", marginBottom: 10,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            }}
-          >
-            ✅ Verify & Continue
-          </button>
-
-          <button
-            onClick={handleExit}
-            style={{
-              width: "100%", padding: "14px",
-              background: "transparent",
-              border: "1px solid rgba(239,68,68,0.3)", borderRadius: 14,
-              color: "rgba(239,68,68,0.7)", fontWeight: 600, fontSize: 14,
-              cursor: "pointer", marginBottom: 16,
-            }}
-          >
-            ❌ I am under 18 / Exit
-          </button>
-
-          <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, textAlign: "center", margin: 0 }}>
-            Birth date used only for verification, not stored on servers.
-          </p>
-        </div>
+        {/* Fine print */}
+        <p style={{
+          color: "rgba(255,255,255,0.18)", fontSize: 11,
+          marginTop: 28, lineHeight: 1.6,
+        }}>
+          By continuing you agree to our Terms of Use and Privacy Policy.
+          If you're in crisis, call or text <b style={{ color: "rgba(255,255,255,0.35)" }}>988</b>.
+        </p>
       </motion.div>
     </div>
   );
