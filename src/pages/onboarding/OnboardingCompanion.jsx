@@ -1,176 +1,224 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
-import { updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
+import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+
+const VISIBLE = COMPANIONS.filter(c => !c.testerOnly);
 
 export default function OnboardingCompanion() {
   const navigate = useNavigate();
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const touchStartX = useRef(null);
+  const store = getOnboardingStore();
+  const initIdx = Math.max(0, VISIBLE.findIndex(c => c.id === store.selectedCompanion));
+  const [idx, setIdx] = useState(initIdx);
+  const [dir, setDir] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState({});
+  const startX = useRef(null);
 
-  const companion = COMPANIONS[index];
+  if (!store.displayName.trim()) {
+    navigate("/onboarding", { replace: true });
+    return null;
+  }
 
-  const go = (dir) => {
-    setDirection(dir);
-    setIndex((prev) => (prev + dir + COMPANIONS.length) % COMPANIONS.length);
+  // Preload all companion avatars to avoid black flash
+  useEffect(() => {
+    VISIBLE.forEach(c => {
+      const img = new window.Image();
+      img.onload = () => setImgLoaded(prev => ({ ...prev, [c.id]: true }));
+      img.onerror = () => setImgLoaded(prev => ({ ...prev, [c.id]: false }));
+      img.src = c.avatar;
+    });
+  }, []);
+
+  const go = (d) => {
+    setDir(d);
+    setIdx(i => Math.min(Math.max(i + d, 0), VISIBLE.length - 1));
   };
 
-  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) go(diff > 0 ? 1 : -1);
-    touchStartX.current = null;
-  };
-
-  const handleChoose = () => {
-    updateOnboardingStore({ selectedCompanion: companion.id });
-    localStorage.setItem("unfiltr_companion_id", companion.id);
-    localStorage.setItem("unfiltr_companion", JSON.stringify(companion));
+  const handleSelect = () => {
+    const c = VISIBLE[idx];
+    updateOnboardingStore({ selectedCompanion: c.id });
     navigate("/onboarding/nickname");
   };
 
-  const variants = {
-    enter: (dir) => ({ x: dir > 0 ? 300 : -300, opacity: 0, scale: 0.8 }),
-    center: { x: 0, opacity: 1, scale: 1 },
-    exit: (dir) => ({ x: dir > 0 ? -300 : 300, opacity: 0, scale: 0.8 }),
+  const onTouchStart = (e) => { startX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (startX.current === null) return;
+    const dx = e.changedTouches[0].clientX - startX.current;
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+    startX.current = null;
+  };
+
+  const companion = VISIBLE[idx];
+
+  const getStyle = (i) => {
+    const diff = i - idx;
+    if (Math.abs(diff) > 2) return null;
+    const scale = diff === 0 ? 1 : diff === -1 || diff === 1 ? 0.72 : 0.52;
+    const opacity = diff === 0 ? 1 : Math.abs(diff) === 1 ? 0.55 : 0.25;
+    const x = diff * 160;
+    const zIndex = diff === 0 ? 10 : Math.abs(diff) === 1 ? 5 : 2;
+    const brightness = diff === 0 ? 1 : 0.35;
+    return { scale, opacity, x, zIndex, brightness };
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-between"
-      style={{ background: "linear-gradient(180deg, #06020f 0%, #1a0533 100%)" }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Header */}
-      <div className="w-full px-4 pt-10 pb-2">
-        <div className="flex items-center mb-2">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <ChevronLeft size={20} color="#fff" />
-          </button>
-          <div className="flex-1 mx-4 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }}>
-            <div className="h-1 rounded-full" style={{ width: "60%", background: "linear-gradient(90deg, #a855f7, #db2777)" }} />
-          </div>
-          <span className="text-xs text-gray-400">Step 3 of 5</span>
-        </div>
-        <h1 className="text-2xl font-bold text-white mt-4">Pick your companion</h1>
-        <p className="text-sm text-gray-400 mt-1">Swipe to explore · tap to select</p>
+    <OnboardingLayout step={3} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
+      {/* Title */}
+      <div style={{ flexShrink: 0, padding: "0 24px 8px", textAlign: "center" }}>
+        <h2 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
+          Pick your companion
+        </h2>
+        <p style={{ color: "rgba(196,180,252,0.6)", fontSize: 13, margin: 0 }}>
+          Swipe to explore · tap to select
+        </p>
       </div>
 
       {/* Carousel */}
-      <div className="flex-1 flex items-center justify-center w-full relative" style={{ minHeight: 380 }}>
-        {/* Left ghost */}
-        {COMPANIONS[(index - 1 + COMPANIONS.length) % COMPANIONS.length] && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30 scale-75 pointer-events-none" style={{ zIndex: 1 }}>
-            <img
-              src={COMPANIONS[(index - 1 + COMPANIONS.length) % COMPANIONS.length].avatar}
-              alt=""
-              style={{ height: 220, objectFit: "contain" }}
-            />
-          </div>
-        )}
+      <div
+        style={{
+          height: 300, flexShrink: 0, position: "relative",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden",
+          backgroundColor: "transparent",
+        }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Glow platform under selected */}
+        <div style={{
+          position: "absolute", bottom: "18%", left: "50%", transform: "translateX(-50%)",
+          width: 180, height: 24, borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(168,85,247,0.5) 0%, transparent 70%)",
+          filter: "blur(10px)", zIndex: 1, pointerEvents: "none",
+        }} />
 
-        {/* Center card */}
-        <div className="relative flex flex-col items-center" style={{ zIndex: 2, width: 240 }}>
-          <AnimatePresence mode="wait" custom={direction}>
+        {VISIBLE.map((c, i) => {
+          const s = getStyle(i);
+          if (!s) return null;
+          return (
             <motion.div
-              key={companion.id}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="flex flex-col items-center"
+              key={c.id}
+              animate={{ x: s.x, scale: s.scale, opacity: s.opacity, zIndex: s.zIndex }}
+              transition={{ type: "spring", stiffness: 280, damping: 28 }}
+              onClick={() => {
+                if (i !== idx) go(i - idx > 0 ? 1 : -1);
+              }}
+              style={{
+                position: "absolute",
+                display: "flex", flexDirection: "column", alignItems: "center",
+                cursor: i !== idx ? "pointer" : "default",
+                filter: `brightness(${s.brightness})`,
+              }}
             >
-              {/* Glow behind avatar */}
-              <div style={{
-                position: "absolute", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 180, height: 180,
-                background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
-                borderRadius: "50%", filter: "blur(20px)", zIndex: 0,
-              }} />
+              {!imgLoaded[c.id] && (
+                <div style={{
+                  height: 260, width: 160,
+                  borderRadius: 20,
+                  background: "linear-gradient(135deg, rgba(168,85,247,0.15), rgba(219,39,119,0.1))",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <span style={{ fontSize: 48 }}>{c.emoji}</span>
+                </div>
+              )}
               <img
-                src={companion.avatar}
-                alt={companion.name}
-                style={{ height: 280, objectFit: "contain", position: "relative", zIndex: 1 }}
+                src={c.avatar}
+                alt={c.name}
+                style={{
+                  height: 260, width: "auto", maxWidth: 180,
+                  objectFit: "contain", objectPosition: "bottom",
+                  display: imgLoaded[c.id] ? "block" : "none",
+                  filter: i === idx
+                    ? "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))"
+                    : "none",
+                  transition: "filter 0.3s",
+                }}
+                onLoad={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
+                onError={e => { e.target.style.display = "none"; }}
               />
             </motion.div>
-          </AnimatePresence>
+          );
+        })}
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={companion.id + "_name"}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="text-center mt-4"
-            >
-              <h2 className="text-2xl font-bold text-white">{companion.name}</h2>
-              <p className="text-sm mt-1" style={{ color: "#a855f7" }}>{companion.tagline}</p>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Right ghost */}
-        {COMPANIONS[(index + 1) % COMPANIONS.length] && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-30 scale-75 pointer-events-none" style={{ zIndex: 1 }}>
-            <img
-              src={COMPANIONS[(index + 1) % COMPANIONS.length].avatar}
-              alt=""
-              style={{ height: 220, objectFit: "contain" }}
-            />
-          </div>
-        )}
-
-        {/* Arrow buttons */}
         <button
           onClick={() => go(-1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-          style={{ width: 44, height: 44, background: "rgba(255,255,255,0.12)", zIndex: 3 }}
+          disabled={idx === 0}
+          style={{
+            position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+            width: 44, height: 44, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: idx === 0 ? "not-allowed" : "pointer", zIndex: 20,
+            opacity: idx === 0 ? 0.3 : 1, transition: "opacity 0.2s",
+          }}
         >
-          <ChevronLeft size={22} color="#fff" />
+          <ChevronLeft size={22} color="white" />
         </button>
         <button
           onClick={() => go(1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-          style={{ width: 44, height: 44, background: "rgba(255,255,255,0.12)", zIndex: 3 }}
+          disabled={idx === VISIBLE.length - 1}
+          style={{
+            position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+            width: 44, height: 44, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: idx === VISIBLE.length - 1 ? "not-allowed" : "pointer", zIndex: 20,
+            opacity: idx === VISIBLE.length - 1 ? 0.3 : 1, transition: "opacity 0.2s",
+          }}
         >
-          <ChevronRight size={22} color="#fff" />
+          <ChevronRight size={22} color="white" />
         </button>
       </div>
 
-      {/* Dots */}
-      <div className="flex gap-2 mb-4">
-        {COMPANIONS.map((_, i) => (
+      {/* Name + tagline */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={companion.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          style={{ flexShrink: 0, textAlign: "center", padding: "0 24px 8px" }}
+        >
+          <p style={{ color: "white", fontWeight: 900, fontSize: 24, margin: "0 0 4px", letterSpacing: -0.5 }}>{companion.name}</p>
+          <p style={{ color: "rgba(196,180,252,0.65)", fontSize: 13, margin: 0 }}>{companion.tagline}</p>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Dot indicators */}
+      <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", gap: 5, padding: "4px 0 12px" }}>
+        {VISIBLE.map((_, i) => (
           <button
             key={i}
-            onClick={() => { setDirection(i > index ? 1 : -1); setIndex(i); }}
+            onClick={() => go(i - idx)}
             style={{
-              width: i === index ? 20 : 8, height: 8, borderRadius: 4,
-              background: i === index ? "#a855f7" : "rgba(255,255,255,0.25)",
-              transition: "all 0.3s ease", border: "none", cursor: "pointer",
+              width: i === idx ? 20 : 6, height: 6, borderRadius: 999, border: "none", padding: 0,
+              background: i === idx ? "#a855f7" : "rgba(255,255,255,0.2)",
+              cursor: "pointer", transition: "all 0.3s ease",
             }}
           />
         ))}
       </div>
 
-      {/* CTA */}
-      <div className="w-full px-6 pb-10">
+      {/* Select button */}
+      <div style={{ flexShrink: 0, padding: "0 24px max(16px, env(safe-area-inset-bottom, 16px))" }}>
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={handleChoose}
-          className="w-full py-4 rounded-2xl text-white font-bold text-lg"
-          style={{ background: "linear-gradient(135deg, #a855f7, #db2777)" }}
+          onClick={handleSelect}
+          style={{
+            width: "100%", padding: "16px",
+            borderRadius: 18, border: "none",
+            background: "linear-gradient(135deg, #7c3aed, #db2777)",
+            color: "white", fontWeight: 800, fontSize: 17,
+            cursor: "pointer",
+            boxShadow: "0 4px 24px rgba(124,58,237,0.5)",
+          }}
         >
-          Choose {companion.name} ✦
+          Choose {companion.name} ✶
         </motion.button>
       </div>
-    </div>
+    </OnboardingLayout>
   );
 }
