@@ -74,30 +74,39 @@ const AuthenticatedApp = ({ splashDone }) => {
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
 
-  // Step 1: Age gate — fires once after splash
-  useEffect(() => {
-    if (!splashDone) return;
-    if (isPublicPath) return;
-    const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
-    if (!ageVerified) {
-      navigate("/age-verification", { replace: true });
-    }
-  }, [splashDone]); // eslint-disable-line
-
-  // Step 2: Auth gate — fires once after splash + auth done, handles logout too
+  // After splash: route user to the right place ONCE
   useEffect(() => {
     if (!splashDone || isLoadingAuth) return;
     if (isPublicPath) return;
+
+    // Not authenticated → Welcome
     if (authError?.type === "auth_required" || authError?.type === "logged_out") {
       navigate("/welcome", { replace: true });
       return;
     }
-    // Authenticated returning user — no redirect needed, PIN is handled by SplashScreen
+
+    // Authenticated — figure out where to send them
+    if (!authError) {
+      const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
+      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+      const pin = localStorage.getItem("unfiltr_pin");
+      const isAtRoot = location.pathname === "/";
+
+      // Only auto-route if they are at root (just launched)
+      if (isAtRoot) {
+        if (!ageVerified) {
+          navigate("/age-verification", { replace: true });
+        } else if (!onboardingDone) {
+          navigate("/welcome", { replace: true });
+        } else if (pin) {
+          navigate("/PinLock", { replace: true });
+        }
+        // else: onboarding done, no PIN → stay on HomePage
+      }
+    }
   }, [splashDone, isLoadingAuth, authError?.type]); // eslint-disable-line
 
-  // Don't render anything until splash is done AND auth check is complete
   if (!splashDone || isLoadingAuth) return null;
-
   if (authError?.type === "user_not_registered") return <UserNotRegisteredError />;
 
   return (
