@@ -65,7 +65,7 @@ export default function OnboardingCompanion() {
   };
 
   return (
-    <OnboardingLayout step={3} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
+    <OnboardingLayout step={4} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
       {/* Title */}
       <div style={{ flexShrink: 0, padding: "0 24px 8px", textAlign: "center" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
