@@ -1,204 +1,277 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const NOTO = "https://fonts.gstatic.com/s/e/notoemoji/latest";
 
 const VIBES = [
   {
     id: "chill",
-    emoji: "😌",
-    label: "Chill",
-    desc: "Just hanging out. No agenda, no pressure.",
-    gradient: "linear-gradient(135deg, #0d9488, #06b6d4)",
-    bg: "rgba(13,148,136,0.12)",
-    border: "rgba(13,148,136,0.35)",
-    glow: "rgba(13,148,136,0.3)",
+    emoji: `${NOTO}/1f60c/512.webp`,
+    label: "Chill", sub: "Low-key",
+    desc: "Just hanging out.\nNo agenda, no pressure.",
+    gradient: "linear-gradient(135deg,#0f766e,#0ea5e9)",
+    orb: "rgba(13,148,136,0.5)", glow: "rgba(13,148,136,0.4)",
+    bg: "#031a18", accent: "#5eead4", cardBorder: "rgba(20,184,166,0.6)",
   },
   {
     id: "vent",
-    emoji: "💨",
-    label: "Vent",
-    desc: "Need to let it all out? I'm here, no judgement.",
-    gradient: "linear-gradient(135deg, #3b82f6, #6366f1)",
-    bg: "rgba(59,130,246,0.12)",
-    border: "rgba(59,130,246,0.35)",
-    glow: "rgba(59,130,246,0.3)",
+    emoji: `${NOTO}/1f32c/512.webp`,
+    label: "Vent", sub: "Let it out",
+    desc: "Need to let it all out?\nI'm here, no judgment.",
+    gradient: "linear-gradient(135deg,#2563eb,#7c3aed)",
+    orb: "rgba(59,130,246,0.5)", glow: "rgba(99,102,241,0.4)",
+    bg: "#020818", accent: "#93c5fd", cardBorder: "rgba(99,102,241,0.6)",
   },
   {
     id: "hype",
-    emoji: "🔥",
-    label: "Hype",
-    desc: "Big moment coming up? Let's get you READY.",
-    gradient: "linear-gradient(135deg, #f97316, #eab308)",
-    bg: "rgba(249,115,22,0.12)",
-    border: "rgba(249,115,22,0.35)",
-    glow: "rgba(249,115,22,0.3)",
+    emoji: `${NOTO}/1f525/512.webp`,
+    label: "Hype", sub: "Let's GO",
+    desc: "Big moment coming up?\nLet's get you READY.",
+    gradient: "linear-gradient(135deg,#ea580c,#facc15)",
+    orb: "rgba(249,115,22,0.5)", glow: "rgba(234,88,12,0.4)",
+    bg: "#180800", accent: "#fdba74", cardBorder: "rgba(251,146,60,0.6)",
   },
   {
     id: "deep",
-    emoji: "🌙",
-    label: "Deep Talk",
-    desc: "2am thoughts, existential questions, real talk.",
-    gradient: "linear-gradient(135deg, #7c3aed, #db2777)",
-    bg: "rgba(124,58,237,0.12)",
-    border: "rgba(124,58,237,0.35)",
-    glow: "rgba(124,58,237,0.3)",
+    emoji: `${NOTO}/1f30c/512.webp`,
+    label: "Deep Talk", sub: "Real talk",
+    desc: "2am thoughts, existential\nquestions, real talk.",
+    gradient: "linear-gradient(135deg,#7c3aed,#db2777)",
+    orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
+    bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
+  },
+  {
+    id: "journal",
+    emoji: `${NOTO}/270f/512.webp`,
+    label: "Journal", sub: "Private",
+    desc: "Write freely.\nSpeak your truth. Save it.",
+    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
+    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
+    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
   },
 ];
 
 export default function VibePage() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const isSwiping = useRef(false);
 
-  const handleContinue = () => {
-    if (!selected) return;
-    if (selected === "journal") {
-      localStorage.setItem("unfiltr_vibe", "journal"); navigate("/mood?dest=journal");
-      return;
-    }
-    localStorage.setItem("unfiltr_vibe", selected);
-    navigate("/mood?dest=chat");
+  const vibe = VIBES[idx];
+
+  const goTo = useCallback((i) => {
+    setIdx(Math.max(0, Math.min(VIBES.length - 1, i)));
+  }, []);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+  const handleTouchMove = (e) => {
+    if (!touchStartX.current) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (dx > 8 && dx > dy) isSwiping.current = true;
+  };
+  const handleTouchEnd = (e) => {
+    if (!touchStartX.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (isSwiping.current && Math.abs(dx) > 35) goTo(idx + (dx < 0 ? 1 : -1));
+    touchStartX.current = null;
+    isSwiping.current = false;
   };
 
+  const handleContinue = () => {
+    localStorage.setItem("unfiltr_vibe", vibe.id);
+    if (vibe.id === "journal") {
+      navigate("/mood?dest=journal");
+    } else {
+      navigate("/mood?dest=chat");
+    }
+  };
+
+  const btnLabel = vibe.id === "journal" ? "Start journaling →" : "Pick your world →";
+
   return (
-    <div style={{
-      position: "fixed", inset: 0,
-      background: "linear-gradient(180deg, #0d0520 0%, #06020f 100%)",
-      display: "flex", flexDirection: "column", overflow: "hidden",
-      fontFamily: "system-ui, -apple-system, sans-serif",
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "max(1.5rem, env(safe-area-inset-top)) 16px 16px",
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={() => navigate(-1)}
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: "fixed", inset: 0, overflow: "hidden",
+        fontFamily: "'SF Pro Display',system-ui,-apple-system,sans-serif",
+        display: "flex", flexDirection: "column",
+        background: `radial-gradient(ellipse at 50% 20%, ${vibe.orb} 0%, ${vibe.bg} 45%, #03000d 100%)`,
+        transition: "background 0.6s ease",
+      }}
+    >
+      {/* Glow orb */}
+      <AnimatePresence mode="wait">
+        <motion.div key={vibe.id}
+          initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.5 }}
           style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: "rgba(255,255,255,0.08)", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
+            position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)",
+            width: 440, height: 440, borderRadius: "50%",
+            background: `radial-gradient(circle, ${vibe.orb} 0%, transparent 70%)`,
+            filter: "blur(55px)", pointerEvents: "none", zIndex: 0,
           }}
-        >
-          <ChevronLeft size={20} color="white" />
+        />
+      </AnimatePresence>
+
+      {/* Header */}
+      <div style={{
+        flexShrink: 0,
+        padding: "max(1.4rem,env(safe-area-inset-top)) 18px 8px",
+        display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 5,
+      }}>
+        <button onClick={() => navigate(-1)} style={{
+          width: 38, height: 38, borderRadius: "50%", border: "none",
+          background: "rgba(255,255,255,0.07)", backdropFilter: "blur(10px)",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+        }}>
+          <ChevronLeft size={20} color="rgba(255,255,255,0.7)" />
         </button>
         <div>
-          <h1 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: 0 }}>Set the vibe</h1>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: 0 }}>How do you want to roll today?</p>
+          <h1 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: 0 }}>
+            What's your vibe?
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: 0 }}>
+            How do you want to show up today?
+          </p>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 100px", display: "flex", flexDirection: "column", gap: 10 }}>
-
-        <motion.div
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setSelected("journal")}
-          style={{
-            borderRadius: 18, padding: "16px",
-            background: selected === "journal" ? "rgba(16,185,129,0.18)" : "rgba(16,185,129,0.08)",
-            border: `1.5px solid ${selected === "journal" ? "rgba(16,185,129,0.7)" : "rgba(16,185,129,0.25)"}`,
-            cursor: "pointer",
-            boxShadow: selected === "journal" ? "0 0 20px rgba(16,185,129,0.2)" : "none",
-            transition: "all 0.2s",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 30, flexShrink: 0 }}>📓</span>
-            <div style={{ flex: 1 }}>
-              <p style={{
-                fontWeight: 700, fontSize: 16, margin: "0 0 2px",
-                background: "linear-gradient(135deg, #34d399, #06b6d4)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              }}>Journal</p>
-              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, margin: 0 }}>
-                Write freely. Speak your thoughts. Save them.
-              </p>
-            </div>
-            {selected === "journal" && (
+      {/* Carousel */}
+      <div style={{
+        flex: 1, position: "relative", zIndex: 5,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden",
+      }}>
+        {VIBES.map((v, i) => {
+          const diff = i - idx;
+          if (Math.abs(diff) > 1) return null;
+          const isActive = diff === 0;
+          return (
+            <motion.div key={v.id}
+              onClick={() => !isActive && goTo(i)}
+              animate={{ x: diff * 262, scale: isActive ? 1 : 0.74, opacity: isActive ? 1 : 0.38 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{
+                position: "absolute", width: 232, height: 322, borderRadius: 32,
+                border: `2px solid ${isActive ? v.cardBorder : "rgba(255,255,255,0.09)"}`,
+                boxShadow: isActive
+                  ? `0 0 0 1px ${v.glow}, 0 0 55px ${v.glow}, 0 28px 64px rgba(0,0,0,0.75)`
+                  : "0 8px 24px rgba(0,0,0,0.4)",
+                background: isActive
+                  ? "linear-gradient(160deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%)"
+                  : "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(22px)",
+                cursor: isActive ? "default" : "pointer",
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                padding: "24px 22px 28px", zIndex: isActive ? 10 : 5,
+              }}
+            >
               <div style={{
-                width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg, #34d399, #06b6d4)",
+                width: 100, height: 100, marginBottom: 16,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                filter: isActive ? `drop-shadow(0 0 28px ${v.glow}) drop-shadow(0 6px 18px rgba(0,0,0,0.6))` : "none",
               }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img src={v.emoji} alt={v.label} style={{ width: 88, height: 88, objectFit: "contain" }} />
               </div>
-            )}
-          </div>
-        </motion.div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 0" }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, fontWeight: 600, letterSpacing: 2, margin: 0 }}>OR CHAT</p>
-          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-        </div>
-
-        {VIBES.map((v) => (
-          <motion.div
-            key={v.id}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setSelected(v.id)}
-            style={{
-              borderRadius: 18, padding: "16px",
-              background: selected === v.id ? v.bg : "rgba(255,255,255,0.04)",
-              border: `1.5px solid ${selected === v.id ? v.border : "rgba(255,255,255,0.08)"}`,
-              cursor: "pointer",
-              boxShadow: selected === v.id ? `0 0 20px ${v.glow}` : "none",
-              transition: "all 0.2s",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ fontSize: 28, flexShrink: 0 }}>{v.emoji}</span>
-              <div style={{ flex: 1 }}>
-                <p style={{
-                  fontWeight: 700, fontSize: 16, margin: "0 0 2px",
-                  background: v.gradient,
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>{v.label}</p>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, margin: 0 }}>{v.desc}</p>
-              </div>
-              {selected === v.id && (
-                <div style={{
-                  width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                  background: v.gradient,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
+              <h2 style={{
+                color: isActive ? v.accent : "rgba(255,255,255,0.5)",
+                fontWeight: 800, fontSize: 26, margin: "0 0 4px",
+                letterSpacing: "-0.5px", textAlign: "center",
+                transition: "color 0.4s",
+              }}>{v.label}</h2>
+              <p style={{
+                color: "rgba(255,255,255,0.35)", fontSize: 11,
+                fontWeight: 700, letterSpacing: 2, textTransform: "uppercase",
+                margin: "0 0 12px",
+              }}>{v.sub}</p>
+              {isActive && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    color: "rgba(255,255,255,0.65)", fontSize: 14, textAlign: "center",
+                    lineHeight: 1.5, margin: 0, whiteSpace: "pre-line",
+                  }}
+                >{v.desc}</motion.p>
               )}
-            </div>
-          </motion.div>
+              {isActive && v.id === "journal" && (
+                <motion.span
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  style={{
+                    marginTop: 14, padding: "4px 14px", borderRadius: 20,
+                    border: `1px solid ${v.cardBorder}`,
+                    color: v.accent, fontSize: 11, fontWeight: 700,
+                    letterSpacing: 1.5, textTransform: "uppercase",
+                  }}
+                >PRIVATE</motion.span>
+              )}
+            </motion.div>
+          );
+        })}
+
+        {/* Arrow buttons */}
+        {idx > 0 && (
+          <button onClick={() => goTo(idx - 1)} style={{
+            position: "absolute", left: 12, zIndex: 20,
+            width: 36, height: 36, borderRadius: "50%", border: "none",
+            background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)",
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+          }}>
+            <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
+          </button>
+        )}
+        {idx < VIBES.length - 1 && (
+          <button onClick={() => goTo(idx + 1)} style={{
+            position: "absolute", right: 12, zIndex: 20,
+            width: 36, height: 36, borderRadius: "50%", border: "none",
+            background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)",
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+          }}>
+            <ChevronRight size={18} color="rgba(255,255,255,0.7)" />
+          </button>
+        )}
+      </div>
+
+      {/* Dots */}
+      <div style={{
+        flexShrink: 0, display: "flex", justifyContent: "center",
+        gap: 8, paddingBottom: 20, position: "relative", zIndex: 5,
+      }}>
+        {VIBES.map((_, i) => (
+          <div key={i} onClick={() => goTo(i)} style={{
+            width: i === idx ? 22 : 7, height: 7, borderRadius: 4,
+            background: i === idx ? vibe.accent : "rgba(255,255,255,0.18)",
+            boxShadow: i === idx ? `0 0 10px ${vibe.glow}` : "none",
+            transition: "all 0.35s ease", cursor: "pointer",
+          }} />
         ))}
       </div>
 
+      {/* CTA Button */}
       <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "16px 16px max(24px, env(safe-area-inset-bottom))",
-        background: "linear-gradient(to top, #06020f 60%, transparent)",
+        flexShrink: 0,
+        padding: "0 24px max(1.4rem,env(safe-area-inset-bottom))",
+        position: "relative", zIndex: 5,
       }}>
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleContinue}
-          disabled={!selected}
-          style={{
-            width: "100%", padding: "17px",
-            background: selected
-              ? "linear-gradient(135deg, #7c3aed, #a855f7, #db2777)"
-              : "rgba(255,255,255,0.07)",
-            border: "none", borderRadius: 18,
-            color: selected ? "white" : "rgba(255,255,255,0.3)",
-            fontWeight: 800, fontSize: 17,
-            cursor: selected ? "pointer" : "not-allowed",
-            boxShadow: selected ? "0 0 28px rgba(168,85,247,0.4)" : "none",
-            transition: "all 0.3s",
-          }}
-        >
-          Let's go →
-        </motion.button>
+        <button onClick={handleContinue} style={{
+          width: "100%", padding: "17px 0", borderRadius: 18, border: "none",
+          background: vibe.gradient,
+          boxShadow: `0 8px 36px ${vibe.glow}`,
+          color: "white", fontWeight: 800, fontSize: 17, cursor: "pointer",
+          letterSpacing: 0.3,
+        }}>
+          {btnLabel}
+        </button>
       </div>
     </div>
   );
