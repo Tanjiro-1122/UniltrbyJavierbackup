@@ -11,31 +11,39 @@ export default function PinGate() {
   const dest = searchParams.get("dest") || "chat";
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [stage, setStage] = useState("create");
+  const [stage, setStage] = useState(existingPin ? "verify" : "create");
   const existingPin = localStorage.getItem("unfiltr_pin");
 
-  React.useEffect(() => {
-    if (existingPin) {
-      navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
-    }
-  }, []);
+  // PIN gate: if PIN exists show verify screen, otherwise show create screen
 
   const handleSkip = () => {
     navigate(dest === "journal" ? "/journal-enter" : "/chat-enter");
   };
 
   const handleDigit = (d) => {
-    if (stage === "create") {
+    if (stage === "verify") {
+      // User must enter existing PIN to proceed
+      const next = pin + d;
+      setPin(next);
+      if (next.length === 4) {
+        if (next === existingPin) {
+          navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
+        } else {
+          setPin(""); // wrong PIN — reset
+        }
+      }
+    } else if (stage === "create") {
       const next = pin + d;
       setPin(next);
       if (next.length === 4) setStage("confirm");
     } else {
+      // confirm stage
       const next = confirm + d;
       setConfirm(next);
       if (next.length === 4) {
         if (next === pin) {
           localStorage.setItem("unfiltr_pin", pin);
-          navigate(dest === "journal" ? "/journal-enter" : "/chat-enter");
+          navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
         } else {
           setConfirm("");
         }
