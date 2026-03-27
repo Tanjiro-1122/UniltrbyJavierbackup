@@ -21,7 +21,7 @@ export default function OnboardingConsent() {
   return (
     <OnboardingLayout
       step={1}
-      onBack={() => navigate("/welcome")}
+      onBack={() => navigate("/home-screen")}
       onNext={handleNext}
       canAdvance={allAgreed}
       nextLabel="I agree — let's go →"
