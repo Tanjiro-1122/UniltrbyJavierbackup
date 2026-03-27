@@ -65,36 +65,9 @@ export default function OnboardingBackground() {
     updateOnboardingStore({ selectedBackground: selected });
     setLoading(true);
     try {
-      const companion = await base44.entities.Companion.create({
-        name: companionData.name,
-        avatar_url: companionData.avatar,
-        mood_mode: "neutral",
-        personality: companionData.tagline,
-      });
-
-      const profileData = {
-        display_name: store.displayName,
-        companion_id: companion.id,
-        background_id: selected,
-        premium: store.isTesterAccount,
-        is_premium: store.isTesterAccount,
-        session_memory: store.isTesterAccount ? [{
-          date: new Date().toLocaleDateString(),
-          summary: "This is a demo account for app review. The user wanted to explore all premium features.",
-        }] : [],
-      };
-
-      let userProfile;
-      if (store.pendingProfileId) {
-        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-      } else {
-        userProfile = await base44.entities.UserProfile.create(profileData);
-      }
-
-      localStorage.setItem("userProfileId", userProfile.id);
-      localStorage.setItem("companionId", companion.id);
-
       const finalName = store.companionNickname?.trim() || companionData.name;
+
+      // ✅ Set ALL localStorage keys FIRST — before any async DB calls
       localStorage.setItem("unfiltr_companion_nickname", store.companionNickname?.trim() || "");
       localStorage.setItem("unfiltr_companion", JSON.stringify({
         id: companionData.id,
@@ -109,15 +82,51 @@ export default function OnboardingBackground() {
         localStorage.setItem("unfiltr_vibe", store.selectedVibe);
       }
       localStorage.setItem("unfiltr_onboarding_complete", "true");
-      resetOnboardingStore();
+
+      // Navigate immediately — don't wait for DB
+      setLoading(false);
       navigate("/");
+
+      // Fire-and-forget DB calls in background
+      (async () => {
+        try {
+          const companion = await base44.entities.Companion.create({
+            name: companionData.name,
+            avatar_url: companionData.avatar,
+            mood_mode: "neutral",
+            personality: companionData.tagline,
+          });
+          const profileData = {
+            display_name: store.displayName,
+            companion_id: companion.id,
+            background_id: selected,
+            premium: store.isTesterAccount,
+            is_premium: store.isTesterAccount,
+            session_memory: store.isTesterAccount ? [{
+              date: new Date().toLocaleDateString(),
+              summary: "This is a demo account for app review. The user wanted to explore all premium features.",
+            }] : [],
+          };
+          let userProfile;
+          if (store.pendingProfileId) {
+            userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+          } else {
+            userProfile = await base44.entities.UserProfile.create(profileData);
+          }
+          localStorage.setItem("userProfileId", userProfile.id);
+          localStorage.setItem("companionId", companion.id);
+          resetOnboardingStore();
+        } catch (err) {
+          console.error("Onboarding DB error (non-blocking):", err);
+          resetOnboardingStore();
+        }
+      })();
     } catch (err) {
-      console.error("Onboarding DB error:", err);
+      console.error("Onboarding error:", err);
       localStorage.setItem("unfiltr_onboarding_complete", "true");
       resetOnboardingStore();
-      navigate("/");
-    } finally {
       setLoading(false);
+      navigate("/");
     }
   };
 
