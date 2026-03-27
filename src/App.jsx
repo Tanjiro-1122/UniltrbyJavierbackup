@@ -188,8 +188,10 @@ const AuthenticatedApp = ({ splashDone }) => {
 };
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [splashDone, setSplashDone] = useState(false);
+  // Only show splash on true first launch — skip if user already verified/onboarded
+  const isFirstLaunch = !localStorage.getItem("unfiltr_age_verified") && !localStorage.getItem("unfiltr_onboarding_complete");
+  const [showSplash, setShowSplash] = useState(isFirstLaunch);
+  const [splashDone, setSplashDone] = useState(!isFirstLaunch);
 
   return (
     <AuthProvider>
