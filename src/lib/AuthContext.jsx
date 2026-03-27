@@ -9,26 +9,26 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth]     = useState(true);
   const [authError, setAuthError]             = useState(null);
 
-  useEffect(() => {
+  const checkAuth = () => {
     const userId    = localStorage.getItem("unfiltr_user_id");
     const authToken = localStorage.getItem("unfiltr_auth_token");
     const onboardingComplete = localStorage.getItem("unfiltr_onboarding_complete");
 
     if (userId && authToken) {
-      // Returning authenticated user
       setUser({ id: userId, email: localStorage.getItem("unfiltr_user_email") || "" });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
+      setAuthError(null);
     } else if (onboardingComplete) {
-      // Completed onboarding but lost token — send to home screen to re-auth
       setIsLoadingAuth(false);
       setAuthError({ type: "logged_out" });
     } else {
-      // Brand new user — needs onboarding, not logged_out
       setIsLoadingAuth(false);
       setAuthError({ type: "new_user" });
     }
-  }, []);
+  };
+
+  useEffect(() => { checkAuth(); }, []);
 
   const logout = async () => {
     try { await base44.auth.logout(); } catch (e) {}
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings: false,
       logout,
       navigateToLogin,
-      checkAppState: () => {},
+      checkAppState: checkAuth,
     }}>
       {children}
     </AuthContext.Provider>
