@@ -87,6 +87,60 @@ export default function Settings() {
   const [familyCodeError, setFamilyCodeError]   = useState("");
   const [showCompanionCard, setShowCompanionCard] = useState(false);
 
+  const handleTriquetraTap = () => {
+    const next = (parseInt(localStorage.getItem('_atc') || '0')) + 1;
+    localStorage.setItem('_atc', next);
+    if (next >= 5) {
+      localStorage.setItem('_atc', '0');
+      setShowCodeModal(true);
+    }
+  };
+
+  const handleCodeSubmit = () => {
+    if (adminCode.trim().toLowerCase() === "huertasfam") {
+      localStorage.setItem("unfiltr_admin_unlocked", "true");
+      setIsAdmin(true);
+      setShowCodeModal(false);
+      setAdminCode("");
+      setCodeError("");
+    } else {
+      setCodeError("Invalid code.");
+      setAdminCode("");
+    }
+  };
+
+  const handleFamilyTriquetraTap = () => {
+    const next = familyTapCount + 1;
+    setFamilyTapCount(next);
+    if (next >= 5) {
+      setFamilyTapCount(0);
+      setShowFamilyModal(true);
+    }
+  };
+
+  const handleFamilyCodeSubmit = async () => {
+    if (familyCode.trim().toLowerCase() === "huertasfam") {
+      localStorage.setItem("unfiltr_is_premium", "true");
+      localStorage.setItem("unfiltr_family_unlock", "true");
+      try {
+        const profileId = localStorage.getItem("userProfileId");
+        if (profileId) {
+          await base44.entities.UserProfile.update(profileId, {
+            is_premium: true,
+            annual_plan: true,
+            bonus_messages: 99999,
+          });
+        }
+      } catch (e) {}
+      setShowFamilyModal(false);
+      setFamilyCode("");
+      setFamilyCodeError("");
+    } else {
+      setFamilyCodeError("Invalid code.");
+      setFamilyCode("");
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       const profileId = localStorage.getItem("userProfileId");
