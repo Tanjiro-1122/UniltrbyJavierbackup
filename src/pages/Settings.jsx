@@ -63,7 +63,9 @@ function CompanionNicknameField({ companion, userProfile }) {
 export default function Settings() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile]     = useState(null);
-  const [companion, setCompanion]         = useState(null);
+  const [companion, setCompanion]         = useState(() => {
+    try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]           = useState(false);
   const [showPauseModal, setShowPauseModal]       = useState(false);
@@ -280,12 +282,7 @@ export default function Settings() {
     alert("Your account will be deleted within 24 hours.");
   };
 
-  if (!userProfile || !companion) return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
-      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform:rotate(360deg) } }`}</style>
-    </div>
-  );
+  // Don't block render — show page immediately with whatever data is available
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: '#06020f', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
