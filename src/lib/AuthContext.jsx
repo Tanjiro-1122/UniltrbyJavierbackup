@@ -1,39 +1,42 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { supabase } from "@/api/supabaseClient";
+import { base44 } from "@/api/base44Client";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]                   = useState(null);
+  const [user, setUser]                       = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [authError, setAuthError]         = useState(null);
+  const [isLoadingAuth, setIsLoadingAuth]     = useState(true);
+  const [authError, setAuthError]             = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
-      setIsLoadingAuth(false);
-    }).catch(() => {
-      setIsLoadingAuth(false);
-    });
+    // Use Base44 localStorage auth
+    const userId   = localStorage.getItem("unfiltr_user_id");
+    const authToken = localStorage.getItem("unfiltr_auth_token");
+    const onboardingComplete = localStorage.getItem("unfiltr_onboarding_complete");
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
+    if (userId && authToken) {
+      setUser({ id: userId, email: localStorage.getItem("unfiltr_user_email") || "" });
+      setIsAuthenticated(true);
       setIsLoadingAuth(false);
-      if (!session?.user) setAuthError(null);
-    });
-
-    return () => subscription.unsubscribe();
+    } else if (onboardingComplete) {
+      // Onboarding done but token missing — treat as logged out
+      setAuthError({ type: "logged_out" });
+      setIsLoadingAuth(false);
+    } else {
+      // Brand new user — needs onboarding
+      setAuthError({ type: "auth_required" });
+      setIsLoadingAuth(false);
+    }
   }, []);
 
-  // NO window.location calls here — App.jsx handles all navigation via React Router
   const logout = async () => {
-    await supabase.auth.signOut().catch(() => {});
+    try { await base44.auth.logout(); } catch (e) {}
+    localStorage.removeItem("unfiltr_auth_token");
+    localStorage.removeItem("unfiltr_user_id");
+    localStorage.removeItem("unfiltr_user_email");
     setUser(null);
     setIsAuthenticated(false);
-    // Signal App.jsx to navigate
     setAuthError({ type: "logged_out" });
   };
 
