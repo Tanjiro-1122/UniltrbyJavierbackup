@@ -72,12 +72,12 @@ export default function OnboardingBackground() {
       }
 
       resetOnboardingStore();
-      navigate("/chat");
+      navigate("/vibe");
     } catch (err) {
       console.error("Onboarding DB error (non-blocking):", err);
       // Still navigate even if DB fails — don't block the user
       resetOnboardingStore();
-      navigate("/chat");
+      navigate("/vibe");
     } finally {
       setLoading(false);
     }
