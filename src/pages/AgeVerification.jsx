@@ -22,11 +22,9 @@ export default function AgeVerification() {
       return;
     }
     const birthYear = parseInt(year);
-    const birthMonthIndex = months.indexOf(month); // 0-based (Jan=0)
+    const birthMonthIndex = months.indexOf(month);
     const today = new Date();
-    // Build an exact birthdate (use day 1 as safe default)
     const birthDate = new Date(birthYear, birthMonthIndex, 1);
-    // Calculate age properly
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
@@ -38,9 +36,8 @@ export default function AgeVerification() {
       return;
     }
     localStorage.setItem("unfiltr_age_verified", "true");
-    // Fire event so App.jsx re-checks state immediately
     window.dispatchEvent(new Event("unfiltr_age_verified"));
-    navigate("/welcome");
+    navigate("/home-screen");
   };
 
   const handleExit = () => {
@@ -91,7 +88,6 @@ export default function AgeVerification() {
         {/* Body */}
         <div style={{ background: "rgba(255,255,255,0.04)", padding: "24px 20px" }}>
 
-          {/* Must be 18+ banner */}
           <div style={{
             background: "rgba(245,158,11,0.12)",
             border: "1px solid rgba(245,158,11,0.35)",
@@ -106,7 +102,6 @@ export default function AgeVerification() {
             </p>
           </div>
 
-          {/* DOB pickers */}
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 600, margin: "0 0 10px" }}>
             📅 Enter your date of birth:
           </p>
@@ -145,7 +140,6 @@ export default function AgeVerification() {
             <p style={{ color: "#f87171", fontSize: 13, textAlign: "center", marginBottom: 12 }}>{error}</p>
           )}
 
-          {/* Disclaimers */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <ShieldCheck size={16} color="#a855f7" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -167,7 +161,6 @@ export default function AgeVerification() {
             </div>
           </div>
 
-          {/* Verify button */}
           <button
             onClick={handleVerify}
             style={{
@@ -179,10 +172,9 @@ export default function AgeVerification() {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
-            ✅ Verify &amp; Continue
+            ✅ Verify & Continue
           </button>
 
-          {/* Exit button */}
           <button
             onClick={handleExit}
             style={{
