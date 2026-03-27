@@ -52,7 +52,7 @@ const HIDE_TABS_ON = [
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
-  "/pin-gate", "/chat-enter", "/journal-enter",
+  "/pin-gate", "/chat-enter", "/journal-enter", "/mood",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
@@ -61,8 +61,8 @@ const HIDE_TABS_ON = [
 
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
-  "/TermsOfUse", "/support", "/Pricing", "/onboarding/",
-  "/how-it-works",
+  "/TermsOfUse", "/support", "/Pricing", "/onboarding",
+  "/how-it-works", "/mood",
 ];
 
 function SafeAreaFix() {
