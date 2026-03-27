@@ -227,6 +227,17 @@ export default function Settings() {
         >
           <ChevronLeft size={20} color="white" />
         </button>
+        <div
+          onClick={handleFamilyTriquetraTap}
+          style={{ cursor: "default", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", marginRight: 8 }}
+        >
+          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+            <path d="M50 15 C30 15 15 30 15 50 C15 65 25 77 38 82 C28 72 25 58 30 45 C35 32 46 25 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+            <path d="M50 15 C54 25 65 32 70 45 C75 58 72 72 62 82 C75 77 85 65 85 50 C85 30 70 15 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+            <path d="M38 82 C42 86 46 88 50 88 C54 88 58 86 62 82 C58 78 54 76 50 76 C46 76 42 78 38 82Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+            <circle cx="50" cy="50" r="8" stroke="#a855f7" strokeWidth="2" fill="rgba(168,85,247,0.15)"/>
+          </svg>
+        </div>
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0 }}>Settings</h1>
       </div>
 
@@ -511,6 +522,50 @@ export default function Settings() {
             )}
           </div>
         </motion.div>
+
+        {/* Family Code Modal — triggered by triquetra tap at top */}
+        <AnimatePresence>
+          {showFamilyModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+              onClick={() => { setShowFamilyModal(false); setFamilyCode(""); setFamilyCodeError(""); }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                style={{ background: "#1a0535", border: "1px solid rgba(168,85,247,0.4)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 320 }}
+              >
+                <div style={{ textAlign: "center", marginBottom: 12 }}>
+                  <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 15 C30 15 15 30 15 50 C15 65 25 77 38 82 C28 72 25 58 30 45 C35 32 46 25 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+                    <path d="M50 15 C54 25 65 32 70 45 C75 58 72 72 62 82 C75 77 85 65 85 50 C85 30 70 15 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+                    <path d="M38 82 C42 86 46 88 50 88 C54 88 58 86 62 82 C58 78 54 76 50 76 C46 76 42 78 38 82Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
+                    <circle cx="50" cy="50" r="8" stroke="#a855f7" strokeWidth="2" fill="rgba(168,85,247,0.15)"/>
+                  </svg>
+                </div>
+                <p style={{ color: "white", fontWeight: 700, fontSize: 18, margin: "0 0 6px", textAlign: "center" }}>Family Access</p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 18px", textAlign: "center" }}>Enter your access code</p>
+                <input
+                  type="password"
+                  value={familyCode}
+                  onChange={e => { setFamilyCode(e.target.value); setFamilyCodeError(""); }}
+                  onKeyDown={e => e.key === "Enter" && handleFamilyCodeSubmit()}
+                  placeholder="Enter code..."
+                  autoFocus
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                />
+                {familyCodeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{familyCodeError}</p>}
+                <button
+                  onClick={handleFamilyCodeSubmit}
+                  style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+                >
+                  Unlock
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Version — tap 5x to unlock admin */}
         <div style={{ textAlign: "center", paddingBottom: 8 }}>
