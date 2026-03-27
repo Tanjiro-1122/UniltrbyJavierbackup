@@ -63,7 +63,7 @@ export default function PinGate() {
     }}>
 
       {/* Close button */}
-      <button onClick={() => navigate("/chat")} style={{
+      <button onClick={() => navigate("/chat-enter")} style={{
         position: "absolute", top: "max(1.5rem,env(safe-area-inset-top))", left: 20,
         background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
         borderRadius: "50%", width: 36, height: 36, color: "rgba(255,255,255,0.5)",
