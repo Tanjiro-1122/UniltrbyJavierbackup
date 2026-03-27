@@ -23,6 +23,7 @@ export default function OnboardingNickname() {
 
   return (
     <OnboardingLayout
+      totalSteps={7}
       step={5}
       onBack={() => navigate("/onboarding/companion")}
       onNext={handleNext}
