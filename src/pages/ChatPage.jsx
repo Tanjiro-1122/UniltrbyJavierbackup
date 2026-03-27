@@ -136,7 +136,21 @@ export default function ChatPage() {
       const consented = localStorage.getItem("unfiltr_consent_accepted") || localStorage.getItem("unfiltr_onboarding_complete");
       const hasProfile = localStorage.getItem("userProfileId");
       if (!c || !e || !consented) {
-        if (hasProfile) return; // already onboarded, just missing cache — don't redirect
+        if (hasProfile && c) {
+          // Has profile and companion but env is missing — use a safe default env
+          const defaultEnv = { id: "cozy", name: "Cozy Living Room", bg: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=80" };
+          localStorage.setItem("unfiltr_env", JSON.stringify(defaultEnv));
+          // Re-read e from the value we just set
+          const parsedCompanion2 = JSON.parse(c);
+          const savedNickname2 = localStorage.getItem("unfiltr_companion_nickname");
+          parsedCompanion2.displayName = (savedNickname2 && savedNickname2.trim()) ? savedNickname2.trim() : parsedCompanion2.name;
+          setCompanion(parsedCompanion2);
+          setEnvironment(defaultEnv);
+          const v2 = localStorage.getItem("unfiltr_vibe");
+          if (v2) setVibe(v2);
+          return; // continue init below
+        }
+        if (hasProfile) return; // has profile but no companion either — don't redirect, just wait
         navigate("/onboarding", { replace: true }); return;
       }
 
