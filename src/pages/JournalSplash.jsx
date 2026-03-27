@@ -6,6 +6,14 @@ export default function JournalSplash() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Returning users (have visited journal before) skip the splash
+    const hasSeenJournal = localStorage.getItem("unfiltr_journal_visited");
+    if (hasSeenJournal) {
+      navigate("/journal/home", { replace: true });
+      return;
+    }
+    // First time — show splash then mark as visited
+    localStorage.setItem("unfiltr_journal_visited", "true");
     const timer = setTimeout(() => {
       navigate("/journal/home", { replace: true });
     }, 2800);
