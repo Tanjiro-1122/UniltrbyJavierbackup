@@ -28,26 +28,18 @@ export function useAppleSubscriptions() {
       setError(null);
       setStatusMessage('Opening App Store...');
       const result = await AppleStoreKitService.purchase(productId);
-      if (result.isCancelled) { setStatusMessage(''); return { success: false, cancelled: true }; }
-      if (!result.isSuccess) { setError(result.error || 'Purchase failed.'); setStatusMessage(''); return { success: false }; }
-      // Update Base44 UserProfile
-      try {
-        const userId = localStorage.getItem('unfiltr_user_id');
-        if (userId) {
-          const { base44 } = await import('@/api/base44Client');
-          const profiles = await base44.entities.UserProfile.filter({ user_id: userId });
-          if (profiles?.[0]?.id) {
-            await base44.entities.UserProfile.update(profiles[0].id, {
-              is_premium: true,
-              annual_plan: productId.includes('annual'),
-            });
-          }
-        }
-      } catch (dbErr) { console.warn('[IAP] DB update failed (non-fatal):', dbErr); }
-      setStatusMessage('\u{1F389} You are now Premium!');
+      if (result.isCancelled) {
+        setStatusMessage('');
+        return { success: false, cancelled: true };
+      }
+      if (!result.isSuccess) {
+        setError(result.error || 'Purchase failed');
+        return { success: false };
+      }
+      setStatusMessage('🎉 You are now Premium!');
       return { success: true };
     } catch (e) {
-      setError('Something went wrong. Please try again.');
+      setError('Something went wrong');
       return { success: false };
     } finally {
       setPurchasing(false);
@@ -58,27 +50,12 @@ export function useAppleSubscriptions() {
     try {
       setStatusMessage('Restoring...');
       const result = await AppleStoreKitService.restorePurchases();
-      if (result.isSuccess) {
-        try {
-          const userId = localStorage.getItem('unfiltr_user_id');
-          if (userId) {
-            const { base44 } = await import('@/api/base44Client');
-            const profiles = await base44.entities.UserProfile.filter({ user_id: userId });
-            if (profiles?.[0]?.id) await base44.entities.UserProfile.update(profiles[0].id, { is_premium: true });
-          }
-        } catch (dbErr) { console.warn('[IAP] DB restore update failed:', dbErr); }
-        setStatusMessage('\u2705 Restored!');
-        setTimeout(() => setStatusMessage(''), 3000);
-        return { success: true };
-      }
-      setStatusMessage(result.message || 'No subscription found');
+      setStatusMessage(result.isSuccess ? '✅ Restored!' : 'Nothing to restore');
       setTimeout(() => setStatusMessage(''), 3000);
-      return { success: false };
     } catch (e) {
       setStatusMessage('Restore failed');
-      return { success: false };
     }
   };
 
-  return { products, loading, purchasing, error, statusMessage, purchase, restore, isNative: AppleStoreKitService.isNative() };
+  return { products, loading, purchasing, error, statusMessage, purchase, restore };
 }
