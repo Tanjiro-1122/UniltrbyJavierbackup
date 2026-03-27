@@ -117,6 +117,7 @@ export default function JournalEntry() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [today, setToday] = useState("");
+  const [currentMood, setCurrentMood] = useState("reflective");
   const [showStickers, setShowStickers] = useState(false);
   const [placedStickers, setPlacedStickers] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -127,6 +128,9 @@ export default function JournalEntry() {
   useEffect(() => {
     const now = new Date();
     setToday(now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }));
+    // Load mood set from MoodPicker
+    const savedMood = localStorage.getItem("unfiltr_mood") || "reflective";
+    setCurrentMood(savedMood);
   }, []);
 
   const handleSave = () => {
@@ -136,7 +140,7 @@ export default function JournalEntry() {
       id: Date.now().toString(),
       title: entry.trim().slice(0, 50),
       content: entry.trim(),
-      mood: "reflective",
+      mood: currentMood,
       images: uploadedImages,
       stickers: placedStickers,
       created_date: new Date().toISOString(),
@@ -174,7 +178,7 @@ export default function JournalEntry() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pb-3 shrink-0"
         style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
-        <button onClick={() => navigate("/journal")}
+        <button onClick={() => navigate("/journal/home")}
           className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
