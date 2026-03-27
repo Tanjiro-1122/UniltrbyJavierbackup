@@ -664,13 +664,11 @@ export default function ChatPage() {
           <div style={{
             flexShrink: 0,
             display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "flex-end",
+            justifyContent: "center",
             position: "relative",
             width: "100%",
-            height: "clamp(220px, 38dvh, 320px)",
             padding: "0 16px",
             boxSizing: "border-box",
-            overflow: "hidden",
           }}>
             {/* Speaking glow */}
             {isSpeaking && (
@@ -761,11 +759,11 @@ export default function ChatPage() {
 
           {/* ▓▓ 3. CHAT MESSAGES — scrollable middle section ▓▓ */}
           <div style={{
-            flex: 1, minHeight: 0,
+            position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
-            background: "linear-gradient(180deg, rgba(6,2,15,0.3) 0%, rgba(6,2,15,0.85) 30%)",
-            overflow: "hidden",
-            borderRadius: "16px 16px 0 0",
+            maxHeight: "45%", overflow: "hidden",
+            background: "linear-gradient(to bottom, transparent 0%, rgba(6,2,15,0.9) 10%, #06020f 100%)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }}>
             <ChatMessages
               messages={messages}
