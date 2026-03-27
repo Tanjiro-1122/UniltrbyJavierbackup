@@ -33,7 +33,7 @@ export default function JournalList() {
 
       <div className="flex items-center gap-3 px-4 pb-4 shrink-0"
         style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}>
-        <button onClick={() => navigate("/journal")}
+        <button onClick={() => navigate("/journal/home")}
           className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
         </button>
@@ -87,7 +87,6 @@ export default function JournalList() {
         )}
       </div>
 
-      {/* FAB — new entry */}
       <motion.button
         initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 }}
         onClick={() => navigate("/journal/entry")}
