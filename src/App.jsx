@@ -35,6 +35,7 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
+import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
 import HomeScreen             from "./pages/HomeScreen";
