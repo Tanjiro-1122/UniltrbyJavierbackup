@@ -88,11 +88,17 @@ const AuthenticatedApp = ({ splashDone }) => {
   useEffect(() => {
     if (!splashDone || isLoadingAuth) return;
     if (isPublicPath) return;
-    if (authError?.type === "auth_required") {
-      navigate("/onboarding/consent", { replace: true });
-    }
-    if (authError?.type === "logged_out") {
+    if (authError?.type === "auth_required" || authError?.type === "logged_out") {
       navigate("/welcome", { replace: true });
+      return;
+    }
+    // Authenticated returning user — check PIN
+    if (!authError && !isLoadingAuth) {
+      const pin = localStorage.getItem("unfiltr_pin");
+      if (pin) {
+        navigate("/PinLock", { replace: true });
+      }
+      // No PIN → stay on current route (/ = HomePage)
     }
   }, [splashDone, isLoadingAuth, authError?.type]); // eslint-disable-line
 
