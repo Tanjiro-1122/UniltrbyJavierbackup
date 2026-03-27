@@ -1,149 +1,339 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+import { base44 } from "@/api/base44Client";
+import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
+import { getOnboardingStore, updateOnboardingStore, resetOnboardingStore } from "@/components/onboarding/useOnboardingStore";
+
+// Google Noto animated emojis
+const NOTO = "https://fonts.gstatic.com/s/e/notoemoji/latest";
 
 const VIBES = [
-  { id: "chill",      emoji: "😌", label: "Chill",      sub: "LOW-KEY",    desc: "Just hanging out.\nNo agenda, no pressure.",        color: "#0f766e", glow: "#14b8a6" },
-  { id: "vent",       emoji: "👻", label: "Vent",       sub: "RELEASE",    desc: "Need to let it all out?\nI'm here, no judgment.",    color: "#6d28d9", glow: "#a855f7" },
-  { id: "hype",       emoji: "🔥", label: "Hype",       sub: "LET'S GO",   desc: "Big moment coming up?\nLet's get you READY.",        color: "#b45309", glow: "#f59e0b" },
-  { id: "deep_talk",  emoji: "🌙", label: "Deep Talk",  sub: "REAL",       desc: "Go somewhere deeper.\nNo small talk.",               color: "#1d4ed8", glow: "#60a5fa" },
-  { id: "journal",    emoji: "✏️",  label: "Journal",    sub: "PRIVATE",    desc: "Write freely.\nSpeak your truth. Save it.",          color: "#065f46", glow: "#10b981" },
+  {
+    id: "chill",
+    emoji: `${NOTO}/1f60c/512.webp`,
+    label: "Chill", sub: "Low-key",
+    desc: "Just hanging out.\nNo agenda, no pressure.",
+    gradient: "linear-gradient(135deg,#0f766e,#0ea5e9)",
+    orb: "rgba(13,148,136,0.5)", glow: "rgba(13,148,136,0.4)",
+    bg: "#031a18", accent: "#5eead4", cardBorder: "rgba(20,184,166,0.6)",
+  },
+  {
+    id: "vent",
+    emoji: `${NOTO}/1f32c/512.webp`,
+    label: "Vent", sub: "Let it out",
+    desc: "Need to let it all out?\nI'm here, no judgment.",
+    gradient: "linear-gradient(135deg,#2563eb,#7c3aed)",
+    orb: "rgba(59,130,246,0.5)", glow: "rgba(99,102,241,0.4)",
+    bg: "#020818", accent: "#93c5fd", cardBorder: "rgba(99,102,241,0.6)",
+  },
+  {
+    id: "hype",
+    emoji: `${NOTO}/1f525/512.webp`,
+    label: "Hype", sub: "Let's GO",
+    desc: "Big moment coming up?\nLet's get you READY.",
+    gradient: "linear-gradient(135deg,#ea580c,#facc15)",
+    orb: "rgba(249,115,22,0.5)", glow: "rgba(234,88,12,0.4)",
+    bg: "#180800", accent: "#fdba74", cardBorder: "rgba(251,146,60,0.6)",
+  },
+  {
+    id: "deep",
+    emoji: `${NOTO}/1f30c/512.webp`,
+    label: "Deep Talk", sub: "Real talk",
+    desc: "2am thoughts, existential\nquestions, real talk.",
+    gradient: "linear-gradient(135deg,#7c3aed,#db2777)",
+    orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
+    bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
+  },
+  {
+    id: "journal",
+    emoji: `${NOTO}/270f/512.webp`,
+    label: "Journal", sub: "Private",
+    desc: "Write freely.\nSpeak your truth. Save it.",
+    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
+    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
+    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
+  },
 ];
 
 export default function OnboardingVibe() {
   const navigate = useNavigate();
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+  const store = getOnboardingStore();
+  const [idx, setIdx] = useState(0);
+  const [loading, setLoading] = useState(false);
   const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const isSwiping = useRef(false);
 
-  const vibe = VIBES[index];
+  if (!store.selectedCompanion) {
+    navigate("/onboarding/nickname", { replace: true });
+    return null;
+  }
 
-  const go = (dir) => {
-    setDirection(dir);
-    setIndex((prev) => (prev + dir + VIBES.length) % VIBES.length);
+  const vibe = VIBES[idx];
+
+  const goTo = useCallback((i) => {
+    setIdx(Math.max(0, Math.min(VIBES.length - 1, i)));
+  }, []);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
   };
-
-  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchMove = (e) => {
+    if (!touchStartX.current) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (dx > 8 && dx > dy) isSwiping.current = true;
+  };
   const handleTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) go(diff > 0 ? 1 : -1);
+    if (!touchStartX.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (isSwiping.current && Math.abs(dx) > 35) goTo(idx + (dx < 0 ? 1 : -1));
     touchStartX.current = null;
+    isSwiping.current = false;
   };
 
-  const handleChoose = () => {
+  const finishOnboardingForJournal = async () => {
+    setLoading(true);
+    try {
+      const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
+      const companion = await base44.entities.Companion.create({
+        name: companionData.name,
+        avatar_url: companionData.avatar,
+        mood_mode: "neutral",
+        personality: companionData.tagline,
+      });
+      const defaultBg = BACKGROUNDS[0];
+      const profileData = {
+        display_name: store.displayName,
+        companion_id: companion.id,
+        background_id: defaultBg.id,
+        is_premium: store.isTesterAccount || false,
+        session_memory: [],
+      };
+      let userProfile;
+      if (store.pendingProfileId) {
+        userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+      } else {
+        userProfile = await base44.entities.UserProfile.create(profileData);
+      }
+      localStorage.setItem("userProfileId", userProfile.id);
+      localStorage.setItem("companionId", companion.id);
+      const finalName = store.companionNickname?.trim() || companionData.name;
+      localStorage.setItem("unfiltr_companion_nickname", finalName);
+      localStorage.setItem("unfiltr_companion", JSON.stringify({
+        id: companionData.id, name: companionData.name, displayName: finalName,
+        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
+      }));
+      localStorage.setItem("unfiltr_env", JSON.stringify({
+        id: defaultBg.id, label: defaultBg.label, bg: defaultBg.url,
+      }));
+      resetOnboardingStore();
+      localStorage.setItem("unfiltr_onboarding_complete", "true");
+    } catch (err) {
+      console.error("Journal onboarding error (non-blocking):", err);
+      resetOnboardingStore();
+    } finally {
+      setLoading(false);
+      navigate("/mood?dest=journal");
+    }
+  };
+
+  const handleContinue = () => {
     updateOnboardingStore({ selectedVibe: vibe.id });
-    localStorage.setItem("unfiltr_default_vibe", vibe.id);
-    // Complete onboarding
-    localStorage.setItem("unfiltr_onboarding_complete", "true");
-    navigate("/vibe");
+    if (vibe.id === "journal") {
+      finishOnboardingForJournal();
+    } else {
+      navigate("/onboarding/background");
+    }
   };
 
-  const variants = {
-    enter: (dir) => ({ x: dir > 0 ? 300 : -300, opacity: 0, scale: 0.85 }),
-    center: { x: 0, opacity: 1, scale: 1 },
-    exit: (dir) => ({ x: dir > 0 ? -300 : 300, opacity: 0, scale: 0.85 }),
-  };
-
-  const isJournal = vibe.id === "journal";
+  const btnLabel = loading ? "Setting up…" : vibe.id === "journal" ? "Start journaling →" : "Pick your world →";
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-between"
-      style={{ background: `linear-gradient(180deg, #06020f 0%, ${vibe.color}55 100%)`, transition: "background 0.5s ease" }}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      style={{
+        position: "fixed", inset: 0, overflow: "hidden",
+        fontFamily: "'SF Pro Display',system-ui,-apple-system,sans-serif",
+        display: "flex", flexDirection: "column",
+        background: `radial-gradient(ellipse at 50% 20%, ${vibe.orb} 0%, ${vibe.bg} 45%, #03000d 100%)`,
+        transition: "background 0.6s ease",
+      }}
     >
+      {/* Glow orb */}
+      <AnimatePresence mode="wait">
+        <motion.div key={vibe.id}
+          initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.5 }}
+          style={{
+            position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)",
+            width: 440, height: 440, borderRadius: "50%",
+            background: `radial-gradient(circle, ${vibe.orb} 0%, transparent 70%)`,
+            filter: "blur(55px)", pointerEvents: "none", zIndex: 0,
+          }}
+        />
+      </AnimatePresence>
+
       {/* Header */}
-      <div className="w-full px-4 pt-10 pb-2">
-        <div className="flex items-center mb-2">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <ChevronLeft size={20} color="#fff" />
-          </button>
-          <div className="flex-1 mx-4 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }}>
-            <div className="h-1 rounded-full" style={{ width: "100%", background: `linear-gradient(90deg, ${vibe.glow}, #db2777)`, transition: "background 0.5s" }} />
+      <div style={{
+        flexShrink: 0,
+        padding: "max(1.4rem,env(safe-area-inset-top)) 18px 8px",
+        display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 5,
+      }}>
+        <button onClick={() => navigate("/onboarding/nickname")} style={{
+          width: 38, height: 38, borderRadius: "50%", border: "none",
+          background: "rgba(255,255,255,0.07)", backdropFilter: "blur(10px)",
+          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+        }}>
+          <ChevronLeft size={20} color="rgba(255,255,255,0.7)" />
+        </button>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <h1 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: 0 }}>
+              What's your vibe?
+            </h1>
+            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 500 }}>
+              Step 5 of 6
+            </span>
           </div>
-          <span className="text-xs text-gray-400">Step 5 of 5</span>
+          <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: 0 }}>
+            How do you want to show up today?
+          </p>
         </div>
-        <h1 className="text-2xl font-bold text-white mt-4">What's your vibe?</h1>
-        <p className="text-sm text-gray-400 mt-1">How do you want to show up today?</p>
       </div>
 
       {/* Carousel */}
-      <div
-        className="flex-1 flex items-center justify-center w-full relative px-12"
-        style={{ minHeight: 340 }}
-      >
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={vibe.id}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="flex flex-col items-center justify-center rounded-3xl p-8 w-full"
-            style={{
-              background: `linear-gradient(135deg, ${vibe.color}cc, ${vibe.color}66)`,
-              border: `2px solid ${vibe.glow}55`,
-              boxShadow: `0 0 40px ${vibe.glow}33`,
-              minHeight: 300,
-            }}
-          >
-            <span style={{ fontSize: 64 }}>{vibe.emoji}</span>
-            <h2 className="text-3xl font-bold mt-4" style={{ color: vibe.glow }}>{vibe.label}</h2>
-            <p className="text-xs font-semibold tracking-widest mt-1 text-white opacity-60">{vibe.sub}</p>
-            <p className="text-center text-white text-sm mt-4 leading-relaxed opacity-90" style={{ whiteSpace: "pre-line" }}>{vibe.desc}</p>
-            {isJournal && (
-              <span className="mt-4 px-3 py-1 rounded-full text-xs font-bold border" style={{ borderColor: vibe.glow, color: vibe.glow }}>PRIVATE</span>
-            )}
-          </motion.div>
-        </AnimatePresence>
+      <div style={{
+        flex: 1, position: "relative", zIndex: 5,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden",
+      }}>
+        {VIBES.map((v, i) => {
+          const diff = i - idx;
+          if (Math.abs(diff) > 1) return null;
+          const isActive = diff === 0;
+          return (
+            <motion.div key={v.id}
+              onClick={() => !isActive && goTo(i)}
+              animate={{ x: diff * 262, scale: isActive ? 1 : 0.74, opacity: isActive ? 1 : 0.38 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{
+                position: "absolute", width: 232, height: 322, borderRadius: 32,
+                border: `2px solid ${isActive ? v.cardBorder : "rgba(255,255,255,0.09)"}`,
+                boxShadow: isActive
+                  ? `0 0 0 1px ${v.glow}, 0 0 55px ${v.glow}, 0 28px 64px rgba(0,0,0,0.75)`
+                  : "0 8px 24px rgba(0,0,0,0.4)",
+                background: isActive
+                  ? "linear-gradient(160deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%)"
+                  : "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(22px)",
+                cursor: isActive ? "default" : "pointer",
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                padding: "24px 22px 28px", zIndex: isActive ? 10 : 5,
+              }}
+            >
+              <div style={{
+                width: 100, height: 100, marginBottom: 16,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                filter: isActive ? `drop-shadow(0 0 28px ${v.glow}) drop-shadow(0 6px 18px rgba(0,0,0,0.6))` : "none",
+              }}>
+                <img src={v.emoji} alt={v.label} style={{ width: "100%", height: "100%", objectFit: "contain", opacity: isActive ? 1 : 0.55 }} />
+              </div>
+              <p style={{
+                fontWeight: 900, fontSize: 26, margin: "0 0 3px", letterSpacing: "-0.5px",
+                background: isActive ? v.gradient : "none",
+                WebkitBackgroundClip: isActive ? "text" : "initial",
+                WebkitTextFillColor: isActive ? "transparent" : "rgba(255,255,255,0.45)",
+                color: isActive ? undefined : "rgba(255,255,255,0.45)",
+              }}>{v.label}</p>
+              <p style={{
+                color: isActive ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
+                fontSize: 11, fontWeight: 700, margin: "0 0 14px",
+                textTransform: "uppercase", letterSpacing: "0.14em",
+              }}>{v.sub}</p>
+              {isActive && (
+                <motion.p
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.35 }}
+                  style={{
+                    color: "rgba(255,255,255,0.52)", fontSize: 13, lineHeight: 1.55,
+                    textAlign: "center", margin: 0, whiteSpace: "pre-line",
+                  }}
+                >{v.desc}</motion.p>
+              )}
+              {isActive && v.id === "journal" && (
+                <div style={{
+                  marginTop: 12, padding: "3px 10px", borderRadius: 999,
+                  background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.35)",
+                  color: "#34d399", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                }}>PRIVATE</div>
+              )}
+            </motion.div>
+          );
+        })}
 
-        {/* Arrows */}
-        <button
-          onClick={() => go(-1)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-          style={{ width: 40, height: 40, background: "rgba(255,255,255,0.12)" }}
-        >
-          <ChevronLeft size={20} color="#fff" />
-        </button>
-        <button
-          onClick={() => go(1)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-          style={{ width: 40, height: 40, background: "rgba(255,255,255,0.12)" }}
-        >
-          <ChevronRight size={20} color="#fff" />
-        </button>
+        {idx > 0 && (
+          <button onClick={() => goTo(idx - 1)} style={{
+            position: "absolute", left: 14, zIndex: 20,
+            width: 42, height: 42, borderRadius: "50%",
+            background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.12)",
+            backdropFilter: "blur(10px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "white",
+          }}>
+            <ChevronLeft size={20} />
+          </button>
+        )}
+        {idx < VIBES.length - 1 && (
+          <button onClick={() => goTo(idx + 1)} style={{
+            position: "absolute", right: 14, zIndex: 20,
+            width: 42, height: 42, borderRadius: "50%",
+            background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.12)",
+            backdropFilter: "blur(10px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: "white",
+          }}>
+            <ChevronRight size={20} />
+          </button>
+        )}
       </div>
 
       {/* Dots */}
-      <div className="flex gap-2 mb-4">
-        {VIBES.map((v, i) => (
-          <button
-            key={i}
-            onClick={() => { setDirection(i > index ? 1 : -1); setIndex(i); }}
-            style={{
-              width: i === index ? 20 : 8, height: 8, borderRadius: 4,
-              background: i === index ? vibe.glow : "rgba(255,255,255,0.25)",
-              transition: "all 0.3s ease", border: "none", cursor: "pointer",
-            }}
-          />
+      <div style={{ display: "flex", justifyContent: "center", gap: 7, paddingBottom: 12, zIndex: 5 }}>
+        {VIBES.map((_, i) => (
+          <div key={i} onClick={() => goTo(i)} style={{
+            width: i === idx ? 20 : 7, height: 7, borderRadius: 999,
+            background: i === idx ? vibe.accent : "rgba(255,255,255,0.2)",
+            cursor: "pointer", transition: "all 0.3s ease",
+          }} />
         ))}
       </div>
 
       {/* CTA */}
-      <div className="w-full px-6 pb-10">
+      <div style={{ padding: "12px 20px", paddingBottom: "max(20px,env(safe-area-inset-bottom))", zIndex: 5 }}>
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={handleChoose}
-          className="w-full py-4 rounded-2xl text-white font-bold text-lg"
-          style={{ background: isJournal ? `linear-gradient(135deg, ${vibe.color}, ${vibe.glow})` : `linear-gradient(135deg, ${vibe.glow}, #db2777)` }}
+          onClick={handleContinue}
+          disabled={loading}
+          style={{
+            width: "100%", padding: "20px",
+            background: loading ? "rgba(255,255,255,0.1)" : vibe.gradient,
+            border: "none", borderRadius: 20,
+            color: loading ? "rgba(255,255,255,0.4)" : "white",
+            fontWeight: 800, fontSize: 18,
+            cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: loading ? "none" : `0 0 40px ${vibe.glow}`,
+            transition: "all 0.4s ease",
+          }}
         >
-          {isJournal ? "Start journaling →" : `Pick your world →`}
+          {btnLabel}
         </motion.button>
       </div>
     </div>
