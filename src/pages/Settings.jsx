@@ -143,16 +143,34 @@ export default function Settings() {
 
   useEffect(() => {
     const loadData = async () => {
-      const profileId = localStorage.getItem("userProfileId");
-      if (!profileId) return;
-      const profile = await base44.entities.UserProfile.get(profileId);
-      const comp = await base44.entities.Companion.get(profile.companion_id);
-      setUserProfile(profile);
-      setCompanion(comp);
-      setVoiceGender(comp?.voice_gender || "female");
-      setVoicePersonality(comp?.voice_personality || "cheerful");
-      // Only grant admin access to display name "Javier 1122"
-      if (profile?.display_name === "Javier 1122") setIsAdmin(true);
+      // Load companion from localStorage first so page renders immediately
+      const storedComp = localStorage.getItem("unfiltr_companion");
+      if (storedComp) {
+        try { setCompanion(JSON.parse(storedComp)); } catch (e) {}
+      }
+
+      // Then try DB — fully wrapped so any failure is silent
+      try {
+        const profileId = localStorage.getItem("userProfileId");
+        if (!profileId) return;
+        const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
+        if (!profile) return;
+        setUserProfile(profile);
+        if (profile?.display_name === "Javier 1122") setIsAdmin(true);
+        setVoiceGender(profile?.voice_gender || "female");
+        setVoicePersonality(profile?.voice_personality || "cheerful");
+
+        if (profile?.companion_id) {
+          const comp = await base44.entities.Companion.get(profile.companion_id).catch(() => null);
+          if (comp) {
+            setCompanion(comp);
+            setVoiceGender(comp?.voice_gender || "female");
+            setVoicePersonality(comp?.voice_personality || "cheerful");
+          }
+        }
+      } catch (e) {
+        console.warn("Settings loadData (non-fatal):", e.message);
+      }
     };
 
     // Load streak
