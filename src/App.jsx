@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
-import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
@@ -13,10 +13,8 @@ import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
 import ChatPage               from "./pages/ChatPage";
 import ChatHistory            from "./pages/ChatHistory";
-import Onboarding             from "./pages/Onboarding";
 import Settings               from "./pages/Settings";
 import Pricing                from "./pages/Pricing";
-import Journal                from "./pages/Journal";
 import JournalHome            from "./pages/JournalHome";
 import JournalEntry           from "./pages/JournalEntry";
 import JournalList            from "./pages/JournalList";
@@ -39,18 +37,31 @@ import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
-import Welcome                from "./pages/Welcome";
+import HomeScreen             from "./pages/HomeScreen";
+import ReturningScreen        from "./pages/ReturningScreen";
+import PinGate                from "./pages/PinGate";
+import ChatEnter              from "./pages/ChatEnter";
+import MoodPicker             from "./pages/MoodPicker";
+import JournalEnter           from "./pages/JournalEnter";
+import JournalWorldPicker     from "./pages/JournalWorldPicker";
+import JournalImmersive       from "./pages/JournalImmersive";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe", "/PinLock", "/PinSetup",
   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
-  "/PrivacyPolicy", "/TermsOfUse", "/welcome", "/age-verification", "/support",
-  "/BackgroundSelect", "/journal/entry", "/journal/list", "/journal/splash",
+  "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
+  "/support", "/BackgroundSelect",
+  "/pin-gate", "/chat-enter", "/journal-enter",
+  "/journal/immersive",
+  "/journal/world", "/journal/splash",
+  "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
+  "/chat-history",
 ];
 
 const PUBLIC_PATHS = [
-  "/age-verification", "/welcome", "/PrivacyPolicy",
-  "/TermsOfUse", "/support", "/Pricing", "/onboarding",
+  "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
+  "/TermsOfUse", "/support", "/Pricing", "/onboarding/",
+  "/how-it-works",
 ];
 
 function SafeAreaFix() {
@@ -68,43 +79,54 @@ function SafeAreaFix() {
 }
 
 const AuthenticatedApp = ({ splashDone }) => {
-  const { isLoadingAuth, authError } = useAuth();
+  const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
 
-  // After splash: route user to the right place ONCE
+  // Step 1: Age gate — always first
+  useEffect(() => {
+    if (!splashDone) return;
+    if (isPublicPath) return;
+    const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
+    if (!ageVerified) {
+      navigate("/age-verification", { replace: true });
+    }
+  }, [splashDone, location.pathname]);
+
+  // Step 2: Route based on auth + onboarding state
   useEffect(() => {
     if (!splashDone || isLoadingAuth) return;
     if (isPublicPath) return;
+    const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
+    if (!ageVerified) return;
 
-    // Not authenticated → Welcome
-    if (authError?.type === "auth_required" || authError?.type === "logged_out") {
-      navigate("/welcome", { replace: true });
+    const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+    const isLanding = location.pathname === "/home-screen" || location.pathname === "/returning-screen";
+
+    if (authError?.type === "logged_out") {
+      navigate("/home-screen", { replace: true });
       return;
     }
 
-    // Authenticated — figure out where to send them
-    if (!authError) {
-      const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
-      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      const pin = localStorage.getItem("unfiltr_pin");
-      const isAtRoot = location.pathname === "/";
-
-      // Only auto-route if they are at root (just launched)
-      if (isAtRoot) {
-        if (!ageVerified) {
-          navigate("/age-verification", { replace: true });
-        } else if (!onboardingDone) {
-          navigate("/welcome", { replace: true });
-        } else if (pin) {
-          navigate("/PinLock", { replace: true });
-        }
-        // else: onboarding done, no PIN → stay on HomePage
+    if (authError?.type === "auth_required") {
+      const isOnAppPage = !["/", "/home-screen", "/returning-screen"].includes(location.pathname);
+      if (!isOnAppPage) {
+        navigate("/home-screen", { replace: true });
+        return;
       }
     }
-  }, [splashDone, isLoadingAuth, authError?.type]); // eslint-disable-line
+
+    if (!onboardingDone && (location.pathname === "/" || isLanding)) {
+      navigate("/home-screen", { replace: true });
+      return;
+    }
+
+    if (onboardingDone && isLanding) {
+      navigate("/returning-screen", { replace: true });
+    }
+  }, [splashDone, isLoadingAuth, isAuthenticated, authError?.type]);
 
   if (!splashDone || isLoadingAuth) return null;
   if (authError?.type === "user_not_registered") return <UserNotRegisteredError />;
@@ -112,8 +134,30 @@ const AuthenticatedApp = ({ splashDone }) => {
   return (
     <>
       <Routes>
+        {/* Public / pre-auth */}
         <Route path="/age-verification"      element={<AgeVerification />} />
-        <Route path="/welcome"               element={<Welcome />} />
+        <Route path="/home-screen"           element={<HomeScreen />} />
+        <Route path="/returning-screen"      element={<ReturningScreen />} />
+        <Route path="/PrivacyPolicy"         element={<PrivacyPolicy />} />
+        <Route path="/TermsOfUse"            element={<TermsOfUse />} />
+        <Route path="/support"               element={<Support />} />
+
+        {/* Onboarding */}
+        <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
+        <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
+        <Route path="/onboarding/name"       element={<OnboardingName />} />
+        <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
+        <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
+        <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
+        <Route path="/onboarding/background" element={<OnboardingBackground />} />
+
+        {/* PIN gate + splash transitions */}
+        <Route path="/pin-gate"              element={<PinGate />} />
+        <Route path="/chat-enter"            element={<ChatEnter />} />
+        <Route path="/mood"                  element={<MoodPicker />} />
+        <Route path="/journal-enter"         element={<JournalEnter />} />
+
+        {/* Main app */}
         <Route path="/"                      element={<HomePage />} />
         <Route path="/chat"                  element={<ChatPage />} />
         <Route path="/chat-history"          element={<ChatHistory />} />
@@ -125,22 +169,14 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/PersonalityQuiz"       element={<PersonalityQuiz />} />
         <Route path="/PinLock"               element={<PinLock />} />
         <Route path="/PinSetup"              element={<PinSetup />} />
-        <Route path="/onboarding"            element={<Onboarding />} />
-        <Route path="/onboarding/name"       element={<OnboardingName />} />
-        <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
-        <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
-        <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
-        <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
-        <Route path="/onboarding/background" element={<OnboardingBackground />} />
-        <Route path="/journal"               element={<Journal />} />
-        <Route path="/journal/home"          element={<JournalHome />} />
+        <Route path="/journal"               element={<JournalSplash />} />
         <Route path="/journal/splash"        element={<JournalSplash />} />
+        <Route path="/journal/home"          element={<JournalHome />} />
         <Route path="/journal/list"          element={<JournalList />} />
         <Route path="/journal/entry"         element={<JournalEntry />} />
+        <Route path="/journal/world"         element={<JournalWorldPicker />} />
+        <Route path="/journal/immersive"     element={<JournalImmersive />} />
         <Route path="/journal/entry/:id"     element={<JournalEntry />} />
-        <Route path="/PrivacyPolicy"         element={<PrivacyPolicy />} />
-        <Route path="/support"               element={<Support />} />
-        <Route path="/TermsOfUse"            element={<TermsOfUse />} />
         <Route path="/AdminAvatarProcessor"  element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard"        element={<AdminDashboard />} />
         <Route path="/FeedbackAdmin"         element={<FeedbackAdmin />} />
