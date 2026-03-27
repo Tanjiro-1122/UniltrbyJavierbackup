@@ -15,11 +15,6 @@ export default function OnboardingConsent() {
     if (!allAgreed) return;
     localStorage.setItem("unfiltr_consent_accepted", "true");
     localStorage.setItem("unfiltr_ai_consent", "true");
-    const existingPin = localStorage.getItem("unfiltr_pin");
-    if (!existingPin) {
-      navigate("/PinSetup");
-      return;
-    }
     navigate("/onboarding/name");
   };
 
