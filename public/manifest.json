@@ -1,0 +1,18 @@
+{
+  "name": "Unfiltr by Javier",
+  "short_name": "Unfiltr",
+  "description": "Your private AI companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06020f",
+  "theme_color": "#06020f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
