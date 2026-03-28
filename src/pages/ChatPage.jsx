@@ -507,15 +507,15 @@ export default function ChatPage() {
 
     try {
       const name = companion.displayName || companion.name;
-      let memorySummary = "";
+      let localMemSummary = memorySummary; // use existing state value
       try {
         const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); memorySummary = prof?.memory_summary || ""; setMemorySummary(memorySummary; }
+        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); localMemSummary = prof?.memory_summary || ""; setMemorySummary(localMemSummary); }
       } catch {}
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
       const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
-      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
+      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
 
@@ -533,7 +533,7 @@ export default function ChatPage() {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium,
         sessionMemory: isPremium ? sessionMemory : [],
-        memorySummary: memorySummary || "",
+        memorySummary: localMemSummary || "",
         imageBase64: imgBase64,
       });
 
