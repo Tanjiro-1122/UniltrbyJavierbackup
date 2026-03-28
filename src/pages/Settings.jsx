@@ -88,6 +88,9 @@ export default function Settings() {
   const [familyCode, setFamilyCode]             = useState("");
   const [familyCodeError, setFamilyCodeError]   = useState("");
   const [showCompanionCard, setShowCompanionCard] = useState(false);
+  const [showCodeModal, setShowCodeModal]       = useState(false);
+  const [adminCode, setAdminCode]               = useState("");
+  const [codeError, setCodeError]               = useState("");
 
   const handleTriquetraTap = () => {
     const next = (parseInt(localStorage.getItem('_atc') || '0')) + 1;
