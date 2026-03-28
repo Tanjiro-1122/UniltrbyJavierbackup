@@ -36,6 +36,8 @@ import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion
 import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
 import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRewardBanner";
+import MemoryCard from "@/components/chat/MemoryCard";
+import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -89,6 +91,8 @@ export default function ChatPage() {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showStreakReward, setShowStreakReward] = useState(false);
+  const [memorySummary, setMemorySummary] = useState("");
+  const [companionDisplayNameForCard, setCompanionDisplayNameForCard] = useState("your companion");
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
@@ -505,7 +509,7 @@ export default function ChatPage() {
       let memorySummary = "";
       try {
         const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); memorySummary = prof?.memory_summary || ""; }
+        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); memorySummary = prof?.memory_summary || ""; setMemorySummary(memorySummary; }
       } catch {}
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
@@ -806,6 +810,22 @@ export default function ChatPage() {
               <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
             </div>
           )}
+
+          {/* Memory card — shows what companion remembers */}
+          <MemoryCard
+            memorySummary={memorySummary}
+            companionName={companionDisplayName || "your companion"}
+            isPremium={isPremium}
+            onUpgrade={() => setShowPaywall(true)}
+          />
+
+          {/* Daily check-in */}
+          <CompanionCheckIn
+            companionName={companionDisplayName || "your companion"}
+            onMoodPicked={(mood) => {
+              // Optionally inject a subtle acknowledgment into the chat
+            }}
+          />
 
           {/* Crisis resources banner */}
           <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
