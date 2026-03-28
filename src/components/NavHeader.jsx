@@ -22,7 +22,6 @@ export default function NavHeader() {
         {isRoot && (
           <div className="flex items-center gap-3">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/a635389cb_image.png" 
               alt="Unfiltr By Javier" 
               className="h-8 object-contain"
             />
