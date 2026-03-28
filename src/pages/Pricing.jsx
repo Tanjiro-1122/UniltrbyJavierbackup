@@ -265,7 +265,7 @@ export default function Pricing() {
           {/* Subscribe button */}
           <button
             onClick={handleSubscribe}
-            disabled={purchasing || loading}
+            disabled={purchasing}
             style={{
               width: '100%', padding: '16px',
               background: 'linear-gradient(135deg, #7c3aed, #a855f7, #db2777)',
