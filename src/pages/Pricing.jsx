@@ -51,11 +51,13 @@ export default function Pricing() {
   const [restoreSuccess, setRestoreSuccess] = useState(false);
 
   const handleRestore = async () => {
+    try {
     const result = await restore();
     if (result?.success) {
       setRestoreSuccess(true);
       setUpgraded(true);
     }
+    } catch (e) { console.error('[handleRestore]', e); }
   };
 
   // Auto-trigger restore if coming from Support page (defined after handleRestore to avoid stale closure)
@@ -66,6 +68,7 @@ export default function Pricing() {
   }, []);
 
   const handleSubscribe = async () => {
+    try {
     if (!selectedProduct) return;
     const result = await purchase(selectedProduct.productId);
     if (result?.success) {
@@ -80,6 +83,7 @@ export default function Pricing() {
       }
       setUpgraded(true);
     }
+    } catch (e) { console.error('[handleSubscribe]', e); }
   };
 
   return (
