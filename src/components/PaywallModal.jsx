@@ -47,7 +47,6 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
       if (profileId) {
         await base44.entities.UserProfile.update(profileId, {
           is_premium: true,
-          premium: true,
           annual_plan: planType === "annual",
         });
       }
