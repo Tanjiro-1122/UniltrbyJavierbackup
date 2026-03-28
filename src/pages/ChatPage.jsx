@@ -93,7 +93,6 @@ export default function ChatPage() {
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showStreakReward, setShowStreakReward] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
-  const [companionDisplayNameForCard, setCompanionDisplayNameForCard] = useState("your companion");
 
   const profileId = localStorage.getItem("userProfileId");
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium);
