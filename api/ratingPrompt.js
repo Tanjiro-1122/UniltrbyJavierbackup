@@ -1,9 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+const B44_APP  = process.env.VITE_BASE44_APP_ID;
+const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+async function b44Get(entity, id) {
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function b44Update(entity, id, data) {
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return res.ok;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -12,25 +25,21 @@ export default async function handler(req, res) {
     const { profileId } = req.body;
     if (!profileId) return res.status(400).json({ error: "Missing profileId" });
 
-    const { data: profile } = await supabase
-      .from("user_profile")
-      .select("message_count, rating_prompted, created_at")
-      .eq("id", profileId)
-      .single();
-
+    const profile = await b44Get("UserProfile", profileId);
     if (!profile) return res.status(200).json({ data: { should_prompt: false } });
 
-    const msgCount = profile.message_count || 0;
+    const msgCount       = profile.message_count || 0;
     const alreadyPrompted = profile.rating_prompted || false;
-    const daysSinceJoin = (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    const createdDate    = profile.created_date || profile.created_at;
+    const daysSinceJoin  = createdDate ? (Date.now() - new Date(createdDate).getTime()) / (1000*60*60*24) : 99;
 
     const should_prompt = !alreadyPrompted && msgCount >= 10 && daysSinceJoin >= 2;
 
     if (should_prompt) {
-      await supabase
-        .from("user_profile")
-        .update({ rating_prompted: true, rating_prompted_at: new Date().toISOString() })
-        .eq("id", profileId);
+      await b44Update("UserProfile", profileId, {
+        rating_prompted:    true,
+        rating_prompted_at: new Date().toISOString(),
+      });
     }
 
     res.status(200).json({ data: { should_prompt } });
