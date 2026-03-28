@@ -125,9 +125,11 @@ export default function OnboardingVibe() {
         try {
           const companion = await base44.entities.Companion.create({
             name: companionData.name,
-            avatar_url: companionData.avatar,
+            avatar_id: companionData.id,
+            avatar_gender: companionData.gender || "female",
+            personality_preset: companionData.personality || companionData.tagline || "friendly",
             mood_mode: "neutral",
-            personality: companionData.tagline,
+            is_active: true,
           });
           const profileData = {
             display_name: store.displayName,
