@@ -164,7 +164,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
         {/* PIN gate + splash transitions */}
-        <Route path="/pin-gate"              element={<PinGate />} />
         <Route path="/chat-enter"            element={<ChatEnter />} />
         <Route path="/mood"                  element={<MoodPicker />} />
         <Route path="/journal-enter"         element={<JournalEnter />} />
@@ -179,8 +178,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/feedback"              element={<FeedbackPage />} />
         <Route path="/BackgroundSelect"      element={<BackgroundSelect />} />
         <Route path="/PersonalityQuiz"       element={<PersonalityQuiz />} />
-        <Route path="/PinLock"               element={<PinLock />} />
-        <Route path="/PinSetup"              element={<PinSetup />} />
         <Route path="/journal"               element={<JournalSplash />} />
         <Route path="/journal/splash"        element={<JournalSplash />} />
         <Route path="/journal/home"          element={<JournalHome />} />
