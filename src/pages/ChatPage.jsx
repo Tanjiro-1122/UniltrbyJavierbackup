@@ -103,7 +103,7 @@ export default function ChatPage() {
           const { platform, receiptData, productId, purchaseToken } = data;
           const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
           const result = res.data;
-          if (result.valid && profileId) {
+          if ((result.isPremium || result.valid) && profileId) {
             await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: result.plan === 'annual' });
             setIsPremium(true);
             setShowPaywall(false);
