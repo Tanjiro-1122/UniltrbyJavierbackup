@@ -50,13 +50,6 @@ export default function Pricing() {
   const [upgraded, setUpgraded] = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
 
-  // Auto-trigger restore if coming from Support page
-  React.useEffect(() => {
-    if (searchParams.get('restore') === 'true') {
-      setTimeout(() => handleRestore(), 500);
-    }
-  }, []);
-
   const handleRestore = async () => {
     const result = await restore();
     if (result?.success) {
@@ -64,6 +57,13 @@ export default function Pricing() {
       setUpgraded(true);
     }
   };
+
+  // Auto-trigger restore if coming from Support page (defined after handleRestore to avoid stale closure)
+  React.useEffect(() => {
+    if (searchParams.get('restore') === 'true') {
+      setTimeout(() => handleRestore(), 500);
+    }
+  }, []);
 
   const handleSubscribe = async () => {
     if (!selectedProduct) return;
