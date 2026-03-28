@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Save, CheckCircle, Image, Smile, X } from "lucide-react";
+import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 
 const STICKER_DEFS = [
@@ -119,6 +119,8 @@ export default function JournalEntry() {
   const [saving, setSaving] = useState(false);
   const [today, setToday] = useState("");
   const [currentMood, setCurrentMood] = useState("neutral");
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const [companionData, setCompanionData] = useState(null);
   const [companionMoodUrl, setCompanionMoodUrl] = useState(null);
   const [showStickers, setShowStickers] = useState(false);
@@ -147,6 +149,27 @@ export default function JournalEntry() {
       }
     } catch {}
   }, []);
+
+  const handleMic = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert("Speech recognition not supported on this device."); return; }
+    const r = new SR();
+    recognitionRef.current = r;
+    r.continuous = true;
+    r.interimResults = false;
+    r.onstart = () => setIsListening(true);
+    r.onend = () => { setIsListening(false); recognitionRef.current = null; };
+    r.onerror = () => { setIsListening(false); recognitionRef.current = null; };
+    r.onresult = (e) => {
+      const transcript = Array.from(e.results).map(r => r[0].transcript).join(' ');
+      setEntry(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    r.start();
+  };
 
   const handleSave = () => {
     if (!entry.trim() || saving) return;
@@ -294,6 +317,11 @@ export default function JournalEntry() {
         <button onClick={() => setShowStickers((v) => !v)}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${showStickers ? "bg-purple-600/60 text-white" : "bg-white/10 text-white/60"}`}>
           <Smile className="w-4 h-4" />Stickers
+        </button>
+        <button onClick={handleMic}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${isListening ? "bg-pink-600/60 text-white" : "bg-white/10 text-white/60"}`}>
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          {isListening ? "Stop" : "Mic"}
         </button>
         <div className="flex-1" />
         <p className="text-white/20 text-xs">Write freely 🌙</p>
