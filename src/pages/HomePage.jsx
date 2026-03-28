@@ -110,7 +110,6 @@ export default function HomePage() {
           }}>
             <div style={{ position: "relative", zIndex: 1, width: 156, height: 156, borderRadius: "20%", overflow: "hidden" }}>
               <img
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/9710f9cf7_da0a2eaa1_generated_image.png"
                 alt="Unfiltr By Javier"
                 style={{
                   width: "100%", height: "100%",
