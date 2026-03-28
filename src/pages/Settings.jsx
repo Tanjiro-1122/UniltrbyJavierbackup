@@ -229,8 +229,9 @@ export default function Settings() {
   };
 
   const handleChangeCompanion = async (newCompanion) => {
-    if (savingCompanion || newCompanion.name === companion.name) return;
+    if (savingCompanion || newCompanion.name === companion?.name) return;
     setSavingCompanion(true);
+    if (!userProfile?.companion_id) { setSavingCompanion(false); return; }
     await base44.entities.Companion.update(userProfile.companion_id, {
       name: newCompanion.name,
       avatar_url: newCompanion.avatar,
@@ -243,7 +244,7 @@ export default function Settings() {
   };
 
   const handleChangeBackground = async (bgId) => {
-    if (savingBackground || bgId === userProfile.background_id) return;
+    if (savingBackground || bgId === userProfile?.background_id) return;
     setSavingBackground(true);
     const profileId = localStorage.getItem("userProfileId");
     await base44.entities.UserProfile.update(profileId, { background_id: bgId });
@@ -452,7 +453,7 @@ export default function Settings() {
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Your Companion</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {COMPANIONS.map((c) => {
-              const isSelected = companion.name === c.name;
+              const isSelected = companion?.name === c.name;
               return (
                 <button key={c.id} onClick={() => handleChangeCompanion(c)}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -486,7 +487,7 @@ export default function Settings() {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
             {BACKGROUNDS.map((bg) => {
-              const isSelected = userProfile.background_id === bg.id;
+              const isSelected = userProfile?.background_id === bg.id;
               return (
                 <button
                   key={bg.id}
