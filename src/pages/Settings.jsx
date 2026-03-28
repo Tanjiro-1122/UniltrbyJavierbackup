@@ -234,7 +234,7 @@ export default function Settings() {
     if (savingCompanion || newCompanion.name === companion?.name) return;
     setSavingCompanion(true);
     if (!userProfile?.companion_id) { setSavingCompanion(false); return; }
-    await base44.entities.Companion.update(userProfile.companion_id, {
+    await base44.entities.Companion.update(userProfile?.companion_id, {
       name: newCompanion.name,
       avatar_id: newCompanion.id,
       avatar_gender: newCompanion.gender || "female",
@@ -593,10 +593,10 @@ export default function Settings() {
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Status</p>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: (userProfile.premium || userProfile.is_premium) ? "#a855f7" : "rgba(255,255,255,0.4)" }} />
-              <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>{(userProfile.premium || userProfile.is_premium) ? "✨ Premium" : "Free (20 msgs/day)"}</p>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: (userProfile?.premium || userProfile?.is_premium) ? "#a855f7" : "rgba(255,255,255,0.4)" }} />
+              <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>{(userProfile?.premium || userProfile?.is_premium) ? "✨ Premium" : "Free (20 msgs/day)"}</p>
             </div>
-            {!(userProfile.premium || userProfile.is_premium) && (
+            {!(userProfile?.premium || userProfile?.is_premium) && (
               <button
                 onClick={() => setShowPaywall(true)}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 999, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
@@ -750,7 +750,7 @@ export default function Settings() {
           style={{ width: "100%", padding: "13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, color: "rgba(255,255,255,0.45)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
           <PauseCircle size={16} />
-          {userProfile.account_paused ? "Account Paused 💙" : "Pause My Account"}
+          {userProfile?.account_paused ? "Account Paused 💙" : "Pause My Account"}
         </button>
         <button
           onClick={() => setShowDeleteConfirm(true)}
