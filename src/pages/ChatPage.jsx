@@ -178,6 +178,7 @@ export default function ChatPage() {
         try {
           const profile = await base44.entities.UserProfile.get(pid);
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
+          if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const premium = !!(profile?.is_premium || profile?.premium);
           setIsPremium(premium);
           if (premium && profile?.session_memory?.length > 0) {
