@@ -107,7 +107,9 @@ export default function PinGate() {
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, margin: 0 }}>
           {stage === "create"
             ? "Create a 4-digit PIN to lock your space"
-            : "Confirm your PIN"}
+            : stage === "confirm"
+            ? "Enter the same PIN again to confirm"
+            : "Enter your PIN to continue"}
         </p>
       </div>
 
