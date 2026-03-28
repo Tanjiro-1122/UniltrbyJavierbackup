@@ -797,8 +797,8 @@ export default function ChatPage() {
           {/* Daily affirmation */}
           <DailyAffirmation visible={showAffirmation} />
 
-          {/* Memory banner */}
-          {showMemoryBanner && !isPremium && (
+          {/* Memory banner — only show old banner if MemoryCard isn't handling it */}
+          {showMemoryBanner && !isPremium && false && (
             <div onClick={() => setShowPaywall(true)}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
