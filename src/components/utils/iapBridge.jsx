@@ -5,8 +5,8 @@
 
 export const subscribeToPlan = async (plan = 'monthly') => {
   const productId = plan === 'annual'
-    ? 'com.huertas.unfiltr.premium.annual'
-    : 'com.huertas.unfiltr.premium.monthly';
+    ? 'com.huertas.unfiltr.pro.annual'
+    : 'com.huertas.unfiltr.pro.monthly';
 
   return new Promise((resolve) => {
     if (window.WTN?.inAppPurchase) {
