@@ -87,6 +87,7 @@ export default function Settings() {
   const [showFamilyModal, setShowFamilyModal]   = useState(false);
   const [familyCode, setFamilyCode]             = useState("");
   const [familyCodeError, setFamilyCodeError]   = useState("");
+  const [familySuccess, setFamilySuccess]         = useState(false);
   const [showCompanionCard, setShowCompanionCard] = useState(false);
   const [showCodeModal, setShowCodeModal]       = useState(false);
   const [adminCode, setAdminCode]               = useState("");
@@ -137,9 +138,15 @@ export default function Settings() {
           });
         }
       } catch (e) {}
-      setShowFamilyModal(false);
+      setFamilySuccess(true);
       setFamilyCode("");
       setFamilyCodeError("");
+      // Show success for 2 seconds then close + reload profile
+      setTimeout(() => {
+        setFamilySuccess(false);
+        setShowFamilyModal(false);
+        setUserProfile(prev => prev ? { ...prev, is_premium: true, annual_plan: true } : prev);
+      }, 2000);
     } else {
       setFamilyCodeError("Invalid code.");
       setFamilyCode("");
@@ -529,16 +536,7 @@ export default function Settings() {
 
 
 
-        {/* Notifications */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-            Notifications
-          </p>
-          <NotificationSettings
-            profileId={localStorage.getItem("userProfileId")}
-            initialEnabled={userProfile?.daily_checkins_enabled}
-          />
-        </motion.div>
+
 
         {/* How To Guide */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}>
@@ -555,15 +553,7 @@ export default function Settings() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.285 }}>
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Fun Stuff</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button onClick={() => navigate("/PersonalityQuiz")}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
-              style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
-              <span className="flex items-center gap-2">
-                <HelpCircle size={16} color="#a855f7" />
-                <span className="text-white font-semibold text-sm">Which companion are you?</span>
-              </span>
-              <span style={{ color: "rgba(168,85,247,0.7)", fontSize: 18 }}>›</span>
-            </button>
+
             <button onClick={() => setShowCompanionCard(true)}
               className="w-full flex items-center justify-between px-4 py-3 rounded-xl"
               style={{ background: "rgba(219,39,119,0.1)", border: "1px solid rgba(219,39,119,0.2)" }}>
@@ -629,24 +619,34 @@ export default function Settings() {
                     <circle cx="50" cy="50" r="8" stroke="#a855f7" strokeWidth="2" fill="rgba(168,85,247,0.15)"/>
                   </svg>
                 </div>
-                <p style={{ color: "white", fontWeight: 700, fontSize: 18, margin: "0 0 6px", textAlign: "center" }}>Family Access</p>
-                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 18px", textAlign: "center" }}>Enter your access code</p>
-                <input
-                  type="password"
-                  value={familyCode}
-                  onChange={e => { setFamilyCode(e.target.value); setFamilyCodeError(""); }}
-                  onKeyDown={e => e.key === "Enter" && handleFamilyCodeSubmit()}
-                  placeholder="Enter code..."
-                  autoFocus
-                  style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
-                />
-                {familyCodeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{familyCodeError}</p>}
-                <button
-                  onClick={handleFamilyCodeSubmit}
-                  style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
-                >
-                  Unlock
-                </button>
+                {familySuccess ? (
+                  <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+                    <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 20, margin: "0 0 6px" }}>Access Granted!</p>
+                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, margin: 0 }}>Welcome to the family 💜</p>
+                  </div>
+                ) : (
+                  <>
+                    <p style={{ color: "white", fontWeight: 700, fontSize: 18, margin: "0 0 6px", textAlign: "center" }}>Family Access</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 18px", textAlign: "center" }}>Enter your access code</p>
+                    <input
+                      type="password"
+                      value={familyCode}
+                      onChange={e => { setFamilyCode(e.target.value); setFamilyCodeError(""); }}
+                      onKeyDown={e => e.key === "Enter" && handleFamilyCodeSubmit()}
+                      placeholder="Enter code..."
+                      autoFocus
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                    />
+                    {familyCodeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{familyCodeError}</p>}
+                    <button
+                      onClick={handleFamilyCodeSubmit}
+                      style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg, #7c3aed, #db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}
+                    >
+                      Unlock
+                    </button>
+                  </>
+                )}
               </motion.div>
             </motion.div>
           )}
