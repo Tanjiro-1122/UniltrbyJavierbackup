@@ -99,15 +99,14 @@ export default function OnboardingBackground() {
             is_active: true,
           });
           const profileData = {
-            display_name: store.displayName,
-            companion_id: companion.id,
-            background_id: selected,
-            premium: store.isTesterAccount,
-            is_premium: store.isTesterAccount,
-            session_memory: store.isTesterAccount ? [{
-              date: new Date().toLocaleDateString(),
-              summary: "This is a demo account for app review. The user wanted to explore all premium features.",
-            }] : [],
+            display_name: store.displayName || "",
+            is_premium: !!(store.isTesterAccount),
+            trial_active: !!(store.isTesterAccount),
+            trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
+            onboarding_complete: true,
+            session_memory: [],
+            message_count: 0,
+            last_active: new Date().toISOString(),
           };
           let userProfile;
           if (store.pendingProfileId) {
