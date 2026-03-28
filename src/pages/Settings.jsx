@@ -255,6 +255,7 @@ export default function Settings() {
   };
 
   const handlePauseAccount = async () => {
+    try {
     setPausing(true);
     const profileId = localStorage.getItem("userProfileId");
     const now = new Date();
@@ -270,6 +271,7 @@ export default function Settings() {
     setUserProfile(prev => ({ ...prev, account_paused: true, account_pause_until: until.toISOString() }));
     setPausing(false);
     setPauseSuccess(true);
+    } catch (e) { console.error('[handlePauseAccount]', e); }
   };
 
   const handleDeleteAccount = async () => {
