@@ -335,9 +335,33 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  /* ─── CLEANUP: stop audio on unmount ─── */
+  /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
   useEffect(() => {
-    return () => { stopCurrentAudio(); };
+    return () => {
+      stopCurrentAudio();
+      // Save session snapshot to unfiltr_chat_sessions for ChatHistory page
+      try {
+        const msgs = JSON.parse(localStorage.getItem("unfiltr_chat_history") || "[]");
+        if (msgs.length >= 2) {
+          const companionRaw = localStorage.getItem("unfiltr_companion");
+          const companionName = companionRaw ? JSON.parse(companionRaw)?.displayName || JSON.parse(companionRaw)?.name : "Companion";
+          const sessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
+          const snapshot = {
+            id: Date.now().toString(),
+            date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            companion_name: companionName,
+            messages: msgs.slice(-40), // keep last 40 messages per session
+          };
+          // Don't duplicate — skip if last session was within 5 min
+          const last = sessions[0];
+          const tooRecent = last && (Date.now() - parseInt(last.id)) < 5 * 60 * 1000;
+          if (!tooRecent) {
+            const updated = [snapshot, ...sessions].slice(0, 50); // max 50 sessions
+            localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
+          }
+        }
+      } catch (e) {}
+    };
   }, []);
 
   /* ─── PRELOAD all mood poses for current companion ─── */
