@@ -11,7 +11,7 @@ export default function OnboardingName() {
 
   // Must consent before entering name
   if (!localStorage.getItem("unfiltr_consent_accepted")) {
-    navigate("/onboarding/pin", { replace: true });
+    navigate("/onboarding/consent", { replace: true });
     return null;
   }
 
@@ -49,7 +49,7 @@ export default function OnboardingName() {
     <OnboardingLayout
       totalSteps={7}
       step={3}
-      onBack={() => navigate("/onboarding/pin")}
+      onBack={() => navigate("/onboarding/consent")}
       onNext={handleNext}
       canAdvance={displayName.trim().length > 0}
     >
