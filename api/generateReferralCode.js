@@ -1,9 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+const B44_APP  = process.env.VITE_BASE44_APP_ID;
+const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+async function b44Update(entity, id, data) {
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return res.ok;
+}
+
+async function b44Get(entity, id) {
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -12,22 +25,13 @@ export default async function handler(req, res) {
     const { profileId } = req.body;
     if (!profileId) return res.status(400).json({ error: "Missing profileId" });
 
-    const { data: profile } = await supabase
-      .from("user_profile")
-      .select("referral_code")
-      .eq("id", profileId)
-      .single();
-
+    const profile = await b44Get("UserProfile", profileId);
     if (profile?.referral_code) {
       return res.status(200).json({ data: { referral_code: profile.referral_code } });
     }
 
-    // Generate a new code
     const code = "UNFILTR-" + Math.random().toString(36).substring(2, 7).toUpperCase();
-    await supabase
-      .from("user_profile")
-      .update({ referral_code: code, updated_at: new Date().toISOString() })
-      .eq("id", profileId);
+    await b44Update("UserProfile", profileId, { referral_code: code });
 
     res.status(200).json({ data: { referral_code: code } });
   } catch (err) {
