@@ -43,12 +43,43 @@ export default function ReturningScreen() {
 
       <motion.p
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-        style={{ color: "rgba(255,255,255,0.45)", fontSize: 16, textAlign: "center", margin: "0 0 48px" }}>
+        style={{ color: "rgba(255,255,255,0.45)", fontSize: 16, textAlign: "center", margin: "0 0 20px" }}>
         {nickname} has been waiting for you.
       </motion.p>
 
+      {/* Stats pills */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        style={{ display: "flex", gap: 10, marginBottom: 40 }}
+      >
+        {(() => {
+          const streakData = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
+          const today = new Date().toDateString();
+          const yesterday = new Date(Date.now() - 86400000).toDateString();
+          const streak = (streakData.date === today || streakData.date === yesterday) ? streakData.count : 0;
+          const created = localStorage.getItem("unfiltr_companion_created");
+          const days = created ? Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)) : 1;
+          const msgCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10);
+          return [
+            streak > 0 ? { label: `${streak} day streak`, icon: "🔥" } : null,
+            { label: `${days} day${days !== 1 ? "s" : ""} together`, icon: "💜" },
+            msgCount > 0 ? { label: `${msgCount} messages`, icon: "💬" } : null,
+          ].filter(Boolean).slice(0, 3).map((pill, i) => (
+            <div key={i} style={{
+              padding: "7px 14px", borderRadius: 99,
+              background: "rgba(168,85,247,0.12)",
+              border: "1px solid rgba(168,85,247,0.25)",
+              display: "flex", alignItems: "center", gap: 5,
+            }}>
+              <span style={{ fontSize: 13 }}>{pill.icon}</span>
+              <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: 600 }}>{pill.label}</span>
+            </div>
+          ));
+        })()}
+      </motion.div>
+
       <motion.button
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
         whileTap={{ scale: 0.97 }}
         onClick={() => navigate("/mood?dest=chat")}
         style={{
