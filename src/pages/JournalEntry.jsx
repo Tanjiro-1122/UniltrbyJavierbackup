@@ -307,24 +307,26 @@ export default function JournalEntry() {
       </AnimatePresence>
 
       {/* Toolbar */}
-      <div className="px-4 pt-2 flex items-center gap-3 shrink-0"
+      <div className="px-4 pt-2 shrink-0"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom, 1.5rem))" }}>
-        <button onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 text-white/60 text-sm font-medium active:scale-95 transition-all">
-          <Image className="w-4 h-4" />Photo
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-        <button onClick={() => setShowStickers((v) => !v)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${showStickers ? "bg-purple-600/60 text-white" : "bg-white/10 text-white/60"}`}>
-          <Smile className="w-4 h-4" />Stickers
-        </button>
-        <button onClick={handleMic}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${isListening ? "bg-pink-600/60 text-white" : "bg-white/10 text-white/60"}`}>
-          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          {isListening ? "Stop" : "Mic"}
-        </button>
-        <div className="flex-1" />
-        <p className="text-white/20 text-xs">Write freely 🌙</p>
+        <div className="flex items-center gap-2">
+          <button onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/10 text-white/60 text-sm font-medium active:scale-95 transition-all">
+            <Image className="w-4 h-4" /><span>Photo</span>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+          <button onClick={() => setShowStickers((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${showStickers ? "bg-purple-600/60 text-white" : "bg-white/10 text-white/60"}`}>
+            <Smile className="w-4 h-4" /><span>Stickers</span>
+          </button>
+          <button onClick={handleMic}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition-all ${isListening ? "bg-pink-600/60 text-white animate-pulse" : "bg-white/10 text-white/60"}`}>
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            <span>{isListening ? "Stop" : "Mic"}</span>
+          </button>
+          <div className="flex-1" />
+          <p className="text-white/20 text-xs">Write freely 🌙</p>
+        </div>
       </div>
     </div>
   );
