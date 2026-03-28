@@ -9,10 +9,10 @@ export default function PinGate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dest = searchParams.get("dest") || "chat";
+  const existingPin = localStorage.getItem("unfiltr_pin");
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState("");
   const [stage, setStage] = useState(existingPin ? "verify" : "create");
-  const existingPin = localStorage.getItem("unfiltr_pin");
 
   // PIN gate: if PIN exists show verify screen, otherwise show create screen
 
