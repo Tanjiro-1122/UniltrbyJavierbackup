@@ -82,7 +82,7 @@ export default function OnboardingBackground() {
         localStorage.setItem("unfiltr_vibe", store.selectedVibe);
       }
       localStorage.setItem("unfiltr_onboarding_complete", "true");
-
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
       // Navigate immediately — don't wait for DB
       setLoading(false);
       navigate("/mood?dest=chat");
@@ -124,6 +124,7 @@ export default function OnboardingBackground() {
     } catch (err) {
       console.error("Onboarding error:", err);
       localStorage.setItem("unfiltr_onboarding_complete", "true");
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
       resetOnboardingStore();
       setLoading(false);
       navigate("/mood?dest=chat");
