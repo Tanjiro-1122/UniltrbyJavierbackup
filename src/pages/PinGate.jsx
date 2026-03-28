@@ -59,7 +59,7 @@ export default function PinGate() {
     }
   };
 
-  const current = stage === "create" ? pin : confirm;
+  const current = stage === "confirm" ? confirm : pin;
 
   return (
     <div style={{
