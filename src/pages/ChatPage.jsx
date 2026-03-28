@@ -814,21 +814,17 @@ export default function ChatPage() {
           {/* Miss you banner — shows if user was away 2+ days */}
           <MissYouBanner />
 
-          {/* Memory card — shows what companion remembers */}
-          <MemoryCard
-            memorySummary={memorySummary}
-            companionName={companionDisplayName || "your companion"}
-            isPremium={isPremium}
-            onUpgrade={() => setShowPaywall(true)}
-          />
+          {/* Memory card — only show when no messages yet */}
+          {messages.length === 0 && (
+            <MemoryCard
+              memorySummary={memorySummary}
+              companionName={companionDisplayName || "your companion"}
+              isPremium={isPremium}
+              onUpgrade={() => setShowPaywall(true)}
+            />
+          )}
 
-          {/* Daily check-in */}
-          <CompanionCheckIn
-            companionName={companionDisplayName || "your companion"}
-            onMoodPicked={(mood) => {
-              // Optionally inject a subtle acknowledgment into the chat
-            }}
-          />
+          {/* Daily check-in removed from layout — mood handled inline in chat */}
 
           {/* Crisis resources banner */}
           <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
