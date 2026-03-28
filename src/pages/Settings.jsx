@@ -236,10 +236,11 @@ export default function Settings() {
     if (!userProfile?.companion_id) { setSavingCompanion(false); return; }
     await base44.entities.Companion.update(userProfile.companion_id, {
       name: newCompanion.name,
-      avatar_url: newCompanion.avatar,
-      personality: newCompanion.tagline,
+      avatar_id: newCompanion.id,
+      avatar_gender: newCompanion.gender || "female",
+      personality_preset: newCompanion.tagline || "friendly",
     });
-    const updatedComp = { ...newCompanion, systemPrompt: companion.systemPrompt };
+    const updatedComp = { ...newCompanion, systemPrompt: companion?.systemPrompt };
     localStorage.setItem("unfiltr_companion", JSON.stringify(updatedComp));
     setCompanion((prev) => ({ ...prev, name: newCompanion.name, avatar_url: newCompanion.avatar }));
     setSavingCompanion(false);
