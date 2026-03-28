@@ -190,11 +190,7 @@ export default function Pricing() {
           </div>
 
           {/* Plan selector */}
-          {loading ? (
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', padding: 20 }}>
-              Loading plans...
-            </div>
-          ) : (
+          {(
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
               {/* Annual */}
               <button
