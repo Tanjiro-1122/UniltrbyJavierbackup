@@ -1,6 +1,6 @@
-// ─── MIGRATED TO SUPABASE ────────────────────────────────────────────────────
-// This file now re-exports from supabaseClient.js
-// All existing imports of base44 and base44.entities continue to work unchanged.
+import { createClient } from "@base44/sdk";
 
-export { base44, supabase, entities } from "./supabaseClient";
-export { default } from "./supabaseClient";
+export const base44 = createClient({ appId: import.meta.env.VITE_BASE44_APP_ID });
+
+export const entities = base44.entities;
+export default base44;
