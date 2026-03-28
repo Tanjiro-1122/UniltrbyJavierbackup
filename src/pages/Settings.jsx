@@ -392,7 +392,7 @@ export default function Settings() {
 
         {isAdmin && (
           <Section>
-            <Row icon={<span style={{ fontSize: 14 }}>🛡️</span>} iconBg="#1a0a3d" label="Admin Dashboard" onPress={() => navigate("/admin")} last />
+            <Row icon={<span style={{ fontSize: 14 }}>🛡️</span>} iconBg="#1a0a3d" label="Admin Dashboard" onPress={() => navigate("/AdminDashboard")} last />
           </Section>
         )}
 
