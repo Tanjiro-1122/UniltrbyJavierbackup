@@ -810,13 +810,12 @@ export default function ChatPage() {
           {/* Crisis resources banner */}
           <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
 
-          {/* ▓▓ 3. CHAT MESSAGES — scrollable middle section ▓▓ */}
+          {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
           <div style={{
-            position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10,
+            flex: 1, minHeight: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
-            maxHeight: "45%", overflow: "hidden",
-            background: "linear-gradient(to bottom, transparent 0%, rgba(6,2,15,0.9) 10%, #06020f 100%)",
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            overflow: "hidden",
+            background: "linear-gradient(to bottom, transparent 0%, rgba(6,2,15,0.85) 18%, rgba(6,2,15,0.97) 100%)",
           }}>
             <ChatMessages
               messages={messages}
