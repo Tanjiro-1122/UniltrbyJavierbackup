@@ -132,11 +132,14 @@ export default function OnboardingVibe() {
             is_active: true,
           });
           const profileData = {
-            display_name: store.displayName,
-            companion_id: companion.id,
-            background_id: defaultBg.id,
-            is_premium: store.isTesterAccount || false,
+            display_name: store.displayName || "",
+            is_premium: !!(store.isTesterAccount),
+            trial_active: !!(store.isTesterAccount),
+            trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
+            onboarding_complete: true,
             session_memory: [],
+            message_count: 0,
+            last_active: new Date().toISOString(),
           };
           let userProfile;
           if (store.pendingProfileId) {
