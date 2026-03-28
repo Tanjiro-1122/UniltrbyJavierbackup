@@ -107,7 +107,8 @@ const AuthenticatedApp = ({ splashDone }) => {
     const isLanding = location.pathname === "/home-screen" || location.pathname === "/returning-screen";
 
     if (authError?.type === "logged_out") {
-      navigate("/home-screen", { replace: true });
+      // If they already finished onboarding, send them to returning screen not home
+      navigate(onboardingDone ? "/returning-screen" : "/home-screen", { replace: true });
       return;
     }
     // new_user but onboarding is done means they just finished — don't redirect back to home-screen
