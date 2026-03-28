@@ -8,9 +8,9 @@ import AppShell from '@/components/shell/AppShell';
 const FREE_FEATURES = [
   { icon: MessageCircle, label: '20 messages per day' },
   { icon: Sparkles,      label: 'Access to all 12 companions' },
-  { icon: Heart,         label: '3 mood modes (Happy, Neutral, Sad)' },
-  { icon: X,             label: 'No conversation history saved', locked: true },
-  { icon: X,             label: 'No memory between sessions', locked: true },
+  { icon: Heart,         label: 'All mood modes' },
+  { icon: X,             label: 'No memory — starts fresh every session', locked: true },
+  { icon: X,             label: 'No conversation history', locked: true },
   { icon: X,             label: 'No voice (TTS)', locked: true },
   { icon: X,             label: 'No journal access', locked: true },
 ];
@@ -18,7 +18,7 @@ const FREE_FEATURES = [
 const PREMIUM_FEATURES = [
   { icon: MessageCircle, label: 'Unlimited messages, every day' },
   { icon: Sparkles,      label: 'All 12 companions + all mood modes' },
-  { icon: Brain,         label: 'Memory — companion remembers you' },
+  { icon: Brain,         label: 'Memory — companion remembers everything' },
   { icon: History,       label: 'Full conversation history saved' },
   { icon: Volume2,       label: 'Voice (TTS) responses' },
   { icon: BookOpen,      label: 'Journal mode unlocked' },
@@ -28,9 +28,9 @@ const PREMIUM_FEATURES = [
 const COMPARISON = [
   { feature: 'Daily messages',        free: '20/day',     premium: 'Unlimited' },
   { feature: 'Companions',            free: 'All 12',     premium: 'All 12' },
-  { feature: 'Mood modes',            free: '3 basic',    premium: 'All modes' },
+  { feature: 'Mood modes',            free: 'All modes',  premium: 'All modes' },
   { feature: 'Conversation history',  free: false,        premium: true },
-  { feature: 'Memory between sessions', free: false,      premium: true },
+  { feature: 'Memory between sessions', free: '🚫 Resets each time', premium: '✅ Remembers everything' },
   { feature: 'Voice responses (TTS)', free: false,        premium: true },
   { feature: 'Journal mode',          free: false,        premium: true },
   { feature: 'Priority responses',    free: false,        premium: true },
