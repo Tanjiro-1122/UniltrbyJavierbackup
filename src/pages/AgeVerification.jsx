@@ -13,7 +13,8 @@ export default function AgeVerification() {
 
   const handleExit = () => {
     // Close the app or go to a blank screen
-    window.location.href = "about:blank";
+    // On mobile we can't close the app — show a locked screen instead
+    document.body.innerHTML = '<div style="background:#06020f;height:100vh;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-family:system-ui;font-size:16px;text-align:center;padding:24px">This app is for ages 18+.<br/><br/>Please close this tab.</div>';
   };
 
   return (
