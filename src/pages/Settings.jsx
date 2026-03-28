@@ -281,9 +281,12 @@ export default function Settings() {
         account_delete_requested_at: new Date().toISOString(),
       });
     }
-    localStorage.clear();
-    base44.auth.logout();
-    alert("Your account will be deleted within 24 hours.");
+    try { await base44.auth.logout(); } catch (e) {}
+    // Clear app data AFTER logout so auth tokens aren't wiped before the logout call
+    const keysToKeep = [];
+    Object.keys(localStorage).forEach(k => { if (!k.startsWith("unfiltr_") && k !== "userProfileId") keysToKeep.push(k); });
+    Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
+    navigate("/age-verification", { replace: true });
   };
 
   // Don't block render — show page immediately with whatever data is available
