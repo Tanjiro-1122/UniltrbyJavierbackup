@@ -107,8 +107,16 @@ const AuthenticatedApp = ({ splashDone }) => {
     const isLanding = location.pathname === "/home-screen" || location.pathname === "/returning-screen";
 
     if (authError?.type === "logged_out") {
-      // If they already finished onboarding, send them to returning screen not home
-      navigate(onboardingDone ? "/returning-screen" : "/home-screen", { replace: true });
+      if (!onboardingDone) {
+        navigate("/home-screen", { replace: true });
+        return;
+      }
+      // Onboarding done — only redirect if they're on a landing/root page, not mid-session
+      const activePaths = ["/chat", "/chat-enter", "/mood", "/journal", "/settings", "/vibe", "/feedback", "/Pricing"];
+      const isActive = activePaths.some(p => location.pathname.startsWith(p));
+      if (!isActive) {
+        navigate("/returning-screen", { replace: true });
+      }
       return;
     }
     // new_user but onboarding is done means they just finished — don't redirect back to home-screen
