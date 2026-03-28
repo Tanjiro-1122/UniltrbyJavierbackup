@@ -247,10 +247,10 @@ export default function Settings() {
     if (savingBackground || bgId === userProfile?.background_id) return;
     setSavingBackground(true);
     const profileId = localStorage.getItem("userProfileId");
-    await base44.entities.UserProfile.update(profileId, { background_id: bgId });
+    // background stored in localStorage only — not a UserProfile schema field
     const bg = BACKGROUNDS.find((b) => b.id === bgId);
     localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    setUserProfile((prev) => ({ ...prev, background_id: bgId }));
+    setUserProfile((prev) => ({ ...prev })); // bg stored in localStorage
     setSavingBackground(false);
   };
 
@@ -765,11 +765,11 @@ export default function Settings() {
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
         onSubscribe={() => {
-          setUserProfile(prev => ({ ...prev, is_premium: true, premium: true }));
+          setUserProfile(prev => ({ ...prev, is_premium: true }));
           setShowPaywall(false);
         }}
         onRestore={() => {
-          setUserProfile(prev => ({ ...prev, is_premium: true, premium: true }));
+          setUserProfile(prev => ({ ...prev, is_premium: true }));
           setShowPaywall(false);
         }}
       />
