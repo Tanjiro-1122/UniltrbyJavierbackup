@@ -38,6 +38,7 @@ import CrisisBanner from "@/components/chat/CrisisBanner";
 import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRewardBanner";
 import MemoryCard from "@/components/chat/MemoryCard";
 import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
+import MissYouBanner from "@/components/chat/MissYouBanner";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -810,6 +811,9 @@ export default function ChatPage() {
               <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
             </div>
           )}
+
+          {/* Miss you banner — shows if user was away 2+ days */}
+          <MissYouBanner />
 
           {/* Memory card — shows what companion remembers */}
           <MemoryCard
