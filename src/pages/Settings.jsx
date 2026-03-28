@@ -198,11 +198,12 @@ export default function Settings() {
     setVoiceGender(newGender);
     setSavingVoice(true);
     try {
-      await base44.entities.Companion.update(userProfile.companion_id, { voice_gender: newGender });
+      // voice_gender stored in localStorage (not in Companion schema)
+      localStorage.setItem("unfiltr_voice_gender", newGender);
       setCompanion(prev => ({ ...prev, voice_gender: newGender }));
     } catch (e) {
       console.error("Voice gender save error:", e);
-      setVoiceGender(companion.voice_gender || "female");
+      setVoiceGender(companion?.voice_gender || "female");
     } finally {
       setSavingVoice(false);
     }
@@ -213,11 +214,12 @@ export default function Settings() {
     setVoicePersonality(newPersonality);
     setSavingPersonality(true);
     try {
-      await base44.entities.Companion.update(userProfile.companion_id, { voice_personality: newPersonality });
+      // voice_personality stored in localStorage (not in Companion schema)
+      localStorage.setItem("unfiltr_voice_personality", newPersonality);
       setCompanion(prev => ({ ...prev, voice_personality: newPersonality }));
     } catch (e) {
       console.error("Voice personality save error:", e);
-      setVoicePersonality(companion.voice_personality || "cheerful");
+      setVoicePersonality(companion?.voice_personality || "cheerful");
     } finally {
       setSavingPersonality(false);
     }
