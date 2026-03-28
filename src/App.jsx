@@ -21,8 +21,6 @@ import JournalList            from "./pages/JournalList";
 import JournalSplash          from "./pages/JournalSplash";
 import FeedbackPage           from "./pages/FeedbackPage";
 import PersonalityQuiz        from "./pages/PersonalityQuiz";
-import PinLock                from "./pages/PinLock";
-import PinSetup               from "./pages/PinSetup";
 import BackgroundSelect       from "./pages/BackgroundSelect";
 import PrivacyPolicy          from "./pages/PrivacyPolicy";
 import TermsOfUse             from "./pages/TermsOfUse";
@@ -40,7 +38,6 @@ import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
 import HomeScreen             from "./pages/HomeScreen";
 import ReturningScreen        from "./pages/ReturningScreen";
-import PinGate                from "./pages/PinGate";
 import ChatEnter              from "./pages/ChatEnter";
 import MoodPicker             from "./pages/MoodPicker";
 import JournalEnter           from "./pages/JournalEnter";
@@ -48,11 +45,10 @@ import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
 
 const HIDE_TABS_ON = [
-  "/onboarding", "/vibe", "/PinLock", "/PinSetup",
-  "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
+  "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
-  "/pin-gate", "/chat-enter", "/journal-enter", "/mood",
+  "/chat-enter", "/journal-enter", "/mood",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
