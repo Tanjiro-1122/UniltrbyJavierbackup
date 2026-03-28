@@ -28,7 +28,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => { checkAuth(); }, []);
+  useEffect(() => {
+    checkAuth();
+    // Re-check auth if another tab or onboarding flow sets localStorage
+    const handler = () => checkAuth();
+    window.addEventListener("storage", handler);
+    window.addEventListener("unfiltr_auth_updated", handler);
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener("unfiltr_auth_updated", handler);
+    };
+  }, []);
 
   const logout = async () => {
     try { await base44.auth.logout(); } catch (e) {}
