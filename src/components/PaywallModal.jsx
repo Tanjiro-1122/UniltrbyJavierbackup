@@ -5,10 +5,11 @@ import { useAppleSubscriptions } from "@/components/hooks/useAppleSubscriptions"
 import { base44 } from "@/api/base44Client";
 
 const PERKS = [
+  { icon: Brain, label: "Memory — your companion finally knows you" },
   { icon: MessageCircle, label: "Unlimited messages, every day" },
-  { icon: Mic, label: "Unlimited voice conversations" },
+  { icon: Mic, label: "Voice responses (TTS)" },
+  { icon: BookOpen, label: "Full conversation history" },
   { icon: Zap, label: "Priority responses" },
-  { icon: Sparkles, label: "All vibes & companions" },
 ];
 
 function getMidnightCountdown() {
