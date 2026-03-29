@@ -41,7 +41,6 @@ export function isAudioUnlocked() {
 export function getAudioContext() {
   if (!sharedAudioContext) {
     sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-    console.log("[Audio] AudioContext created, state:", sharedAudioContext.state);
   }
   return sharedAudioContext;
 }
@@ -69,7 +68,6 @@ function startSilentAudioLoop() {
     audio.volume = 0.01;
     audio.play().catch(() => {});
     silentAudioElement = audio;
-    console.log("[Audio] Silent loop started for mute-switch bypass");
   } catch (e) {
     console.warn("[Audio] Failed to start silent loop:", e?.message);
   }
@@ -101,7 +99,6 @@ export async function resumeAudioContext() {
 
   if (!unlocked) {
     unlocked = true;
-    console.log("[Audio] Audio fully unlocked");
     if (unlockPromiseResolve) unlockPromiseResolve();
   }
   return ctx;
@@ -112,7 +109,6 @@ export async function resumeAudioContext() {
  * Falls back to HTML5 Audio data URI if Web Audio API fails.
  */
 export async function playAudioFromBase64(base64Audio) {
-  console.log('[TTS] playAudioFromBase64 called, base64 length:', base64Audio?.length);
   
   if (!base64Audio || base64Audio.length === 0) {
     console.error('[TTS] No base64 audio data provided');
@@ -126,20 +122,16 @@ export async function playAudioFromBase64(base64Audio) {
     bytes[i] = binaryStr.charCodeAt(i);
   }
   const audioBuffer = bytes.buffer;
-  console.log('[TTS] ArrayBuffer created, size:', audioBuffer.byteLength, 'bytes');
 
   // Stop any currently playing source
   stopCurrentAudio();
 
   try {
     const ctx = getAudioContext();
-    console.log('[TTS] AudioContext state before resume:', ctx.state);
     if (ctx.state === "suspended") await ctx.resume();
-    console.log('[TTS] AudioContext state after resume:', ctx.state);
 
     // decodeAudioData needs a COPY of the ArrayBuffer (it detaches the original)
     const buffer = await ctx.decodeAudioData(audioBuffer.slice(0));
-    console.log('[TTS] decodeAudioData success — duration:', buffer.duration, 's');
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
@@ -147,7 +139,6 @@ export async function playAudioFromBase64(base64Audio) {
     currentSource = source;
     
     source.start(0);
-    console.log('[TTS] Web Audio playback started');
 
     await new Promise((resolve) => {
       // Safety timeout: if onended never fires, resolve after duration + 2s
@@ -160,14 +151,12 @@ export async function playAudioFromBase64(base64Audio) {
 
       source.onended = () => {
         clearTimeout(timeout);
-        console.log('[TTS] Web Audio playback ended normally');
         currentSource = null;
         resolve();
       };
     });
   } catch (error) {
     console.error('[TTS] Web Audio API failed:', error?.message || error);
-    console.log('[TTS] Falling back to HTML5 Audio data URI...');
     currentSource = null;
 
     // Fallback: HTML5 Audio with data URI (more reliable than Blob URLs on iOS)
@@ -177,7 +166,6 @@ export async function playAudioFromBase64(base64Audio) {
       audio.playsInline = true;
       audio.setAttribute('playsinline', '');
       
-      console.log('[TTS] HTML5 Audio data URI playing...');
       await audio.play();
 
       await new Promise((resolve) => {
@@ -188,7 +176,6 @@ export async function playAudioFromBase64(base64Audio) {
 
         audio.onended = () => {
           clearTimeout(timeout);
-          console.log('[TTS] HTML5 Audio playback ended');
           resolve();
         };
         audio.onerror = () => {
@@ -221,14 +208,12 @@ export function stopCurrentAudio() {
  */
 function doUnlock() {
   if (unlocked) return;
-  console.log("[Audio] First user gesture detected — unlocking audio");
 
   // 1. Create and immediately resume the AudioContext
   const ctx = getAudioContext();
   const resumePromise = ctx.state === "suspended" ? ctx.resume() : Promise.resolve();
 
   resumePromise.then(() => {
-    console.log("[Audio] AudioContext resumed, state:", ctx.state);
     // 2. Play a silent buffer to fully prime the audio pipeline
     try {
       const buffer = ctx.createBuffer(1, 1, 22050);
@@ -236,7 +221,6 @@ function doUnlock() {
       source.buffer = buffer;
       source.connect(ctx.destination);
       source.start(0);
-      console.log("[Audio] Silent buffer played — Web Audio unlocked");
     } catch (e) {
       console.warn("[Audio] Silent buffer play failed:", e?.message);
     }
