@@ -226,7 +226,7 @@ export default function ChatPage() {
       } else { setStreak(streakData.count); }
 
       // Mood check-in disabled — mood is set via MoodPicker before entering chat
-      // const moodToday = localStorage.getItem("unfiltr_mood_checkin_date");
+      
       // if (moodToday !== todayStr) setShowMoodCheckIn(true);
 
       // Show daily affirmation
@@ -408,7 +408,6 @@ export default function ChatPage() {
 
   /* ─── TTS (iOS-safe Web Audio API playback) ─── */
   const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "cheerful") => {
-    console.log("[TTS] speakText called, voiceEnabled:", voiceEnabled);
     if (!voiceEnabled) return;
     try {
       setIsSpeaking(true);
@@ -418,24 +417,19 @@ export default function ChatPage() {
       
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
-      console.log("[TTS] Audio unlocked:", isAudioUnlocked());
       
-      console.log("[TTS] Invoking TTS function with voice:", voiceGender, voicePersonality);
       const res = await base44.functions.invoke("tts", { text: cleanText, companionId, voiceGender, voicePersonality });
-      console.log("[TTS] Response received, status:", res.status);
       
       const base64 = res.data?.audio;
       if (!base64) { 
         console.warn("[TTS] No audio in response"); 
         setIsSpeaking(false); setAvatarState("idle"); return; 
       }
-      console.log("[TTS] Got base64 audio, length:", base64.length);
       
       // Resume again right before playback (iOS may have re-suspended during the API call)
       try { await resumeAudioContext(); } catch {}
       
       await playAudioFromBase64(base64);
-      console.log("[TTS] Playback complete");
       setIsSpeaking(false); setAvatarState("idle");
     } catch (e) { 
       console.error("[TTS] speakText failed:", e?.message, e); 
@@ -547,7 +541,6 @@ export default function ChatPage() {
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
-      console.log("[Mood] detected:", res.data?.mood, "→ applied:", newMood);
       setCompanionMood(newMood);
       if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
 
