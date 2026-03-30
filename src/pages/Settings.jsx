@@ -233,10 +233,12 @@ export default function Settings() {
         personality_curiosity: personalityCuriosity,
         personality_style: personalityStyle,
       });
-      setPersonalitySaved(true);
-      setTimeout(() => setPersonalitySaved(false), 2500);
-    } catch (e) {}
-    setSavingPersonality(false);
+      // Navigate back to chat after saving
+      setSavingPersonality(false);
+      navigate("/chat");
+    } catch (e) {
+      setSavingPersonality(false);
+    }
   };
 
   // ── Sub-screens ────────────────────────────────────────────────────────────
