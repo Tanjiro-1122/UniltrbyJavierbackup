@@ -65,21 +65,27 @@ export default function ConversationTopics({ visible, onClose, onSelect }) {
       </div>
 
       <div className="scroll-area" style={{ flex: 1, padding: "0 16px 24px", overflowY: "auto" }}>
+        <p style={{ color: "rgba(168,85,247,0.9)", fontSize: 14, fontWeight: 600, marginBottom: 20, lineHeight: 1.5, textAlign: "center" }}>
+          ✨ Tap any topic to send it — start a real conversation
+        </p>
         {TOPIC_CATEGORIES.map(cat => (
           <div key={cat.title} style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 16 }}>{cat.emoji}</span>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 700 }}>{cat.title}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 20 }}>{cat.emoji}</span>
+              <span style={{ color: "white", fontSize: 15, fontWeight: 800 }}>{cat.title}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {cat.topics.map((topic, i) => (
                 <button key={i} onClick={() => { onSelect(topic); onClose(); }} style={{
-                  padding: "12px 14px", borderRadius: 14, textAlign: "left",
-                  background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)",
-                  color: "rgba(255,255,255,0.8)", fontSize: 13, lineHeight: 1.5,
+                  padding: "14px 16px", borderRadius: 16, textAlign: "left",
+                  background: "rgba(139,92,246,0.14)", 
+                  border: "1px solid rgba(168,85,247,0.3)",
+                  color: "rgba(255,255,255,0.95)", fontSize: 14, lineHeight: 1.5,
                   cursor: "pointer", transition: "all 0.15s",
+                  display: "flex", alignItems: "center", gap: 10,
                 }}>
-                  {topic}
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>💬</span>
+                  <span>{topic}</span>
                 </button>
               ))}
             </div>
