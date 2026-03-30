@@ -318,11 +318,11 @@ export default function MeditatePage() {
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-              Go to Chat 💬
+              Choose Something Else ✦
             </motion.button>
-            <button onClick={() => { setPhase("setup"); setTimer(0); }}
+            <button onClick={() => navigate(-1)}
               style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"rgba(255,255,255,0.5)", fontWeight:600, fontSize:14, cursor:"pointer" }}>
-              Meditate again
+              ← Go Back
             </button>
           </div>
         </motion.div>
