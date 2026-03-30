@@ -3,10 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 
-const NOTO = "https://fonts.gstatic.com/s/e/notoemoji/latest";
-
 export default function HubPage() {
   const navigate = useNavigate();
+
+  const EmojiIcon = ({ emoji, glow }) => (
+    <div style={{
+      width: 64, height: 64, flexShrink: 0,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 46,
+      filter: `drop-shadow(0 0 18px ${glow})`,
+    }}>
+      {emoji}
+    </div>
+  );
 
   return (
     <div style={{
@@ -69,13 +78,7 @@ export default function HubPage() {
             textAlign: "left",
           }}
         >
-          <div style={{
-            width: 64, height: 64, flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            filter: "drop-shadow(0 0 20px rgba(168,85,247,0.6))",
-          }}>
-            <img src={`${NOTO}/1f4ac/512.webp`} alt="Chat" style={{ width: 56, height: 56 }} />
-          </div>
+          <EmojiIcon emoji="💬" glow="rgba(168,85,247,0.7)" />
           <div>
             <div style={{ color: "#c4b5fd", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Chat</div>
             <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Talk with your companion</div>
@@ -98,13 +101,7 @@ export default function HubPage() {
             textAlign: "left",
           }}
         >
-          <div style={{
-            width: 64, height: 64, flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            filter: "drop-shadow(0 0 20px rgba(52,211,153,0.5))",
-          }}>
-            <img src={`${NOTO}/1f4d3/512.webp`} alt="Journal" style={{ width: 56, height: 56 }} />
-          </div>
+          <EmojiIcon emoji="📓" glow="rgba(52,211,153,0.6)" />
           <div>
             <div style={{ color: "#34d399", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Journal</div>
             <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Write freely, speak your truth</div>
@@ -127,13 +124,7 @@ export default function HubPage() {
             textAlign: "left",
           }}
         >
-          <div style={{
-            width: 64, height: 64, flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            filter: "drop-shadow(0 0 20px rgba(125,211,252,0.5))",
-          }}>
-            <img src={`${NOTO}/1f9d8/512.webp`} alt="Meditate" style={{ width: 56, height: 56 }} />
-          </div>
+          <EmojiIcon emoji="🧘" glow="rgba(125,211,252,0.6)" />
           <div>
             <div style={{ color: "#7dd3fc", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Meditate</div>
             <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Ambient sounds + breathing</div>
