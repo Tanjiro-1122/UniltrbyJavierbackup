@@ -43,12 +43,13 @@ import MoodPicker             from "./pages/MoodPicker";
 import JournalEnter           from "./pages/JournalEnter";
 import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
+import HubPage               from "./pages/HubPage";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
-  "/chat-enter", "/journal-enter", "/mood",
+  "/chat-enter", "/journal-enter", "/mood", "/hub",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
@@ -177,6 +178,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/Pricing"               element={<Pricing />} />
         <Route path="/feedback"              element={<FeedbackPage />} />
         <Route path="/BackgroundSelect"      element={<BackgroundSelect />} />
+        <Route path="/hub"                   element={<HubPage />} />
         <Route path="/PersonalityQuiz"       element={<PersonalityQuiz />} />
         <Route path="/journal"               element={<JournalSplash />} />
         <Route path="/journal/splash"        element={<JournalSplash />} />
