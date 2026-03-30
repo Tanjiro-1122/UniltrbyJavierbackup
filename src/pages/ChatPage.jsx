@@ -106,7 +106,8 @@ export default function ChatPage() {
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
-  const { isAtLimit, remaining, incrementCount, FREE_LIMIT } = useMessageLimit(isPremium, isAnnual);
+  const [isPro,    setIsPro]    = useState(false);
+  const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
   /* ─── NATIVE PURCHASE LISTENER ─── */
@@ -202,6 +203,8 @@ export default function ChatPage() {
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const premium = !!(profile?.is_premium || profile?.premium);
           setIsPremium(premium);
+          setIsAnnual(!!(profile?.annual_plan));
+          setIsPro(!!(profile?.pro_plan));
           if (premium && profile?.session_memory?.length > 0) {
             setSessionMemory(profile.session_memory);
             setShowMemoryBanner(false);
