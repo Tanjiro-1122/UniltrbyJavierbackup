@@ -81,7 +81,7 @@ export default function ReturningScreen() {
       <motion.button
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
         whileTap={{ scale: 0.97 }}
-        onClick={() => navigate("/chat")}
+        onClick={() => navigate("/hub")}
         style={{
           width: "100%", maxWidth: 340, padding: "20px",
           background: "linear-gradient(135deg,#7c3aed,#a855f7,#db2777)",
