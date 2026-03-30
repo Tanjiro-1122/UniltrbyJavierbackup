@@ -39,6 +39,7 @@ import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRew
 import MemoryCard from "@/components/chat/MemoryCard";
 import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
 import MissYouBanner from "@/components/chat/MissYouBanner";
+import ChatWalkthrough from "@/components/chat/ChatWalkthrough";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -100,6 +101,7 @@ export default function ChatPage() {
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showStreakReward, setShowStreakReward] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -173,6 +175,12 @@ export default function ChatPage() {
       if (!effectiveC || !effectiveE) {
         // Truly new user with nothing set
         if (!hasProfile) { navigate("/onboarding", { replace: true }); return; }
+      // Show walkthrough only on very first visit to chat
+      const walkthroughDone = localStorage.getItem("unfiltr_walkthrough_done");
+      if (!walkthroughDone) {
+        // Small delay so the chat renders first
+        setTimeout(() => setShowWalkthrough(true), 1200);
+      }
         return; // wait for state to settle
       }
 
