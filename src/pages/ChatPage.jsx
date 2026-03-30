@@ -204,6 +204,12 @@ export default function ChatPage() {
             try {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
+      // Cache personality in localStorage for fast access during chat
+      if (dbComp?.personality_vibe)      localStorage.setItem("unfiltr_personality_vibe",      dbComp.personality_vibe);
+      if (dbComp?.personality_empathy)   localStorage.setItem("unfiltr_personality_empathy",   dbComp.personality_empathy);
+      if (dbComp?.personality_humor)     localStorage.setItem("unfiltr_personality_humor",      dbComp.personality_humor);
+      if (dbComp?.personality_curiosity) localStorage.setItem("unfiltr_personality_curiosity", dbComp.personality_curiosity);
+      if (dbComp?.personality_style)     localStorage.setItem("unfiltr_personality_style",     dbComp.personality_style);
               // Cache voice settings immediately so first message uses correct voice
               if (dbComp?.voice_gender) localStorage.setItem("unfiltr_voice_gender", dbComp.voice_gender);
               if (dbComp?.voice_personality) localStorage.setItem("unfiltr_voice_personality", dbComp.voice_personality);
