@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Wind, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark, MessageCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -8,7 +8,7 @@ export default function ChatHeader({
   isPremium, messages, companion, navigate,
   setMessages, vibe,
   onShowGames, onShowMeditation, onShowAchievements,
-  onShowBreathing, onShowSleepStory, onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
+  onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
 }) {
   const [saving, setSaving] = useState(false);
 
@@ -105,11 +105,20 @@ export default function ChatHeader({
       </div>
 
       {/* Center: feature icons */}
-      <div style={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", scrollbarWidth: "none" }}>
-        <HeaderIconBtn onClick={onShowBreathing} icon={<Wind size={13} />} title="Breathe" />
+      <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", scrollbarWidth: "none" }}>
+        {/* Topics — prominent pill button so users can actually see it */}
+        <button onClick={onShowTopics}
+          style={{
+            height: 30, borderRadius: 999, border: "1px solid rgba(168,85,247,0.5)",
+            background: "rgba(168,85,247,0.18)", display: "flex", alignItems: "center",
+            justifyContent: "center", gap: 5, padding: "0 12px", cursor: "pointer",
+            flexShrink: 0, color: "#c084fc",
+          }}
+          title="Conversation Topics">
+          <MessageCircle size={13} color="#c084fc" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#c084fc", whiteSpace: "nowrap" }}>Topics</span>
+        </button>
         <HeaderIconBtn onClick={onShowMeditation} icon={<Moon size={13} />} title="Meditate" />
-        <HeaderIconBtn onClick={onShowSleepStory} icon={<span style={{ fontSize: 13 }}>🌙</span>} title="Sleep Story" />
-        <HeaderIconBtn onClick={onShowTopics} icon={<Sparkles size={13} />} title="Topics" />
         <HeaderIconBtn onClick={onShowMoodInsights} icon={<TrendingUp size={13} />} title="Mood" />
         <HeaderIconBtn onClick={onShowTimeCapsule} icon={<Clock size={13} />} title="Capsule" />
         <HeaderIconBtn onClick={onShowGames} icon={<Gamepad2 size={13} />} title="Games" />
