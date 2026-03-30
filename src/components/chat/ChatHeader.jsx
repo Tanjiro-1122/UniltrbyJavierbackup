@@ -85,7 +85,10 @@ export default function ChatHeader({
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "8px 12px",
+      paddingTop: "max(14px, env(safe-area-inset-top, 14px))",
+      paddingBottom: "8px",
+      paddingLeft: "12px",
+      paddingRight: "12px",
       boxSizing: "border-box",
       minHeight: 44,
     }}>
