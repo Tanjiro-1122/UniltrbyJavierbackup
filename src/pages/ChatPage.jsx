@@ -99,6 +99,7 @@ export default function ChatPage() {
   const [showAffirmation, setShowAffirmation] = useState(false);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
+  const [showMeditationNudge, setShowMeditationNudge] = useState(false);
   const [showStreakReward, setShowStreakReward] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
@@ -590,6 +591,16 @@ export default function ChatPage() {
       // Crisis detection — check both client-side and server-side
       const lowerText = text.toLowerCase();
       const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw)) || res.data?.crisis;
+
+      // ── Meditation nudge detection ──────────────────────────────────────
+      const STRESS_KEYWORDS = ["stressed","anxious","anxiety","overwhelmed","can't sleep","cant sleep","can't focus","panic","spiraling","need to calm","need to relax","so tired","exhausted","wound up","on edge","nervous"];
+      const userSaidStress = STRESS_KEYWORDS.some(kw => lowerText.includes(kw));
+      const lastNudge = parseInt(localStorage.getItem("unfiltr_last_med_nudge") || "0");
+      const nudgeCooldown = Date.now() - lastNudge > 1000 * 60 * 30; // 30 min cooldown
+      if (userSaidStress && nudgeCooldown) {
+        localStorage.setItem("unfiltr_last_med_nudge", Date.now().toString());
+        setTimeout(() => setShowMeditationNudge(true), 1200);
+      }
       if (isCrisis) setShowCrisisBanner(true);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
