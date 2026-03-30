@@ -1,10 +1,12 @@
 const B44_APP  = process.env.VITE_BASE44_APP_ID;
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 
+const B44_API_KEY = process.env.BASE44_API_KEY || "";
+
 async function b44Update(entity, id, data) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
     body: JSON.stringify(data),
   });
   return res.ok;
