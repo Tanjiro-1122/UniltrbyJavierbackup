@@ -286,6 +286,28 @@ export default function ChatPage() {
   /* ─── GREETING + HISTORY ─── */
   useEffect(() => {
     if (!companion) return;
+
+    // ── Post-meditation check-in ──────────────────────────────────────────
+    const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
+    if (meditationRaw) {
+      try {
+        const med = JSON.parse(meditationRaw);
+        const minsAgo = (Date.now() - med.timestamp) / 60000;
+        if (minsAgo < 60) {
+          const mins = Math.floor(med.duration / 60);
+          const secs = med.duration % 60;
+          const durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+          localStorage.removeItem("unfiltr_just_meditated");
+          setMessages([{
+            role: "assistant",
+            content: `Welcome back 🌙 You just spent ${durStr} with ${med.sound} sounds. How did that feel? Sometimes just a few minutes of stillness changes everything.`
+          }]);
+          return;
+        }
+        localStorage.removeItem("unfiltr_just_meditated");
+      } catch {}
+    }
+
     const name = companion.displayName || companion.name;
     const userName = localStorage.getItem("unfiltr_user_display_name") || "";
     const hour = new Date().getHours();
