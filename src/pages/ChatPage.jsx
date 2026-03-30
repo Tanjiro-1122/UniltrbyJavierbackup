@@ -544,12 +544,22 @@ export default function ChatPage() {
         setPendingImage(null);
       }
 
+      // Build personality payload from cached localStorage values
+      const personalityPayload = {
+        vibe:      localStorage.getItem("unfiltr_personality_vibe")      || "chill",
+        empathy:   localStorage.getItem("unfiltr_personality_empathy")   || "balanced",
+        humor:     localStorage.getItem("unfiltr_personality_humor")     || "subtle",
+        curiosity: localStorage.getItem("unfiltr_personality_curiosity") || "moderate",
+        style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
+      };
+
       const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium,
         sessionMemory: isPremium ? sessionMemory : [],
         memorySummary: localMemSummary || "",
         imageBase64: imgBase64,
+        personality: personalityPayload,
       });
 
       const replyText = res.data?.reply || "...";
