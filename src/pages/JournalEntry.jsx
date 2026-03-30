@@ -4,6 +4,36 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 
+// Journal entry limits per tier
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
+const JOURNAL_KEY = "unfiltr_journal_monthly";
+
+function getMonthKey() { return new Date().toISOString().slice(0, 7); }
+
+function getJournalUsage() {
+  try {
+    const raw = localStorage.getItem(JOURNAL_KEY);
+    if (!raw) return 0;
+    const { month, count } = JSON.parse(raw);
+    return month === getMonthKey() ? count : 0;
+  } catch { return 0; }
+}
+
+function incrementJournalUsage() {
+  const count = getJournalUsage() + 1;
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify({ month: getMonthKey(), count }));
+}
+
+function getJournalLimit() {
+  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
+  const isPro     = localStorage.getItem("unfiltr_is_pro") === "true";
+  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
+  if (isAnnual)  return JOURNAL_LIMITS.annual;
+  if (isPro)     return JOURNAL_LIMITS.pro;
+  if (isPremium) return JOURNAL_LIMITS.plus;
+  return JOURNAL_LIMITS.free;
+}
+
 const STICKER_DEFS = [
   {
     id: "butterfly", emoji: "🦋", label: "Butterfly",
@@ -173,6 +203,16 @@ export default function JournalEntry() {
 
   const handleSave = () => {
     if (!entry.trim() || saving) return;
+    // Enforce monthly journal entry limit
+    const limit = getJournalLimit();
+    const used  = getJournalUsage();
+    if (used >= limit) {
+      alert(limit === JOURNAL_LIMITS.free
+        ? `You've used all ${limit} free journal entries this month. Upgrade to write more 💜`
+        : `You've reached your ${limit} journal entries for this month.`
+      );
+      return;
+    }
     setSaving(true);
     const newEntry = {
       id: Date.now().toString(),
@@ -185,6 +225,7 @@ export default function JournalEntry() {
     };
     const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify([newEntry, ...existing]));
+    incrementJournalUsage();
     setSaving(false);
     setSaved(true);
     setTimeout(() => { setSaved(false); navigate("/journal/list"); }, 1500);
