@@ -202,9 +202,15 @@ export default function ChatPage() {
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const premium = !!(profile?.is_premium || profile?.premium);
+          const annual  = !!(profile?.annual_plan);
+          const pro     = !!(profile?.pro_plan);
           setIsPremium(premium);
-          setIsAnnual(!!(profile?.annual_plan));
-          setIsPro(!!(profile?.pro_plan));
+          setIsAnnual(annual);
+          setIsPro(pro);
+          // Cache to localStorage so other pages (Journal) can read them
+          localStorage.setItem("unfiltr_is_premium", String(premium));
+          localStorage.setItem("unfiltr_is_annual",  String(annual));
+          localStorage.setItem("unfiltr_is_pro",     String(pro));
           if (premium && profile?.session_memory?.length > 0) {
             setSessionMemory(profile.session_memory);
             setShowMemoryBanner(false);
