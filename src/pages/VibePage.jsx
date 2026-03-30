@@ -42,15 +42,6 @@ const VIBES = [
     orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
     bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
   },
-  {
-    id: "journal",
-    emoji: `${NOTO}/270f/512.webp`,
-    label: "Journal", sub: "Private",
-    desc: "Write freely.\nSpeak your truth. Save it.",
-    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
-    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
-    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
-  },
 ];
 
 export default function VibePage() {
@@ -87,14 +78,10 @@ export default function VibePage() {
 
   const handleContinue = () => {
     localStorage.setItem("unfiltr_vibe", vibe.id);
-    if (vibe.id === "journal") {
-      navigate("/mood?dest=journal");
-    } else {
-      navigate("/mood?dest=chat");
-    }
+    navigate("/mood?dest=chat");
   };
 
-  const btnLabel = vibe.id === "journal" ? "Start journaling →" : "Pick your world →";
+  const btnLabel = "Pick your world →";
 
   return (
     <div
@@ -204,17 +191,7 @@ export default function VibePage() {
                   }}
                 >{v.desc}</motion.p>
               )}
-              {isActive && v.id === "journal" && (
-                <motion.span
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  style={{
-                    marginTop: 14, padding: "4px 14px", borderRadius: 20,
-                    border: `1px solid ${v.cardBorder}`,
-                    color: v.accent, fontSize: 11, fontWeight: 700,
-                    letterSpacing: 1.5, textTransform: "uppercase",
-                  }}
-                >PRIVATE</motion.span>
-              )}
+
             </motion.div>
           );
         })}
