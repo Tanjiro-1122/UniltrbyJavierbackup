@@ -303,7 +303,7 @@ export default function Pricing() {
                 {restoreSuccess ? 'Your premium access has been restored and unlocked.' : 'Welcome to Unfiltr Premium 💜'}
               </p>
               <button
-                onClick={() => navigate('/chat')}
+                onClick={() => navigate('/hub')}
                 style={{
                   width: '100%', padding: '14px',
                   background: 'linear-gradient(135deg, #16a34a, #22c55e)',
