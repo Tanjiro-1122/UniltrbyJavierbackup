@@ -19,7 +19,7 @@ export default function JournalHome() {
         style={{ paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))" }}
       >
         <button
-          onClick={() => navigate("/", { replace: true })}
+          onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5 text-white" />
