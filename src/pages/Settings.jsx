@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal
 } from "lucide-react";
 import PaywallModal from "@/components/PaywallModal";
 import ReferralSection from "@/components/ReferralSection";
@@ -113,6 +113,13 @@ export default function Settings() {
   const [adminCode, setAdminCode]             = useState("");
   const [codeError, setCodeError]             = useState("");
   const [showCompanionCard, setShowCompanionCard] = useState(false);
+  const [personalityVibe, setPersonalityVibe]           = useState("chill");
+  const [personalityEmpathy, setPersonalityEmpathy]     = useState("balanced");
+  const [personalityHumor, setPersonalityHumor]         = useState("subtle");
+  const [personalityCuriosity, setPersonalityCuriosity] = useState("moderate");
+  const [personalityStyle, setPersonalityStyle]         = useState("casual");
+  const [savingPersonality, setSavingPersonality]       = useState(false);
+  const [personalitySaved, setPersonalitySaved]         = useState(false);
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
   const currentBg = (() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } })();
@@ -134,7 +141,14 @@ export default function Settings() {
         setUserProfile(profile);
         if (profile?.companion_id) {
           const comp = await base44.entities.Companion.get(profile.companion_id).catch(() => null);
-          if (comp) setCompanion(comp);
+          if (comp) {
+            setCompanion(comp);
+            if (comp.personality_vibe)      setPersonalityVibe(comp.personality_vibe);
+            if (comp.personality_empathy)   setPersonalityEmpathy(comp.personality_empathy);
+            if (comp.personality_humor)     setPersonalityHumor(comp.personality_humor);
+            if (comp.personality_curiosity) setPersonalityCuriosity(comp.personality_curiosity);
+            if (comp.personality_style)     setPersonalityStyle(comp.personality_style);
+          }
         }
       } catch (e) {}
     })();
@@ -206,6 +220,24 @@ export default function Settings() {
     { id: "energetic", emoji: "⚡", label: "Energetic", desc: "Fast & lively" },
     { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & steady" },
   ];
+
+  // ── Save personality to DB ────────────────────────────────────────────────
+  const handleSavePersonality = async () => {
+    if (!userProfile?.companion_id || savingPersonality) return;
+    setSavingPersonality(true);
+    try {
+      await base44.entities.Companion.update(userProfile.companion_id, {
+        personality_vibe: personalityVibe,
+        personality_empathy: personalityEmpathy,
+        personality_humor: personalityHumor,
+        personality_curiosity: personalityCuriosity,
+        personality_style: personalityStyle,
+      });
+      setPersonalitySaved(true);
+      setTimeout(() => setPersonalitySaved(false), 2500);
+    } catch (e) {}
+    setSavingPersonality(false);
+  };
 
   // ── Sub-screens ────────────────────────────────────────────────────────────
   const screens = {
@@ -312,6 +344,104 @@ export default function Settings() {
       </SubScreen>
     ),
 
+
+    personality: (
+      <SubScreen title="Personality" onBack={() => setScreen(null)}>
+        {/* Vibe */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Overall Vibe</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }}>
+          {[
+            { id: "chill",      emoji: "😌", label: "Chill",      desc: "Low-key, easy" },
+            { id: "playful",    emoji: "😄", label: "Playful",    desc: "Light & fun" },
+            { id: "deep",       emoji: "🌌", label: "Deep",       desc: "Thoughtful" },
+            { id: "motivating", emoji: "🔥", label: "Motivating", desc: "Hype you up" },
+            { id: "sarcastic",  emoji: "😏", label: "Sarcastic",  desc: "Witty edge" },
+          ].map(o => (
+            <button key={o.id} onClick={() => setPersonalityVibe(o.id)}
+              style={{ padding: "12px 8px", borderRadius: 13, border: personalityVibe === o.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)", background: personalityVibe === o.id ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
+              <span style={{ color: personalityVibe === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityVibe === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Empathy */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Empathy Level</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {[
+            { id: "listener", emoji: "👂", label: "Listener",  desc: "Just vibes" },
+            { id: "balanced", emoji: "⚖️",  label: "Balanced",  desc: "Both worlds" },
+            { id: "advisor",  emoji: "💡", label: "Advisor",   desc: "Real input" },
+          ].map(o => (
+            <button key={o.id} onClick={() => setPersonalityEmpathy(o.id)}
+              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityEmpathy === o.id ? "2px solid #db2777" : "1px solid rgba(255,255,255,0.08)", background: personalityEmpathy === o.id ? "rgba(219,39,119,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
+              <span style={{ color: personalityEmpathy === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityEmpathy === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Humor */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Humor</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {[
+            { id: "none",     emoji: "🧊", label: "None",      desc: "Straight up" },
+            { id: "subtle",   emoji: "😏", label: "Subtle",    desc: "Dry wit" },
+            { id: "fullsend", emoji: "😂", label: "Full Send", desc: "All in" },
+          ].map(o => (
+            <button key={o.id} onClick={() => setPersonalityHumor(o.id)}
+              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityHumor === o.id ? "2px solid #f59e0b" : "1px solid rgba(255,255,255,0.08)", background: personalityHumor === o.id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
+              <span style={{ color: personalityHumor === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityHumor === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Curiosity */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Curiosity</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {[
+            { id: "quiet",    emoji: "🤫", label: "Quiet",    desc: "Let you talk" },
+            { id: "moderate", emoji: "🙂", label: "Moderate", desc: "Some questions" },
+            { id: "curious",  emoji: "🔍", label: "Curious",  desc: "Digs deeper" },
+          ].map(o => (
+            <button key={o.id} onClick={() => setPersonalityCuriosity(o.id)}
+              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityCuriosity === o.id ? "2px solid #06b6d4" : "1px solid rgba(255,255,255,0.08)", background: personalityCuriosity === o.id ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
+              <span style={{ color: personalityCuriosity === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityCuriosity === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Style */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Conversational Style</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 28 }}>
+          {[
+            { id: "casual",        emoji: "👟", label: "Casual",        desc: "Everyday chat" },
+            { id: "thoughtful",    emoji: "💭", label: "Thoughtful",    desc: "Reflective" },
+            { id: "philosophical", emoji: "🦉", label: "Philosophical", desc: "Big picture" },
+            { id: "hype",          emoji: "🚀", label: "Hype",          desc: "Energy boost" },
+          ].map(o => (
+            <button key={o.id} onClick={() => setPersonalityStyle(o.id)}
+              style={{ padding: "13px 10px", borderRadius: 13, border: personalityStyle === o.id ? "2px solid #10b981" : "1px solid rgba(255,255,255,0.08)", background: personalityStyle === o.id ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
+              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
+              <span style={{ color: personalityStyle === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityStyle === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Save Button */}
+        <button onClick={handleSavePersonality} disabled={savingPersonality}
+          style={{ width: "100%", padding: "15px", background: personalitySaved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#7c3aed,#db2777)", border: personalitySaved ? "1px solid rgba(34,197,94,0.5)" : "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: savingPersonality ? "default" : "pointer", opacity: savingPersonality ? 0.6 : 1, transition: "all 0.3s" }}>
+          {personalitySaved ? "✓ Saved — takes effect next chat" : savingPersonality ? "Saving..." : "Save Personality"}
+        </button>
+      </SubScreen>
+    ),
     account: (
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
@@ -383,6 +513,7 @@ export default function Settings() {
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
+          <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
         </Section>
 
