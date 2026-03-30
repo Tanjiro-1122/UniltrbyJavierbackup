@@ -3,11 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Home, MessageSquare, Settings, Star, BookOpen } from "lucide-react";
 
 const TABS = [
-  { path: "/",          label: "Home",    icon: Home },
-  { path: "/hub",       label: "Chat",    icon: MessageSquare },
-  { path: "/hub",       label: "Journal", icon: BookOpen },
-  { path: "/Pricing",   label: "Premium", icon: Star },
-  { path: "/settings",  label: "Settings",icon: Settings },
+  { path: "/",           label: "Home",     icon: Home },
+  { path: "/hub",        label: "Chat",     icon: MessageSquare },
+  { path: "/journal",    label: "Journal",  icon: BookOpen },
+  { path: "/Pricing",    label: "Premium",  icon: Star },
+  { path: "/settings",   label: "Settings", icon: Settings },
 ];
 
 export default function BottomTabs() {
@@ -40,15 +40,19 @@ export default function BottomTabs() {
           path === "/"
             ? location.pathname === "/"
             : label === "Chat"
-              ? ["/hub", "/vibe", "/mood", "/chat-enter", "/chat"].some(p => location.pathname.startsWith(p))
+              ? ["/hub", "/vibe", "/mood", "/chat-enter", "/chat", "/meditate"].some(p => location.pathname.startsWith(p))
               : label === "Journal"
               ? location.pathname.startsWith("/journal")
               : location.pathname === path || location.pathname.startsWith(path);
 
         return (
           <button
-            key={path}
-            onClick={() => navigate(path)}
+            key={label}
+            onClick={() => {
+              // Use replace:true so tab taps never stack in browser history.
+              // Back button will skip past tabs and go to the real previous screen.
+              if (!isActive) navigate(path, { replace: true });
+            }}
             style={{
               flex: 1,
               height: 64,
@@ -62,6 +66,7 @@ export default function BottomTabs() {
               cursor: "pointer",
               transition: "opacity 0.15s",
               opacity: isActive ? 1 : 0.45,
+              position: "relative",
             }}
           >
             {/* Active glow pill */}
