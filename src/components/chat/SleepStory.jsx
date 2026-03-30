@@ -14,16 +14,25 @@ export default function SleepStory({ visible, onClose, companionName }) {
   const [loading, setLoading] = useState(false);
   const [story, setStory] = useState(null);
   const [playing, setPlaying] = useState(false);
+  const [error, setError] = useState(null);
 
   if (!visible) return null;
 
   const generateStory = async (theme) => {
     setLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are ${companionName || "a gentle companion"}. Write a short, soothing bedtime story (about 150 words) with the theme "${theme.label}". Use calm, gentle language. End with "Goodnight... 🌙". No headers or titles.`,
-    });
-    setStory({ theme, text: res });
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are ${companionName || "a gentle companion"}. Write a short, soothing bedtime story (about 150 words) with the theme "${theme.label}". Use calm, gentle language. End with "Goodnight... 🌙". No headers or titles.`,
+      });
+      const text = typeof res === "string" ? res : res?.text || res?.content || JSON.stringify(res);
+      setStory({ theme, text });
+    } catch (e) {
+      console.error("SleepStory error:", e);
+      setError("Couldn't load the story right now. Tap a theme to try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const playStory = async () => {
@@ -57,7 +66,7 @@ export default function SleepStory({ visible, onClose, companionName }) {
           <Moon size={18} color="#c084fc" />
           <h2 style={{ color: "white", fontSize: 18, fontWeight: 800, margin: 0 }}>Sleep Stories</h2>
         </div>
-        <button onClick={() => { setStory(null); onClose(); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <button onClick={() => { setStory(null); setError(null); onClose(); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <X size={16} color="white" />
         </button>
       </div>
