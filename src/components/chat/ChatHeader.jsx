@@ -94,7 +94,7 @@ export default function ChatHeader({
     }}>
       {/* Left side: back + voice */}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <button onClick={() => navigate("/vibe")}
+        <button onClick={() => navigate("/hub")}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={18} color="white" />
         </button>
