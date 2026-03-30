@@ -22,14 +22,33 @@ export default function OnboardingCompanion() {
     return null;
   }
 
-  // Preload all companion avatars to avoid black flash
+  // Preload companion avatars in small batches — prevents WebView freeze on large images
   useEffect(() => {
-    VISIBLE.forEach(c => {
-      const img = new window.Image();
-      img.onload = () => setImgLoaded(prev => ({ ...prev, [c.id]: true }));
-      img.onerror = () => setImgLoaded(prev => ({ ...prev, [c.id]: false }));
-      img.src = c.avatar;
-    });
+    let cancelled = false;
+    const preloadBatch = async () => {
+      for (let i = 0; i < VISIBLE.length; i++) {
+        if (cancelled) break;
+        const c = VISIBLE[i];
+        await new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = () => {
+            if (!cancelled) setImgLoaded(prev => ({ ...prev, [c.id]: true }));
+            resolve();
+          };
+          img.onerror = () => {
+            if (!cancelled) setImgLoaded(prev => ({ ...prev, [c.id]: false }));
+            resolve();
+          };
+          img.src = c.avatar;
+          // Safety timeout — don't let one slow image block the rest
+          setTimeout(resolve, 3000);
+        });
+        // Small breathing room between loads to avoid memory spike
+        if (i < VISIBLE.length - 1) await new Promise(r => setTimeout(r, 80));
+      }
+    };
+    preloadBatch();
+    return () => { cancelled = true; };
   }, []);
 
   const go = (d) => {
