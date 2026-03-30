@@ -149,6 +149,11 @@ export default function MoodPicker() {
   const handleContinue = () => {
     localStorage.setItem("unfiltr_mood", mood.id);
     sessionStorage.setItem("unfiltr_mood_session", new Date().toDateString());
+    // Also write into the mood history so the AI greeting can reference it
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const history = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
+    history[todayKey] = mood.id;
+    localStorage.setItem("unfiltr_mood_history", JSON.stringify(history));
     if (dest === "journal") {
       navigate("/journal-enter");
     } else {
