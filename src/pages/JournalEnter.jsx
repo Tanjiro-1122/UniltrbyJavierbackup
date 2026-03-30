@@ -6,6 +6,14 @@ export default function JournalEnter() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Save today's mood to history so AI greeting can use it
+    const currentMood = localStorage.getItem("unfiltr_mood");
+    if (currentMood) {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const history = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
+      history[todayKey] = currentMood;
+      localStorage.setItem("unfiltr_mood_history", JSON.stringify(history));
+    }
     const t = setTimeout(() => navigate("/journal/home", { replace: true }), 2400);
     return () => clearTimeout(t);
   }, []);
