@@ -319,34 +319,74 @@ export default function ChatPage() {
     try { history = saved ? JSON.parse(saved) : []; } catch {}
 
     if (history.length > 0) {
-      // Returning user — personalized welcome back with memory context
+      // Returning user — personalized welcome back using mood history
       const hi = userName ? `${timeGreeting}, ${userName}` : `${timeGreeting}`;
-      
-      // Try to use memory summary for a personal touch
+
+      // ── Read mood history from localStorage (same key MoodInsights uses) ──
+      const moodHistory = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
+      const today = new Date();
+
+      // Get moods from the last 7 days (excluding today)
+      const recentMoods = [];
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        if (moodHistory[key]) recentMoods.push(moodHistory[key]);
+      }
+
+      // Determine the emotional pattern of the past week
+      const negativeMoods = ["sad", "anxious", "frustrated"];
+      const positiveMoods = ["happy", "loved", "motivated", "calm"];
+      const negCount = recentMoods.filter(m => negativeMoods.includes(m)).length;
+      const posCount = recentMoods.filter(m => positiveMoods.includes(m)).length;
+
+      // Build a mood-aware follow-up line
+      let moodFollowUp = null;
+      if (recentMoods.length >= 2) {
+        if (negCount >= 2 && negCount > posCount) {
+          // Rough stretch — be gentle and check in
+          const roughPhrases = [
+            "Last week looked a little rough — how are you holding up today?",
+            "Feels like things have been heavy lately. Is today treating you any better?",
+            "You've had a tough few days. I've been thinking about you — how are you feeling now?",
+          ];
+          moodFollowUp = roughPhrases[Math.floor(Math.random() * roughPhrases.length)];
+        } else if (posCount >= 2 && posCount > negCount) {
+          // Good stretch — keep the energy
+          const goodPhrases = [
+            "You've been in a good place lately — love to see it 🌟 What's keeping that energy going?",
+            "Last week had some real bright spots. What's been good?",
+            "The vibe has been positive lately. How's today feeling?",
+          ];
+          moodFollowUp = goodPhrases[Math.floor(Math.random() * goodPhrases.length)];
+        } else if (recentMoods.length >= 3) {
+          // Mixed — acknowledge the ups and downs
+          const mixedPhrases = [
+            "Feels like it's been an up-and-down kind of week. How are you right now?",
+            "Week had its moments — good and tough. How are you doing today?",
+          ];
+          moodFollowUp = mixedPhrases[Math.floor(Math.random() * mixedPhrases.length)];
+        }
+      }
+
+      // Also check memory summary for additional context
       const pid = localStorage.getItem("userProfileId");
+      const buildMessage = (mem) => {
+        const followUp = moodFollowUp || (mem
+          ? "I've been thinking about our last chat. How's everything going?"
+          : "How have you been? I'm here whenever you want to talk.");
+        return `${hi}! 💜 ${followUp}`;
+      };
+
       if (pid) {
         base44.entities.UserProfile.get(pid).then(profile => {
-          const mem = profile?.memory_summary;
-          let followUp = "How have you been?";
-          if (mem) {
-            // Extract a conversational hook from the memory
-            followUp = "I've been thinking about our last chat. How's everything going?";
-          }
-          setMessages([{
-            role: "assistant",
-            content: `${hi}! 💜 ${followUp} I'm right here whenever you want to talk.`,
-          }]);
+          setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary) }]);
         }).catch(() => {
-          setMessages([{
-            role: "assistant",
-            content: `${hi}! 💜 How have you been? I'm right here whenever you want to talk.`,
-          }]);
+          setMessages([{ role: "assistant", content: buildMessage(null) }]);
         });
       } else {
-        setMessages([{
-          role: "assistant",
-          content: `${hi}! 💜 How have you been? I'm right here whenever you want to talk.`,
-        }]);
+        setMessages([{ role: "assistant", content: buildMessage(null) }]);
       }
       return;
     }
