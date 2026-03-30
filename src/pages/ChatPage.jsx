@@ -62,6 +62,13 @@ export default function ChatPage() {
   const [isListening, setIsListening]   = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
+
+  // Persist messages so returning from Settings doesn't lose chat
+  React.useEffect(() => {
+    if (messages.length > 0) {
+      try { sessionStorage.setItem("unfiltr_chat_messages", JSON.stringify(messages.slice(-100))); } catch {}
+    }
+  }, [messages]);
   const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium]       = useState(false);
   const [sessionMemory, setSessionMemory] = useState([]);
