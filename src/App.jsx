@@ -177,6 +177,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/vibe"                  element={<VibePage />} />
         <Route path="/settings"              element={<Settings />} />
         <Route path="/Pricing"               element={<Pricing />} />
+          <Route path="/pricing"               element={<Pricing />} />
         <Route path="/feedback"              element={<FeedbackPage />} />
         <Route path="/BackgroundSelect"      element={<BackgroundSelect />} />
         <Route path="/hub"                      element={<HubPage />} />
