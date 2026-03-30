@@ -179,7 +179,8 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/Pricing"               element={<Pricing />} />
         <Route path="/feedback"              element={<FeedbackPage />} />
         <Route path="/BackgroundSelect"      element={<BackgroundSelect />} />
-        <Route path="/hub", "/meditate"                   element={<HubPage />} />
+        <Route path="/hub"                      element={<HubPage />} />
+          <Route path="/meditate"               element={<MeditatePage />} />
         <Route path="/PersonalityQuiz"       element={<PersonalityQuiz />} />
         <Route path="/journal"               element={<JournalSplash />} />
         <Route path="/journal/splash"        element={<JournalSplash />} />
