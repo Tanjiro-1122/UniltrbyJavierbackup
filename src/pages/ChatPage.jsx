@@ -891,6 +891,35 @@ export default function ChatPage() {
           {/* Crisis resources banner */}
           <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
 
+          {/* ── Meditation nudge card ── */}
+          {showMeditationNudge && (
+            <div style={{ position:"absolute", bottom:130, left:16, right:16, zIndex:80 }}>
+              <div style={{
+                background:"linear-gradient(135deg,rgba(14,165,233,0.22),rgba(125,211,252,0.1))",
+                border:"1px solid rgba(125,211,252,0.4)", borderRadius:18,
+                padding:"14px 16px", display:"flex", alignItems:"center", gap:12,
+                backdropFilter:"blur(12px)",
+                boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
+              }}>
+                <span style={{ fontSize:26, flexShrink:0 }}>🧘</span>
+                <div style={{ flex:1 }}>
+                  <p style={{ color:"white", fontWeight:700, fontSize:13, margin:"0 0 2px" }}>Want to take a breath?</p>
+                  <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, margin:0 }}>A quick meditation might help right now</p>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  <button onClick={() => { setShowMeditationNudge(false); navigate("/meditate"); }}
+                    style={{ padding:"7px 12px", background:"linear-gradient(135deg,#0ea5e9,#7dd3fc)", border:"none", borderRadius:10, color:"white", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                    Let's go
+                  </button>
+                  <button onClick={() => setShowMeditationNudge(false)}
+                    style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
+                    Not now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
           <div style={{
             flex: 1, minHeight: 0, zIndex: 10,
