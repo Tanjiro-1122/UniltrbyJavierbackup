@@ -1,34 +1,55 @@
 import { useState, useEffect } from "react";
 
-const FREE_LIMIT    = 20;
-const MONTHLY_LIMIT = 100;
-const ANNUAL_LIMIT  = 500;
-const STORAGE_KEY   = "unfiltr_msg_usage";
+// Tier limits
+const FREE_DAILY       = 20;
+const PLUS_DAILY       = 50;    // $9.99/mo
+const PRO_DAILY        = 100;   // $14.99/mo
+// Annual = unlimited (very high cap)
+const ANNUAL_DAILY     = 99999;
 
-function getTodayKey() {
-  return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-}
+const FREE_MONTHLY     = 600;   // 20/day × 30
+const PLUS_MONTHLY     = 1500;  // $9.99 cap
+const PRO_MONTHLY      = 3000;  // $14.99 cap
+const ANNUAL_MONTHLY   = 99999; // unlimited
 
-export function useMessageLimit(isPremium, isAnnual = false) {
-  const [usedToday, setUsedToday] = useState(0);
-  const [effectiveLimit, setEffectiveLimit] = useState(FREE_LIMIT);
+const STORAGE_KEY      = "unfiltr_msg_usage";
+const MONTHLY_KEY      = "unfiltr_msg_monthly";
+
+function getTodayKey()   { return new Date().toISOString().split("T")[0]; }
+function getMonthKey()   { return new Date().toISOString().slice(0, 7); }
+
+export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
+  const [usedToday,   setUsedToday]   = useState(0);
+  const [usedMonth,   setUsedMonth]   = useState(0);
+  const [dailyLimit,  setDailyLimit]  = useState(FREE_DAILY);
+  const [monthlyLimit,setMonthlyLimit]= useState(FREE_MONTHLY);
 
   useEffect(() => {
-    // Determine base limit
-    let baseLimit = FREE_LIMIT;
-    if (isPremium) {
-      baseLimit = isAnnual ? ANNUAL_LIMIT : MONTHLY_LIMIT;
+    let daily   = FREE_DAILY;
+    let monthly = FREE_MONTHLY;
+
+    if (isAnnual) {
+      daily   = ANNUAL_DAILY;
+      monthly = ANNUAL_MONTHLY;
+    } else if (isPro) {
+      daily   = PRO_DAILY;
+      monthly = PRO_MONTHLY;
+    } else if (isPremium) {
+      daily   = PLUS_DAILY;
+      monthly = PLUS_MONTHLY;
     }
 
-    // Load bonus_messages from localStorage (admin grants)
+    // Bonus messages (admin grants)
     const bonus = parseInt(localStorage.getItem("unfiltr_bonus_messages") || "0", 10);
-    const finalLimit = isNaN(bonus) || bonus <= 0 ? baseLimit : baseLimit + bonus;
-    setEffectiveLimit(finalLimit);
+    if (!isNaN(bonus) && bonus > 0) daily += bonus;
 
-    // Load message count from localStorage
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
+    setDailyLimit(daily);
+    setMonthlyLimit(monthly);
+
+    // Daily count
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
         const { date, count } = JSON.parse(raw);
         if (date === getTodayKey()) {
           setUsedToday(count);
@@ -36,20 +57,44 @@ export function useMessageLimit(isPremium, isAnnual = false) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayKey(), count: 0 }));
           setUsedToday(0);
         }
-      } catch (e) {
-        localStorage.removeItem(STORAGE_KEY);
       }
-    }
-  }, [isPremium, isAnnual]);
+    } catch { localStorage.removeItem(STORAGE_KEY); }
+
+    // Monthly count
+    try {
+      const raw = localStorage.getItem(MONTHLY_KEY);
+      if (raw) {
+        const { month, count } = JSON.parse(raw);
+        if (month === getMonthKey()) {
+          setUsedMonth(count);
+        } else {
+          localStorage.setItem(MONTHLY_KEY, JSON.stringify({ month: getMonthKey(), count: 0 }));
+          setUsedMonth(0);
+        }
+      }
+    } catch { localStorage.removeItem(MONTHLY_KEY); }
+
+  }, [isPremium, isAnnual, isPro]);
 
   const incrementCount = () => {
-    const newCount = usedToday + 1;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayKey(), count: newCount }));
-    setUsedToday(newCount);
+    const newDay = usedToday + 1;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayKey(), count: newDay }));
+    setUsedToday(newDay);
+
+    const newMonth = usedMonth + 1;
+    localStorage.setItem(MONTHLY_KEY, JSON.stringify({ month: getMonthKey(), count: newMonth }));
+    setUsedMonth(newMonth);
   };
 
-  const isAtLimit = usedToday >= effectiveLimit;
-  const remaining = Math.max(0, effectiveLimit - usedToday);
+  const isAtLimit   = usedToday >= dailyLimit || usedMonth >= monthlyLimit;
+  const remaining   = Math.max(0, Math.min(dailyLimit - usedToday, monthlyLimit - usedMonth));
+  const hitMonthly  = usedMonth >= monthlyLimit && monthlyLimit < ANNUAL_MONTHLY;
 
-  return { usedToday, remaining, isAtLimit, incrementCount, FREE_LIMIT: effectiveLimit, MONTHLY_LIMIT, ANNUAL_LIMIT };
+  return {
+    usedToday, usedMonth, remaining, isAtLimit, hitMonthly,
+    incrementCount,
+    dailyLimit, monthlyLimit,
+    // legacy named exports so existing callers don't break
+    FREE_LIMIT: dailyLimit, MONTHLY_LIMIT: PLUS_MONTHLY, ANNUAL_LIMIT: ANNUAL_DAILY,
+  };
 }
