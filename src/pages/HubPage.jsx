@@ -51,14 +51,15 @@ export default function HubPage() {
       <div style={{
         flex: 1, display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 20, padding: "0 28px", position: "relative", zIndex: 5,
+        gap: 16, padding: "0 28px", position: "relative", zIndex: 5,
       }}>
+
         {/* Chat Card */}
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/vibe")}
           style={{
-            width: "100%", padding: "28px 24px", borderRadius: 28,
+            width: "100%", padding: "24px 24px", borderRadius: 28,
             border: "2px solid rgba(168,85,247,0.5)",
             background: "linear-gradient(160deg,rgba(124,58,237,0.18) 0%,rgba(168,85,247,0.06) 100%)",
             backdropFilter: "blur(20px)",
@@ -69,22 +70,16 @@ export default function HubPage() {
           }}
         >
           <div style={{
-            width: 72, height: 72, flexShrink: 0,
+            width: 64, height: 64, flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
             filter: "drop-shadow(0 0 20px rgba(168,85,247,0.6))",
           }}>
-            <img src={`${NOTO}/1f4ac/512.webp`} alt="Chat" style={{ width: 64, height: 64 }} />
+            <img src={`${NOTO}/1f4ac/512.webp`} alt="Chat" style={{ width: 56, height: 56 }} />
           </div>
           <div>
-            <div style={{ color: "#c4b5fd", fontWeight: 800, fontSize: 22, letterSpacing: "-0.3px" }}>
-              Chat
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
-              Talk with your companion
-            </div>
-            <div style={{ color: "rgba(196,181,253,0.6)", fontSize: 12, marginTop: 6 }}>
-              Pick your vibe → how you feel → let's go
-            </div>
+            <div style={{ color: "#c4b5fd", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Chat</div>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Talk with your companion</div>
+            <div style={{ color: "rgba(196,181,253,0.6)", fontSize: 12, marginTop: 5 }}>Pick your vibe → how you feel → let's go</div>
           </div>
         </motion.button>
 
@@ -93,7 +88,7 @@ export default function HubPage() {
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/mood?dest=journal")}
           style={{
-            width: "100%", padding: "28px 24px", borderRadius: 28,
+            width: "100%", padding: "24px 24px", borderRadius: 28,
             border: "2px solid rgba(52,211,153,0.5)",
             background: "linear-gradient(160deg,rgba(16,185,129,0.18) 0%,rgba(52,211,153,0.06) 100%)",
             backdropFilter: "blur(20px)",
@@ -104,24 +99,48 @@ export default function HubPage() {
           }}
         >
           <div style={{
-            width: 72, height: 72, flexShrink: 0,
+            width: 64, height: 64, flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
             filter: "drop-shadow(0 0 20px rgba(52,211,153,0.5))",
           }}>
-            <img src={`${NOTO}/1f4d3/512.webp`} alt="Journal" style={{ width: 64, height: 64 }} />
+            <img src={`${NOTO}/1f4d3/512.webp`} alt="Journal" style={{ width: 56, height: 56 }} />
           </div>
           <div>
-            <div style={{ color: "#34d399", fontWeight: 800, fontSize: 22, letterSpacing: "-0.3px" }}>
-              Journal
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 4 }}>
-              Write freely, speak your truth
-            </div>
-            <div style={{ color: "rgba(52,211,153,0.6)", fontSize: 12, marginTop: 6 }}>
-              How you feel → your private space
-            </div>
+            <div style={{ color: "#34d399", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Journal</div>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Write freely, speak your truth</div>
+            <div style={{ color: "rgba(52,211,153,0.6)", fontSize: 12, marginTop: 5 }}>How you feel → your private space</div>
           </div>
         </motion.button>
+
+        {/* Meditate Card */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate("/meditate")}
+          style={{
+            width: "100%", padding: "24px 24px", borderRadius: 28,
+            border: "2px solid rgba(125,211,252,0.5)",
+            background: "linear-gradient(160deg,rgba(14,165,233,0.18) 0%,rgba(125,211,252,0.06) 100%)",
+            backdropFilter: "blur(20px)",
+            boxShadow: "0 0 40px rgba(14,165,233,0.2), 0 20px 50px rgba(0,0,0,0.6)",
+            display: "flex", alignItems: "center", gap: 20,
+            cursor: "pointer", WebkitTapHighlightColor: "transparent",
+            textAlign: "left",
+          }}
+        >
+          <div style={{
+            width: 64, height: 64, flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            filter: "drop-shadow(0 0 20px rgba(125,211,252,0.5))",
+          }}>
+            <img src={`${NOTO}/1f9d8/512.webp`} alt="Meditate" style={{ width: 56, height: 56 }} />
+          </div>
+          <div>
+            <div style={{ color: "#7dd3fc", fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>Meditate</div>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 500, marginTop: 3 }}>Ambient sounds + breathing</div>
+            <div style={{ color: "rgba(125,211,252,0.6)", fontSize: 12, marginTop: 5 }}>Your companion checks in after 💜</div>
+          </div>
+        </motion.button>
+
       </div>
 
       {/* Bottom safe area */}
