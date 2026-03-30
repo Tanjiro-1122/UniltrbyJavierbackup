@@ -87,10 +87,12 @@ export default async function handler(req, res) {
 
   if (PREMIUM_EVENTS.includes(eventType)) {
     const isAnnual = event?.event?.product_id?.includes("annual");
+    const isPro    = !isAnnual && event?.event?.product_id?.includes("pro");
     updateData = {
       is_premium: true,
       trial_active: false,
-      annual_plan: isAnnual ? true : profile.annual_plan || false,
+      annual_plan: isAnnual ? true : (profile.annual_plan || false),
+      pro_plan:    isPro    ? true : (profile.pro_plan    || false),
     };
     console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual})`);
   } else if (REVOKE_EVENTS.includes(eventType)) {
