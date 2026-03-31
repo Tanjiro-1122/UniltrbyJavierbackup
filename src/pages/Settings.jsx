@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
 } from "lucide-react";
 import PaywallModal from "@/components/PaywallModal";
 import ReferralSection from "@/components/ReferralSection";
@@ -120,6 +120,16 @@ export default function Settings() {
   const [personalityStyle, setPersonalityStyle]         = useState("casual");
   const [savingPersonality, setSavingPersonality]       = useState(false);
   const [personalitySaved, setPersonalitySaved]         = useState(false);
+
+  // PIN state
+  const [pinScreen, setPinScreen]     = useState(null); // null | "set" | "change" | "disable"
+  const [pinInput, setPinInput]       = useState([]);
+  const [pinConfirm, setPinConfirm]   = useState([]);
+  const [pinStage, setPinStage]       = useState("create"); // "create" | "confirm" | "verify"
+  const [pinError, setPinError]       = useState("");
+  const [pinShake, setPinShake]       = useState(false);
+  const [pinSaved, setPinSaved]       = useState(false);
+  const hasPin = !!localStorage.getItem("unfiltr_pin");
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
   const currentBg = (() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } })();
@@ -256,6 +266,53 @@ export default function Settings() {
     } catch (e) {
       setSavingPersonality(false);
     }
+  };
+
+  // ── PIN helpers ───────────────────────────────────────────────────────────
+  const openPinScreen = (mode) => {
+    setPinScreen(mode);
+    setPinInput([]); setPinConfirm([]);
+    setPinStage(mode === "change" || mode === "disable" ? "verify" : "create");
+    setPinError(""); setPinSaved(false);
+  };
+  const closePinScreen = () => { setPinScreen(null); setPinInput([]); setPinConfirm([]); setPinError(""); };
+  const triggerPinShake = () => { setPinShake(true); setTimeout(() => setPinShake(false), 500); };
+  const handlePinDigit = (d) => {
+    const cur = pinStage === "confirm" ? pinConfirm : pinInput;
+    const set = pinStage === "confirm" ? setPinConfirm : setPinInput;
+    if (cur.length >= 4) return;
+    const next = [...cur, d];
+    set(next);
+    if (next.length === 4) {
+      setTimeout(() => {
+        if (pinStage === "verify") {
+          // verifying existing PIN before change/disable
+          if (next.join("") === localStorage.getItem("unfiltr_pin")) {
+            if (pinScreen === "disable") {
+              localStorage.removeItem("unfiltr_pin");
+              setPinSaved(true);
+              setTimeout(() => closePinScreen(), 1200);
+            } else {
+              // change — move to create new
+              setPinStage("create"); setPinInput([]); setPinError("");
+            }
+          } else { triggerPinShake(); setPinError("Wrong PIN"); setPinInput([]); }
+        } else if (pinStage === "create") {
+          setPinStage("confirm"); setPinConfirm([]); setPinError("");
+        } else {
+          // confirm stage
+          if (next.join("") === pinInput.join("")) {
+            localStorage.setItem("unfiltr_pin", pinInput.join(""));
+            setPinSaved(true);
+            setTimeout(() => closePinScreen(), 1200);
+          } else { triggerPinShake(); setPinError("PINs don't match — try again"); setPinConfirm([]); }
+        }
+      }, 60);
+    }
+  };
+  const handlePinDelete = () => {
+    if (pinStage === "confirm") setPinConfirm(p => p.slice(0, -1));
+    else setPinInput(p => p.slice(0, -1));
   };
 
   // ── Sub-screens ────────────────────────────────────────────────────────────
@@ -461,6 +518,29 @@ export default function Settings() {
         </button>
       </SubScreen>
     ),
+    pin: (
+      <SubScreen title="App Lock / PIN" onBack={() => setScreen(null)}>
+        <div>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
+            Set a 4-digit PIN to lock the app. Every time you open Unfiltr, you'll need to enter it first.
+          </p>
+          {!hasPin ? (
+            <button onClick={() => openPinScreen("set")} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              🔒 Set a PIN
+            </button>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => openPinScreen("change")} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.1)", color: "white", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
+                🔄 Change PIN
+              </button>
+              <button onClick={() => openPinScreen("disable")} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)", color: "#f87171", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>
+                🔓 Remove PIN
+              </button>
+            </div>
+          )}
+        </div>
+      </SubScreen>
+    ),
     account: (
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
@@ -533,6 +613,7 @@ export default function Settings() {
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
+          <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
         </Section>
 
@@ -558,6 +639,51 @@ export default function Settings() {
 
       {/* ── Paywall ── */}
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onSubscribe={() => setUserProfile(p => p ? { ...p, is_premium: true } : p)} />
+
+      {/* ── PIN Keypad Modal ── */}
+      {pinScreen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(6,2,15,0.97)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'SF Pro Display',system-ui,sans-serif" }}>
+          <button onClick={closePinScreen} style={{ position: "absolute", top: "max(20px,env(safe-area-inset-top))", left: 20, background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <ChevronLeft size={20} color="white" />
+          </button>
+          <div style={{ marginBottom: 8, fontSize: 40 }}>🔒</div>
+          <h2 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: "0 0 6px", textAlign: "center" }}>
+            {pinSaved ? (pinScreen === "disable" ? "PIN Removed ✓" : "PIN Saved ✓") :
+             pinStage === "verify" ? "Enter Current PIN" :
+             pinStage === "confirm" ? "Confirm Your PIN" : "Set Your PIN"}
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, margin: "0 0 32px", textAlign: "center" }}>
+            {pinSaved ? "All set!" :
+             pinStage === "verify" ? "Enter your existing PIN first" :
+             pinStage === "confirm" ? "Re-enter to confirm" : "Choose a 4-digit code"}
+          </p>
+          <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+            {[0,1,2,3].map(i => {
+              const cur = pinStage === "confirm" ? pinConfirm : pinInput;
+              return (
+                <div key={i} style={{
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: i < cur.length ? "#a855f7" : "rgba(255,255,255,0.15)",
+                  border: "2px solid " + (i < cur.length ? "#a855f7" : "rgba(255,255,255,0.2)"),
+                  transition: "all 0.15s",
+                  transform: pinShake ? ["translateX(-6px)","translateX(6px)","translateX(-4px)","translateX(4px)"][i] : "none",
+                }} />
+              );
+            })}
+          </div>
+          {pinError && <p style={{ color: "#f87171", fontSize: 13, margin: "6px 0 10px", textAlign: "center" }}>{pinError}</p>}
+          {!pinSaved && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,80px)", gap: 12, marginTop: 16 }}>
+              {[1,2,3,4,5,6,7,8,9].map(d => (
+                <button key={d} onClick={() => handlePinDigit(String(d))} style={{ height: 72, borderRadius: 18, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.07)", color: "white", fontSize: 26, fontWeight: 600, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>{d}</button>
+              ))}
+              <div />
+              <button onClick={() => handlePinDigit("0")} style={{ height: 72, borderRadius: 18, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.07)", color: "white", fontSize: 26, fontWeight: 600, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>0</button>
+              <button onClick={handlePinDelete} style={{ height: 72, borderRadius: 18, border: "none", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", WebkitTapHighlightColor: "transparent" }}>⌫</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Companion Share Card ── */}
       <CompanionShareCard visible={showCompanionCard} onClose={() => setShowCompanionCard(false)} companionId={companion?.id} companionName={localStorage.getItem("unfiltr_companion_nickname") || companion?.name} daysTogether={daysSince} />
@@ -686,4 +812,5 @@ export default function Settings() {
     </div>
   );
 }
+
 
