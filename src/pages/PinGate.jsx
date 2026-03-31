@@ -81,16 +81,18 @@ export default function PinGate() {
         ✕
       </button>
 
-      {/* Skip button */}
-      <button onClick={handleSkip} style={{
-        position: "absolute", top: "max(1.5rem,env(safe-area-inset-top))", right: 20,
-        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-        borderRadius: 20, padding: "6px 16px", color: "rgba(255,255,255,0.5)",
-        fontSize: 14, fontWeight: 600, cursor: "pointer",
-        display: "flex", alignItems: "center", gap: 6,
-      }}>
-        Skip <ChevronRight size={14} />
-      </button>
+      {/* Skip button - only show in create flow, never when verifying existing PIN */}
+      {stage !== "verify" && (
+        <button onClick={handleSkip} style={{
+          position: "absolute", top: "max(1.5rem,env(safe-area-inset-top))", right: 20,
+          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 20, padding: "6px 16px", color: "rgba(255,255,255,0.5)",
+          fontSize: 14, fontWeight: 600, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 6,
+        }}>
+          Skip <ChevronRight size={14} />
+        </button>
+      )}
 
       {/* Icon + Title */}
       <div style={{ textAlign: "center", marginBottom: 32 }}>
