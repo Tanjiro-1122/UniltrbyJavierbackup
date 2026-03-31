@@ -133,30 +133,31 @@ export default function OnboardingCompanion() {
                 filter: `brightness(${s.brightness})`,
               }}
             >
-              {!imgLoaded[c.id] && (
-                <div style={{
-                  height: 260, width: 160,
-                  borderRadius: 20,
-                  background: "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <span style={{ fontSize: 48 }}>{c.emoji}</span>
-                </div>
-              )}
+              {/* Emoji placeholder — visible until image loads */}
+              <div style={{
+                position: "absolute",
+                height: 260, width: 160,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: imgLoaded[c.id] ? 0 : 1,
+                transition: "opacity 0.3s",
+                pointerEvents: "none",
+              }}>
+                <span style={{ fontSize: 48 }}>{c.emoji}</span>
+              </div>
               <img
                 src={c.avatar}
                 alt={c.name}
                 style={{
                   height: 260, width: "auto", maxWidth: 180,
                   objectFit: "contain", objectPosition: "bottom",
-                  display: imgLoaded[c.id] ? "block" : "none",
+                  opacity: imgLoaded[c.id] ? 1 : 0,
+                  transition: "opacity 0.3s, filter 0.3s",
                   filter: i === idx
                     ? "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))"
                     : "none",
-                  transition: "filter 0.3s",
                 }}
                 onLoad={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
-                onError={e => { e.target.style.display = "none"; }}
+                onError={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
               />
             </motion.div>
           );
