@@ -277,8 +277,8 @@ export default function Settings() {
             const sel = companion?.name === c.name;
             return (
               <button key={c.id} onClick={() => handleChangeCompanion(c)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                <div style={{ position: "relative", width: 58, height: 58, borderRadius: 15, overflow: "hidden", border: sel ? "2px solid #a855f7" : "2px solid rgba(255,255,255,0.07)", background: sel ? "#2d1a4e" : "#150d2a", transform: sel ? "scale(1.07)" : "scale(1)", transition: "all 0.15s" }}>
-                  <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+                <div style={{ position: "relative", width: 58, height: 70, borderRadius: 15, overflow: "hidden", border: sel ? "2px solid #a855f7" : "2px solid rgba(255,255,255,0.07)", background: sel ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.04)", transform: sel ? "scale(1.07)" : "scale(1)", transition: "all 0.15s", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                  <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "bottom center" }} />
                   {sel && <div style={{ position: "absolute", inset: 0, background: "rgba(168,85,247,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}><Check size={14} color="white" /></div>}
                 </div>
                 <span style={{ fontSize: 10, color: sel ? "#c4b5fd" : "rgba(255,255,255,0.4)", fontWeight: sel ? 700 : 400 }}>{c.name}</span>
