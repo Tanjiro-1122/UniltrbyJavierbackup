@@ -20,8 +20,8 @@ const PLANS = [
     emoji: '💜',
     tagline: 'Perfect for regular connection',
     bullets: [
-      { icon: MessageCircle, text: '50 messages/day' },
-      { icon: MessageCircle, text: 'Up to 1,500 msgs/month' },
+      { icon: MessageCircle, text: '100 messages/day' },
+      { icon: MessageCircle, text: 'Up to 3,000 msgs/month' },
       { icon: Brain,         text: 'Memory — companion remembers you' },
       { icon: History,       text: 'Full conversation history' },
       { icon: Volume2,       text: 'Voice responses (TTS)' },
