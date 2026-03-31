@@ -112,7 +112,7 @@ export class AppleStoreKitService {
       return { isSuccess: false, error: 'Purchases only available in the iOS app.' };
     }
     try {
-      const packageId = productId.includes('annual') ? '$rc_annual' : '$rc_monthly';
+      const packageId = productId.includes('annual') ? '$rc_annual' : productId.includes('tier.pro') ? 'pro_tier' : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
       const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
