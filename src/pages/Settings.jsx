@@ -181,12 +181,21 @@ export default function Settings() {
     navigate("/", { replace: true });
   };
   const handleChangeCompanion = async (c) => {
-    if (savingCompanion || c.name === companion?.name) return;
+    if (savingCompanion) return;
     setSavingCompanion(true);
-    if (!userProfile?.companion_id) { setSavingCompanion(false); return; }
-    await base44.entities.Companion.update(userProfile.companion_id, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female", personality_preset: c.tagline || "friendly" });
-    localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
-    setCompanion(p => ({ ...p, name: c.name, avatar_url: c.avatar }));
+    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    if (!companionId) {
+      // Save to localStorage only if no DB record
+      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c }));
+      setCompanion(c);
+      setSavingCompanion(false);
+      return;
+    }
+    try {
+      await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female", personality_preset: c.tagline || "friendly" });
+      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
+      setCompanion(p => ({ ...p, ...c, name: c.name, avatar_url: c.avatar }));
+    } catch(e) { console.error('companion update failed', e); }
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
@@ -223,19 +232,27 @@ export default function Settings() {
 
   // ── Save personality to DB ────────────────────────────────────────────────
   const handleSavePersonality = async () => {
-    if (!userProfile?.companion_id || savingPersonality) return;
+    if (savingPersonality) return;
     setSavingPersonality(true);
+    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
     try {
-      await base44.entities.Companion.update(userProfile.companion_id, {
-        personality_vibe: personalityVibe,
-        personality_empathy: personalityEmpathy,
-        personality_humor: personalityHumor,
-        personality_curiosity: personalityCuriosity,
-        personality_style: personalityStyle,
-      });
-      // Navigate back to chat after saving
+      if (companionId) {
+        await base44.entities.Companion.update(companionId, {
+          personality_vibe: personalityVibe,
+          personality_empathy: personalityEmpathy,
+          personality_humor: personalityHumor,
+          personality_curiosity: personalityCuriosity,
+          personality_style: personalityStyle,
+        });
+      }
+      // Save to localStorage as backup
+      localStorage.setItem("unfiltr_personality_vibe", personalityVibe);
+      localStorage.setItem("unfiltr_personality_style", personalityStyle);
+      localStorage.setItem("unfiltr_personality_humor", personalityHumor);
+      localStorage.setItem("unfiltr_personality_curiosity", personalityCuriosity);
       setSavingPersonality(false);
-      navigate("/chat");
+      setPersonalitySaved(true);
+      setTimeout(() => { setPersonalitySaved(false); navigate("/chat"); }, 1200);
     } catch (e) {
       setSavingPersonality(false);
     }
@@ -669,3 +686,4 @@ export default function Settings() {
     </div>
   );
 }
+
