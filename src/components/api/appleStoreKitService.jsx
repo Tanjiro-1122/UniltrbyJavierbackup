@@ -168,6 +168,23 @@ export class AppleStoreKitService {
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Restore successful — premium granted');
+
+        // Also update Base44 UserProfile so it survives reinstalls
+        try {
+          const profileId = localStorage.getItem('userProfileId');
+          const userId    = localStorage.getItem('unfiltr_user_id');
+          if (profileId || userId) {
+            await fetch('/api/verifyPurchase', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios' }),
+            });
+            debugLog('✅ UserProfile restore updated in database');
+          }
+        } catch (e) {
+          debugLog(`⚠️ DB restore update failed (non-fatal): ${e.message}`);
+        }
+
         return { isSuccess: true };
       }
       debugLog('⚠️ Restore: no active subscription found');
