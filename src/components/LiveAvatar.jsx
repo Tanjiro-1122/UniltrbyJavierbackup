@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { COMPANIONS } from "@/components/companionData";
 
 const MOOD_ANIMATIONS = {
@@ -28,7 +28,53 @@ const MOOD_ANIM_NAME = {
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick }) {
   const companionData = COMPANIONS.find(c => c.id === companionId);
   const poseUrl = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
-  const imageUrl = poseUrl;
+
+  // Crossfade state — keeps old image visible while new one loads
+  const [displayUrl, setDisplayUrl] = useState(poseUrl);
+  const [nextUrl, setNextUrl] = useState(null);
+  const [fading, setFading] = useState(false);
+  const prevKey = useRef(`${companionId}-${mood}`);
+
+  useEffect(() => {
+    const newKey = `${companionId}-${mood}`;
+    if (newKey === prevKey.current) return;
+    prevKey.current = newKey;
+
+    if (!poseUrl || poseUrl === displayUrl) {
+      setDisplayUrl(poseUrl);
+      return;
+    }
+
+    // Preload new image before swapping
+    setNextUrl(poseUrl);
+    const img = new window.Image();
+    img.onload = () => {
+      setDisplayUrl(poseUrl);
+      setFading(true);
+      setTimeout(() => {
+        setNextUrl(null);
+        setFading(false);
+      }, 200);
+    };
+    img.onerror = () => {
+      setDisplayUrl(poseUrl);
+      setNextUrl(null);
+    };
+    img.src = poseUrl;
+  }, [companionId, mood, poseUrl]);
+
+  const baseStyle = {
+    WebkitTouchCallout: "none",
+    pointerEvents: "none",
+    height: "clamp(312px, 54dvh, 468px)",
+    width: "auto",
+    maxWidth: "100%",
+    objectFit: "contain",
+    background: "none",
+    transformOrigin: "bottom center",
+    filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.55)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
+    display: "block",
+  };
 
   return (
     <>
@@ -36,7 +82,6 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
       <style>{`
         @keyframes speakRing { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.06)} }
         @keyframes spin       { to { transform:rotate(360deg) } }
-
       `}</style>
 
       <div
@@ -65,30 +110,35 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           }} />
         )}
 
-        {/* Main avatar */}
+        {/* Main avatar — stays mounted, no remount flicker */}
         <img
-          src={imageUrl}
+          src={displayUrl}
           alt={companionId}
-          key={`${companionId}-${mood}`}
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
           style={{
-            WebkitTouchCallout: "none",
-            pointerEvents: "none",
-            height: "clamp(312px, 54dvh, 468px)",
-            width: "auto",
-            maxWidth: "100%",
-            objectFit: "contain",
-            background: "none",
+            ...baseStyle,
             animation: MOOD_ANIM_NAME[mood] || "none",
-            transformOrigin: "bottom center",
-            filter: `drop-shadow(0px 20px 30px rgba(0,0,0,0.55)) ${isSpeaking ? "brightness(1.08)" : "brightness(1)"}`,
-            transition: "filter 0.2s",
-            display: "block",
+            opacity: fading ? 0 : 1,
+            transition: "opacity 0.2s ease, filter 0.2s",
           }}
         />
 
-
+        {/* Next image preloads invisibly, then swaps in */}
+        {nextUrl && (
+          <img
+            src={nextUrl}
+            alt=""
+            draggable={false}
+            style={{
+              ...baseStyle,
+              position: "absolute",
+              bottom: 0,
+              opacity: 0,
+              pointerEvents: "none",
+            }}
+          />
+        )}
       </div>
     </>
   );
