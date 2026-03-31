@@ -137,7 +137,7 @@ export default function OnboardingCompanion() {
                 <div style={{
                   height: 260, width: 160,
                   borderRadius: 20,
-                  background: "linear-gradient(135deg, rgba(168,85,247,0.15), rgba(219,39,119,0.1))",
+                  background: "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <span style={{ fontSize: 48 }}>{c.emoji}</span>
@@ -196,10 +196,10 @@ export default function OnboardingCompanion() {
       <AnimatePresence mode="wait">
         <motion.div
           key={companion.id}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.15 }}
           style={{ flexShrink: 0, textAlign: "center", padding: "0 24px 8px" }}
         >
           <p style={{ color: "white", fontWeight: 900, fontSize: 24, margin: "0 0 4px", letterSpacing: -0.5 }}>{companion.name}</p>
