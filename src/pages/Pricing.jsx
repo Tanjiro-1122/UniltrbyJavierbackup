@@ -30,7 +30,7 @@ const PLANS = [
   },
   {
     id: 'pro',
-    productId: 'com.huertas.unfiltr.pro.pro',
+    productId: 'com.huertas.unfiltr.tier.pro',
     label: 'Pro',
     price: '$14.99',
     period: 'per month',
@@ -102,7 +102,7 @@ export default function Pricing() {
   const meta    = PLANS.find(p => p.id === selectedPlan);
   const product = products.find(p =>
     selectedPlan === 'annual' ? p.productId?.includes('annual')
-    : selectedPlan === 'pro'  ? p.productId?.includes('.pro.pro')
+    : selectedPlan === 'pro'  ? p.productId?.includes('tier.pro')
     : p.productId?.includes('monthly')
   );
 
