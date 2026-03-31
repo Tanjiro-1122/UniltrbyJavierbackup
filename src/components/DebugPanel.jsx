@@ -10,7 +10,7 @@ export function debugLog(msg) {
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   const entry = `[${time}] ${msg}`;
   logs.unshift(entry);
-  if (logs.length > 30) logs.pop();
+  if (logs.length > 50) logs.pop();
   if (setLogsExternal) setLogsExternal([...logs]);
   console.log('[UNFILTR DEBUG]', msg);
 }
@@ -24,7 +24,22 @@ export function DebugPanel() {
     setLogsExternal = setLogLines;
     // Auto-show if ?debug=1 in URL
     if (window.location.search.includes('debug=1')) setVisible(true);
-    return () => { setLogsExternal = null; };
+
+    // Listen for native debug messages
+    const handleNativeDebug = (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'NATIVE_DEBUG') {
+          debugLog(`🍎 ${data.message}`);
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('message', handleNativeDebug);
+
+    return () => {
+      setLogsExternal = null;
+      window.removeEventListener('message', handleNativeDebug);
+    };
   }, []);
 
   // Secret: tap the panel trigger 5x to show/hide
@@ -97,6 +112,7 @@ export function DebugPanel() {
                   color: line.includes('✅') ? '#4ade80'
                        : line.includes('❌') ? '#f87171'
                        : line.includes('⚠️') ? '#fbbf24'
+                       : line.includes('🍎') ? '#60a5fa'
                        : '#e2e8f0'
                 }}>
                   {line}
