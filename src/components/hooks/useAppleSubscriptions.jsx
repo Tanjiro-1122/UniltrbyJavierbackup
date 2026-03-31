@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AppleStoreKitService } from '@/components/api/appleStoreKitService';
 
 export function useAppleSubscriptions() {
@@ -7,21 +7,36 @@ export function useAppleSubscriptions() {
   const [purchasing, setPurchasing]       = useState(false);
   const [error, setError]                 = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const loadAttempted = useRef(false);
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    // Wait up to 3s for the RNWV bridge to be injected before loading products
+    let attempts = 0;
+    const maxAttempts = 15; // 15 x 200ms = 3 seconds
+    const interval = setInterval(() => {
+      attempts++;
+      const bridgeReady = typeof window !== 'undefined' && !!window.ReactNativeWebView;
+      if (bridgeReady || attempts >= maxAttempts) {
+        clearInterval(interval);
+        if (!loadAttempted.current) {
+          loadAttempted.current = true;
+          loadProducts();
+        }
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      // Add a 5-second timeout so native bridge delays don't block the UI
       const result = await Promise.race([
         AppleStoreKitService.getProducts(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
       ]);
-      setProducts(result && result.length > 0 ? result : [{ productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' }, { productId: 'com.huertas.unfiltr.pro.annual', title: 'Annual Premium', price: '$59.99', period: 'year' }]);
+      setProducts(result && result.length > 0 ? result : MOCK_PRODUCTS);
     } catch (e) {
-      // On timeout or error, fall back to mock products so UI stays functional
-      setProducts([{ productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' }, { productId: 'com.huertas.unfiltr.pro.annual', title: 'Annual Premium', price: '$59.99', period: 'year' }]);
+      setProducts(MOCK_PRODUCTS);
     } finally {
       setLoading(false);
     }
@@ -36,6 +51,12 @@ export function useAppleSubscriptions() {
       if (result.isCancelled) {
         setStatusMessage('');
         return { success: false, cancelled: true };
+      }
+      if (result.isMock) {
+        // Web/browser mock — no real purchase
+        setStatusMessage('');
+        setError('Purchases only available in the iOS app.');
+        return { success: false };
       }
       if (!result.isSuccess) {
         setError(result.error || 'Purchase failed');
@@ -64,3 +85,8 @@ export function useAppleSubscriptions() {
 
   return { products, loading, purchasing, error, statusMessage, purchase, restore };
 }
+
+const MOCK_PRODUCTS = [
+  { productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' },
+  { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$59.99', period: 'year' },
+];
