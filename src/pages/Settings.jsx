@@ -460,7 +460,7 @@ export default function Settings() {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, backgroundColor: "#06020f", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10, backgroundColor: "#06020f", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#06020f", flexShrink: 0 }}>
