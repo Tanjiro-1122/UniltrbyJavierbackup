@@ -44,6 +44,7 @@ import JournalEnter           from "./pages/JournalEnter";
 import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
 import HubPage               from "./pages/HubPage";
+import { DebugPanel } from '@/components/DebugPanel';
 import MeditatePage          from "./pages/MeditatePage";
 
 const HIDE_TABS_ON = [
@@ -222,6 +223,7 @@ function App() {
         </Router>
         <Toaster />
       </QueryClientProvider>
+      <DebugPanel />
     </AuthProvider>
   );
 }
