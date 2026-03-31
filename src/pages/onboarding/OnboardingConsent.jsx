@@ -15,7 +15,7 @@ export default function OnboardingConsent() {
     if (!allAgreed) return;
     localStorage.setItem("unfiltr_consent_accepted", "true");
     localStorage.setItem("unfiltr_ai_consent", "true");
-    navigate("/onboarding/pin");
+    navigate("/onboarding/name");
   };
 
   return (
@@ -207,3 +207,4 @@ export default function OnboardingConsent() {
     </OnboardingLayout>
   );
 }
+
