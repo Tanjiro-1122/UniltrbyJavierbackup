@@ -116,6 +116,7 @@ export default function OnboardingBackground() {
           }
           localStorage.setItem("userProfileId", userProfile.id);
           localStorage.setItem("companionId", companion.id);
+          localStorage.setItem("unfiltr_companion_id", companion.id);
           resetOnboardingStore();
         } catch (err) {
           console.error("Onboarding DB error (non-blocking):", err);
@@ -281,3 +282,4 @@ export default function OnboardingBackground() {
     </div>
   );
 }
+
