@@ -229,10 +229,11 @@ export default function Pricing() {
               background: selectedPlan === p.id ? p.bg : 'rgba(255,255,255,0.02)',
               cursor:'pointer', transition:'all 0.18s', position:'relative',
             }}>
-              {p.badge && selectedPlan === p.id && (
+              {p.badge && (
                 <div style={{
                   position:'absolute', top:-9, left:'50%', transform:'translateX(-50%)',
                   background: BADGE_COLORS[p.badge], borderRadius:999, padding:'2px 8px', whiteSpace:'nowrap',
+                  pointerEvents:'none',
                 }}>
                   <span style={{ color:'white', fontWeight:800, fontSize:8 }}>{p.badge}</span>
                 </div>
