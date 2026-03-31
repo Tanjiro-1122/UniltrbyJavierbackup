@@ -122,6 +122,29 @@ export class AppleStoreKitService {
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Premium granted! localStorage updated.');
+
+        // Update Base44 UserProfile so premium persists across reinstalls
+        try {
+          const profileId = localStorage.getItem('userProfileId');
+          const userId    = localStorage.getItem('unfiltr_user_id');
+          const isAnnual  = productId?.includes('annual');
+          if (profileId || userId) {
+            await fetch('/api/verifyPurchase', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                profileId: profileId || userId,
+                userId:    userId,
+                platform:  'ios',
+                productId,
+              }),
+            });
+            debugLog('✅ UserProfile updated in database');
+          }
+        } catch (e) {
+          debugLog(`⚠️ DB update failed (non-fatal): ${e.message}`);
+        }
+
         return { isSuccess: true, customerInfo };
       }
       debugLog('❌ Purchase completed but no entitlement found');
