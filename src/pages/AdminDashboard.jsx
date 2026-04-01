@@ -130,7 +130,7 @@ export default function AdminDashboard() {
         {/* Quick Links */}
         <div className="bg-gray-900 rounded-2xl p-4 mb-6 border border-gray-800">
           <h2 className="text-sm font-semibold text-gray-300 mb-3">Quick Links</h2>
-          <Link to="/admin/feedback" className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors">
+          <Link to="/FeedbackAdmin" className="flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors">
             <span className="flex items-center gap-2 text-sm">
               <MessageSquareMore className="w-4 h-4 text-purple-400" />
               Feedback Manager
