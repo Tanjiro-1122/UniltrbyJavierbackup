@@ -1,6 +1,5 @@
 const B44_APP  = process.env.VITE_BASE44_APP_ID;
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-
 const B44_API_KEY = process.env.BASE44_API_KEY || "";
 
 async function b44Update(entity, id, data) {
@@ -17,11 +16,17 @@ const RC_API_BASE    = "https://api.revenuecat.com/v1";
 const ENTITLEMENT_ID = "unfiltr by javier Pro";
 
 const PRODUCT_MAP = {
-  "com.huertas.unfiltr.pro.monthly": "monthly",
-  "com.huertas.unfiltr.pro.annual":  "annual",
+  "com.huertas.unfiltr.pro.monthly": "monthly",   // $9.99 Plus
+  "com.huertas.unfiltr.tier.pro":    "pro",        // $14.99 Pro
+  "com.huertas.unfiltr.pro.annual":  "annual",     // $59.99 Annual
 };
 
 async function postReceiptToRevenueCat(receiptData, appUserId, productId) {
+  const priceMap = {
+    "com.huertas.unfiltr.pro.monthly": 9.99,
+    "com.huertas.unfiltr.tier.pro":    14.99,
+    "com.huertas.unfiltr.pro.annual":  59.99,
+  };
   const res = await fetch(`${RC_API_BASE}/receipts`, {
     method: "POST",
     headers: {
@@ -33,7 +38,7 @@ async function postReceiptToRevenueCat(receiptData, appUserId, productId) {
       app_user_id:  appUserId,
       fetch_token:  receiptData,
       product_id:   productId,
-      price:        productId?.includes("annual") ? 59.99 : 9.99,
+      price:        priceMap[productId] ?? 9.99,
       currency:     "USD",
     }),
   });
@@ -55,8 +60,8 @@ export default async function handler(req, res) {
   try {
     const { receipt, productId, profileId, userId } = req.body;
     const appUserId = profileId || userId;
-    if (!receipt)     return res.status(400).json({ error: "No receipt provided" });
-    if (!appUserId)   return res.status(400).json({ error: "No user ID provided" });
+    if (!receipt)   return res.status(400).json({ error: "No receipt provided" });
+    if (!appUserId) return res.status(400).json({ error: "No user ID provided" });
 
     await postReceiptToRevenueCat(receipt, appUserId, productId);
 
@@ -71,9 +76,10 @@ export default async function handler(req, res) {
     const plan            = PRODUCT_MAP[activeProductId] || "monthly";
     const expiresDate     = premiumEnt.expires_date;
 
-    // Update Base44 UserProfile
+    // Update Base44 UserProfile — set the correct tier flags
     await b44Update("UserProfile", appUserId, {
       is_premium:   true,
+      pro_plan:     plan === "pro",
       annual_plan:  plan === "annual",
       updated_date: new Date().toISOString(),
     });
