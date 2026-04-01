@@ -3,13 +3,12 @@ import { useState, useEffect } from "react";
 // Tier limits
 const FREE_DAILY       = 20;
 const PLUS_DAILY       = 100;   // $9.99/mo
-const PRO_DAILY        = 100;   // $14.99/mo
-// Annual = unlimited (very high cap)
-const ANNUAL_DAILY     = 99999;
+const PRO_DAILY        = 200;   // $14.99/mo — double the daily vs Plus
+const ANNUAL_DAILY     = 99999; // unlimited
 
 const FREE_MONTHLY     = 600;   // 20/day × 30
-const PLUS_MONTHLY     = 3000;  // $9.99 cap (100/day x 30)
-const PRO_MONTHLY      = 3000;  // $14.99 cap
+const PLUS_MONTHLY     = 3000;  // 100/day × 30
+const PRO_MONTHLY      = 6000;  // 200/day × 30
 const ANNUAL_MONTHLY   = 99999; // unlimited
 
 const STORAGE_KEY      = "unfiltr_msg_usage";
