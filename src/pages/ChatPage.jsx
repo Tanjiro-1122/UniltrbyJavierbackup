@@ -696,7 +696,7 @@ export default function ChatPage() {
         const cName = companion.displayName || companion.name;
         base44.functions.invoke("summarizeSession", {
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
-          profileId: profileId2, companionName: cName, isPremium,
+          profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
             base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); }).catch(() => {});
