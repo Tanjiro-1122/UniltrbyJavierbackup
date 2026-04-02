@@ -4,8 +4,9 @@ const PRODUCTION_URL = 'https://buy.itunes.apple.com/verifyReceipt';
 const SANDBOX_URL = 'https://sandbox.itunes.apple.com/verifyReceipt';
 
 const PRODUCT_MAPPING = {
-  'com.huertas.unfiltr.premium.annual': 'premium_annual',
-  'com.huertas.unfiltr.premium.monthly': 'premium_monthly',
+  'com.huertas.unfiltr.pro.monthly':  'premium_monthly',
+  'com.huertas.unfiltr.tier.pro':     'premium_pro',
+  'com.huertas.unfiltr.pro.annual':   'premium_annual',
 };
 
 Deno.serve(async (req) => {
@@ -39,6 +40,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
         is_premium: true,
         annual_plan: subscriptionType === 'premium_annual',
+        pro_plan: subscriptionType === 'premium_pro',
       });
     }
 
