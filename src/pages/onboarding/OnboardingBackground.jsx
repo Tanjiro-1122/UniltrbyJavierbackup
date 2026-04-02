@@ -90,6 +90,7 @@ export default function OnboardingBackground() {
       // Fire-and-forget DB calls in background
       (async () => {
         try {
+          // Step 1: Create companion
           const companion = await base44.entities.Companion.create({
             name: companionData.name,
             avatar_id: companionData.id,
@@ -98,8 +99,15 @@ export default function OnboardingBackground() {
             mood_mode: "neutral",
             is_active: true,
           });
+
+          // Step 2: Save companion ID to localStorage immediately
+          localStorage.setItem("companionId", companion.id);
+          localStorage.setItem("unfiltr_companion_id", companion.id);
+
+          // Step 3: Build full profile data including companion_id
           const profileData = {
-            display_name: store.displayName || "",
+            display_name: store.displayName?.trim() || "",
+            companion_id: companion.id,
             is_premium: !!(store.isTesterAccount),
             trial_active: !!(store.isTesterAccount),
             trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
@@ -107,16 +115,22 @@ export default function OnboardingBackground() {
             session_memory: [],
             message_count: 0,
             last_active: new Date().toISOString(),
+            preferred_mood: store.selectedVibe || "chill",
           };
+
+          // Step 4: Update or create UserProfile
           let userProfile;
           if (store.pendingProfileId) {
             userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+            localStorage.setItem("userProfileId", store.pendingProfileId);
           } else {
             userProfile = await base44.entities.UserProfile.create(profileData);
+            localStorage.setItem("userProfileId", userProfile.id);
           }
-          localStorage.setItem("userProfileId", userProfile.id);
-          localStorage.setItem("companionId", companion.id);
-          localStorage.setItem("unfiltr_companion_id", companion.id);
+
+          // Step 5: Also save display_name to localStorage so it survives force-close
+          localStorage.setItem("unfiltr_display_name", store.displayName?.trim() || "");
+
           resetOnboardingStore();
         } catch (err) {
           console.error("Onboarding DB error (non-blocking):", err);
@@ -282,4 +296,5 @@ export default function OnboardingBackground() {
     </div>
   );
 }
+
 
