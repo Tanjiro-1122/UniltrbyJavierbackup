@@ -100,6 +100,14 @@ export default function Pricing() {
   const [upgraded, setUpgraded]         = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
   const [showDebug, setShowDebug]   = useState(false);
+  const [headerTaps, setHeaderTaps] = useState(0);
+  const handleHeaderTap = () => {
+    setHeaderTaps(n => {
+      const next = n + 1;
+      if (next >= 5) { setShowDebug(true); return 0; }
+      return next;
+    });
+  };
   const [debugLog, setDebugLog]     = useState([]);
   const [iapTesting, setIapTesting] = useState(false);
 
@@ -356,7 +364,7 @@ export default function Pricing() {
 
         {/* ── Header ── */}
         <div style={{ textAlign:'center', marginBottom:28 }}>
-          <div style={{ fontSize:52, marginBottom:10, filter:'drop-shadow(0 0 20px rgba(168,85,247,0.6))' }}>✨</div>
+          <div onClick={handleHeaderTap} style={{ fontSize:52, marginBottom:10, filter:'drop-shadow(0 0 20px rgba(168,85,247,0.6))', cursor:'default', userSelect:'none' }}>✨</div>
           <h1 style={{ color:'white', fontWeight:900, fontSize:28, margin:'0 0 8px', letterSpacing:-0.5 }}>
             Upgrade Unfiltr
           </h1>
@@ -512,12 +520,8 @@ export default function Pricing() {
           <RotateCcw size={14}/> Restore Previous Purchase
         </button>
 
-        {/* ── Debug Panel ── */}
+        {/* ── Debug Panel — hidden, unlock by tapping ✨ 5x ── */}
         <div style={{ marginBottom: 16 }}>
-          <button onClick={() => setShowDebug(p => !p)} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:12, color:'rgba(255,255,255,0.3)', fontSize:12, padding:'10px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <span>🔧 IAP Debug</span>
-            <span>{showDebug ? '▲' : '▼'}</span>
-          </button>
           {showDebug && (
             <div style={{ background:'rgba(0,0,0,0.7)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:12, marginTop:6, padding:14, fontFamily:'monospace' }}>
               <div style={{ marginBottom:10, display:'flex', gap:8 }}>
@@ -572,5 +576,6 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
