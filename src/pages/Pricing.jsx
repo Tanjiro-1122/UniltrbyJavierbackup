@@ -93,6 +93,10 @@ const BADGE_COLORS = {
 
 export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState('pro');
+  const [appleSignInPending, setAppleSignInPending] = useState(false);
+  const [appleSignInDone, setAppleSignInDone] = useState(
+    !!localStorage.getItem('unfiltr_apple_user_id')
+  );
   const [upgraded, setUpgraded]         = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
   const [showDebug, setShowDebug]   = useState(false);
@@ -200,12 +204,97 @@ export default function Pricing() {
     loadProducts(); // only fetch when pricing page opens
   }, []);
 
+  // Sign in with Apple — requests native bridge, waits for response
+  const requestAppleSignIn = () => {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Apple sign-in timeout')), 60000);
+
+      const handler = async (e) => {
+        const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (msg.type === 'APPLE_SIGN_IN_SUCCESS') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          try {
+            // Call backend to find/create profile
+            const res = await fetch('/api/appleAuth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                appleUserId: msg.data.appleUserId,
+                email: msg.data.email,
+                fullName: msg.data.fullName,
+                displayName: localStorage.getItem('unfiltr_display_name'),
+              }),
+            });
+            const result = await res.json();
+            if (result.ok) {
+              localStorage.setItem('unfiltr_apple_user_id', msg.data.appleUserId);
+              localStorage.setItem('userProfileId', result.profileId);
+              localStorage.setItem('unfiltr_user_id', result.profileId);
+              localStorage.setItem('unfiltr_auth_token', result.profileId);
+              if (result.displayName) localStorage.setItem('unfiltr_display_name', result.displayName);
+              window.dispatchEvent(new Event('unfiltr_auth_updated'));
+              resolve(result);
+            } else {
+              reject(new Error(result.error || 'Auth failed'));
+            }
+          } catch (err) { reject(err); }
+        }
+        if (msg.type === 'APPLE_SIGN_IN_CANCELLED') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          reject(new Error('cancelled'));
+        }
+        if (msg.type === 'APPLE_SIGN_IN_ERROR') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', handler);
+          reject(new Error(msg.error || 'Apple sign-in failed'));
+        }
+      };
+
+      window.addEventListener('message', handler);
+
+      // Send to native bridge
+      const bridgeMsg = JSON.stringify({ type: 'SIGN_IN_WITH_APPLE' });
+      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(bridgeMsg);
+      else if (window.webkit?.messageHandlers?.ReactNativeWebView)
+        window.webkit.messageHandlers.ReactNativeWebView.postMessage(bridgeMsg);
+      else {
+        clearTimeout(timeout);
+        window.removeEventListener('message', handler);
+        reject(new Error('no_bridge'));
+      }
+    });
+  };
+
   const handleSubscribe = async () => {
     try {
       if (!resolvedProductId) {
         console.error('[subscribe] No productId resolved for plan:', selectedPlan);
         return;
       }
+
+      // Step 1: Require Sign in with Apple before purchase if not already done
+      const hasAppleId = !!localStorage.getItem('unfiltr_apple_user_id');
+      if (!hasAppleId) {
+        setAppleSignInPending(true);
+        try {
+          await requestAppleSignIn();
+          setAppleSignInDone(true);
+        } catch (err) {
+          setAppleSignInPending(false);
+          if (err.message === 'cancelled') return; // user cancelled — do nothing
+          if (err.message === 'no_bridge') {
+            // Web browser / simulator — skip Apple sign-in, proceed anyway
+            console.warn('[subscribe] No native bridge — skipping Apple sign-in');
+          } else {
+            console.error('[subscribe] Apple sign-in failed:', err.message);
+            return;
+          }
+        }
+        setAppleSignInPending(false);
+      }
+
       console.log('[subscribe] Purchasing productId:', resolvedProductId, 'for plan:', selectedPlan);
       const result = await purchase(resolvedProductId);
       if (result?.success) {
@@ -483,4 +572,5 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
