@@ -10,9 +10,15 @@ export default function DisplayNameEditor({ userProfile, onSave }) {
   const handleSave = async () => {
     if (!name.trim() || saving) return;
     setSaving(true);
+    // Always save to localStorage immediately — survives force-close
+    localStorage.setItem("unfiltr_display_name", name.trim());
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
-      await base44.entities.UserProfile.update(profileId, { display_name: name.trim() });
+      try {
+        await base44.entities.UserProfile.update(profileId, { display_name: name.trim() });
+      } catch (e) {
+        console.warn("Display name DB save failed (localStorage saved):", e);
+      }
     }
     onSave?.(name.trim());
     setSaving(false);
