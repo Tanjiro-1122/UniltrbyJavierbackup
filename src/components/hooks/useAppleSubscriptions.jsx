@@ -1,33 +1,18 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { AppleStoreKitService } from '@/components/api/appleStoreKitService';
 
 export function useAppleSubscriptions() {
   const [products, setProducts]           = useState([]);
-  const [loading, setLoading]             = useState(true);
+  const [loading, setLoading]             = useState(false); // <-- false by default, not true
   const [purchasing, setPurchasing]       = useState(false);
   const [error, setError]                 = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const loadAttempted = useRef(false);
 
-  useEffect(() => {
-    // Wait up to 3s for the RNWV bridge to be injected before loading products
-    let attempts = 0;
-    const maxAttempts = 15; // 15 x 200ms = 3 seconds
-    const interval = setInterval(() => {
-      attempts++;
-      const bridgeReady = typeof window !== 'undefined' && !!window.ReactNativeWebView;
-      if (bridgeReady || attempts >= maxAttempts) {
-        clearInterval(interval);
-        if (!loadAttempted.current) {
-          loadAttempted.current = true;
-          loadProducts();
-        }
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadProducts = async () => {
+  // loadProducts is now exposed and called manually, NOT on mount
+  const loadProducts = useCallback(async () => {
+    if (loadAttempted.current) return; // prevent duplicate calls
+    loadAttempted.current = true;
     try {
       setLoading(true);
       const result = await Promise.race([
@@ -40,7 +25,7 @@ export function useAppleSubscriptions() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const purchase = async (productId) => {
     try {
@@ -53,7 +38,6 @@ export function useAppleSubscriptions() {
         return { success: false, cancelled: true };
       }
       if (result.isMock) {
-        // Web/browser mock — no real purchase
         setStatusMessage('');
         setError('Purchases only available in the iOS app.');
         return { success: false };
@@ -83,7 +67,7 @@ export function useAppleSubscriptions() {
     }
   };
 
-  return { products, loading, purchasing, error, statusMessage, purchase, restore };
+  return { products, loading, purchasing, error, statusMessage, purchase, restore, loadProducts };
 }
 
 const MOCK_PRODUCTS = [
