@@ -176,7 +176,7 @@ export default function Settings() {
 
   const handleTriquetraTap = () => {
     const next = tapCount + 1; setTapCount(next);
-    if (next >= 5) { setTapCount(0); setShowCodeModal(true); }
+    if (next >= 5) { setTapCount(0); setShowFamilyModal(true); }
   };
   const handleCodeSubmit = () => {
     if (adminCode.trim().toLowerCase() === "huertasfam") {
