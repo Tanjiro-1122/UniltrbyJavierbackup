@@ -104,6 +104,108 @@ export default function Settings() {
   const [daysSince, setDaysSince]             = useState(0);
   const [moodHistory, setMoodHistory]         = useState([]);
   const [isAdmin, setIsAdmin]                 = useState(() => localStorage.getItem("unfiltr_admin_unlocked") === "true");
+  const [showDebug, setShowDebug]             = useState(false);
+  const [debugLog, setDebugLog]               = useState([]);
+  const [iapTesting, setIapTesting]           = useState(false);
+
+  const addLog = (msg, type = "info") => {
+    const ts = new Date().toLocaleTimeString();
+    setDebugLog(prev => [...prev, { ts, msg, type }]);
+    console.log(`[UNFILTR DEBUG ${ts}] ${msg}`);
+  };
+
+  const runIapDiagnostic = async () => {
+    setIapTesting(true);
+    setDebugLog([]);
+    addLog("🚀 Starting IAP diagnostic...");
+
+    // 1. Bridge detection
+    const hasRNWV = !!(window.ReactNativeWebView);
+    const hasWTN  = !!(window.webkit?.messageHandlers?.ReactNativeWebView);
+    addLog(`ReactNativeWebView: ${hasRNWV ? "✅ FOUND" : "❌ NOT FOUND"}`, hasRNWV ? "ok" : "error");
+    addLog(`webkit.messageHandlers: ${hasWTN ? "✅ FOUND" : "❌ NOT FOUND"}`, hasWTN ? "ok" : "error");
+
+    if (!hasRNWV && !hasWTN) {
+      addLog("⚠️ No native bridge — you are on web/browser, not in the iOS wrapper", "warn");
+    } else {
+      addLog("✅ Native bridge detected — running in iOS wrapper");
+    }
+
+    // 2. LocalStorage state
+    addLog("--- localStorage snapshot ---");
+    const keys = ["unfiltr_is_premium","unfiltr_user_id","userProfileId","unfiltr_display_name","unfiltr_onboarding_complete","unfiltr_family_unlock"];
+    keys.forEach(k => {
+      const v = localStorage.getItem(k);
+      addLog(`  ${k}: ${v ?? "(null)"}`, v ? "ok" : "warn");
+    });
+
+    // 3. Send GET_OFFERINGS to native
+    if (hasRNWV || hasWTN) {
+      addLog("📡 Sending GET_OFFERINGS to native bridge...");
+      const offeringsResult = await new Promise(resolve => {
+        const timeout = setTimeout(() => resolve({ error: "TIMEOUT after 15s" }), 15000);
+        const handler = (e) => {
+          try {
+            const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+            if (d.type === "OFFERINGS_RESULT" || d.type === "OFFERINGS_ERROR") {
+              clearTimeout(timeout);
+              window.removeEventListener("message", handler);
+              resolve(d);
+            }
+          } catch {}
+        };
+        window.addEventListener("message", handler);
+        const msg = JSON.stringify({ type: "GET_OFFERINGS" });
+        if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+        else window.webkit.messageHandlers.ReactNativeWebView.postMessage(msg);
+      });
+
+      if (offeringsResult.error) {
+        addLog(`❌ GET_OFFERINGS failed: ${offeringsResult.error}`, "error");
+      } else {
+        addLog(`✅ GET_OFFERINGS response received`, "ok");
+        addLog(`  type: ${offeringsResult.type}`);
+        const pkgs = offeringsResult.data?.current?.availablePackages || [];
+        addLog(`  packages count: ${pkgs.length}`, pkgs.length > 0 ? "ok" : "error");
+        pkgs.forEach(p => addLog(`    📦 ${p.identifier} → ${p.product?.productIdentifier || "?"}`));
+        if (pkgs.length === 0) addLog("⚠️ No packages returned — check RevenueCat dashboard", "warn");
+      }
+
+      // 4. Check entitlement
+      addLog("📡 Sending GET_CUSTOMER_INFO to native bridge...");
+      const ciResult = await new Promise(resolve => {
+        const timeout = setTimeout(() => resolve({ error: "TIMEOUT after 10s" }), 10000);
+        const handler = (e) => {
+          try {
+            const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+            if (d.type === "CUSTOMER_INFO_RESULT" || d.type === "CUSTOMER_INFO_ERROR") {
+              clearTimeout(timeout);
+              window.removeEventListener("message", handler);
+              resolve(d);
+            }
+          } catch {}
+        };
+        window.addEventListener("message", handler);
+        const msg = JSON.stringify({ type: "GET_CUSTOMER_INFO" });
+        if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+        else window.webkit.messageHandlers.ReactNativeWebView.postMessage(msg);
+      });
+
+      if (ciResult.error) {
+        addLog(`❌ GET_CUSTOMER_INFO failed: ${ciResult.error}`, "error");
+      } else {
+        addLog(`✅ Customer info received`, "ok");
+        const entitlements = ciResult.data?.entitlements?.active || {};
+        const entKeys = Object.keys(entitlements);
+        addLog(`  Active entitlements: ${entKeys.length > 0 ? entKeys.join(", ") : "NONE"}`, entKeys.length > 0 ? "ok" : "warn");
+        const hasPro = !!(entitlements["unfiltr by javier Pro"]);
+        addLog(`  "unfiltr by javier Pro": ${hasPro ? "✅ ACTIVE" : "❌ NOT ACTIVE"}`, hasPro ? "ok" : "error");
+      }
+    }
+
+    addLog("✅ Diagnostic complete.");
+    setIapTesting(false);
+  };
   const [tapCount, setTapCount]               = useState(0);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyCode, setFamilyCode]           = useState("");
@@ -652,6 +754,53 @@ export default function Settings() {
           </Section>
         )}
 
+        {/* ── Debug Panel ── */}
+        <div style={{ marginTop: 8 }}>
+          <button onClick={() => setShowDebug(p => !p)} style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "rgba(255,255,255,0.3)", fontSize: 12, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>🔧 Debug Panel</span>
+            <span>{showDebug ? "▲" : "▼"}</span>
+          </button>
+          {showDebug && (
+            <div style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 12, marginTop: 6, padding: 14, fontFamily: "monospace" }}>
+              <div style={{ marginBottom: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={runIapDiagnostic} disabled={iapTesting}
+                  style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "none", background: iapTesting ? "rgba(168,85,247,0.3)" : "rgba(168,85,247,0.7)", color: "white", fontSize: 12, fontWeight: 700, cursor: iapTesting ? "not-allowed" : "pointer" }}>
+                  {iapTesting ? "⏳ Running..." : "▶ Run IAP Diagnostic"}
+                </button>
+                <button onClick={() => setDebugLog([])}
+                  style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>
+                  Clear
+                </button>
+              </div>
+              {/* Quick snapshot */}
+              <div style={{ marginBottom: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, margin: "0 0 4px", fontWeight: 700 }}>QUICK SNAPSHOT</p>
+                {[
+                  ["User ID",       localStorage.getItem("unfiltr_user_id")],
+                  ["Profile ID",    localStorage.getItem("userProfileId")],
+                  ["Premium",       localStorage.getItem("unfiltr_is_premium")],
+                  ["Display Name",  localStorage.getItem("unfiltr_display_name")],
+                  ["Native Bridge", window.ReactNativeWebView ? "✅ YES" : "❌ NO (web)"],
+                ].map(([k,v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>{k}</span>
+                    <span style={{ color: v && v !== "null" ? "#a855f7" : "#f87171", fontSize: 11, maxWidth: "55%", textAlign: "right", wordBreak: "break-all" }}>{v || "—"}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Log output */}
+              <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+                {debugLog.length === 0 && <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, textAlign: "center", margin: "8px 0" }}>Tap "Run IAP Diagnostic" to start</p>}
+                {debugLog.map((entry, i) => (
+                  <div key={i} style={{ fontSize: 11, lineHeight: 1.5, color: entry.type === "error" ? "#f87171" : entry.type === "warn" ? "#fbbf24" : entry.type === "ok" ? "#4ade80" : "rgba(255,255,255,0.55)" }}>
+                    <span style={{ color: "rgba(255,255,255,0.2)", marginRight: 6 }}>{entry.ts}</span>{entry.msg}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div style={{ textAlign: "center", paddingTop: 8 }}>
           <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none" }}>v1.2.0</span>
         </div>
@@ -840,6 +989,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
