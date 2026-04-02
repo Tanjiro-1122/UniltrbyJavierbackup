@@ -20,28 +20,15 @@ export default function AdminDashboard() {
     setUnauthorized(false);
     setErrorDetail("");
 
-    // Check display name from localStorage profile
-    const profileId = localStorage.getItem("userProfileId");
-    if (!profileId) {
+    // Check localStorage admin flag — set by Settings password modal
+    const isAdmin = localStorage.getItem("unfiltr_admin_unlocked") === "true";
+    if (!isAdmin) {
       setUnauthorized(true);
       setLoading(false);
       return;
     }
 
-    try {
-      const profile = await base44.entities.UserProfile.get(profileId);
-      if (profile?.display_name !== ADMIN_DISPLAY_NAME) {
-        setUnauthorized(true);
-        setLoading(false);
-        return;
-      }
-    } catch {
-      setUnauthorized(true);
-      setLoading(false);
-      return;
-    }
-
-    // Display name matches — load admin stats
+    // Admin confirmed — load stats
     loadData();
   };
 
@@ -258,3 +245,4 @@ function HelpLine({ label, number, desc, color, link }) {
     </div>
   );
 }
+
