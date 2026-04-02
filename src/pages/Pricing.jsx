@@ -95,7 +95,7 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState('pro');
   const [upgraded, setUpgraded]         = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
-  const { products, loading, purchasing, error, statusMessage, purchase, restore } = useAppleSubscriptions();
+  const { products, loading, purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
   const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -115,6 +115,7 @@ export default function Pricing() {
 
   React.useEffect(() => {
     if (searchParams.get('restore') === 'true') setTimeout(handleRestore, 500);
+    loadProducts(); // only fetch when pricing page opens
   }, []);
 
   const handleSubscribe = async () => {
@@ -359,3 +360,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
