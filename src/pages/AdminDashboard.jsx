@@ -84,14 +84,55 @@ export default function AdminDashboard() {
     );
   }
 
+  const [pwInput, setPwInput] = useState("");
+  const [pwError, setPwError] = useState(false);
+  const ADMIN_PASS = "javier1122admin";
+
+  const handleUnlock = () => {
+    if (pwInput.trim() === ADMIN_PASS) {
+      localStorage.setItem("unfiltr_admin_unlocked", "true");
+      setPwError(false);
+      checkAccessAndLoad();
+    } else {
+      setPwError(true);
+      setTimeout(() => setPwError(false), 1500);
+    }
+  };
+
   if (unauthorized) {
     return (
-      <div className="text-white" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f" }}>
-        <div className="text-center" style={{ padding: "0 32px" }}>
-          <ShieldAlert className="w-14 h-14 text-purple-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
-          <p className="text-gray-400 mb-6 text-sm">You don't have admin access.</p>
-          <Link to="/chat" className="text-purple-400 hover:text-purple-300 text-sm">← Go Back</Link>
+      <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#06020f", fontFamily: "'SF Pro Display',system-ui,sans-serif" }}>
+        <div style={{ padding: "32px 28px", width: "100%", maxWidth: 360, textAlign: "center" }}>
+          <ShieldAlert style={{ width: 52, height: 52, color: "#a855f7", margin: "0 auto 16px" }} />
+          <h1 style={{ color: "white", fontWeight: 800, fontSize: 22, margin: "0 0 6px" }}>Admin Access</h1>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 24px" }}>Enter the admin password to continue.</p>
+          <input
+            type="password"
+            value={pwInput}
+            onChange={e => setPwInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleUnlock()}
+            placeholder="Admin password"
+            autoFocus
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "13px 16px", borderRadius: 14,
+              border: pwError ? "1.5px solid #f87171" : "1.5px solid rgba(139,92,246,0.35)",
+              background: "rgba(139,92,246,0.08)", color: "white",
+              fontSize: 15, outline: "none", marginBottom: 12,
+              transition: "border 0.2s",
+            }}
+          />
+          {pwError && <p style={{ color: "#f87171", fontSize: 12, margin: "-4px 0 10px" }}>Wrong password</p>}
+          <button
+            onClick={handleUnlock}
+            style={{
+              width: "100%", padding: "13px", borderRadius: 14, border: "none",
+              background: "linear-gradient(135deg, #7c3aed, #db2777)",
+              color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 16,
+            }}>
+            Unlock
+          </button>
+          <Link to="/chat" style={{ color: "rgba(168,85,247,0.7)", fontSize: 13, textDecoration: "none" }}>← Back to app</Link>
         </div>
       </div>
     );
@@ -270,5 +311,6 @@ function HelpLine({ label, number, desc, color, link }) {
     </div>
   );
 }
+
 
 
