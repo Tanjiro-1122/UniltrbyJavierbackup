@@ -320,7 +320,11 @@ export default function Pricing() {
         }
         setUpgraded(true);
       }
-    } catch (e) { console.error('[subscribe]', e); }
+    } catch (e) {
+      console.error('[subscribe]', e);
+    } finally {
+      setAppleSignInPending(false);
+    }
   };
 
   /* ── Success screen ─────────────────────────────────────────────────────── */
@@ -408,10 +412,11 @@ export default function Pricing() {
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
           {PLANS.map(p => (
             <button key={p.id} onClick={() => setSelectedPlan(p.id)} style={{
-              flex:1, padding:'11px 4px', borderRadius:14,
+              flex:1, padding:'11px 4px', paddingTop: p.badge ? 18 : 11, borderRadius:14,
               border:`2px solid ${selectedPlan === p.id ? p.border : 'rgba(255,255,255,0.07)'}`,
               background: selectedPlan === p.id ? p.bg : 'rgba(255,255,255,0.02)',
               cursor:'pointer', transition:'all 0.18s', position:'relative',
+              marginTop: p.badge ? 8 : 0,
             }}>
               {p.badge && (
                 <div style={{
@@ -446,7 +451,7 @@ export default function Pricing() {
             )}
 
             {/* Plan header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18, marginTop: meta.badge ? 28 : 0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                 <div style={{ fontSize:38 }}>{meta.emoji}</div>
                 <div>
@@ -484,13 +489,13 @@ export default function Pricing() {
         {/* ── CTA button ── */}
         <button
           onClick={handleSubscribe}
-          disabled={purchasing}
+          disabled={purchasing || appleSignInPending}
           style={{
             width:'100%', padding:'18px', borderRadius:18,
-            background: purchasing
+            background: (purchasing || appleSignInPending)
               ? 'rgba(255,255,255,0.08)'
               : `linear-gradient(135deg,${meta?.color || '#a855f7'} 0%,#db2777 100%)`,
-            border:'none', cursor: purchasing ? 'wait' : 'pointer',
+            border:'none', cursor: (purchasing || appleSignInPending) ? 'wait' : 'pointer',
             color:'white', fontWeight:800, fontSize:16,
             display:'flex', alignItems:'center', justifyContent:'center', gap:8,
             marginBottom:10, transition:'all 0.2s',
@@ -576,6 +581,7 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
 
