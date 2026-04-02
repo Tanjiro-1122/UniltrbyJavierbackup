@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
+import { debugLog } from "@/components/DebugPanel";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
-function signInWithApple(navigate) {
+function doAppleSignIn(navigate, setLoading) {
   const bridge = window.ReactNativeWebView;
+  debugLog(`[WEB] signInWithApple called, bridge=${!!bridge}`);
+
   if (!bridge) {
-    // Fallback — no native bridge, go to onboarding normally
+    debugLog('[WEB] No native bridge — going to onboarding');
     navigate("/onboarding/consent");
     return;
   }
@@ -17,26 +20,36 @@ function signInWithApple(navigate) {
   const handler = (e) => {
     try {
       const msg = JSON.parse(e.data);
+      debugLog(`[WEB] received message: ${msg.type}`);
       if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
         window.removeEventListener("message", handler);
         const { appleUserId, email, fullName } = msg.data || {};
-        // Store Apple identity
+        debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
         localStorage.setItem("unfiltr_apple_user_id", appleUserId);
         localStorage.setItem("unfiltr_user_id", appleUserId);
         localStorage.setItem("unfiltr_auth_token", appleUserId);
         if (email) localStorage.setItem("unfiltr_apple_email", email);
         if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-        // If onboarding already done, go straight to hub
         const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
         navigate(onboardingDone ? "/hub" : "/onboarding/consent");
-      } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
+      } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
         window.removeEventListener("message", handler);
-        // Just go to normal onboarding on cancel/error
+        debugLog('[WEB] 🚫 Apple sign-in cancelled');
+        setLoading(false);
+        navigate("/onboarding/consent");
+      } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
+        window.removeEventListener("message", handler);
+        debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
+        setLoading(false);
         navigate("/onboarding/consent");
       }
-    } catch {}
+    } catch (err) {
+      debugLog(`[WEB] message parse error: ${err.message}`);
+    }
   };
+
   window.addEventListener("message", handler);
+  debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
 }
 
@@ -47,7 +60,7 @@ export default function HomeScreen() {
 
   const handleAppleSignIn = () => {
     setLoading(true);
-    signInWithApple(navigate);
+    doAppleSignIn(navigate, setLoading);
   };
 
   return (
@@ -58,12 +71,10 @@ export default function HomeScreen() {
       fontFamily: "system-ui,-apple-system,sans-serif",
       overflow: "hidden",
     }}>
-      {/* Top glow */}
       <div style={{ position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(168,85,247,0.18) 0%,transparent 70%)", pointerEvents: "none" }} />
 
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", padding: "max(3rem,env(safe-area-inset-top)) 24px 24px" }}>
 
-        {/* Logo + Title */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <motion.img src={LOGO} alt="Unfiltr"
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}
@@ -79,7 +90,7 @@ export default function HomeScreen() {
           </motion.p>
         </div>
 
-        {/* Sign in with Apple (native only) */}
+        {/* Sign in with Apple */}
         {isNative && (
           <motion.button
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
@@ -88,22 +99,21 @@ export default function HomeScreen() {
             disabled={loading}
             style={{
               width: "100%", padding: "18px",
-              background: "white",
-              border: "none", borderRadius: 20,
+              background: "white", border: "none", borderRadius: 20,
               color: "#000", fontWeight: 800, fontSize: 17,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
               marginBottom: 12,
               opacity: loading ? 0.7 : 1,
             }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="black">
-              <path d="M16.125 1C14.297 1.063 12.156 2.234 10.922 3.781c-1.125 1.406-2.063 3.547-1.688 5.641 2.016.156 4.078-.969 5.281-2.531C15.719 5.328 16.594 3.172 16.125 1zM20.953 17.813c-.938 1.953-1.391 2.828-2.609 4.547-1.688 2.391-4.078 5.375-7.031 5.406-2.625.031-3.313-1.703-6.891-1.688-3.578.016-4.313 1.719-6.938 1.688-2.953-.031-5.203-2.688-6.891-5.078C-14.25 16.734-14.578 8.578-11.641 4.281c2.016-3.047 5.203-4.828 8.219-4.828 3.063 0 4.984 1.719 7.516 1.719 2.453 0 3.953-1.719 7.5-1.719 2.688 0 5.531 1.453 7.547 3.969-6.625 3.641-5.547 13.125.812 14.391z"/>
+            <svg width="20" height="20" viewBox="0 0 814 1000" fill="black">
+              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3.1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3.4 6 .6 9.7.6 29.7 0 67.9-19.5 85.7-47.1z"/>
             </svg>
             {loading ? "Signing in..." : "Sign in with Apple"}
           </motion.button>
         )}
 
-        {/* Primary CTA */}
+        {/* Continue as Guest / Meet companion */}
         <motion.button
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           whileTap={{ scale: 0.97 }}
@@ -122,14 +132,12 @@ export default function HomeScreen() {
           {isNative ? "Continue as Guest" : "✨ Meet Your Companion"}
         </motion.button>
 
-        {/* How It Works */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
             <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, fontWeight: 600, letterSpacing: 2 }}>HOW IT WORKS</span>
             <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
           </div>
-
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
             {[
               { emoji: "💜", title: "Pick your companion", desc: "Choose from 12 unique personalities built just for you." },
@@ -146,8 +154,6 @@ export default function HomeScreen() {
               </div>
             ))}
           </div>
-
-          {/* Info links */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
             {[
               { icon: Shield,         label: "Privacy Policy", path: "/PrivacyPolicy", color: "#22c55e" },
@@ -167,7 +173,6 @@ export default function HomeScreen() {
             ))}
           </div>
         </motion.div>
-
         <div style={{ height: "max(24px,env(safe-area-inset-bottom))" }} />
       </div>
     </div>
