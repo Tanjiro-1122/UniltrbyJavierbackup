@@ -12,9 +12,15 @@ export default function ChatInputBar({
     <div style={{
       flexShrink: 0,
       width: "100%",
-      padding: "6px 12px calc(8px + env(safe-area-inset-bottom, 8px))",
-      background: "transparent",
       boxSizing: "border-box",
+      // ✅ Solid background that paints ALL the way into the safe-area zone
+      // This kills the gray strip at the bottom on iPhone
+      background: "#06020f",
+      // Padding: top gap + safe-area-inset-bottom so the pill sits above home indicator
+      paddingTop: 6,
+      paddingLeft: 12,
+      paddingRight: 12,
+      paddingBottom: "calc(10px + env(safe-area-inset-bottom, 10px))",
     }}>
       {/* Pending image preview */}
       {pendingImage && (
