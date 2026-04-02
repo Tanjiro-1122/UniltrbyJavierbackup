@@ -61,7 +61,7 @@ const HIDE_TABS_ON = [
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
   "/TermsOfUse", "/support", "/Pricing", "/onboarding",
-  "/how-it-works",
+  "/how-it-works", "/AdminDashboard", "/FeedbackAdmin", "/AdminAvatarProcessor",
 ];
 
 function SafeAreaFix() {
@@ -229,3 +229,4 @@ function App() {
 }
 
 export default App;
+
