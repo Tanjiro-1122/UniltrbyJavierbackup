@@ -928,13 +928,13 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* MissYouBanner — rendered as fixed overlay below */
+          {/* MissYouBanner — rendered as fixed overlay below */}
 
-          {/* MemoryCard — rendered as fixed overlay below */
+          {/* MemoryCard — rendered as fixed overlay below */}
 
           {/* Daily check-in removed from layout — mood handled inline in chat */}
 
-          {/* CrisisBanner — rendered as fixed overlay below */
+          {/* CrisisBanner — rendered as fixed overlay below */}
 
           {/* meditation nudge moved to fixed overlay below */}
 
@@ -1111,4 +1111,5 @@ export default function ChatPage() {
     </>
   );
 }
+
 
