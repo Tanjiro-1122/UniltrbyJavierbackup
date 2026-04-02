@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import {
   Users, MessageSquare, Crown, ShieldAlert, Phone, Heart,
   RefreshCw, BookOpen, AlertTriangle, MessageSquareMore, LogOut, ChevronRight
@@ -42,35 +41,35 @@ export default function AdminDashboard() {
     setLoading(true);
     setErrorDetail("");
     try {
-      const [profiles, messages, companions, feedback] = await Promise.all([
-        base44.entities.UserProfile.list(),
-        base44.entities.Message.list(),
-        base44.entities.Companion.list(),
-        base44.entities.Feedback.list().catch(() => []),
-      ]);
-      const today = new Date().toISOString().slice(0, 10);
-      const week  = new Date(Date.now() - 7 * 86400000).toISOString();
+      // Call Base44 adminStats function with secret token — no user auth needed
+      const res = await fetch("https://unfiltrbyjavier.base44.app/api/functions/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken: "unfiltr_admin_javier1122_secret" }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed to load stats");
       setStats({
-        totalUsers:       profiles.length,
-        premiumUsers:     profiles.filter(p => p.is_premium).length,
-        todayMessages:    messages.filter(m => (m.created_date || "").startsWith(today)).length,
-        totalMessages:    messages.length,
-        journalEntries:   messages.filter(m => m.mood_mode === "journal").length,
-        crisisFlags:      messages.filter(m => m.is_crisis_flagged).length,
-        newThisWeek:      profiles.filter(p => (p.created_date || "") >= week).length,
-        activeThisWeek:   profiles.filter(p => (p.last_active || "") >= week).length,
-        companions:       companions.length,
-        feedbackCount:    feedback.length,
-        openFeedback:     feedback.filter(f => f.status !== "resolved").length,
-        recentUsers:      [...profiles].sort((a,b) => (b.created_date||"").localeCompare(a.created_date||"")).slice(0, 15),
-        allFeedback:      [...feedback].sort((a,b) => (b.created_date||"").localeCompare(a.created_date||"")),
-        premiumList:      profiles.filter(p => p.is_premium).sort((a,b) => (b.created_date||"").localeCompare(a.created_date||"")),
-        pausedAccounts:   profiles.filter(p => p.account_paused),
-        deleteRequested:  profiles.filter(p => p.account_delete_requested),
-        trialUsers:       profiles.filter(p => p.trial_active),
+        totalUsers:      data.totalUsers       ?? 0,
+        premiumUsers:    data.premiumUsers      ?? 0,
+        todayMessages:   data.todayMessages     ?? 0,
+        totalMessages:   data.totalMessages     ?? 0,
+        journalEntries:  data.totalJournalEntries ?? 0,
+        crisisFlags:     data.crisisFlags       ?? 0,
+        newThisWeek:     data.newThisWeek       ?? 0,
+        activeThisWeek:  data.activeThisWeek    ?? 0,
+        companions:      data.companions        ?? 0,
+        feedbackCount:   data.feedbackCount     ?? 0,
+        openFeedback:    data.openFeedback      ?? 0,
+        recentUsers:     data.recentUsers       ?? [],
+        allFeedback:     data.allFeedback       ?? [],
+        premiumList:     data.premiumList       ?? [],
+        pausedAccounts:  Array(data.pausedAccounts  ?? 0).fill({}),
+        deleteRequested: Array(data.deleteRequested ?? 0).fill({}),
+        trialUsers:      Array(data.trialUsers       ?? 0).fill({}),
       });
     } catch (err) {
-      setErrorDetail(err?.message || "Failed to load");
+      setErrorDetail(err?.message || "Failed to load stats");
     }
     setLoading(false);
   };
@@ -342,3 +341,4 @@ function StatCard({ icon, label, value, sub }) {
     </div>
   );
 }
+
