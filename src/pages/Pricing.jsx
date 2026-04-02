@@ -282,27 +282,8 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     try {
-      // Step 1: Require Sign in with Apple before purchase if not already done
-      const hasAppleId = !!localStorage.getItem('unfiltr_apple_user_id');
-      if (!hasAppleId) {
-        setAppleSignInPending(true);
-        try {
-          await requestAppleSignIn();
-          setAppleSignInDone(true);
-        } catch (err) {
-          setAppleSignInPending(false);
-          if (err.message === 'cancelled') return; // user cancelled — do nothing
-          if (err.message === 'no_bridge') {
-            // Web browser / simulator — skip Apple sign-in, proceed anyway
-            console.warn('[subscribe] No native bridge — skipping Apple sign-in');
-          } else {
-            console.error('[subscribe] Apple sign-in failed:', err.message);
-            return;
-          }
-        }
-        setAppleSignInPending(false);
-      }
-
+      // NOTE: Sign in with Apple is wired but requires the April 23rd iOS wrapper build.
+      // For now, skip it and go straight to purchase so the IAP flow works immediately.
       console.log('[subscribe] Purchasing productId:', resolvedProductId, 'for plan:', selectedPlan);
       const result = await purchase(resolvedProductId);
       if (result?.success) {
@@ -581,6 +562,7 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
 
