@@ -42,8 +42,8 @@ const PLANS = [
     emoji: '⚡',
     tagline: 'For those who need more',
     bullets: [
-      { icon: MessageCircle, text: '100 messages/day' },
-      { icon: MessageCircle, text: 'Up to 3,000 msgs/month' },
+      { icon: MessageCircle, text: '250 messages/day' },
+      { icon: MessageCircle, text: 'Up to 7,500 msgs/month' },
       { icon: Brain,         text: 'Memory — companion remembers you' },
       { icon: History,       text: 'Full conversation history' },
       { icon: Volume2,       text: 'Voice responses (TTS)' },
@@ -99,12 +99,21 @@ export default function Pricing() {
   const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const meta    = PLANS.find(p => p.id === selectedPlan);
-  const product = products.find(p =>
-    selectedPlan === 'annual' ? p.productId?.includes('annual')
-    : selectedPlan === 'pro'  ? p.productId?.includes('tier.pro')
-    : p.productId?.includes('monthly')
-  );
+  const meta = PLANS.find(p => p.id === selectedPlan);
+
+  // ✅ Always resolve productId — first try live RevenueCat products, fall back to hardcoded PLANS productId
+  const resolvedProductId = (() => {
+    if (products && products.length > 0) {
+      const match = products.find(p =>
+        selectedPlan === 'annual'  ? p.productId?.includes('annual')
+        : selectedPlan === 'pro'  ? p.productId?.includes('tier.pro')
+        : p.productId?.includes('monthly')
+      );
+      if (match) return match.productId;
+    }
+    // Fallback: use the hardcoded productId from PLANS — never blocks the purchase
+    return meta?.productId || null;
+  })();
 
   const handleRestore = async () => {
     try {
@@ -120,8 +129,12 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     try {
-      if (!product) return;
-      const result = await purchase(product.productId);
+      if (!resolvedProductId) {
+        console.error('[subscribe] No productId resolved for plan:', selectedPlan);
+        return;
+      }
+      console.log('[subscribe] Purchasing productId:', resolvedProductId, 'for plan:', selectedPlan);
+      const result = await purchase(resolvedProductId);
       if (result?.success) {
         const pid = localStorage.getItem('userProfileId');
         if (pid) {
@@ -150,7 +163,7 @@ export default function Pricing() {
           {restoreSuccess ? 'Purchases Restored!' : `You're on ${meta?.label}!`}
         </h2>
         <p style={{ color:'rgba(255,255,255,0.55)', fontSize:15, margin:'0 0 36px', lineHeight:1.6 }}>
-          {restoreSuccess ? 'Your access has been restored.' : 'Your companion is ready. Let\'s talk 💜'}
+          {restoreSuccess ? 'Your access has been restored.' : "Your companion is ready. Let's talk 💜"}
         </p>
         <button onClick={() => navigate('/hub')} style={{
           background:'linear-gradient(135deg,#7c3aed,#db2777)',
@@ -232,35 +245,31 @@ export default function Pricing() {
             }}>
               {p.badge && (
                 <div style={{
-                  position:'absolute', top:-9, left:'50%', transform:'translateX(-50%)',
-                  background: BADGE_COLORS[p.badge], borderRadius:999, padding:'2px 8px', whiteSpace:'nowrap',
-                  pointerEvents:'none',
+                  position:'absolute', top:-8, left:'50%', transform:'translateX(-50%)',
+                  background: BADGE_COLORS[p.badge], borderRadius:6, padding:'2px 7px',
+                  fontSize:8, fontWeight:800, color:'white', whiteSpace:'nowrap', letterSpacing:0.3,
                 }}>
-                  <span style={{ color:'white', fontWeight:800, fontSize:8 }}>{p.badge}</span>
+                  {p.badge}
                 </div>
               )}
-              <div style={{ fontSize:20 }}>{p.emoji}</div>
-              <div style={{ color: selectedPlan === p.id ? 'white' : 'rgba(255,255,255,0.45)',
-                            fontWeight:700, fontSize:12, marginTop:3 }}>{p.label}</div>
-              <div style={{ color: selectedPlan === p.id ? p.color : 'rgba(255,255,255,0.3)',
-                            fontWeight:800, fontSize:13 }}>{p.price}</div>
+              <div style={{ color: selectedPlan === p.id ? 'white' : 'rgba(255,255,255,0.4)', fontWeight:700, fontSize:12 }}>{p.label}</div>
+              <div style={{ color: selectedPlan === p.id ? p.color : 'rgba(255,255,255,0.25)', fontWeight:800, fontSize:14, marginTop:2 }}>{p.price}</div>
             </button>
           ))}
         </div>
 
-        {/* ── Selected plan detail ── */}
+        {/* ── Plan detail card ── */}
         {meta && (
           <div style={{
-            borderRadius:22, padding:'22px 18px', marginBottom:18,
-            background: meta.bg,
-            border:`2px solid ${meta.border}`,
-            boxShadow:`0 8px 32px ${meta.glow}`,
-            position:'relative',
+            borderRadius:20, padding:'20px 18px', marginBottom:20,
+            background: meta.bg, border:`1.5px solid ${meta.border}`,
+            boxShadow:`0 0 32px ${meta.glow}`, position:'relative', overflow:'hidden',
           }}>
             {meta.badge && (
               <div style={{
-                position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
-                background: BADGE_COLORS[meta.badge], borderRadius:999, padding:'4px 16px', whiteSpace:'nowrap',
+                position:'absolute', top:14, right:14,
+                background: BADGE_COLORS[meta.badge], borderRadius:8, padding:'4px 10px',
+                fontSize:10, fontWeight:800, color:'white', letterSpacing:0.4,
               }}>
                 <span style={{ color:'white', fontWeight:800, fontSize:11 }}>{meta.badge} {meta.id === 'pro' ? '🔥' : '💎'}</span>
               </div>
@@ -305,22 +314,21 @@ export default function Pricing() {
         {/* ── CTA button ── */}
         <button
           onClick={handleSubscribe}
-          disabled={purchasing || loading}
+          disabled={purchasing}
           style={{
             width:'100%', padding:'18px', borderRadius:18,
-            background: (purchasing || loading)
+            background: purchasing
               ? 'rgba(255,255,255,0.08)'
               : `linear-gradient(135deg,${meta?.color || '#a855f7'} 0%,#db2777 100%)`,
             border:'none', cursor: purchasing ? 'wait' : 'pointer',
             color:'white', fontWeight:800, fontSize:16,
             display:'flex', alignItems:'center', justifyContent:'center', gap:8,
             marginBottom:10, transition:'all 0.2s',
-            boxShadow: (purchasing || loading) ? 'none' : `0 6px 24px ${meta?.glow || 'rgba(168,85,247,0.4)'}`,
+            boxShadow: purchasing ? 'none' : `0 6px 24px ${meta?.glow || 'rgba(168,85,247,0.4)'}`,
           }}
         >
           {purchasing
             ? <><Loader2 size={18} style={{ animation:'spin 1s linear infinite' }}/> Processing...</>
-            : loading ? 'Loading plans...'
             : `Start ${meta?.label} — ${meta?.price} ${meta?.id === 'annual' ? '/yr' : '/mo'}`
           }
         </button>
@@ -351,7 +359,7 @@ export default function Pricing() {
             Terms of Use
           </button>
         </div>
-        <p style={{ color:'rgba(255,255,255,0.18)', fontSize:10, textAlign:'center', margin:0, lineHeight:1.6, paddingHorizontal:8 }}>
+        <p style={{ color:'rgba(255,255,255,0.18)', fontSize:10, textAlign:'center', margin:0, lineHeight:1.6 }}>
           Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current billing period.
           Manage or cancel anytime in your Apple ID Settings.
         </p>
@@ -360,4 +368,3 @@ export default function Pricing() {
     </AppShell>
   );
 }
-
