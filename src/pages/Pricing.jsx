@@ -95,6 +95,79 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState('pro');
   const [upgraded, setUpgraded]         = useState(false);
   const [restoreSuccess, setRestoreSuccess] = useState(false);
+  const [showDebug, setShowDebug]   = useState(false);
+  const [debugLog, setDebugLog]     = useState([]);
+  const [iapTesting, setIapTesting] = useState(false);
+
+  const addLog = (msg, type = 'info') => {
+    const ts = new Date().toLocaleTimeString();
+    setDebugLog(prev => [...prev, { ts, msg, type }]);
+    console.log('[UNFILTR IAP]', ts, msg);
+  };
+
+  const runIapDiagnostic = async () => {
+    setIapTesting(true);
+    setDebugLog([]);
+    addLog('🚀 Starting IAP diagnostic...');
+
+    const hasRNWV = !!(window.ReactNativeWebView);
+    const hasWTN  = !!(window.webkit?.messageHandlers?.ReactNativeWebView);
+    addLog('ReactNativeWebView: ' + (hasRNWV ? '✅ FOUND' : '❌ NOT FOUND'), hasRNWV ? 'ok' : 'error');
+    addLog('webkit.messageHandlers: ' + (hasWTN ? '✅ FOUND' : '❌ NOT FOUND'), hasWTN ? 'ok' : 'error');
+    if (!hasRNWV && !hasWTN) addLog('⚠️ No native bridge — running in web browser, not iOS wrapper', 'warn');
+
+    addLog('--- localStorage ---');
+    ['unfiltr_is_premium','unfiltr_user_id','userProfileId','unfiltr_display_name','unfiltr_onboarding_complete'].forEach(k => {
+      const v = localStorage.getItem(k);
+      addLog('  ' + k + ': ' + (v ?? '(null)'), v ? 'ok' : 'warn');
+    });
+
+    if (hasRNWV || hasWTN) {
+      const send = (msg) => {
+        if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(msg));
+        else window.webkit.messageHandlers.ReactNativeWebView.postMessage(JSON.stringify(msg));
+      };
+      const waitFor = (types, timeout = 15000) => new Promise(resolve => {
+        const t = setTimeout(() => resolve({ error: 'TIMEOUT after ' + (timeout/1000) + 's' }), timeout);
+        const h = (e) => {
+          try {
+            const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            if (types.includes(d.type)) { clearTimeout(t); window.removeEventListener('message', h); resolve(d); }
+          } catch {}
+        };
+        window.addEventListener('message', h);
+      });
+
+      addLog('📡 Sending GET_OFFERINGS...');
+      send({ type: 'GET_OFFERINGS' });
+      const off = await waitFor(['OFFERINGS_RESULT', 'OFFERINGS_ERROR']);
+      if (off.error) {
+        addLog('❌ GET_OFFERINGS: ' + off.error, 'error');
+      } else {
+        addLog('✅ Offerings received — type: ' + off.type, 'ok');
+        const pkgs = off.data?.current?.availablePackages || [];
+        addLog('  packages: ' + pkgs.length, pkgs.length > 0 ? 'ok' : 'error');
+        pkgs.forEach(p => addLog('    📦 ' + p.identifier + ' → ' + (p.product?.productIdentifier || '?')));
+        if (pkgs.length === 0) addLog('⚠️ No packages — check RevenueCat dashboard', 'warn');
+      }
+
+      addLog('📡 Sending GET_CUSTOMER_INFO...');
+      send({ type: 'GET_CUSTOMER_INFO' });
+      const ci = await waitFor(['CUSTOMER_INFO_RESULT', 'CUSTOMER_INFO_ERROR'], 10000);
+      if (ci.error) {
+        addLog('❌ GET_CUSTOMER_INFO: ' + ci.error, 'error');
+      } else {
+        addLog('✅ Customer info received', 'ok');
+        const ents = ci.data?.entitlements?.active || {};
+        const keys = Object.keys(ents);
+        addLog('  Active entitlements: ' + (keys.length ? keys.join(', ') : 'NONE'), keys.length ? 'ok' : 'warn');
+        const hasPro = !!ents['unfiltr by javier Pro'];
+        addLog('  "unfiltr by javier Pro": ' + (hasPro ? '✅ ACTIVE' : '❌ NOT ACTIVE'), hasPro ? 'ok' : 'error');
+      }
+    }
+    addLog('✅ Done.');
+    setIapTesting(false);
+  };
   const { products, loading, purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
   const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
@@ -350,6 +423,48 @@ export default function Pricing() {
           <RotateCcw size={14}/> Restore Previous Purchase
         </button>
 
+        {/* ── Debug Panel ── */}
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={() => setShowDebug(p => !p)} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:12, color:'rgba(255,255,255,0.3)', fontSize:12, padding:'10px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <span>🔧 IAP Debug</span>
+            <span>{showDebug ? '▲' : '▼'}</span>
+          </button>
+          {showDebug && (
+            <div style={{ background:'rgba(0,0,0,0.7)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:12, marginTop:6, padding:14, fontFamily:'monospace' }}>
+              <div style={{ marginBottom:10, display:'flex', gap:8 }}>
+                <button onClick={runIapDiagnostic} disabled={iapTesting}
+                  style={{ flex:1, padding:'9px 12px', borderRadius:10, border:'none', background: iapTesting ? 'rgba(168,85,247,0.3)' : 'rgba(168,85,247,0.8)', color:'white', fontSize:12, fontWeight:700, cursor: iapTesting ? 'not-allowed' : 'pointer' }}>
+                  {iapTesting ? '⏳ Running...' : '▶ Run IAP Diagnostic'}
+                </button>
+                <button onClick={() => setDebugLog([])} style={{ padding:'9px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'rgba(255,255,255,0.4)', fontSize:12, cursor:'pointer' }}>Clear</button>
+              </div>
+              <div style={{ marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:8 }}>
+                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:11, margin:'0 0 4px', fontWeight:700 }}>QUICK SNAPSHOT</p>
+                {[
+                  ['User ID',      localStorage.getItem('unfiltr_user_id')],
+                  ['Profile ID',   localStorage.getItem('userProfileId')],
+                  ['Premium',      localStorage.getItem('unfiltr_is_premium')],
+                  ['Display Name', localStorage.getItem('unfiltr_display_name')],
+                  ['Native Bridge',window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
+                ].map(([k,v]) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
+                    <span style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>{k}</span>
+                    <span style={{ color: v && v !== 'null' ? '#a855f7' : '#f87171', fontSize:11, maxWidth:'55%', textAlign:'right', wordBreak:'break-all' }}>{v || '—'}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ maxHeight:240, overflowY:'auto', display:'flex', flexDirection:'column', gap:2 }}>
+                {debugLog.length === 0 && <p style={{ color:'rgba(255,255,255,0.2)', fontSize:11, textAlign:'center', margin:'8px 0' }}>Tap "Run IAP Diagnostic" to start</p>}
+                {debugLog.map((e,i) => (
+                  <div key={i} style={{ fontSize:11, lineHeight:1.5, color: e.type==='error'?'#f87171':e.type==='warn'?'#fbbf24':e.type==='ok'?'#4ade80':'rgba(255,255,255,0.55)' }}>
+                    <span style={{ color:'rgba(255,255,255,0.2)', marginRight:6 }}>{e.ts}</span>{e.msg}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* ── Legal ── */}
         <div style={{ display:'flex', justifyContent:'center', gap:20, marginBottom:10 }}>
           <button onClick={() => navigate('/PrivacyPolicy')} style={{ background:'none', border:'none', color:'rgba(168,85,247,0.5)', fontSize:11, cursor:'pointer' }}>
@@ -368,3 +483,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
