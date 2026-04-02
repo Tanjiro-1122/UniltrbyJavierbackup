@@ -103,7 +103,7 @@ export default function Settings() {
   const [streak, setStreak]                   = useState(0);
   const [daysSince, setDaysSince]             = useState(0);
   const [moodHistory, setMoodHistory]         = useState([]);
-  const [isAdmin, setIsAdmin]                 = useState(false);
+  const [isAdmin, setIsAdmin]                 = useState(() => localStorage.getItem("unfiltr_admin_unlocked") === "true");
   const [tapCount, setTapCount]               = useState(0);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyCode, setFamilyCode]           = useState("");
@@ -141,8 +141,7 @@ export default function Settings() {
     const created = localStorage.getItem("unfiltr_companion_created");
     if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
     setMoodHistory(getMoodWeek());
-    // Admin section is now a standalone page — no in-app admin check needed
-    // setIsAdmin(false); // Kept for backwards compat but admin row hidden
+    if (localStorage.getItem("unfiltr_admin_unlocked") === "true") setIsAdmin(true);
     (async () => {
       try {
         const profileId = localStorage.getItem("userProfileId");
@@ -181,9 +180,19 @@ export default function Settings() {
   };
   const handleCodeSubmit = () => {
     if (adminCode.trim().toLowerCase() === "huertasfam") {
+      // Persist admin unlock permanently in localStorage
       localStorage.setItem("unfiltr_admin_unlocked", "true");
-      setIsAdmin(true); setShowCodeModal(false); setAdminCode(""); setCodeError("");
-    } else { setCodeError("Invalid code."); setAdminCode(""); }
+      sessionStorage.setItem("unfiltr_admin_session", "true");
+      setIsAdmin(true);
+      setShowCodeModal(false);
+      setAdminCode("");
+      setCodeError("");
+      // Navigate directly to the standalone admin page
+      navigate("/AdminDashboard");
+    } else {
+      setCodeError("Invalid code.");
+      setAdminCode("");
+    }
   };
   const handleFamilyCodeSubmit = async () => {
     if (familyCode.trim().toLowerCase() === "huertasfam") {
@@ -580,7 +589,7 @@ export default function Settings() {
         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
-        <div onClick={() => { const n = tapCount + 1; setTapCount(n); if (n >= 5) { setTapCount(0); setShowFamilyModal(true); } }} style={{ cursor: "default", userSelect: "none" }}>
+        <div onClick={handleTriquetraTap} style={{ cursor: "default", userSelect: "none" }}>
           <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ opacity: 0.5 }}>
             <path d="M50 15 C30 15 15 30 15 50 C15 65 25 77 38 82 C28 72 25 58 30 45 C35 32 46 25 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
             <path d="M50 15 C54 25 65 32 70 45 C75 58 72 72 62 82 C75 77 85 65 85 50 C85 30 70 15 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
@@ -744,6 +753,27 @@ export default function Settings() {
       </AnimatePresence>
 
 
+
+      {/* ── Admin Code Modal ── */}
+      <AnimatePresence>
+        {showCodeModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            onClick={() => { setShowCodeModal(false); setAdminCode(""); setCodeError(""); }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "#0d0520", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 300 }}>
+              <p style={{ color: "white", fontWeight: 700, fontSize: 17, textAlign: "center", margin: "0 0 6px" }}>🛡️ Admin Access</p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", margin: "0 0 18px" }}>Enter the admin code to unlock.</p>
+              <input type="password" value={adminCode} onChange={e => { setAdminCode(e.target.value); setCodeError(""); }}
+                onKeyDown={e => e.key === "Enter" && handleCodeSubmit()} placeholder="Admin code" autoFocus
+                style={{ width: "100%", padding: "13px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+              {codeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{codeError}</p>}
+              <button onClick={handleCodeSubmit} style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Unlock & Open Admin</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Pause Modal ── */}
       <AnimatePresence>
