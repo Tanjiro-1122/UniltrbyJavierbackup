@@ -1,132 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
 import { base44 } from '@/api/base44Client';
-import { Check, X, RotateCcw, ChevronLeft, Loader2, MessageCircle, Brain, BookOpen, Volume2, History, Zap, Shield } from 'lucide-react';
+import { Brain, MessageCircle, Mic, Zap, BookOpen, RotateCcw, Loader2, ChevronLeft } from 'lucide-react';
 import AppShell from '@/components/shell/AppShell';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function getMidnightCountdown() {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  const diff = midnight - now;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// ─── Plans ───────────────────────────────────────────────────────────────────
 
 const PLANS = [
   {
-    id: 'plus',
-    productId: 'com.huertas.unfiltr.pro.monthly',
-    label: 'Plus',
-    price: '$9.99',
-    period: 'per month',
-    badge: null,
-    color: '#a855f7',
-    glow: 'rgba(168,85,247,0.3)',
-    bg: 'rgba(124,58,237,0.12)',
-    border: 'rgba(168,85,247,0.45)',
-    emoji: '💜',
-    tagline: 'Perfect for regular connection',
-    bullets: [
-      { icon: MessageCircle, text: '100 messages/day' },
-      { icon: MessageCircle, text: 'Up to 3,000 msgs/month' },
-      { icon: Brain,         text: 'Memory — companion remembers you' },
-      { icon: History,       text: 'Full conversation history' },
-      { icon: Volume2,       text: 'Voice responses (TTS)' },
-      { icon: BookOpen,      text: 'Journal mode — 30 entries/month' },
-    ],
+    id: 'annual',
+    productId: 'com.huertas.unfiltr.pro.annual',
+    label: '$59.99 / year',
+    sub: 'Save 50% — only $5/mo · Cancel anytime',
+    badge: 'BEST VALUE 🔥',
+    badgeBg: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+    isAnnual: true,
+    isPro: false,
   },
   {
     id: 'pro',
     productId: 'com.huertas.unfiltr.tier.pro',
-    label: 'Pro',
-    price: '$14.99',
-    period: 'per month',
-    badge: 'MOST POPULAR',
-    color: '#f59e0b',
-    glow: 'rgba(245,158,11,0.3)',
-    bg: 'rgba(245,158,11,0.10)',
-    border: 'rgba(245,158,11,0.55)',
-    emoji: '⚡',
-    tagline: 'For those who need more',
-    bullets: [
-      { icon: MessageCircle, text: '250 messages/day' },
-      { icon: MessageCircle, text: 'Up to 7,500 msgs/month' },
-      { icon: Brain,         text: 'Memory — companion remembers you' },
-      { icon: History,       text: 'Full conversation history' },
-      { icon: Volume2,       text: 'Voice responses (TTS)' },
-      { icon: BookOpen,      text: 'Journal mode — 100 entries/month' },
-      { icon: Zap,           text: 'Priority response speed' },
-    ],
+    label: '$14.99 / month',
+    sub: '250 msgs/day · Priority speed · 100 journal entries',
+    badge: 'MOST POPULAR ⚡',
+    badgeBg: 'linear-gradient(135deg,#f59e0b,#a855f7)',
+    isAnnual: false,
+    isPro: true,
   },
   {
-    id: 'annual',
-    productId: 'com.huertas.unfiltr.pro.annual',
-    label: 'Yearly',
-    price: '$59.99',
-    period: 'per year',
-    badge: 'BEST VALUE',
-    color: '#22d3ee',
-    glow: 'rgba(34,211,238,0.3)',
-    bg: 'rgba(6,182,212,0.10)',
-    border: 'rgba(34,211,238,0.45)',
-    emoji: '🌟',
-    tagline: 'Only $5/mo — save 67%',
-    bullets: [
-      { icon: MessageCircle, text: 'Truly unlimited messages' },
-      { icon: BookOpen,      text: 'Unlimited journal entries' },
-      { icon: Brain,         text: 'Memory — companion remembers everything' },
-      { icon: History,       text: 'Full conversation history' },
-      { icon: Volume2,       text: 'Voice responses (TTS)' },
-      { icon: Zap,           text: 'Priority response speed' },
-      { icon: Shield,        text: 'Everything in Pro — forever' },
-    ],
+    id: 'monthly',
+    productId: 'com.huertas.unfiltr.pro.monthly',
+    label: '$9.99 / month',
+    sub: '100 msgs/day · Auto-renews monthly',
+    badge: null,
+    isAnnual: false,
+    isPro: false,
   },
 ];
 
-const FREE_FEATURES = [
-  { text: '20 messages/day', ok: true },
-  { text: 'All 12 companions', ok: true },
-  { text: 'All mood modes', ok: true },
-  { text: 'Memory (resets each session)', ok: false },
-  { text: 'Conversation history', ok: false },
-  { text: 'Voice responses', ok: false },
-  { text: 'Journal mode', ok: false },
+const PERKS = [
+  { icon: Brain,         label: 'Memory — your companion finally knows you' },
+  { icon: MessageCircle, label: 'Unlimited messages, every day' },
+  { icon: Mic,           label: 'Voice responses (TTS)' },
+  { icon: BookOpen,      label: 'Full conversation history' },
+  { icon: Zap,           label: 'Priority responses' },
 ];
 
-const BADGE_COLORS = {
-  'MOST POPULAR': 'linear-gradient(135deg,#f59e0b,#ef4444)',
-  'BEST VALUE':   'linear-gradient(135deg,#06b6d4,#6366f1)',
-};
+// ─── IAP Debug Panel ─────────────────────────────────────────────────────────
 
-export default function Pricing() {
-  const [selectedPlan, setSelectedPlan] = useState('pro');
-  const [appleSignInPending, setAppleSignInPending] = useState(false);
-  const [appleSignInDone, setAppleSignInDone] = useState(
-    !!localStorage.getItem('unfiltr_apple_user_id')
-  );
-  const [upgraded, setUpgraded]         = useState(false);
-  const [restoreSuccess, setRestoreSuccess] = useState(false);
-  const [showDebug, setShowDebug]   = useState(false);
-  const [headerTaps, setHeaderTaps] = useState(0);
-  const handleHeaderTap = () => {
-    setHeaderTaps(n => {
-      const next = n + 1;
-      if (next >= 5) { setShowDebug(true); return 0; }
-      return next;
-    });
-  };
-  const [debugLog, setDebugLog]     = useState([]);
-  const [iapTesting, setIapTesting] = useState(false);
+function IAPDebugPanel({ onClose }) {
+  const [log, setLog] = useState([]);
+  const [running, setRunning] = useState(false);
 
   const addLog = (msg, type = 'info') => {
     const ts = new Date().toLocaleTimeString();
-    setDebugLog(prev => [...prev, { ts, msg, type }]);
-    console.log('[UNFILTR IAP]', ts, msg);
+    setLog(prev => [...prev, { ts, msg, type }]);
   };
 
-  const runIapDiagnostic = async () => {
-    setIapTesting(true);
-    setDebugLog([]);
+  const runDiag = async () => {
+    setRunning(true);
+    setLog([]);
     addLog('🚀 Starting IAP diagnostic...');
-
-    const hasRNWV = !!(window.ReactNativeWebView);
-    const hasWTN  = !!(window.webkit?.messageHandlers?.ReactNativeWebView);
+    const hasRNWV = !!window.ReactNativeWebView;
+    const hasWTN  = !!window.webkit?.messageHandlers?.ReactNativeWebView;
     addLog('ReactNativeWebView: ' + (hasRNWV ? '✅ FOUND' : '❌ NOT FOUND'), hasRNWV ? 'ok' : 'error');
     addLog('webkit.messageHandlers: ' + (hasWTN ? '✅ FOUND' : '❌ NOT FOUND'), hasWTN ? 'ok' : 'error');
-    if (!hasRNWV && !hasWTN) addLog('⚠️ No native bridge — running in web browser, not iOS wrapper', 'warn');
 
     addLog('--- localStorage ---');
     ['unfiltr_is_premium','unfiltr_user_id','userProfileId','unfiltr_display_name','unfiltr_onboarding_complete'].forEach(k => {
@@ -140,7 +92,7 @@ export default function Pricing() {
         else window.webkit.messageHandlers.ReactNativeWebView.postMessage(JSON.stringify(msg));
       };
       const waitFor = (types, timeout = 15000) => new Promise(resolve => {
-        const t = setTimeout(() => resolve({ error: 'TIMEOUT after ' + (timeout/1000) + 's' }), timeout);
+        const t = setTimeout(() => resolve({ error: 'TIMEOUT after ' + (timeout / 1000) + 's' }), timeout);
         const h = (e) => {
           try {
             const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
@@ -156,415 +108,340 @@ export default function Pricing() {
       if (off.error) {
         addLog('❌ GET_OFFERINGS: ' + off.error, 'error');
       } else {
-        addLog('✅ Offerings received — type: ' + off.type, 'ok');
         const pkgs = off.data?.current?.availablePackages || [];
-        addLog('  packages: ' + pkgs.length, pkgs.length > 0 ? 'ok' : 'error');
-        pkgs.forEach(p => addLog('    📦 ' + p.identifier + ' → ' + (p.product?.productIdentifier || '?')));
-        if (pkgs.length === 0) addLog('⚠️ No packages — check RevenueCat dashboard', 'warn');
+        addLog('✅ Offerings: ' + pkgs.length + ' packages', pkgs.length > 0 ? 'ok' : 'warn');
+        pkgs.forEach(p => addLog('    📦 ' + p.identifier));
       }
 
       addLog('📡 Sending GET_CUSTOMER_INFO...');
       send({ type: 'GET_CUSTOMER_INFO' });
-      const ci = await waitFor(['CUSTOMER_INFO_RESULT', 'CUSTOMER_INFO_ERROR'], 10000);
+      const ci = await waitFor(['CUSTOMER_INFO_RESULT'], 10000);
       if (ci.error) {
         addLog('❌ GET_CUSTOMER_INFO: ' + ci.error, 'error');
       } else {
-        addLog('✅ Customer info received', 'ok');
-        const ents = ci.data?.entitlements?.active || {};
-        const keys = Object.keys(ents);
-        addLog('  Active entitlements: ' + (keys.length ? keys.join(', ') : 'NONE'), keys.length ? 'ok' : 'warn');
-        const hasPro = !!ents['unfiltr by javier Pro'];
-        addLog('  "unfiltr by javier Pro": ' + (hasPro ? '✅ ACTIVE' : '❌ NOT ACTIVE'), hasPro ? 'ok' : 'error');
+        const ents = Object.keys(ci.data?.entitlements?.active || {});
+        addLog('✅ Entitlements: ' + (ents.length ? ents.join(', ') : 'NONE'), ents.length ? 'ok' : 'warn');
       }
     }
     addLog('✅ Done.');
-    setIapTesting(false);
+    setRunning(false);
   };
-  const { products, loading, purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
-  const navigate    = useNavigate();
+
+  const colorFor = (t) => t === 'ok' ? '#4ade80' : t === 'error' ? '#f87171' : t === 'warn' ? '#fbbf24' : '#a78bfa';
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.85)',
+      display: 'flex', flexDirection: 'column', padding: 16,
+      paddingTop: 'max(48px, env(safe-area-inset-top, 48px))',
+      paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ color: '#a78bfa', fontWeight: 700, fontSize: 16 }}>🔧 IAP Diagnostic</span>
+        <button onClick={onClose} style={{ color: 'white', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Close</button>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 12 }}>
+        <p style={{ color: '#a78bfa', fontWeight: 700, margin: '0 0 6px' }}>QUICK SNAPSHOT</p>
+        {[
+          ['User ID', localStorage.getItem('unfiltr_user_id')],
+          ['Profile ID', localStorage.getItem('userProfileId')],
+          ['Premium', localStorage.getItem('unfiltr_is_premium')],
+          ['Display Name', localStorage.getItem('unfiltr_display_name')],
+          ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
+        ].map(([k, v]) => (
+          <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{k}</span>
+            <span style={{ color: v && v !== 'null' ? '#4ade80' : '#f87171' }}>{v || '—'}</span>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={runDiag}
+        disabled={running}
+        style={{
+          background: 'linear-gradient(135deg,#7c3aed,#db2777)', color: 'white',
+          border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 700,
+          marginBottom: 12, cursor: 'pointer', opacity: running ? 0.6 : 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}
+      >
+        {running ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Running...</> : '▶ Run IAP Diagnostic'}
+      </button>
+      <div style={{ flex: 1, overflowY: 'auto', fontFamily: 'monospace', fontSize: 11 }}>
+        {log.map((l, i) => (
+          <p key={i} style={{ margin: '2px 0', color: colorFor(l.type) }}>
+            <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 6 }}>{l.ts}</span>{l.msg}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Admin Panel ──────────────────────────────────────────────────────────────
+
+function AdminPanel({ onClose, navigate }) {
+  const [code, setCode] = useState('');
+  const [err, setErr] = useState('');
+
+  const submit = () => {
+    if (code.trim().toLowerCase() === 'javier1122admin') {
+      localStorage.setItem('unfiltr_admin_unlocked', 'true');
+      sessionStorage.setItem('unfiltr_admin_session', 'true');
+      onClose();
+      navigate('/AdminDashboard');
+    } else if (code.trim().toLowerCase() === 'huertasfam') {
+      const profileId = localStorage.getItem('userProfileId');
+      if (profileId) {
+        base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: true });
+      }
+      localStorage.setItem('unfiltr_is_premium', 'true');
+      localStorage.setItem('unfiltr_is_annual', 'true');
+      onClose();
+      alert('✅ Family access unlocked!');
+    } else {
+      setErr('Invalid code');
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: '#1a0a35', borderRadius: 20, padding: 28, width: '100%', maxWidth: 340, border: '1px solid rgba(168,85,247,0.3)' }}>
+        <p style={{ color: 'white', fontWeight: 700, fontSize: 18, textAlign: 'center', marginBottom: 6 }}>🔐 Admin Access</p>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textAlign: 'center', marginBottom: 20 }}>Enter the admin code to unlock.</p>
+        <input
+          type="password"
+          value={code}
+          onChange={e => { setCode(e.target.value); setErr(''); }}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder="Enter code..."
+          style={{ width: '100%', padding: '12px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(168,85,247,0.3)', color: 'white', fontSize: 15, marginBottom: 8, boxSizing: 'border-box' }}
+        />
+        {err && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{err}</p>}
+        <button onClick={submit} style={{ width: '100%', padding: '13px 0', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#db2777)', color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', marginBottom: 10 }}>Unlock</button>
+        <button onClick={onClose} style={{ width: '100%', padding: '12px 0', borderRadius: 12, background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: 'none', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function Pricing() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const meta = PLANS.find(p => p.id === selectedPlan);
+  const [planType, setPlanType]   = useState('annual');
+  const [countdown, setCountdown] = useState(getMidnightCountdown());
+  const [tab, setTab]             = useState('upgrade');
+  const [showDebug, setShowDebug] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [tapCount, setTapCount]   = useState(0);
+  const tapTimer                  = useRef(null);
 
-  // Always resolve productId — live RC products first, hardcoded fallback always available
-  const resolvedProductId = (() => {
-    if (products && products.length > 0) {
-      const match = products.find(p =>
-        selectedPlan === 'annual'  ? p.productId?.includes('annual')
-        : selectedPlan === 'pro'  ? p.productId?.includes('tier.pro')
-        : p.productId?.includes('monthly')
-      );
-      if (match) return match.productId;
-    }
-    // Hardcoded fallback — always works even if RevenueCat hasn't loaded
-    const hardcoded = {
-      plus:   'com.huertas.unfiltr.pro.monthly',
-      pro:    'com.huertas.unfiltr.tier.pro',
-      annual: 'com.huertas.unfiltr.pro.annual',
-    };
-    return hardcoded[selectedPlan] || meta?.productId || 'com.huertas.unfiltr.pro.monthly';
-  })();
+  const { purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
 
-  const handleRestore = async () => {
-    try {
-      const r = await restore();
-      if (r?.success) { setRestoreSuccess(true); setUpgraded(true); }
-    } catch {}
-  };
-
-  React.useEffect(() => {
-    if (searchParams.get('restore') === 'true') setTimeout(handleRestore, 500);
-    loadProducts(); // only fetch when pricing page opens
+  useEffect(() => {
+    const t = setInterval(() => setCountdown(getMidnightCountdown()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  // Sign in with Apple — requests native bridge, waits for response
-  const requestAppleSignIn = () => {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Apple sign-in timeout')), 60000);
+  useEffect(() => {
+    loadProducts();
+    if (searchParams.get('restore') === 'true') setTimeout(handleRestore, 500);
+  }, []);
 
-      const handler = async (e) => {
-        const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (msg.type === 'APPLE_SIGN_IN_SUCCESS') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handler);
-          try {
-            // Call backend to find/create profile
-            const res = await fetch('/api/appleAuth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                appleUserId: msg.data.appleUserId,
-                email: msg.data.email,
-                fullName: msg.data.fullName,
-                displayName: localStorage.getItem('unfiltr_display_name'),
-              }),
-            });
-            const result = await res.json();
-            if (result.ok) {
-              localStorage.setItem('unfiltr_apple_user_id', msg.data.appleUserId);
-              localStorage.setItem('userProfileId', result.profileId);
-              localStorage.setItem('unfiltr_user_id', result.profileId);
-              localStorage.setItem('unfiltr_auth_token', result.profileId);
-              if (result.displayName) localStorage.setItem('unfiltr_display_name', result.displayName);
-              window.dispatchEvent(new Event('unfiltr_auth_updated'));
-              resolve(result);
-            } else {
-              reject(new Error(result.error || 'Auth failed'));
-            }
-          } catch (err) { reject(err); }
-        }
-        if (msg.type === 'APPLE_SIGN_IN_CANCELLED') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handler);
-          reject(new Error('cancelled'));
-        }
-        if (msg.type === 'APPLE_SIGN_IN_ERROR') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handler);
-          reject(new Error(msg.error || 'Apple sign-in failed'));
-        }
-      };
+  const selectedPlan = PLANS.find(p => p.id === planType) || PLANS[0];
 
-      window.addEventListener('message', handler);
-
-      // Send to native bridge
-      const bridgeMsg = JSON.stringify({ type: 'SIGN_IN_WITH_APPLE' });
-      if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(bridgeMsg);
-      else if (window.webkit?.messageHandlers?.ReactNativeWebView)
-        window.webkit.messageHandlers.ReactNativeWebView.postMessage(bridgeMsg);
-      else {
-        clearTimeout(timeout);
-        window.removeEventListener('message', handler);
-        reject(new Error('no_bridge'));
-      }
-    });
+  // 5 taps on ✨ → admin panel
+  const handleSparkTap = () => {
+    const next = tapCount + 1;
+    setTapCount(next);
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (next >= 5) {
+      setTapCount(0);
+      setShowAdmin(true);
+    } else {
+      tapTimer.current = setTimeout(() => setTapCount(0), 2000);
+    }
   };
 
   const handleSubscribe = async () => {
-    try {
-      // NOTE: Sign in with Apple is wired but requires the April 23rd iOS wrapper build.
-      // For now, skip it and go straight to purchase so the IAP flow works immediately.
-      console.log('[subscribe] Purchasing productId:', resolvedProductId, 'for plan:', selectedPlan);
-      const result = await purchase(resolvedProductId);
-      if (result?.success) {
-        const pid = localStorage.getItem('userProfileId');
-        if (pid) {
-          const isAnnual = selectedPlan === 'annual';
-          const isPro    = selectedPlan === 'pro';
-          await base44.entities.UserProfile.update(pid, {
-            is_premium: true, premium: true,
-            annual_plan: isAnnual, pro_plan: isPro,
-          });
-          localStorage.setItem('unfiltr_is_premium', 'true');
-          localStorage.setItem('unfiltr_is_annual',  String(isAnnual));
-          localStorage.setItem('unfiltr_is_pro',     String(isPro));
-        }
-        setUpgraded(true);
+    const result = await purchase(selectedPlan.productId);
+    if (result?.success) {
+      const profileId = localStorage.getItem('userProfileId');
+      if (profileId) {
+        await base44.entities.UserProfile.update(profileId, {
+          is_premium:  true,
+          annual_plan: selectedPlan.isAnnual,
+          pro_plan:    selectedPlan.isPro,
+        });
+        localStorage.setItem('unfiltr_is_premium', 'true');
+        localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
+        localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
       }
-    } catch (e) {
-      console.error('[subscribe]', e);
-    } finally {
-      setAppleSignInPending(false);
+      navigate(-1);
     }
   };
 
-  /* ── Success screen ─────────────────────────────────────────────────────── */
-  if (upgraded) return (
-    <AppShell tabs={false} bg="radial-gradient(ellipse at center,#1a0533 0%,#0d0520 60%,#06020f 100%)">
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                    height:'100%', padding:32, textAlign:'center' }}>
-        <div style={{ fontSize:80, marginBottom:20 }}>{restoreSuccess ? '🔄' : meta?.emoji || '💜'}</div>
-        <h2 style={{ color:'white', fontWeight:800, fontSize:28, margin:'0 0 12px' }}>
-          {restoreSuccess ? 'Purchases Restored!' : `You're on ${meta?.label}!`}
-        </h2>
-        <p style={{ color:'rgba(255,255,255,0.55)', fontSize:15, margin:'0 0 36px', lineHeight:1.6 }}>
-          {restoreSuccess ? 'Your access has been restored.' : "Your companion is ready. Let's talk 💜"}
-        </p>
-        <button onClick={() => navigate('/hub')} style={{
-          background:'linear-gradient(135deg,#7c3aed,#db2777)',
-          border:'none', borderRadius:18, padding:'16px 44px',
-          color:'white', fontWeight:800, fontSize:17, cursor:'pointer',
-          boxShadow:'0 6px 24px rgba(124,58,237,0.5)',
-        }}>Let's Go →</button>
-      </div>
-    </AppShell>
-  );
+  const handleRestore = async () => {
+    const result = await restore();
+    if (result?.success) {
+      const profileId = localStorage.getItem('userProfileId');
+      if (profileId) {
+        const profile = await base44.entities.UserProfile.get(profileId);
+        if (profile?.is_premium) navigate(-1);
+      }
+    }
+  };
 
-  /* ── Main page ──────────────────────────────────────────────────────────── */
   return (
-    <AppShell tabs={false} bg="radial-gradient(ellipse at center,#1a0533 0%,#0d0520 60%,#06020f 100%)">
+    <AppShell hideNav>
+      {showDebug && <IAPDebugPanel onClose={() => setShowDebug(false)} />}
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} navigate={navigate} />}
 
-      {/* Back */}
-      <div style={{ flexShrink:0, padding:'max(16px,env(safe-area-inset-top)) 16px 0' }}>
-        <button onClick={() => navigate(-1)} style={{
-          display:'flex', alignItems:'center', gap:4,
-          background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)',
-          borderRadius:12, padding:'8px 14px', cursor:'pointer', color:'white', fontSize:14, fontWeight:600,
-        }}>
-          <ChevronLeft size={16}/> Back
-        </button>
-      </div>
+      <div style={{
+        minHeight: '100dvh',
+        background: 'linear-gradient(180deg,#1a0a35 0%,#0d0520 100%)',
+        display: 'flex', flexDirection: 'column',
+        paddingTop: 'max(16px, env(safe-area-inset-top, 16px))',
+        paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+      }}>
 
-      <div className="scroll-area" style={{ padding:'20px 18px', paddingBottom:100 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 16px' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          ><ChevronLeft size={18} color="white" /></button>
 
-        {/* ── Header ── */}
-        <div style={{ textAlign:'center', marginBottom:28 }}>
-          <div onClick={handleHeaderTap} style={{ fontSize:52, marginBottom:10, filter:'drop-shadow(0 0 20px rgba(168,85,247,0.6))', cursor:'default', userSelect:'none' }}>✨</div>
-          <h1 style={{ color:'white', fontWeight:900, fontSize:28, margin:'0 0 8px', letterSpacing:-0.5 }}>
-            Upgrade Unfiltr
-          </h1>
-          <p style={{ color:'rgba(255,255,255,0.45)', fontSize:14, margin:0, lineHeight:1.5 }}>
-            Deeper connection. Real memory. No limits.
-          </p>
+          {/* 5-tap secret: ✨ emoji */}
+          <span onClick={handleSparkTap} style={{ fontSize: 22, cursor: 'pointer', userSelect: 'none' }}>✨</span>
+
+          {/* Hidden debug button — tiny, transparent */}
+          <button onClick={() => setShowDebug(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>·</button>
         </div>
 
-        {/* ── Free tier ── */}
-        <div style={{
-          borderRadius:18, padding:'16px 16px', marginBottom:16,
-          background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
-        }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-            <div>
-              <div style={{ color:'rgba(255,255,255,0.9)', fontWeight:700, fontSize:17 }}>🆓 Free</div>
-              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:12, marginTop:2 }}>Always free, always here</div>
-            </div>
-            <div style={{ textAlign:'right' }}>
-              <div style={{ color:'white', fontWeight:900, fontSize:24 }}>$0</div>
-              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>forever</div>
-            </div>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-            {FREE_FEATURES.map(({ text, ok }) => (
-              <div key={text} style={{ display:'flex', alignItems:'center', gap:9 }}>
-                <div style={{
-                  width:17, height:17, borderRadius:'50%', flexShrink:0,
-                  background: ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.12)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                }}>
-                  {ok ? <Check size={9} color="#22c55e"/> : <X size={9} color="#ef4444"/>}
-                </div>
-                <span style={{ fontSize:12.5, color: ok ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.28)', lineHeight:1.3 }}>{text}</span>
-              </div>
+        <div style={{ padding: '0 20px', flex: 1 }}>
+
+          {/* Tab toggle */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, padding: 4, borderRadius: 14, background: 'rgba(255,255,255,0.05)' }}>
+            {[['upgrade','✨ Upgrade'],['wait','⏳ Wait']].map(([id, label]) => (
+              <button key={id} onClick={() => setTab(id)} style={{
+                flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                fontWeight: 700, fontSize: 14,
+                background: tab === id ? (id === 'upgrade' ? 'linear-gradient(135deg,#7c3aed,#db2777)' : 'rgba(255,255,255,0.1)') : 'transparent',
+                color: tab === id ? 'white' : 'rgba(255,255,255,0.4)',
+                boxShadow: tab === id && id === 'upgrade' ? '0 0 12px rgba(168,85,247,0.4)' : 'none',
+              }}>{label}</button>
             ))}
           </div>
-        </div>
 
-        {/* ── Plan tab selector ── */}
-        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          {PLANS.map(p => (
-            <button key={p.id} onClick={() => setSelectedPlan(p.id)} style={{
-              flex:1, padding:'11px 4px', paddingTop: p.badge ? 18 : 11, borderRadius:14,
-              border:`2px solid ${selectedPlan === p.id ? p.border : 'rgba(255,255,255,0.07)'}`,
-              background: selectedPlan === p.id ? p.bg : 'rgba(255,255,255,0.02)',
-              cursor:'pointer', transition:'all 0.18s', position:'relative',
-              marginTop: p.badge ? 8 : 0,
-            }}>
-              {p.badge && (
-                <div style={{
-                  position:'absolute', top:-8, left:'50%', transform:'translateX(-50%)',
-                  background: BADGE_COLORS[p.badge], borderRadius:6, padding:'2px 7px',
-                  fontSize:8, fontWeight:800, color:'white', whiteSpace:'nowrap', letterSpacing:0.3,
-                }}>
-                  {p.badge}
-                </div>
-              )}
-              <div style={{ color: selectedPlan === p.id ? 'white' : 'rgba(255,255,255,0.4)', fontWeight:700, fontSize:12 }}>{p.label}</div>
-              <div style={{ color: selectedPlan === p.id ? p.color : 'rgba(255,255,255,0.25)', fontWeight:800, fontSize:14, marginTop:2 }}>{p.price}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* ── Plan detail card ── */}
-        {meta && (
-          <div style={{
-            borderRadius:20, padding:'20px 18px', marginBottom:20,
-            background: meta.bg, border:`1.5px solid ${meta.border}`,
-            boxShadow:`0 0 32px ${meta.glow}`, position:'relative', overflow:'hidden',
-          }}>
-            {meta.badge && (
-              <div style={{
-                position:'absolute', top:14, right:14,
-                background: BADGE_COLORS[meta.badge], borderRadius:8, padding:'4px 10px',
-                fontSize:10, fontWeight:800, color:'white', letterSpacing:0.4,
-              }}>
-                <span style={{ color:'white', fontWeight:800, fontSize:11 }}>{meta.badge} {meta.id === 'pro' ? '🔥' : '💎'}</span>
+          {tab === 'upgrade' && (
+            <>
+              {/* Hero */}
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
+                <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22, margin: '0 0 6px' }}>You've hit your limit</h2>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: 0 }}>You've used all 20 free messages today. Upgrade to keep chatting — no limits, ever.</p>
               </div>
-            )}
 
-            {/* Plan header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18, marginTop: meta.badge ? 28 : 0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ fontSize:38 }}>{meta.emoji}</div>
-                <div>
-                  <div style={{ color:'white', fontWeight:800, fontSize:20 }}>{meta.label}</div>
-                  <div style={{ color:'rgba(255,255,255,0.45)', fontSize:12, marginTop:2 }}>{meta.tagline}</div>
-                </div>
+              {/* Perks */}
+              <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {PERKS.map(({ icon: Icon, label }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={16} color="#a78bfa" />
+                    </div>
+                    <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, margin: 0 }}>{label}</p>
+                  </div>
+                ))}
               </div>
-              <div style={{ textAlign:'right' }}>
-                <div style={{ color: meta.color, fontWeight:900, fontSize:28, lineHeight:1 }}>{meta.price}</div>
-                <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11, marginTop:3 }}>{meta.period}</div>
-              </div>
-            </div>
 
-            {/* Divider */}
-            <div style={{ height:1, background:'rgba(255,255,255,0.08)', marginBottom:16 }}/>
-
-            {/* Feature list */}
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {meta.bullets.map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display:'flex', alignItems:'center', gap:11 }}>
-                  <div style={{
-                    width:28, height:28, borderRadius:8, flexShrink:0,
-                    background:`rgba(${meta.color === '#a855f7' ? '168,85,247' : meta.color === '#f59e0b' ? '245,158,11' : '34,211,238'},0.15)`,
-                    display:'flex', alignItems:'center', justifyContent:'center',
+              {/* Plans */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {PLANS.map(plan => (
+                  <button key={plan.id} onClick={() => setPlanType(plan.id)} style={{
+                    width: '100%', padding: '14px 16px', borderRadius: 14, textAlign: 'left',
+                    background: planType === plan.id ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.04)',
+                    border: `2px solid ${planType === plan.id ? 'rgba(124,58,237,0.7)' : 'rgba(255,255,255,0.08)'}`,
+                    cursor: 'pointer', position: 'relative',
                   }}>
-                    <Icon size={13} color={meta.color}/>
-                  </div>
-                  <span style={{ color:'rgba(255,255,255,0.88)', fontSize:13.5, lineHeight:1.3 }}>{text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── CTA button ── */}
-        <button
-          onClick={handleSubscribe}
-          disabled={purchasing || appleSignInPending}
-          style={{
-            width:'100%', padding:'18px', borderRadius:18,
-            background: (purchasing || appleSignInPending)
-              ? 'rgba(255,255,255,0.08)'
-              : `linear-gradient(135deg,${meta?.color || '#a855f7'} 0%,#db2777 100%)`,
-            border:'none', cursor: (purchasing || appleSignInPending) ? 'wait' : 'pointer',
-            color:'white', fontWeight:800, fontSize:16,
-            display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-            marginBottom:10, transition:'all 0.2s',
-            boxShadow: purchasing ? 'none' : `0 6px 24px ${meta?.glow || 'rgba(168,85,247,0.4)'}`,
-          }}
-        >
-          {purchasing
-            ? <><Loader2 size={18} style={{ animation:'spin 1s linear infinite' }}/> Processing...</>
-            : `Start ${meta?.label} — ${meta?.price} ${meta?.id === 'annual' ? '/yr' : '/mo'}`
-          }
-        </button>
-
-        {statusMessage && (
-          <p style={{ color:'rgba(255,255,255,0.4)', fontSize:12, textAlign:'center', margin:'0 0 10px' }}>{statusMessage}</p>
-        )}
-        {error && (
-          <p style={{ color:'#f87171', fontSize:12, textAlign:'center', margin:'0 0 10px' }}>{error}</p>
-        )}
-
-        {/* ── Restore ── */}
-        <button onClick={handleRestore} style={{
-          width:'100%', padding:'13px', borderRadius:14,
-          background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)',
-          color:'rgba(255,255,255,0.45)', fontSize:13, cursor:'pointer', fontWeight:600,
-          display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginBottom:24,
-        }}>
-          <RotateCcw size={14}/> Restore Previous Purchase
-        </button>
-
-        {/* ── Debug Panel — hidden, unlock by tapping ✨ 5x ── */}
-        <div style={{ marginBottom: 16 }}>
-          {showDebug && (
-            <div style={{ background:'rgba(0,0,0,0.7)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:12, marginTop:6, padding:14, fontFamily:'monospace' }}>
-              <div style={{ marginBottom:10, display:'flex', gap:8 }}>
-                <button onClick={runIapDiagnostic} disabled={iapTesting}
-                  style={{ flex:1, padding:'9px 12px', borderRadius:10, border:'none', background: iapTesting ? 'rgba(168,85,247,0.3)' : 'rgba(168,85,247,0.8)', color:'white', fontSize:12, fontWeight:700, cursor: iapTesting ? 'not-allowed' : 'pointer' }}>
-                  {iapTesting ? '⏳ Running...' : '▶ Run IAP Diagnostic'}
-                </button>
-                <button onClick={() => setDebugLog([])} style={{ padding:'9px 12px', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'rgba(255,255,255,0.4)', fontSize:12, cursor:'pointer' }}>Clear</button>
-              </div>
-              <div style={{ marginBottom:10, padding:'8px 10px', background:'rgba(255,255,255,0.03)', borderRadius:8 }}>
-                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:11, margin:'0 0 4px', fontWeight:700 }}>QUICK SNAPSHOT</p>
-                {[
-                  ['User ID',      localStorage.getItem('unfiltr_user_id')],
-                  ['Profile ID',   localStorage.getItem('userProfileId')],
-                  ['Premium',      localStorage.getItem('unfiltr_is_premium')],
-                  ['Display Name', localStorage.getItem('unfiltr_display_name')],
-                  ['Native Bridge',window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
-                ].map(([k,v]) => (
-                  <div key={k} style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
-                    <span style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>{k}</span>
-                    <span style={{ color: v && v !== 'null' ? '#a855f7' : '#f87171', fontSize:11, maxWidth:'55%', textAlign:'right', wordBreak:'break-all' }}>{v || '—'}</span>
-                  </div>
+                    {plan.badge && (
+                      <div style={{ position: 'absolute', top: -10, right: 12, background: plan.badgeBg, borderRadius: 999, padding: '2px 10px' }}>
+                        <span style={{ color: 'white', fontWeight: 800, fontSize: 10 }}>{plan.badge}</span>
+                      </div>
+                    )}
+                    <p style={{ color: 'white', fontWeight: 700, fontSize: 15, margin: 0 }}>{plan.label}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, margin: '2px 0 0' }}>{plan.sub}</p>
+                  </button>
                 ))}
               </div>
-              <div style={{ maxHeight:240, overflowY:'auto', display:'flex', flexDirection:'column', gap:2 }}>
-                {debugLog.length === 0 && <p style={{ color:'rgba(255,255,255,0.2)', fontSize:11, textAlign:'center', margin:'8px 0' }}>Tap "Run IAP Diagnostic" to start</p>}
-                {debugLog.map((e,i) => (
-                  <div key={i} style={{ fontSize:11, lineHeight:1.5, color: e.type==='error'?'#f87171':e.type==='warn'?'#fbbf24':e.type==='ok'?'#4ade80':'rgba(255,255,255,0.55)' }}>
-                    <span style={{ color:'rgba(255,255,255,0.2)', marginRight:6 }}>{e.ts}</span>{e.msg}
-                  </div>
-                ))}
+
+              {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{error}</p>}
+              {statusMessage && <p style={{ color: '#a78bfa', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{statusMessage}</p>}
+
+              {/* CTA */}
+              <button
+                onClick={handleSubscribe}
+                disabled={purchasing}
+                style={{
+                  width: '100%', padding: '16px 0', borderRadius: 16,
+                  background: 'linear-gradient(135deg,#7c3aed,#a855f7,#db2777)',
+                  boxShadow: '0 0 24px rgba(168,85,247,0.4)',
+                  color: 'white', fontWeight: 700, fontSize: 17,
+                  border: 'none', cursor: 'pointer', marginBottom: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: purchasing ? 0.6 : 1,
+                }}
+              >
+                {purchasing
+                  ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
+                  : `Start ${planType === 'annual' ? 'Annual' : planType === 'pro' ? 'Pro' : 'Plus'} — ${selectedPlan.label.split(' ')[0]}`}
+              </button>
+
+              <button onClick={handleRestore} style={{
+                width: '100%', padding: '12px 0', borderRadius: 14,
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)',
+                border: 'none', cursor: 'pointer', fontSize: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}>
+                <RotateCcw size={14} /> Restore Previous Purchase
+              </button>
+
+              <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, textAlign: 'center', marginTop: 16 }}>
+                Subscriptions auto-renew unless cancelled at least 24 hours before the end of the billing period.
+              </p>
+            </>
+          )}
+
+          {tab === 'wait' && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 40, gap: 16 }}>
+              <div style={{ fontSize: 48 }}>⏳</div>
+              <h3 style={{ color: 'white', fontWeight: 700, fontSize: 20, margin: 0 }}>Messages reset at midnight</h3>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' }}>
+                Your free messages reset every day at midnight. Come back then or upgrade now for unlimited access.
+              </p>
+              <div style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 16, padding: '20px 32px', textAlign: 'center' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: '0 0 6px' }}>Time until reset</p>
+                <p style={{ color: '#a78bfa', fontWeight: 800, fontSize: 36, fontFamily: 'monospace', margin: 0 }}>{countdown}</p>
               </div>
+              <button onClick={() => setTab('upgrade')} style={{
+                padding: '14px 32px', borderRadius: 14,
+                background: 'linear-gradient(135deg,#7c3aed,#db2777)',
+                color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', marginTop: 8,
+              }}>✨ Upgrade Instead</button>
             </div>
           )}
         </div>
 
-        {/* ── Legal ── */}
-        <div style={{ display:'flex', justifyContent:'center', gap:20, marginBottom:10 }}>
-          <button onClick={() => navigate('/PrivacyPolicy')} style={{ background:'none', border:'none', color:'rgba(168,85,247,0.5)', fontSize:11, cursor:'pointer' }}>
-            Privacy Policy
-          </button>
-          <button onClick={() => navigate('/TermsOfUse')} style={{ background:'none', border:'none', color:'rgba(168,85,247,0.5)', fontSize:11, cursor:'pointer' }}>
-            Terms of Use
-          </button>
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, padding: '16px 0 0' }}>
+          <button onClick={() => navigate('/PrivacyPolicy')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer' }}>Privacy Policy</button>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer' }}>Terms of Use</button>
         </div>
-        <p style={{ color:'rgba(255,255,255,0.18)', fontSize:10, textAlign:'center', margin:0, lineHeight:1.6 }}>
-          Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current billing period.
-          Manage or cancel anytime in your Apple ID Settings.
-        </p>
-
       </div>
     </AppShell>
   );
 }
-
-
-
-
-
-
