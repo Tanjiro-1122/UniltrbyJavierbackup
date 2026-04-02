@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
-// Only shows on TestFlight / non-production builds
-// Toggle with 5 taps on the version number, or auto-shows if ?debug=1 in URL
+// Debug panel — only shows in iOS wrapper or when ?debug=1 in URL
+// Tap trigger moved to bottom-RIGHT corner (away from Settings logo tap zone)
 
 const logs = [];
 let setLogsExternal = null;
@@ -19,6 +19,7 @@ export function DebugPanel() {
   const [visible, setVisible] = useState(false);
   const [logLines, setLogLines] = useState([]);
   const [tapCount, setTapCount] = useState(0);
+  const [lastTap, setLastTap] = useState(0);
 
   useEffect(() => {
     setLogsExternal = setLogLines;
@@ -42,11 +43,15 @@ export function DebugPanel() {
     };
   }, []);
 
-  // Secret: tap the panel trigger 5x to show/hide
+  // Secret: tap 5x within 3 seconds to show/hide
+  // Tap target is bottom-RIGHT corner to avoid conflict with Settings logo (bottom-left)
   const handleTriggerTap = () => {
-    const next = tapCount + 1;
-    setTapCount(next);
-    if (next >= 5) {
+    const now = Date.now();
+    // Reset count if more than 3 seconds since last tap
+    const newCount = (now - lastTap < 3000) ? tapCount + 1 : 1;
+    setLastTap(now);
+    setTapCount(newCount);
+    if (newCount >= 5) {
       setVisible(v => !v);
       setTapCount(0);
     }
@@ -54,13 +59,13 @@ export function DebugPanel() {
 
   return (
     <>
-      {/* Invisible tap target — bottom left corner */}
+      {/* Invisible tap target — bottom RIGHT corner (avoids Settings logo conflict) */}
       <div
         onClick={handleTriggerTap}
         style={{
-          position: 'fixed', bottom: 80, left: 0,
-          width: 40, height: 40, zIndex: 9998,
-          opacity: 0, cursor: 'pointer'
+          position: 'fixed', bottom: 80, right: 0,
+          width: 44, height: 44, zIndex: 9998,
+          opacity: 0, cursor: 'pointer',
         }}
       />
 
