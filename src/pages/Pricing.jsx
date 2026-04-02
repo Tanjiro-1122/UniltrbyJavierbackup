@@ -189,7 +189,7 @@ function AdminPanel({ onClose, navigate }) {
       localStorage.setItem('unfiltr_admin_unlocked', 'true');
       sessionStorage.setItem('unfiltr_admin_session', 'true');
       onClose();
-      navigate('/AdminDashboard');
+      window.location.href = 'https://unfiltrbyjavier2.vercel.app/AdminDashboard';
     } else if (code.trim().toLowerCase() === 'huertasfam') {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
@@ -253,14 +253,14 @@ export default function Pricing() {
 
   const selectedPlan = PLANS.find(p => p.id === planType) || PLANS[0];
 
-  // 5 taps on ✨ → admin panel
+  // 5 taps on ✨ → opens IAP debug panel
   const handleSparkTap = () => {
     const next = tapCount + 1;
     setTapCount(next);
     if (tapTimer.current) clearTimeout(tapTimer.current);
     if (next >= 5) {
       setTapCount(0);
-      setShowAdmin(true);
+      setShowDebug(true);
     } else {
       tapTimer.current = setTimeout(() => setTapCount(0), 2000);
     }
@@ -319,8 +319,8 @@ export default function Pricing() {
           {/* 5-tap secret: ✨ emoji */}
           <span onClick={handleSparkTap} style={{ fontSize: 22, cursor: 'pointer', userSelect: 'none' }}>✨</span>
 
-          {/* Hidden debug button — tiny, transparent */}
-          <button onClick={() => setShowDebug(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>·</button>
+          {/* Hidden admin button — tap to open admin panel */}
+          <button onClick={() => setShowAdmin(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>·</button>
         </div>
 
         <div style={{ padding: '0 20px', flex: 1 }}>
