@@ -16,11 +16,11 @@ export default function ChatInputBar({
       // ✅ Solid background that paints ALL the way into the safe-area zone
       // This kills the gray strip at the bottom on iPhone
       background: "#06020f",
-      // Padding: top gap + safe-area-inset-bottom so the pill sits above home indicator
-      paddingTop: 6,
+      paddingTop: 8,
       paddingLeft: 12,
       paddingRight: 12,
-      paddingBottom: "calc(10px + env(safe-area-inset-bottom, 10px))",
+      // Covers iPhone home indicator cleanly — no double-padding with wrapper
+      paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
     }}>
       {/* Pending image preview */}
       {pendingImage && (
