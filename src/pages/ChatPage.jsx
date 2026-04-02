@@ -40,6 +40,7 @@ import MemoryCard from "@/components/chat/MemoryCard";
 import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
 import MissYouBanner from "@/components/chat/MissYouBanner";
 import ChatWalkthrough from "@/components/chat/ChatWalkthrough";
+import { debugLog } from "@/components/DebugPanel";
 
 const VIBES_SUFFIX = {
   chill: "Keep it casual, laid-back and conversational. Short responses.",
@@ -1117,6 +1118,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
