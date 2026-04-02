@@ -141,7 +141,8 @@ export default function Settings() {
     const created = localStorage.getItem("unfiltr_companion_created");
     if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
     setMoodHistory(getMoodWeek());
-    if (localStorage.getItem("unfiltr_admin_unlocked") === "true") setIsAdmin(true);
+    // Admin section is now a standalone page — no in-app admin check needed
+    // setIsAdmin(false); // Kept for backwards compat but admin row hidden
     (async () => {
       try {
         const profileId = localStorage.getItem("userProfileId");
@@ -643,7 +644,7 @@ export default function Settings() {
         )}
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span onClick={handleTriquetraTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, cursor: "default", userSelect: "none" }}>v1.2.0</span>
+          <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none" }}>v1.2.0</span>
         </div>
       </div>
 
@@ -742,25 +743,7 @@ export default function Settings() {
         )}
       </AnimatePresence>
 
-      {/* ── Admin Code Modal ── */}
-      <AnimatePresence>
-        {showCodeModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-            onClick={() => { setShowCodeModal(false); setAdminCode(""); setCodeError(""); }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              style={{ background: "#0d0520", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 300 }}>
-              <p style={{ color: "white", fontWeight: 700, fontSize: 17, textAlign: "center", margin: "0 0 16px" }}>🛡️ Admin Access</p>
-              <input type="password" value={adminCode} onChange={e => { setAdminCode(e.target.value); setCodeError(""); }}
-                onKeyDown={e => e.key === "Enter" && handleCodeSubmit()} placeholder="Admin code" autoFocus
-                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-              {codeError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{codeError}</p>}
-              <button onClick={handleCodeSubmit} style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Enter</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* ── Pause Modal ── */}
       <AnimatePresence>
