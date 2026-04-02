@@ -128,8 +128,15 @@ export default function OnboardingBackground() {
             localStorage.setItem("userProfileId", userProfile.id);
           }
 
-          // Step 5: Also save display_name to localStorage so it survives force-close
+          // Step 5: Also save display_name + user identity to localStorage so it survives force-close
           localStorage.setItem("unfiltr_display_name", store.displayName?.trim() || "");
+          // Set auth keys so the rest of the app treats this user as logged in
+          const resolvedProfileId = store.pendingProfileId || userProfile?.id;
+          if (resolvedProfileId) {
+            localStorage.setItem("unfiltr_user_id", resolvedProfileId);
+            localStorage.setItem("unfiltr_auth_token", resolvedProfileId); // same value — app uses profileId as identity
+            window.dispatchEvent(new Event("unfiltr_auth_updated"));
+          }
 
           resetOnboardingStore();
         } catch (err) {
@@ -296,5 +303,6 @@ export default function OnboardingBackground() {
     </div>
   );
 }
+
 
 
