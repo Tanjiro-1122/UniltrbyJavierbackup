@@ -45,6 +45,7 @@ import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
 import HubPage               from "./pages/HubPage";
 import { DebugPanel } from '@/components/DebugPanel';
+import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
 
 const HIDE_TABS_ON = [
@@ -78,7 +79,48 @@ function SafeAreaFix() {
   return null;
 }
 
+// One-time recovery: if userProfileId is missing but display_name exists, find profile by name
+function useProfileRecovery() {
+  useEffect(() => {
+    const profileId = localStorage.getItem("userProfileId");
+    const displayName = localStorage.getItem("unfiltr_display_name");
+    const onboardingDone = localStorage.getItem("unfiltr_onboarding_complete");
+    if (profileId || !onboardingDone) return; // already set or not onboarded yet
+
+    // Try to find profile by display_name
+    (async () => {
+      try {
+        let profiles = [];
+        if (displayName) {
+          profiles = await base44.entities.UserProfile.filter({ display_name: displayName });
+        }
+        // If no match by name, grab the most recent profile (last resort)
+        if (!profiles || profiles.length === 0) {
+          const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" });
+          profiles = all || [];
+        }
+        if (profiles.length > 0) {
+          const p = profiles[0];
+          localStorage.setItem("userProfileId", p.id);
+          localStorage.setItem("unfiltr_user_id", p.id);
+          localStorage.setItem("unfiltr_auth_token", p.id);
+          if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
+          if (p.companion_id) {
+            localStorage.setItem("companionId", p.companion_id);
+            localStorage.setItem("unfiltr_companion_id", p.companion_id);
+          }
+          window.dispatchEvent(new Event("unfiltr_auth_updated"));
+          console.log("[Recovery] Profile restored:", p.id, p.display_name);
+        }
+      } catch (e) {
+        console.warn("[Recovery] Could not restore profile:", e);
+      }
+    })();
+  }, []);
+}
+
 const AuthenticatedApp = ({ splashDone }) => {
+  useProfileRecovery();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -229,4 +271,5 @@ function App() {
 }
 
 export default App;
+
 
