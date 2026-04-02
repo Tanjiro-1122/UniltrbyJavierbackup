@@ -4,7 +4,6 @@ import { base44 } from "@/api/base44Client";
 import RatingPromptModal from "@/components/RatingPromptModal";
 import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 import ShareCardModal from "@/components/ShareCardModal";
-import PaywallModal from "@/components/PaywallModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 
@@ -74,7 +73,6 @@ export default function ChatPage() {
   const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium]       = useState(false);
   const [sessionMemory, setSessionMemory] = useState([]);
-  const [showPaywall, setShowPaywall]   = useState(false);
   const [showMemoryBanner, setShowMemoryBanner] = useState(false);
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
@@ -130,7 +128,7 @@ export default function ChatPage() {
             localStorage.setItem('unfiltr_is_premium', 'true');
             localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
             localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
-            setShowPaywall(false);
+            () => {};
           }
         }
       } catch (e) { console.error('Native message error:', e); }
@@ -540,7 +538,7 @@ export default function ChatPage() {
 
   /* ─── PHOTO ─── */
   const handlePhotoClick = () => {
-    if (!isPremium) { setShowPaywall(true); return; }
+    if (!isPremium) { navigate('/Pricing'); return; }
     const today = new Date().toDateString();
     const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
     const count = stored.date === today ? stored.count : 0;
@@ -575,7 +573,7 @@ export default function ChatPage() {
     if (!text && !pendingImage) return;
     if (loading) return;
     setLastFailedText(null);
-    if (isAtLimit) { setShowPaywall(true); return; }
+    if (isAtLimit) { navigate('/Pricing'); return; }
 
     // Resume shared AudioContext on every user gesture (critical for iOS)
     resumeAudioContext().catch(() => {});
@@ -874,7 +872,7 @@ export default function ChatPage() {
 
             {/* Msg counter */}
             {!isPremium ? (
-              <button onClick={() => setShowPaywall(true)}
+              <button onClick={() => navigate('/Pricing')}
                 style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
                 {remaining}/{FREE_LIMIT} msgs left today · Go Premium
               </button>
@@ -921,7 +919,7 @@ export default function ChatPage() {
                   memorySummary={memorySummary}
                   companionName={companionDisplayName || "your companion"}
                   isPremium={isPremium}
-                  onUpgrade={() => setShowPaywall(true)}
+                  onUpgrade={() => navigate('/Pricing')}
                 />
               </div>
             )}
@@ -931,7 +929,7 @@ export default function ChatPage() {
 
           {/* Memory banner — only show old banner if MemoryCard isn't handling it */}
           {showMemoryBanner && !isPremium && false && (
-            <div onClick={() => setShowPaywall(true)}
+            <div onClick={() => navigate('/Pricing')}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                 gap: 6, padding: "4px 16px",
@@ -1029,8 +1027,6 @@ export default function ChatPage() {
           </div>
         </div>
       )}
-
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onSubscribe={handleSubscribe} onRestore={handleRestore} isAndroid={/android/i.test(navigator.userAgent)} />
       <RatingPromptModal visible={showRatingPrompt} onClose={() => setShowRatingPrompt(false)} />
       <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} mood={shareCard?.mood || "neutral"} />
 
@@ -1118,6 +1114,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
