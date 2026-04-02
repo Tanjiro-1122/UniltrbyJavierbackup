@@ -3,6 +3,7 @@ import { debugLog } from '@/components/DebugPanel';
 const MOCK_PRODUCTS = [
   { productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' },
   { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$59.99', period: 'year' },
+  { productId: 'com.huertas.unfiltr.tier.pro',    title: 'Pro Tier',        price: '$14.99', period: 'month' },
 ];
 
 function isReactNativeWebView() {
@@ -20,7 +21,10 @@ function sendToNative(type, payload = {}) {
     }
 
     let resolved = false;
-    const timeoutMs = type === 'PURCHASE' ? 120000 : 30000;
+
+    // ✅ PURCHASE has NO timeout — Apple's StoreKit sheet is user-driven and takes as long as needed.
+    // Non-purchase calls (offerings, restore, customer info) keep a 30s timeout.
+    const timeoutMs = type === 'PURCHASE' ? null : 30000;
 
     const handleResponse = (event) => {
       if (resolved) return;
@@ -61,14 +65,17 @@ function sendToNative(type, payload = {}) {
       return;
     }
 
-    setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        window.removeEventListener('message', handleResponse);
-        debugLog(`❌ Timeout after ${timeoutMs / 1000}s — no response from native`);
-        reject(new Error('Timeout'));
-      }
-    }, timeoutMs);
+    // Only set a timeout for non-purchase calls
+    if (timeoutMs) {
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          window.removeEventListener('message', handleResponse);
+          debugLog(`❌ Timeout after ${timeoutMs / 1000}s — no response from native`);
+          reject(new Error('Timeout'));
+        }
+      }, timeoutMs);
+    }
   });
 }
 
@@ -108,17 +115,22 @@ export class AppleStoreKitService {
   static async purchase(productId) {
     debugLog(`💳 purchase() called: ${productId}`);
     if (!this.isNative()) {
-      debugLog('⚠️ Not native — would be mock purchase, blocking');
+      debugLog('⚠️ Not native — purchases only available in the iOS app.');
       return { isSuccess: false, error: 'Purchases only available in the iOS app.' };
     }
     try {
-      const packageId = productId.includes('annual') ? '$rc_annual' : productId.includes('tier.pro') ? 'pro_tier' : '$rc_monthly';
+      const packageId = productId.includes('annual')   ? '$rc_annual'
+                      : productId.includes('tier.pro') ? 'pro_tier'
+                      : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
+
+      // ✅ No timeout — waits as long as Apple/StoreKit needs
       const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
       const hasPremium = entitlementKeys.length > 0;
+
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Premium granted! localStorage updated.');
@@ -128,17 +140,20 @@ export class AppleStoreKitService {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
           const isAnnual  = productId?.includes('annual');
+          const isPro     = productId?.includes('tier.pro');
           if (profileId || userId) {
             await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 profileId: profileId || userId,
-                userId:    userId,
+                userId,
                 platform:  'ios',
                 productId,
               }),
             });
+            localStorage.setItem('unfiltr_is_annual', String(isAnnual));
+            localStorage.setItem('unfiltr_is_pro',    String(isPro));
             debugLog('✅ UserProfile updated in database');
           }
         } catch (e) {
@@ -148,9 +163,9 @@ export class AppleStoreKitService {
         return { isSuccess: true, customerInfo };
       }
       debugLog('❌ Purchase completed but no entitlement found');
-      return { isSuccess: false, error: 'Entitlement not found' };
+      return { isSuccess: false, error: 'Entitlement not found after purchase' };
     } catch (e) {
-      if (e.message?.includes('cancel')) {
+      if (e.message?.toLowerCase().includes('cancel')) {
         debugLog('ℹ️ User cancelled purchase');
         return { isSuccess: false, isCancelled: true };
       }
@@ -169,7 +184,6 @@ export class AppleStoreKitService {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Restore successful — premium granted');
 
-        // Also update Base44 UserProfile so it survives reinstalls
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
