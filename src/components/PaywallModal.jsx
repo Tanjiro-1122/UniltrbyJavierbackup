@@ -27,9 +27,10 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
   const [tab, setTab] = useState("upgrade");
   const [countdown, setCountdown] = useState(getMidnightCountdown());
   const [planType, setPlanType] = useState("annual");
-  const { products, loading: productsLoading, purchasing, error, statusMessage, purchase, restore } = useAppleSubscriptions();
+  const { products, loading: productsLoading, purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
 
   useEffect(() => {
+    loadProducts(); // only fetch when paywall opens
     if (!visible) return;
     setTab("upgrade");
     const timer = setInterval(() => setCountdown(getMidnightCountdown()), 1000);
