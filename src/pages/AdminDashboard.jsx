@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     setErrorDetail("");
     try {
       // Call Base44 adminStats function with secret token — no user auth needed
-      const res = await fetch("https://unfiltrbyjavier.base44.app/api/functions/adminStats", {
+      const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ adminToken: "unfiltr_admin_javier1122_secret" }),
