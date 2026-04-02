@@ -246,7 +246,28 @@ export default function Settings() {
     if (localStorage.getItem("unfiltr_admin_unlocked") === "true") setIsAdmin(true);
     (async () => {
       try {
-        const profileId = localStorage.getItem("userProfileId");
+        let profileId = localStorage.getItem("userProfileId");
+
+        // Recovery: if profileId missing, try to find profile by display_name
+        if (!profileId) {
+          const displayName = localStorage.getItem("unfiltr_display_name");
+          let profiles = [];
+          if (displayName) {
+            profiles = await base44.entities.UserProfile.filter({ display_name: displayName }).catch(() => []);
+          }
+          if (!profiles || profiles.length === 0) {
+            const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" }).catch(() => []);
+            profiles = all || [];
+          }
+          if (profiles.length > 0) {
+            profileId = profiles[0].id;
+            localStorage.setItem("userProfileId", profileId);
+            localStorage.setItem("unfiltr_user_id", profileId);
+            localStorage.setItem("unfiltr_auth_token", profileId);
+            console.log("[Settings] Recovered profileId:", profileId);
+          }
+        }
+
         if (!profileId) return;
         const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
         if (!profile) return;
