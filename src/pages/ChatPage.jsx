@@ -120,8 +120,15 @@ export default function ChatPage() {
           const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
           const result = res.data;
           if ((result.isPremium || result.valid) && profileId) {
-            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: result.plan === 'annual' });
+            const isAnnualPurchase = result.plan === 'annual';
+            const isProPurchase    = result.plan === 'pro';
+            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
             setIsPremium(true);
+            if (isAnnualPurchase) setIsAnnual(true);
+            if (isProPurchase)   setIsPro(true);
+            localStorage.setItem('unfiltr_is_premium', 'true');
+            localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
+            localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
             setShowPaywall(false);
           }
         }
@@ -904,8 +911,7 @@ export default function ChatPage() {
             )}
           </div>
 
-          {/* Daily affirmation */}
-          <DailyAffirmation visible={showAffirmation} />
+          {/* Daily affirmation — rendered as fixed overlay, no impact on flex layout */}
 
           {/* Memory banner — only show old banner if MemoryCard isn't handling it */}
           {showMemoryBanner && !isPremium && false && (
@@ -922,52 +928,15 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Miss you banner — shows if user was away 2+ days */}
-          <MissYouBanner />
+          {/* MissYouBanner — rendered as fixed overlay below */
 
-          {/* Memory card — only show when no messages yet */}
-          {messages.length === 0 && (
-            <MemoryCard
-              memorySummary={memorySummary}
-              companionName={companionDisplayName || "your companion"}
-              isPremium={isPremium}
-              onUpgrade={() => setShowPaywall(true)}
-            />
-          )}
+          {/* MemoryCard — rendered as fixed overlay below */
 
           {/* Daily check-in removed from layout — mood handled inline in chat */}
 
-          {/* Crisis resources banner */}
-          <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
+          {/* CrisisBanner — rendered as fixed overlay below */
 
-          {/* ── Meditation nudge card ── */}
-          {showMeditationNudge && (
-            <div style={{ position:"absolute", bottom:130, left:16, right:16, zIndex:80 }}>
-              <div style={{
-                background:"linear-gradient(135deg,rgba(14,165,233,0.22),rgba(125,211,252,0.1))",
-                border:"1px solid rgba(125,211,252,0.4)", borderRadius:18,
-                padding:"14px 16px", display:"flex", alignItems:"center", gap:12,
-                backdropFilter:"blur(12px)",
-                boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
-              }}>
-                <span style={{ fontSize:26, flexShrink:0 }}>🧘</span>
-                <div style={{ flex:1 }}>
-                  <p style={{ color:"white", fontWeight:700, fontSize:13, margin:"0 0 2px" }}>Want to take a breath?</p>
-                  <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, margin:0 }}>A quick meditation might help right now</p>
-                </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  <button onClick={() => { setShowMeditationNudge(false); navigate("/meditate"); }}
-                    style={{ padding:"7px 12px", background:"linear-gradient(135deg,#0ea5e9,#7dd3fc)", border:"none", borderRadius:10, color:"white", fontWeight:700, fontSize:11, cursor:"pointer" }}>
-                    Let's go
-                  </button>
-                  <button onClick={() => setShowMeditationNudge(false)}
-                    style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
-                    Not now
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* meditation nudge moved to fixed overlay below */}
 
           {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
           <div style={{
@@ -1096,6 +1065,50 @@ export default function ChatPage() {
         companionName={companionDisplayName}
         daysTogether={(() => { const c = localStorage.getItem("unfiltr_companion_created"); return c ? Math.max(1, Math.floor((Date.now() - new Date(c).getTime()) / 86400000)) : 0; })()}
       />
+
+      {/* ── FIXED OVERLAYS — never affect flex layout ── */}
+      <DailyAffirmation visible={showAffirmation} />
+      <MissYouBanner />
+      {messages.length <= 1 && (
+        <div style={{ position:"fixed", bottom:140, left:16, right:16, zIndex:60, pointerEvents:"auto" }}>
+          <MemoryCard
+            memorySummary={memorySummary}
+            companionName={companionDisplayName || "your companion"}
+            isPremium={isPremium}
+            onUpgrade={() => setShowPaywall(true)}
+          />
+        </div>
+      )}
+      <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
+      {showMeditationNudge && (
+        <div style={{ position:"fixed", bottom:130, left:16, right:16, zIndex:80 }}>
+          <div style={{
+            background:"linear-gradient(135deg,rgba(14,165,233,0.22),rgba(125,211,252,0.1))",
+            border:"1px solid rgba(125,211,252,0.4)", borderRadius:18,
+            padding:"14px 16px", display:"flex", alignItems:"center", gap:12,
+            backdropFilter:"blur(12px)",
+            boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+            <span style={{ fontSize:26, flexShrink:0 }}>🧘</span>
+            <div style={{ flex:1 }}>
+              <p style={{ color:"white", fontWeight:700, fontSize:13, margin:"0 0 2px" }}>Want to take a breath?</p>
+              <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, margin:0 }}>A quick meditation might help right now</p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <button onClick={() => { setShowMeditationNudge(false); navigate("/meditate"); }}
+                style={{ padding:"7px 12px", background:"linear-gradient(135deg,#0ea5e9,#7dd3fc)", border:"none", borderRadius:10, color:"white", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                Let's go
+              </button>
+              <button onClick={() => setShowMeditationNudge(false)}
+                style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
+
