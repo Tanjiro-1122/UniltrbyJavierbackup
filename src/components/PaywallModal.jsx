@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock, Loader2, Brain, BookOpen } from "lucide-react";
+import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock, Loader2, Brain, BookOpen, Shield } from "lucide-react";
 import { useAppleSubscriptions } from "@/components/hooks/useAppleSubscriptions";
 import { base44 } from "@/api/base44Client";
 
 const PERKS = [
-  { icon: Brain, label: "Memory — your companion finally knows you" },
+  { icon: Brain,         label: "Memory — your companion finally knows you" },
   { icon: MessageCircle, label: "Unlimited messages, every day" },
-  { icon: Mic, label: "Voice responses (TTS)" },
-  { icon: BookOpen, label: "Full conversation history" },
-  { icon: Zap, label: "Priority responses" },
+  { icon: Mic,           label: "Voice responses (TTS)" },
+  { icon: BookOpen,      label: "Full conversation history" },
+  { icon: Zap,           label: "Priority responses" },
 ];
 
 function getMidnightCountdown() {
@@ -23,6 +23,39 @@ function getMidnightCountdown() {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// All 3 plans with their correct product IDs
+const PAYWALL_PLANS = [
+  {
+    id: "annual",
+    productId: "com.huertas.unfiltr.pro.annual",
+    label: "$59.99 / year",
+    sub: "Save 50% — only $5/mo · Cancel anytime",
+    badge: "BEST VALUE 🔥",
+    badgeBg: "linear-gradient(135deg,#f59e0b,#ef4444)",
+    isAnnual: true,
+    isPro: false,
+  },
+  {
+    id: "pro",
+    productId: "com.huertas.unfiltr.tier.pro",
+    label: "$14.99 / month",
+    sub: "250 msgs/day · Priority speed · 100 journal entries",
+    badge: "MOST POPULAR ⚡",
+    badgeBg: "linear-gradient(135deg,#f59e0b,#a855f7)",
+    isAnnual: false,
+    isPro: true,
+  },
+  {
+    id: "monthly",
+    productId: "com.huertas.unfiltr.pro.monthly",
+    label: "$9.99 / month",
+    sub: "100 msgs/day · Auto-renews monthly",
+    badge: null,
+    isAnnual: false,
+    isPro: false,
+  },
+];
+
 export default function PaywallModal({ visible, onClose, onSubscribe, onRestore, isLoading: externalLoading, isAndroid }) {
   const [tab, setTab] = useState("upgrade");
   const [countdown, setCountdown] = useState(getMidnightCountdown());
@@ -30,7 +63,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
   const { products, loading: productsLoading, purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
 
   useEffect(() => {
-    loadProducts(); // only fetch when paywall opens
+    loadProducts();
     if (!visible) return;
     setTab("upgrade");
     const timer = setInterval(() => setCountdown(getMidnightCountdown()), 1000);
@@ -39,18 +72,23 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
 
   const isLoading = externalLoading || purchasing;
 
+  const selectedPlan = PAYWALL_PLANS.find(p => p.id === planType) || PAYWALL_PLANS[0];
+
   const handleSubscribe = async () => {
-    const productId = planType === "annual"
-      ? "com.huertas.unfiltr.pro.annual"
-      : "com.huertas.unfiltr.pro.monthly";
+    const productId = selectedPlan.productId;
+    console.log("[PaywallModal] purchasing:", productId, "plan:", planType);
     const result = await purchase(productId);
     if (result?.success) {
       const profileId = localStorage.getItem("userProfileId");
       if (profileId) {
         await base44.entities.UserProfile.update(profileId, {
-          is_premium: true,
-          annual_plan: planType === "annual",
+          is_premium:  true,
+          annual_plan: selectedPlan.isAnnual,
+          pro_plan:    selectedPlan.isPro,
         });
+        localStorage.setItem("unfiltr_is_premium", "true");
+        localStorage.setItem("unfiltr_is_annual",  String(selectedPlan.isAnnual));
+        localStorage.setItem("unfiltr_is_pro",     String(selectedPlan.isPro));
       }
       if (onSubscribe) onSubscribe();
       onClose();
@@ -114,9 +152,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   color: tab === "upgrade" ? "#fff" : "rgba(255,255,255,0.4)",
                   boxShadow: tab === "upgrade" ? "0 0 12px rgba(168,85,247,0.4)" : "none",
                 }}
-              >
-                ✨ Upgrade
-              </button>
+              >✨ Upgrade</button>
               <button
                 onClick={() => setTab("wait")}
                 className="flex-1 py-2 rounded-lg text-sm font-bold transition-all"
@@ -124,9 +160,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   background: tab === "wait" ? "rgba(255,255,255,0.1)" : "transparent",
                   color: tab === "wait" ? "#fff" : "rgba(255,255,255,0.4)",
                 }}
-              >
-                ⏳ Wait
-              </button>
+              >⏳ Wait</button>
             </div>
 
             {tab === "upgrade" && (
@@ -151,38 +185,28 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   ))}
                 </div>
 
-                {/* Plan selector */}
+                {/* Plan selector — all 3 plans */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {/* Annual */}
-                  <button
-                    onClick={() => setPlanType("annual")}
-                    style={{
-                      width: "100%", padding: "14px 16px", borderRadius: 14, textAlign: "left",
-                      background: planType === "annual" ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.04)",
-                      border: `2px solid ${planType === "annual" ? "rgba(124,58,237,0.7)" : "rgba(255,255,255,0.08)"}`,
-                      cursor: "pointer", position: "relative",
-                    }}
-                  >
-                    <div style={{ position: "absolute", top: -10, right: 12, background: "linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius: 999, padding: "2px 10px" }}>
-                      <span style={{ color: "white", fontWeight: 800, fontSize: 10 }}>BEST VALUE 🔥</span>
-                    </div>
-                    <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>$59.99 / year</p>
-                    <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "2px 0 0" }}>Save 50% — only $5/mo · Cancel anytime</p>
-                  </button>
-
-                  {/* Monthly */}
-                  <button
-                    onClick={() => setPlanType("monthly")}
-                    style={{
-                      width: "100%", padding: "14px 16px", borderRadius: 14, textAlign: "left",
-                      background: planType === "monthly" ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.04)",
-                      border: `2px solid ${planType === "monthly" ? "rgba(124,58,237,0.5)" : "rgba(255,255,255,0.08)"}`,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>$9.99 / month</p>
-                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "2px 0 0" }}>Auto-renews monthly</p>
-                  </button>
+                  {PAYWALL_PLANS.map(plan => (
+                    <button
+                      key={plan.id}
+                      onClick={() => setPlanType(plan.id)}
+                      style={{
+                        width: "100%", padding: "14px 16px", borderRadius: 14, textAlign: "left",
+                        background: planType === plan.id ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.04)",
+                        border: `2px solid ${planType === plan.id ? "rgba(124,58,237,0.7)" : "rgba(255,255,255,0.08)"}`,
+                        cursor: "pointer", position: "relative",
+                      }}
+                    >
+                      {plan.badge && (
+                        <div style={{ position: "absolute", top: -10, right: 12, background: plan.badgeBg, borderRadius: 999, padding: "2px 10px" }}>
+                          <span style={{ color: "white", fontWeight: 800, fontSize: 10 }}>{plan.badge}</span>
+                        </div>
+                      )}
+                      <p style={{ color: "white", fontWeight: 700, fontSize: 15, margin: 0 }}>{plan.label}</p>
+                      <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: "2px 0 0" }}>{plan.sub}</p>
+                    </button>
+                  ))}
                 </div>
 
                 {/* Status / Error */}
@@ -203,7 +227,7 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                       <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
                       Processing...
                     </span>
-                  ) : "Subscribe Now →"}
+                  ) : `Subscribe — ${selectedPlan.label.split(" / ")[0]}/mo`}
                 </button>
 
                 <button onClick={handleRestore} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
@@ -211,51 +235,24 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                   Restore Purchase
                 </button>
 
-                <button onClick={onClose} className="w-full py-3 rounded-2xl text-white/40 text-sm mt-2"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  Not now
+                <button onClick={onClose} className="w-full py-3 text-white/20 text-xs mt-1">
+                  Maybe later
                 </button>
+
+                <p className="text-white/15 text-center text-xs mt-3 leading-relaxed">
+                  Subscriptions auto-renew unless cancelled 24 hours before renewal. Manage in Apple ID Settings.
+                </p>
               </>
             )}
 
             {tab === "wait" && (
-              <div className="flex flex-col items-center text-center py-4">
-                <div className="text-5xl mb-4">🌙</div>
-                <h2 className="text-white font-bold text-xl mb-2">Come back tomorrow</h2>
-                <p className="text-white/50 text-sm mb-6 leading-relaxed">
-                  Your 20 free messages reset at midnight. Your companion will be right here waiting for you.
-                </p>
-
-                {/* Countdown clock */}
-                <div className="rounded-2xl px-8 py-5 mb-6 w-full"
-                  style={{
-                    background: "rgba(139,92,246,0.1)",
-                    border: "1px solid rgba(139,92,246,0.25)",
-                    boxShadow: "0 0 20px rgba(139,92,246,0.1)",
-                  }}>
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                    <p className="text-purple-300/70 text-xs font-medium uppercase tracking-widest">Resets in</p>
-                  </div>
-                  <p className="text-white font-black text-4xl tracking-widest"
-                    style={{ textShadow: "0 0 20px rgba(168,85,247,0.8)", fontVariantNumeric: "tabular-nums" }}>
-                    {countdown}
-                  </p>
-                </div>
-
-                <p className="text-white/30 text-xs mb-5">Or upgrade for unlimited access — no waiting, ever.</p>
-
-                <button
-                  onClick={() => setTab("upgrade")}
-                  className="w-full py-3 rounded-2xl text-white font-bold text-sm active:scale-95 transition-all mb-3"
-                  style={{ background: "linear-gradient(135deg, #7c3aed, #db2777)", boxShadow: "0 0 16px rgba(168,85,247,0.3)" }}
-                >
-                  Upgrade instead ✨
-                </button>
-
-                <button onClick={onClose} className="w-full py-3 rounded-2xl text-white/40 text-sm"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  Close
+              <div className="text-center py-6">
+                <div className="text-5xl mb-4">⏳</div>
+                <h3 className="text-white font-bold text-lg mb-2">Messages reset at midnight</h3>
+                <p className="text-white/40 text-sm mb-6">Your free messages refill every day at midnight.</p>
+                <div className="text-4xl font-mono font-black text-purple-400 mb-6">{countdown}</div>
+                <button onClick={onClose} className="w-full py-3 rounded-2xl text-white/50 text-sm border border-white/10">
+                  I'll wait
                 </button>
               </div>
             )}
