@@ -780,52 +780,7 @@ export default function Settings() {
           </Section>
         )}
 
-        {/* ── Debug Panel ── */}
-        <div style={{ marginTop: 8 }}>
-          <button onClick={() => setShowDebug(p => !p)} style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "rgba(255,255,255,0.3)", fontSize: 12, padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>🔧 Debug Panel</span>
-            <span>{showDebug ? "▲" : "▼"}</span>
-          </button>
-          {showDebug && (
-            <div style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 12, marginTop: 6, padding: 14, fontFamily: "monospace" }}>
-              <div style={{ marginBottom: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={runIapDiagnostic} disabled={iapTesting}
-                  style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "none", background: iapTesting ? "rgba(168,85,247,0.3)" : "rgba(168,85,247,0.7)", color: "white", fontSize: 12, fontWeight: 700, cursor: iapTesting ? "not-allowed" : "pointer" }}>
-                  {iapTesting ? "⏳ Running..." : "▶ Run IAP Diagnostic"}
-                </button>
-                <button onClick={() => setDebugLog([])}
-                  style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>
-                  Clear
-                </button>
-              </div>
-              {/* Quick snapshot */}
-              <div style={{ marginBottom: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
-                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, margin: "0 0 4px", fontWeight: 700 }}>QUICK SNAPSHOT</p>
-                {[
-                  ["User ID",       localStorage.getItem("unfiltr_user_id")],
-                  ["Profile ID",    localStorage.getItem("userProfileId")],
-                  ["Premium",       localStorage.getItem("unfiltr_is_premium")],
-                  ["Display Name",  localStorage.getItem("unfiltr_display_name")],
-                  ["Native Bridge", window.ReactNativeWebView ? "✅ YES" : "❌ NO (web)"],
-                ].map(([k,v]) => (
-                  <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>{k}</span>
-                    <span style={{ color: v && v !== "null" ? "#a855f7" : "#f87171", fontSize: 11, maxWidth: "55%", textAlign: "right", wordBreak: "break-all" }}>{v || "—"}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Log output */}
-              <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
-                {debugLog.length === 0 && <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, textAlign: "center", margin: "8px 0" }}>Tap "Run IAP Diagnostic" to start</p>}
-                {debugLog.map((entry, i) => (
-                  <div key={i} style={{ fontSize: 11, lineHeight: 1.5, color: entry.type === "error" ? "#f87171" : entry.type === "warn" ? "#fbbf24" : entry.type === "ok" ? "#4ade80" : "rgba(255,255,255,0.55)" }}>
-                    <span style={{ color: "rgba(255,255,255,0.2)", marginRight: 6 }}>{entry.ts}</span>{entry.msg}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
           <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none" }}>v1.2.0</span>
@@ -1015,6 +970,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
