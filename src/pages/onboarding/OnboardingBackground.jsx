@@ -64,96 +64,78 @@ export default function OnboardingBackground() {
     const selected = bg.id;
     updateOnboardingStore({ selectedBackground: selected });
     setLoading(true);
+
+    const finalName = store.companionNickname?.trim() || companionData.name;
+
+    // Step 1 — Write all localStorage keys immediately (fast, sync)
+    localStorage.setItem("unfiltr_companion_nickname", store.companionNickname?.trim() || "");
+    localStorage.setItem("unfiltr_companion", JSON.stringify({
+      id: companionData.id,
+      name: companionData.name,
+      displayName: finalName,
+      systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
+    }));
+    localStorage.setItem("unfiltr_env", JSON.stringify({
+      id: bg.id, label: bg.label, bg: bg.url,
+    }));
+    localStorage.setItem("unfiltr_display_name", store.displayName?.trim() || "");
+    if (store.selectedVibe) localStorage.setItem("unfiltr_vibe", store.selectedVibe);
+    localStorage.setItem("unfiltr_onboarding_complete", "true");
+
+    // Step 2 — Save to DB and WAIT before navigating
     try {
-      const finalName = store.companionNickname?.trim() || companionData.name;
-
-      // ✅ Set ALL localStorage keys FIRST — before any async DB calls
-      localStorage.setItem("unfiltr_companion_nickname", store.companionNickname?.trim() || "");
-      localStorage.setItem("unfiltr_companion", JSON.stringify({
-        id: companionData.id,
+      // Create companion record
+      const companion = await base44.entities.Companion.create({
         name: companionData.name,
-        displayName: finalName,
-        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
-      }));
-      localStorage.setItem("unfiltr_env", JSON.stringify({
-        id: bg.id, label: bg.label, bg: bg.url,
-      }));
-      if (store.selectedVibe) {
-        localStorage.setItem("unfiltr_vibe", store.selectedVibe);
+        avatar_id: companionData.id,
+        avatar_gender: companionData.gender || "female",
+        personality_preset: companionData.personality || companionData.tagline || "friendly",
+        mood_mode: "neutral",
+        is_active: true,
+      });
+      localStorage.setItem("companionId", companion.id);
+      localStorage.setItem("unfiltr_companion_id", companion.id);
+
+      const profileData = {
+        display_name: store.displayName?.trim() || "",
+        companion_id: companion.id,
+        is_premium: !!(store.isTesterAccount),
+        trial_active: !!(store.isTesterAccount),
+        trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
+        onboarding_complete: true,
+        session_memory: [],
+        message_count: 0,
+        last_active: new Date().toISOString(),
+        preferred_mood: store.selectedVibe || "chill",
+      };
+
+      // Create or update UserProfile
+      let profileId;
+      if (store.pendingProfileId) {
+        await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+        profileId = store.pendingProfileId;
+      } else {
+        const profile = await base44.entities.UserProfile.create(profileData);
+        profileId = profile.id;
       }
-      localStorage.setItem("unfiltr_onboarding_complete", "true");
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
-      // Navigate immediately — don't wait for DB
-      setLoading(false);
-      navigate("/mood?dest=chat");
 
-      // Fire-and-forget DB calls in background
-      (async () => {
-        try {
-          // Step 1: Create companion
-          const companion = await base44.entities.Companion.create({
-            name: companionData.name,
-            avatar_id: companionData.id,
-            avatar_gender: companionData.gender || "female",
-            personality_preset: companionData.personality || companionData.tagline || "friendly",
-            mood_mode: "neutral",
-            is_active: true,
-          });
-
-          // Step 2: Save companion ID to localStorage immediately
-          localStorage.setItem("companionId", companion.id);
-          localStorage.setItem("unfiltr_companion_id", companion.id);
-
-          // Step 3: Build full profile data including companion_id
-          const profileData = {
-            display_name: store.displayName?.trim() || "",
-            companion_id: companion.id,
-            is_premium: !!(store.isTesterAccount),
-            trial_active: !!(store.isTesterAccount),
-            trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
-            onboarding_complete: true,
-            session_memory: [],
-            message_count: 0,
-            last_active: new Date().toISOString(),
-            preferred_mood: store.selectedVibe || "chill",
-          };
-
-          // Step 4: Update or create UserProfile
-          let userProfile;
-          if (store.pendingProfileId) {
-            userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-            localStorage.setItem("userProfileId", store.pendingProfileId);
-          } else {
-            userProfile = await base44.entities.UserProfile.create(profileData);
-            localStorage.setItem("userProfileId", userProfile.id);
-          }
-
-          // Step 5: Also save display_name + user identity to localStorage so it survives force-close
-          localStorage.setItem("unfiltr_display_name", store.displayName?.trim() || "");
-          // Set auth keys so the rest of the app treats this user as logged in
-          const resolvedProfileId = store.pendingProfileId || userProfile?.id;
-          if (resolvedProfileId) {
-            localStorage.setItem("unfiltr_user_id", resolvedProfileId);
-            localStorage.setItem("unfiltr_auth_token", resolvedProfileId); // same value — app uses profileId as identity
-            window.dispatchEvent(new Event("unfiltr_auth_updated"));
-          }
-
-          resetOnboardingStore();
-        } catch (err) {
-          console.error("Onboarding DB error (non-blocking):", err);
-          resetOnboardingStore();
-        }
-      })();
-    } catch (err) {
-      console.error("Onboarding error:", err);
-      localStorage.setItem("unfiltr_onboarding_complete", "true");
+      // Persist ALL identity keys
+      localStorage.setItem("userProfileId", profileId);
+      localStorage.setItem("unfiltr_user_id", profileId);
+      localStorage.setItem("unfiltr_auth_token", profileId);
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       resetOnboardingStore();
-      setLoading(false);
-      navigate("/mood?dest=chat");
-    }
-  };
 
+    } catch (err) {
+      // DB failed — still allow entry, keys already set from Step 1
+      console.error("Onboarding DB error:", err);
+      resetOnboardingStore();
+    }
+
+    // Navigate only AFTER DB is done (or failed)
+    setLoading(false);
+    navigate("/mood?dest=chat");
+  };
   // Companion neutral mood image
   const companionImg = companionData?.moods?.neutral || companionData?.avatar;
 
