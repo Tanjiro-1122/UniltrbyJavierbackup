@@ -1,12 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, Shield, FileText, HeadphonesIcon, Star, ChevronRight } from "lucide-react";
+import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
+function signInWithApple(navigate) {
+  const bridge = window.ReactNativeWebView;
+  if (!bridge) {
+    // Fallback — no native bridge, go to onboarding normally
+    navigate("/onboarding/consent");
+    return;
+  }
+
+  // Listen for Apple sign-in response
+  const handler = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
+        window.removeEventListener("message", handler);
+        const { appleUserId, email, fullName } = msg.data || {};
+        // Store Apple identity
+        localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+        localStorage.setItem("unfiltr_user_id", appleUserId);
+        localStorage.setItem("unfiltr_auth_token", appleUserId);
+        if (email) localStorage.setItem("unfiltr_apple_email", email);
+        if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+        // If onboarding already done, go straight to hub
+        const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+        navigate(onboardingDone ? "/hub" : "/onboarding/consent");
+      } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
+        window.removeEventListener("message", handler);
+        // Just go to normal onboarding on cancel/error
+        navigate("/onboarding/consent");
+      }
+    } catch {}
+  };
+  window.addEventListener("message", handler);
+  bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
+}
+
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const isNative = !!window.ReactNativeWebView;
+
+  const handleAppleSignIn = () => {
+    setLoading(true);
+    signInWithApple(navigate);
+  };
 
   return (
     <div style={{
@@ -37,6 +79,30 @@ export default function HomeScreen() {
           </motion.p>
         </div>
 
+        {/* Sign in with Apple (native only) */}
+        {isNative && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleAppleSignIn}
+            disabled={loading}
+            style={{
+              width: "100%", padding: "18px",
+              background: "white",
+              border: "none", borderRadius: 20,
+              color: "#000", fontWeight: 800, fontSize: 17,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              marginBottom: 12,
+              opacity: loading ? 0.7 : 1,
+            }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="black">
+              <path d="M16.125 1C14.297 1.063 12.156 2.234 10.922 3.781c-1.125 1.406-2.063 3.547-1.688 5.641 2.016.156 4.078-.969 5.281-2.531C15.719 5.328 16.594 3.172 16.125 1zM20.953 17.813c-.938 1.953-1.391 2.828-2.609 4.547-1.688 2.391-4.078 5.375-7.031 5.406-2.625.031-3.313-1.703-6.891-1.688-3.578.016-4.313 1.719-6.938 1.688-2.953-.031-5.203-2.688-6.891-5.078C-14.25 16.734-14.578 8.578-11.641 4.281c2.016-3.047 5.203-4.828 8.219-4.828 3.063 0 4.984 1.719 7.516 1.719 2.453 0 3.953-1.719 7.5-1.719 2.688 0 5.531 1.453 7.547 3.969-6.625 3.641-5.547 13.125.812 14.391z"/>
+            </svg>
+            {loading ? "Signing in..." : "Sign in with Apple"}
+          </motion.button>
+        )}
+
         {/* Primary CTA */}
         <motion.button
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -53,7 +119,7 @@ export default function HomeScreen() {
             marginBottom: 28,
           }}>
           <Users size={22} />
-          ✨ Meet Your Companion
+          {isNative ? "Continue as Guest" : "✨ Meet Your Companion"}
         </motion.button>
 
         {/* How It Works */}
