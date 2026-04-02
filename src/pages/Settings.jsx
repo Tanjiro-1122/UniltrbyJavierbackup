@@ -149,15 +149,25 @@ export default function Settings() {
         const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
         if (!profile) return;
         setUserProfile(profile);
-        if (profile?.companion_id) {
-          const comp = await base44.entities.Companion.get(profile.companion_id).catch(() => null);
+        // Always keep display_name in localStorage as local backup
+        if (profile?.display_name) {
+          localStorage.setItem("unfiltr_display_name", profile.display_name);
+        }
+        // Ensure companion_id is always persisted
+        if (profile?.companion_id && profile.companion_id !== "pending") {
+          localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+          localStorage.setItem("companionId", profile.companion_id);
+        }
+        const resolvedCompanionId = profile?.companion_id || localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
+        if (resolvedCompanionId && resolvedCompanionId !== "pending") {
+          const comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
           if (comp) {
             setCompanion(comp);
-            if (comp.personality_vibe)      setPersonalityVibe(comp.personality_vibe);
-            if (comp.personality_empathy)   setPersonalityEmpathy(comp.personality_empathy);
-            if (comp.personality_humor)     setPersonalityHumor(comp.personality_humor);
-            if (comp.personality_curiosity) setPersonalityCuriosity(comp.personality_curiosity);
-            if (comp.personality_style)     setPersonalityStyle(comp.personality_style);
+            if (comp.personality_vibe)      { setPersonalityVibe(comp.personality_vibe);      localStorage.setItem("unfiltr_personality_vibe", comp.personality_vibe); }
+            if (comp.personality_empathy)   { setPersonalityEmpathy(comp.personality_empathy); localStorage.setItem("unfiltr_personality_empathy", comp.personality_empathy); }
+            if (comp.personality_humor)     { setPersonalityHumor(comp.personality_humor);     localStorage.setItem("unfiltr_personality_humor", comp.personality_humor); }
+            if (comp.personality_curiosity) { setPersonalityCuriosity(comp.personality_curiosity); localStorage.setItem("unfiltr_personality_curiosity", comp.personality_curiosity); }
+            if (comp.personality_style)     { setPersonalityStyle(comp.personality_style);     localStorage.setItem("unfiltr_personality_style", comp.personality_style); }
           }
         }
       } catch (e) {}
@@ -613,7 +623,7 @@ export default function Settings() {
 
         {/* Main menu */}
         <Section>
-          <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || ""} onPress={() => setScreen("profile")} />
+          <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
@@ -817,6 +827,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
