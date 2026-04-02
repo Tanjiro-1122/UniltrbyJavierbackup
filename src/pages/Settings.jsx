@@ -255,6 +255,11 @@ export default function Settings() {
         if (profile?.display_name) {
           localStorage.setItem("unfiltr_display_name", profile.display_name);
         }
+        // Backfill user_id + auth_token if missing (for users who onboarded before this fix)
+        if (profile?.id) {
+          if (!localStorage.getItem("unfiltr_user_id"))    localStorage.setItem("unfiltr_user_id", profile.id);
+          if (!localStorage.getItem("unfiltr_auth_token")) localStorage.setItem("unfiltr_auth_token", profile.id);
+        }
         // Ensure companion_id is always persisted
         if (profile?.companion_id && profile.companion_id !== "pending") {
           localStorage.setItem("unfiltr_companion_id", profile.companion_id);
@@ -989,6 +994,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
