@@ -775,8 +775,11 @@ export default function ChatPage() {
       {/* ═══ MAIN WRAPPER — position:fixed; inset:0; flex column ═══ */}
       <div style={{
         position: "fixed",
-        inset: 0,
+        top: 0, bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
         width: "100%",
+        maxWidth: 430,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -930,7 +933,17 @@ export default function ChatPage() {
 
           {/* MissYouBanner — rendered as fixed overlay below */}
 
-          {/* MemoryCard — rendered as fixed overlay below */}
+          {/* Memory card — inline in flow, only when no user messages yet */}
+          {messages.filter(m => m.role === "user").length === 0 && (
+            <div style={{ flexShrink: 0 }}>
+              <MemoryCard
+                memorySummary={memorySummary}
+                companionName={companionDisplayName || "your companion"}
+                isPremium={isPremium}
+                onUpgrade={() => setShowPaywall(true)}
+              />
+            </div>
+          )}
 
           {/* Daily check-in removed from layout — mood handled inline in chat */}
 
@@ -1069,16 +1082,7 @@ export default function ChatPage() {
       {/* ── FIXED OVERLAYS — never affect flex layout ── */}
       <DailyAffirmation visible={showAffirmation} />
       <MissYouBanner />
-      {messages.length <= 1 && (
-        <div style={{ position:"fixed", bottom:140, left:16, right:16, zIndex:60, pointerEvents:"auto" }}>
-          <MemoryCard
-            memorySummary={memorySummary}
-            companionName={companionDisplayName || "your companion"}
-            isPremium={isPremium}
-            onUpgrade={() => setShowPaywall(true)}
-          />
-        </div>
-      )}
+      {/* MemoryCard rendered inline in flex column above messages */}
       <CrisisBanner visible={showCrisisBanner} onDismiss={() => setShowCrisisBanner(false)} />
       {showMeditationNudge && (
         <div style={{ position:"fixed", bottom:130, left:16, right:16, zIndex:80 }}>
@@ -1111,5 +1115,6 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
