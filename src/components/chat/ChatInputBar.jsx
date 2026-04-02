@@ -13,13 +13,10 @@ export default function ChatInputBar({
       flexShrink: 0,
       width: "100%",
       boxSizing: "border-box",
-      // ✅ Solid background that paints ALL the way into the safe-area zone
-      // This kills the gray strip at the bottom on iPhone
-      background: "#06020f",
+      background: "transparent",
       paddingTop: 8,
       paddingLeft: 12,
       paddingRight: 12,
-      // Covers iPhone home indicator cleanly — no double-padding with wrapper
       paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
     }}>
       {/* Pending image preview */}
@@ -76,3 +73,4 @@ export default function ChatInputBar({
     </div>
   );
 }
+
