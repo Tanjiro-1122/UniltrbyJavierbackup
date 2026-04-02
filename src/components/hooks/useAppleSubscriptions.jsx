@@ -1,26 +1,39 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { AppleStoreKitService } from '@/components/api/appleStoreKitService';
 
+// ✅ Global singleton — persists across ALL component mounts/unmounts
+// This means no matter how many times Pricing or PaywallModal mounts,
+// getProducts() only ever fires ONCE per app session
+let globalLoadAttempted = false;
+let globalProducts = null;
+
 export function useAppleSubscriptions() {
-  const [products, setProducts]           = useState([]);
-  const [loading, setLoading]             = useState(false); // <-- false by default, not true
+  const [products, setProducts]           = useState(globalProducts || []);
+  const [loading, setLoading]             = useState(false);
   const [purchasing, setPurchasing]       = useState(false);
   const [error, setError]                 = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
-  const loadAttempted = useRef(false);
 
-  // loadProducts is now exposed and called manually, NOT on mount
+  // Called manually when the paywall or pricing page actually opens
   const loadProducts = useCallback(async () => {
-    if (loadAttempted.current) return; // prevent duplicate calls
-    loadAttempted.current = true;
+    // Already loaded this session — don't fire again
+    if (globalLoadAttempted) {
+      if (globalProducts) setProducts(globalProducts);
+      return;
+    }
+    globalLoadAttempted = true;
+
     try {
       setLoading(true);
       const result = await Promise.race([
         AppleStoreKitService.getProducts(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
       ]);
-      setProducts(result && result.length > 0 ? result : MOCK_PRODUCTS);
+      const finalProducts = result && result.length > 0 ? result : MOCK_PRODUCTS;
+      globalProducts = finalProducts;
+      setProducts(finalProducts);
     } catch (e) {
+      globalProducts = MOCK_PRODUCTS;
       setProducts(MOCK_PRODUCTS);
     } finally {
       setLoading(false);
