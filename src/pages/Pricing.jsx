@@ -186,7 +186,7 @@ export default function Pricing() {
 
   const meta = PLANS.find(p => p.id === selectedPlan);
 
-  // ✅ Always resolve productId — first try live RevenueCat products, fall back to hardcoded PLANS productId
+  // Always resolve productId — live RC products first, hardcoded fallback always available
   const resolvedProductId = (() => {
     if (products && products.length > 0) {
       const match = products.find(p =>
@@ -196,8 +196,13 @@ export default function Pricing() {
       );
       if (match) return match.productId;
     }
-    // Fallback: use the hardcoded productId from PLANS — never blocks the purchase
-    return meta?.productId || null;
+    // Hardcoded fallback — always works even if RevenueCat hasn't loaded
+    const hardcoded = {
+      plus:   'com.huertas.unfiltr.pro.monthly',
+      pro:    'com.huertas.unfiltr.tier.pro',
+      annual: 'com.huertas.unfiltr.pro.annual',
+    };
+    return hardcoded[selectedPlan] || meta?.productId || 'com.huertas.unfiltr.pro.monthly';
   })();
 
   const handleRestore = async () => {
@@ -277,11 +282,6 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     try {
-      if (!resolvedProductId) {
-        console.error('[subscribe] No productId resolved for plan:', selectedPlan);
-        return;
-      }
-
       // Step 1: Require Sign in with Apple before purchase if not already done
       const hasAppleId = !!localStorage.getItem('unfiltr_apple_user_id');
       if (!hasAppleId) {
@@ -581,6 +581,7 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
 
