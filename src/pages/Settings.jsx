@@ -244,28 +244,33 @@ export default function Settings() {
   const handleSavePersonality = async () => {
     if (savingPersonality) return;
     setSavingPersonality(true);
+
+    // Always save to localStorage immediately — this is what chat reads
+    localStorage.setItem("unfiltr_personality_vibe",      personalityVibe);
+    localStorage.setItem("unfiltr_personality_empathy",   personalityEmpathy);
+    localStorage.setItem("unfiltr_personality_style",     personalityStyle);
+    localStorage.setItem("unfiltr_personality_humor",     personalityHumor);
+    localStorage.setItem("unfiltr_personality_curiosity", personalityCuriosity);
+
+    // Also persist to DB if we have a companion record
     const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
-    try {
-      if (companionId) {
+    if (companionId) {
+      try {
         await base44.entities.Companion.update(companionId, {
-          personality_vibe: personalityVibe,
-          personality_empathy: personalityEmpathy,
-          personality_humor: personalityHumor,
+          personality_vibe:      personalityVibe,
+          personality_empathy:   personalityEmpathy,
+          personality_humor:     personalityHumor,
           personality_curiosity: personalityCuriosity,
-          personality_style: personalityStyle,
+          personality_style:     personalityStyle,
         });
+      } catch (e) {
+        console.warn("Personality DB save failed (localStorage is fine):", e);
       }
-      // Save to localStorage as backup
-      localStorage.setItem("unfiltr_personality_vibe", personalityVibe);
-      localStorage.setItem("unfiltr_personality_style", personalityStyle);
-      localStorage.setItem("unfiltr_personality_humor", personalityHumor);
-      localStorage.setItem("unfiltr_personality_curiosity", personalityCuriosity);
-      setSavingPersonality(false);
-      setPersonalitySaved(true);
-      setTimeout(() => { setPersonalitySaved(false); navigate("/chat"); }, 1200);
-    } catch (e) {
-      setSavingPersonality(false);
     }
+
+    setSavingPersonality(false);
+    setPersonalitySaved(true);
+    setTimeout(() => { setPersonalitySaved(false); navigate("/chat"); }, 1200);
   };
 
   // ── PIN helpers ───────────────────────────────────────────────────────────
@@ -812,5 +817,6 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
