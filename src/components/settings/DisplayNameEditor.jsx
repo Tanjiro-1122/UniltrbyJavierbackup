@@ -1,11 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function DisplayNameEditor({ userProfile, onSave }) {
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(userProfile?.display_name || "");
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
+
+  // Pull from userProfile first, fall back to localStorage
+  const resolvedName = userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || "";
+  const [name, setName] = useState(resolvedName);
+
+  // If userProfile loads late, sync the name in
+  useEffect(() => {
+    if (userProfile?.display_name) setName(userProfile.display_name);
+  }, [userProfile?.display_name]);
 
   const handleSave = async () => {
     if (!name.trim() || saving) return;
@@ -28,7 +36,9 @@ export default function DisplayNameEditor({ userProfile, onSave }) {
   if (!editing) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ color: "white", fontWeight: 700, fontSize: 17, margin: 0 }}>{userProfile?.display_name}</p>
+        <p style={{ color: resolvedName ? "white" : "rgba(255,255,255,0.3)", fontWeight: 700, fontSize: 17, margin: 0 }}>
+          {resolvedName || "Tap Edit to set your name"}
+        </p>
         <button onClick={() => setEditing(true)}
           style={{ padding: "6px 14px", borderRadius: 999, background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", color: "#c4b5fd", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
           Edit
@@ -41,6 +51,7 @@ export default function DisplayNameEditor({ userProfile, onSave }) {
     <div style={{ display: "flex", gap: 8 }}>
       <input type="text" value={name} onChange={e => setName(e.target.value)}
         onKeyDown={e => e.key === "Enter" && handleSave()}
+        placeholder="Enter your name..."
         maxLength={30} autoFocus
         style={{
           flex: 1, padding: "10px 14px", borderRadius: 12,
