@@ -841,7 +841,7 @@ export default function ChatPage() {
             justifyContent: "center",
             position: "relative",
             width: "100%",
-            padding: "0 16px",
+            padding: "0 16px 48px",
             boxSizing: "border-box",
           }}>
             {/* Speaking glow */}
@@ -912,6 +912,19 @@ export default function ChatPage() {
                 <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
               </div>
             )}
+            {/* MemoryCard — floating at bottom of avatar zone, no layout impact */}
+            {messages.filter(m => m.role === "user").length === 0 && (
+              <div style={{
+                position: "absolute", bottom: 0, left: 8, right: 8, zIndex: 5, pointerEvents: "auto"
+              }}>
+                <MemoryCard
+                  memorySummary={memorySummary}
+                  companionName={companionDisplayName || "your companion"}
+                  isPremium={isPremium}
+                  onUpgrade={() => setShowPaywall(true)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Daily affirmation — rendered as fixed overlay, no impact on flex layout */}
@@ -933,17 +946,7 @@ export default function ChatPage() {
 
           {/* MissYouBanner — rendered as fixed overlay below */}
 
-          {/* Memory card — inline in flow, only when no user messages yet */}
-          {messages.filter(m => m.role === "user").length === 0 && (
-            <div style={{ flexShrink: 0 }}>
-              <MemoryCard
-                memorySummary={memorySummary}
-                companionName={companionDisplayName || "your companion"}
-                isPremium={isPremium}
-                onUpgrade={() => setShowPaywall(true)}
-              />
-            </div>
-          )}
+          {/* MemoryCard — rendered as absolute overlay inside avatar zone (see below) */}
 
           {/* Daily check-in removed from layout — mood handled inline in chat */}
 
@@ -1115,6 +1118,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
