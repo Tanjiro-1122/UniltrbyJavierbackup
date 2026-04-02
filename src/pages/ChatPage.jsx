@@ -959,7 +959,7 @@ export default function ChatPage() {
             flex: 1, minHeight: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
             overflow: "hidden",
-            background: "linear-gradient(to bottom, transparent 0%, rgba(6,2,15,0.85) 18%, rgba(6,2,15,0.97) 100%)",
+            background: "transparent",
           }}>
             <ChatMessages
               messages={messages}
@@ -1118,6 +1118,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
