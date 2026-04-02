@@ -5,7 +5,6 @@ import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
   LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
 } from "lucide-react";
-import PaywallModal from "@/components/PaywallModal";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
@@ -90,7 +89,6 @@ export default function Settings() {
   const [screen, setScreen] = useState(null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
   const [userProfile, setUserProfile]         = useState(null);
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
-  const [showPaywall, setShowPaywall]         = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
@@ -749,7 +747,7 @@ export default function Settings() {
 
         {/* Premium banner (if not premium) */}
         {!isPremium && (
-          <button onClick={() => setShowPaywall(true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
+          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
             <span style={{ fontSize: 22 }}>✨</span>
             <div style={{ flex: 1, textAlign: "left" }}>
               <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
@@ -793,7 +791,6 @@ export default function Settings() {
       </AnimatePresence>
 
       {/* ── Paywall ── */}
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} onSubscribe={() => setUserProfile(p => p ? { ...p, is_premium: true } : p)} />
 
       {/* ── PIN Keypad Modal ── */}
       {pinScreen && (
@@ -970,6 +967,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
