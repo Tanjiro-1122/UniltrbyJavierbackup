@@ -10,73 +10,100 @@ function isReactNativeWebView() {
   return typeof window !== 'undefined' && !!window.ReactNativeWebView;
 }
 
-function sendToNative(type, payload = {}) {
-  return new Promise((resolve, reject) => {
-    const bridgeReady = isReactNativeWebView();
-    debugLog(`📡 sendToNative: ${type} | bridge: ${bridgeReady ? '✅ ready' : '❌ NOT FOUND'}`);
+// ── Register the global handler that native calls directly ───────────────────
+// Native wrapper calls: window.onMessageFromRN(jsonString)
+// This follows the proven Close.com pattern for native→web communication
+if (typeof window !== 'undefined') {
+  window._rnMessageHandlers = window._rnMessageHandlers || {};
 
-    if (!bridgeReady) {
-      reject(new Error('Not in React Native WebView'));
-      return;
+  window.onMessageFromRN = function(jsonStr) {
+    try {
+      const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`📨 [RN→WEB] ${data.type}`);
+      const handlers = window._rnMessageHandlers[data.type] || [];
+      handlers.forEach(fn => {
+        try { fn(data); } catch(e) {}
+      });
+      // Also fire as window event for any legacy listeners
+      window.dispatchEvent(new MessageEvent('message', { data }));
+    } catch(e) {
+      debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
     }
+  };
+}
 
+function onceFromNative(types, timeoutMs) {
+  return new Promise((resolve, reject) => {
     let resolved = false;
+    const typeArray = Array.isArray(types) ? types : [types];
 
-    // ✅ PURCHASE has NO timeout — Apple's StoreKit sheet is user-driven and takes as long as needed.
-    // Non-purchase calls (offerings, restore, customer info) keep a 30s timeout.
-    const timeoutMs = type === 'PURCHASE' ? null : 30000;
-
-    const handleResponse = (event) => {
-      if (resolved) return;
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        const responseTypes = {
-          'PURCHASE':          ['PURCHASE_SUCCESS', 'PURCHASE_ERROR'],
-          'RESTORE':           ['RESTORE_RESULT'],
-          'GET_OFFERINGS':     ['OFFERINGS_RESULT'],
-          'GET_CUSTOMER_INFO': ['CUSTOMER_INFO_RESULT'],
-        };
-        const expected = responseTypes[type] || [];
-        if (expected.includes(data.type)) {
-          resolved = true;
-          window.removeEventListener('message', handleResponse);
-          debugLog(`📨 Response: ${data.type} ${data.type.includes('ERROR') ? '❌' : '✅'}`);
-          if (data.type === 'PURCHASE_ERROR') {
-            reject(new Error(data.error || 'Purchase failed'));
-          } else {
-            resolve(data.data);
-          }
+    const cleanup = () => {
+      typeArray.forEach(t => {
+        if (window._rnMessageHandlers[t]) {
+          window._rnMessageHandlers[t] = window._rnMessageHandlers[t].filter(f => f !== handler);
         }
-      } catch (e) {
-        debugLog(`⚠️ Parse error: ${e.message}`);
+      });
+    };
+
+    const handler = (data) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      if (data.type?.includes('ERROR')) {
+        reject(new Error(data.error || data.type));
+      } else {
+        resolve(data);
       }
     };
 
-    window.addEventListener('message', handleResponse);
+    typeArray.forEach(t => {
+      window._rnMessageHandlers[t] = window._rnMessageHandlers[t] || [];
+      window._rnMessageHandlers[t].push(handler);
+    });
 
-    try {
-      const msg = JSON.stringify({ type, ...payload });
-      debugLog(`📤 Posting to native: ${msg.substring(0, 80)}`);
-      window.ReactNativeWebView.postMessage(msg);
-    } catch (e) {
-      window.removeEventListener('message', handleResponse);
-      debugLog(`❌ postMessage failed: ${e.message}`);
-      reject(new Error('Failed to send message'));
-      return;
-    }
-
-    // Only set a timeout for non-purchase calls
     if (timeoutMs) {
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          window.removeEventListener('message', handleResponse);
+          cleanup();
           debugLog(`❌ Timeout after ${timeoutMs / 1000}s — no response from native`);
           reject(new Error('Timeout'));
         }
       }, timeoutMs);
     }
   });
+}
+
+function sendToNative(type, payload = {}) {
+  const bridgeReady = isReactNativeWebView();
+  debugLog(`📡 sendToNative: ${type} | bridge: ${bridgeReady ? '✅ ready' : '❌ NOT FOUND'}`);
+
+  if (!bridgeReady) {
+    return Promise.reject(new Error('Not in React Native WebView'));
+  }
+
+  const responseTypes = {
+    'PURCHASE':          ['PURCHASE_SUCCESS', 'PURCHASE_ERROR'],
+    'RESTORE':           ['RESTORE_RESULT'],
+    'GET_OFFERINGS':     ['OFFERINGS_RESULT'],
+    'GET_CUSTOMER_INFO': ['CUSTOMER_INFO_RESULT'],
+    'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR'],
+  };
+
+  // PURCHASE has no timeout — StoreKit is user-driven
+  const timeoutMs = type === 'PURCHASE' ? null : 30000;
+  const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
+
+  try {
+    const msg = JSON.stringify({ type, ...payload });
+    debugLog(`📤 Posting to native: ${msg.substring(0, 80)}`);
+    window.ReactNativeWebView.postMessage(msg);
+  } catch(e) {
+    debugLog(`❌ postMessage failed: ${e.message}`);
+    return Promise.reject(new Error('Failed to send message'));
+  }
+
+  return waitFor.then(data => data.data !== undefined ? data.data : data);
 }
 
 export class AppleStoreKitService {
@@ -106,7 +133,7 @@ export class AppleStoreKitService {
       }
       debugLog('⚠️ No packages in offerings — falling back to mock');
       return MOCK_PRODUCTS;
-    } catch (e) {
+    } catch(e) {
       debugLog(`❌ getProducts error: ${e.message}`);
       return MOCK_PRODUCTS;
     }
@@ -124,7 +151,6 @@ export class AppleStoreKitService {
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
-      // ✅ No timeout — waits as long as Apple/StoreKit needs
       const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
@@ -134,8 +160,6 @@ export class AppleStoreKitService {
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Premium granted! localStorage updated.');
-
-        // Update Base44 UserProfile so premium persists across reinstalls
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
@@ -145,26 +169,20 @@ export class AppleStoreKitService {
             await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                profileId: profileId || userId,
-                userId,
-                platform:  'ios',
-                productId,
-              }),
+              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios', productId }),
             });
             localStorage.setItem('unfiltr_is_annual', String(isAnnual));
             localStorage.setItem('unfiltr_is_pro',    String(isPro));
             debugLog('✅ UserProfile updated in database');
           }
-        } catch (e) {
+        } catch(e) {
           debugLog(`⚠️ DB update failed (non-fatal): ${e.message}`);
         }
-
         return { isSuccess: true, customerInfo };
       }
       debugLog('❌ Purchase completed but no entitlement found');
       return { isSuccess: false, error: 'Entitlement not found after purchase' };
-    } catch (e) {
+    } catch(e) {
       if (e.message?.toLowerCase().includes('cancel')) {
         debugLog('ℹ️ User cancelled purchase');
         return { isSuccess: false, isCancelled: true };
@@ -183,7 +201,6 @@ export class AppleStoreKitService {
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Restore successful — premium granted');
-
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
@@ -195,17 +212,25 @@ export class AppleStoreKitService {
             });
             debugLog('✅ UserProfile restore updated in database');
           }
-        } catch (e) {
+        } catch(e) {
           debugLog(`⚠️ DB restore update failed (non-fatal): ${e.message}`);
         }
-
         return { isSuccess: true };
       }
       debugLog('⚠️ Restore: no active subscription found');
       return { isSuccess: false, message: 'No subscription found' };
-    } catch (e) {
+    } catch(e) {
       debugLog(`❌ restore error: ${e.message}`);
       return { isSuccess: false, error: e.message };
     }
+  }
+
+  static async signInWithApple() {
+    debugLog('🍎 signInWithApple called, bridge=' + isReactNativeWebView());
+    if (!this.isNative()) {
+      return Promise.reject(new Error('Apple Sign-In only available in the iOS app'));
+    }
+    const result = await sendToNative('SIGN_IN_WITH_APPLE');
+    return result;
   }
 }
