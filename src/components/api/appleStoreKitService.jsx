@@ -47,6 +47,11 @@ function onceFromNative(types, timeoutMs) {
 
     const handler = (data) => {
       if (resolved) return;
+      // WAITING is just an ack — keep listening, don't resolve yet
+      if (data.type === 'APPLE_SIGN_IN_WAITING') {
+        debugLog('🍎 Apple overlay shown — waiting for user tap...');
+        return;
+      }
       resolved = true;
       cleanup();
       if (data.type?.includes('ERROR')) {
@@ -87,11 +92,11 @@ function sendToNative(type, payload = {}) {
     'RESTORE':           ['RESTORE_RESULT'],
     'GET_OFFERINGS':     ['OFFERINGS_RESULT'],
     'GET_CUSTOMER_INFO': ['CUSTOMER_INFO_RESULT'],
-    'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR'],
+    'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
   };
 
-  // PURCHASE has no timeout — StoreKit is user-driven
-  const timeoutMs = type === 'PURCHASE' ? null : 30000;
+  // PURCHASE and SIGN_IN_WITH_APPLE have no timeout — user-driven flows
+  const timeoutMs = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : 30000;
   const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
 
   try {
@@ -234,3 +239,4 @@ export class AppleStoreKitService {
     return result;
   }
 }
+
