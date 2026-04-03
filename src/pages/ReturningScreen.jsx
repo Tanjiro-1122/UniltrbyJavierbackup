@@ -4,31 +4,65 @@ import { motion } from "framer-motion";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
-function signInWithApple(navigate) {
+function signInWithApple(navigate, setLoading) {
   const bridge = window.ReactNativeWebView;
   if (!bridge) {
     navigate("/hub");
     return;
   }
-  const handler = (e) => {
+
+  let resolved = false;
+
+  const handleResult = (msg) => {
+    if (resolved) return;
+
+    // Ignore WAITING — just means the native overlay appeared
+    if (msg.type === "APPLE_SIGN_IN_WAITING") return;
+
+    resolved = true;
+    cleanup();
+
+    if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
+      const { appleUserId, email, fullName } = msg.data || {};
+      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+      localStorage.setItem("unfiltr_user_id", appleUserId);
+      localStorage.setItem("unfiltr_auth_token", appleUserId);
+      if (email) localStorage.setItem("unfiltr_apple_email", email);
+      if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
+      navigate("/hub");
+    } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
+      setLoading(false);
+      navigate("/hub");
+    }
+  };
+
+  // PRIMARY: onMessageFromRN — matches our fixed bridge in index.tsx
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
     try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-        window.removeEventListener("message", handler);
-        const { appleUserId, email, fullName } = msg.data || {};
-        localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-        localStorage.setItem("unfiltr_user_id", appleUserId);
-        localStorage.setItem("unfiltr_auth_token", appleUserId);
-        if (email) localStorage.setItem("unfiltr_apple_email", email);
-        if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-        navigate("/hub");
-      } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
-        window.removeEventListener("message", handler);
-        navigate("/hub");
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      handleResult(msg);
+    } catch {}
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
+  };
+
+  // FALLBACK: window message event
+  const windowHandler = (e) => {
+    try {
+      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg.type)) {
+        handleResult(msg);
       }
     } catch {}
   };
-  window.addEventListener("message", handler);
+  window.addEventListener("message", windowHandler);
+
+  const cleanup = () => {
+    window.onMessageFromRN = prevHandler;
+    window.removeEventListener("message", windowHandler);
+  };
+
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
 }
 
@@ -43,7 +77,7 @@ export default function ReturningScreen() {
 
   const handleAppleSignIn = () => {
     setLoading(true);
-    signInWithApple(navigate);
+    signInWithApple(navigate, setLoading);
   };
 
   return (
