@@ -28,6 +28,7 @@ import AdminAvatarProcessor   from "./pages/AdminAvatarProcessor";
 import AdminDashboard         from "./pages/AdminDashboard";
 import FeedbackAdmin          from "./pages/admin/FeedbackAdmin";
 import OnboardingBackground   from "./pages/onboarding/OnboardingBackground";
+import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import OnboardingCompanion    from "./pages/onboarding/OnboardingCompanion";
 import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
@@ -258,6 +259,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Onboarding */}
         <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
+        <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
