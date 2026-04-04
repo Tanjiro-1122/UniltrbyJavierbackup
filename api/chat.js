@@ -5,27 +5,21 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const CRISIS_KEYWORDS = ["suicide","kill myself","end my life","self harm","cutting myself","want to die","hurt myself","don't want to live"];
 
 // ── Tier-based model selection ──────────────────────────────────────────────
-// FREE:   gpt-3.5-turbo  — fast, cheap, good enough
-// PLUS:   gpt-4o-mini    — noticeably better, default paid experience
-// PRO:    gpt-4o-mini    — same model but higher limits + more context
-// ANNUAL: gpt-4o-mini    — same model, full context, no restrictions
 function getModel(isPremium, isPro, isAnnual) {
   if (!isPremium && !isPro && !isAnnual) return "gpt-3.5-turbo";
   return "gpt-4o-mini";
 }
 
-// Max tokens by tier
 function getMaxTokens(isPremium, isPro, isAnnual) {
-  if (!isPremium && !isPro && !isAnnual) return 250;  // Free — short, snappy replies
-  if (isPro || isAnnual)                return 800;   // Pro/Annual — fuller replies
-  return 600;                                          // Plus — standard
+  if (!isPremium && !isPro && !isAnnual) return 250;
+  if (isPro || isAnnual)                return 800;
+  return 600;
 }
 
-// Context window (how many past messages to include)
 function getContextWindow(isPremium, isPro, isAnnual) {
-  if (!isPremium && !isPro && !isAnnual) return 4;   // Free — last 4 messages only
-  if (isPro || isAnnual)                return 20;   // Pro/Annual — rich context
-  return 10;                                          // Plus — standard
+  if (!isPremium && !isPro && !isAnnual) return 4;
+  if (isPro || isAnnual)                return 20;
+  return 10;
 }
 
 function buildPersonalityParagraph(p = {}) {
@@ -61,14 +55,78 @@ function buildPersonalityParagraph(p = {}) {
   };
 
   const lines = [
-    vibeMap[p.vibe]           || "",
-    empathyMap[p.empathy]     || "",
-    humorMap[p.humor]         || "",
-    curiosityMap[p.curiosity] || "",
-    styleMap[p.style]         || "",
+    vibeMap[p.vibe], empathyMap[p.empathy], humorMap[p.humor],
+    curiosityMap[p.curiosity], styleMap[p.style],
   ].filter(Boolean);
 
   return lines.length ? "\n\nPersonality traits:\n" + lines.join(" ") : "";
+}
+
+// ── Build a rich, structured memory block for the system prompt ─────────────
+// This is the MOST IMPORTANT function for memory quality.
+// It converts our stored facts + sessions into natural language the AI understands perfectly.
+function buildMemoryBlock(memorySummary, userFacts, sessionMemory, isPremium, isPro, isAnnual) {
+  const parts = [];
+
+  // ── Structured facts (highest priority — AI should absolutely use these) ──
+  if (userFacts && Object.keys(userFacts).length > 0) {
+    const f = userFacts;
+    const factLines = [];
+
+    if (f.name) factLines.push(`Their name is ${f.name}.`);
+    if (f.age) factLines.push(`They are ${f.age} years old.`);
+    if (f.location) factLines.push(`They're based in ${f.location}.`);
+    if (f.occupation) factLines.push(`They work as ${f.occupation}.`);
+    if (f.relationship_status) factLines.push(`Relationship status: ${f.relationship_status}.`);
+
+    if (f.important_people?.length) {
+      const people = f.important_people
+        .map(p => `${p.name} (${p.role}${p.note ? `, ${p.note}` : ""})`)
+        .join(", ");
+      factLines.push(`Important people in their life: ${people}.`);
+    }
+
+    if (f.recurring_struggles?.length) {
+      factLines.push(`They regularly deal with: ${f.recurring_struggles.join(", ")}.`);
+    }
+
+    if (f.goals?.length) {
+      factLines.push(`Their goals/dreams: ${f.goals.join(", ")}.`);
+    }
+
+    if (f.core_values?.length) {
+      factLines.push(`They deeply care about: ${f.core_values.join(", ")}.`);
+    }
+
+    if (f.hobbies?.length) {
+      factLines.push(`Hobbies/interests: ${f.hobbies.join(", ")}.`);
+    }
+
+    if (f.communication_style) {
+      factLines.push(`How they communicate: ${f.communication_style}.`);
+    }
+
+    if (factLines.length) {
+      parts.push("=== What you know about this person ===\n" + factLines.join("\n"));
+    }
+  }
+
+  // ── Recent session history (emotional arc) ────────────────────────────────
+  const sessionsToShow = isPro || isAnnual ? 5 : isPremium ? 3 : 1;
+  if (sessionMemory?.length) {
+    const recent = sessionMemory.slice(0, sessionsToShow);
+    const sessionLines = recent.map(s => `• [${s.date}] ${s.summary}`).join("\n");
+    parts.push("=== Recent conversations ===\n" + sessionLines);
+  }
+
+  // ── Fallback: raw summary if no structured data yet ───────────────────────
+  if (parts.length === 0 && memorySummary) {
+    parts.push("What you remember about this user:\n" + memorySummary);
+  }
+
+  if (!parts.length) return "";
+
+  return "\n\n" + parts.join("\n\n") + "\n\nIMPORTANT: Use this context naturally. If you know their name, use it occasionally. Reference their struggles or goals when relevant. Never say 'As I remember from our last conversation' — just naturally USE the knowledge.";
 }
 
 export default async function handler(req, res) {
@@ -80,6 +138,7 @@ export default async function handler(req, res) {
       systemPrompt,
       memorySummary,
       sessionMemory,
+      userFacts,        // NEW: structured fact object from UserProfile
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
@@ -93,15 +152,12 @@ export default async function handler(req, res) {
     const ctxWindow  = getContextWindow(isPremium, isPro, isAnnual);
 
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
-    const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
     const personalityCtx = buildPersonalityParagraph(personality);
 
-    // Session memory context (paid tiers only)
-    let sessionCtx = "";
-    if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
-      const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
-      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
-    }
+    // ── Rich structured memory block (replaces the old flat string) ──────────
+    const memoryBlock = buildMemoryBlock(
+      memorySummary, userFacts, sessionMemory, isPremium, isPro, isAnnual
+    );
 
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
@@ -111,7 +167,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx +
+          content: system + personalityCtx + memoryBlock +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
@@ -122,16 +178,13 @@ export default async function handler(req, res) {
 
     const raw = response.choices[0]?.message?.content || "Hey, I am here for you 💜";
 
-    // Extract mood tag from end of response
     const moodMatch = raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue)/i);
     const mood  = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
-    // Crisis detection
     const lower  = reply.toLowerCase() + " " + (messages[messages.length - 1]?.content || "").toLowerCase();
     const crisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
 
-    // Return tier info so client can log it (optional, for debugging)
     res.status(200).json({ reply, mood, crisis, _tier: model });
 
   } catch (err) {
