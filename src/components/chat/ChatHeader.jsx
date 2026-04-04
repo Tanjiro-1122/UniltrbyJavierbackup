@@ -7,6 +7,7 @@ export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
   isPremium, messages, companion, navigate,
   setMessages, vibe,
+  onNavigateToSettings,
   onShowGames, onShowMeditation, onShowAchievements,
   onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
 }) {
@@ -27,7 +28,6 @@ export default function ChatHeader({
         },
       },
     });
-    // Save to localStorage only — never to the cloud
     const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     const entry = {
       id: Date.now().toString(),
@@ -43,8 +43,8 @@ export default function ChatHeader({
     toast.success("Journal entry saved ✨");
     navigate("/journal");
   };
+
   const handleNewChat = async () => {
-    // Save current messages to localStorage only — never to the cloud
     const userMessages = messages.filter(m => m.role === "user" && m.content);
     if (userMessages.length > 0) {
       const toSave = messages.filter(m => m.content && m.content !== "__ERROR__").slice(0, 20);
@@ -57,10 +57,12 @@ export default function ChatHeader({
       };
       const history = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
       history.unshift(session);
-      // Keep last 50 sessions
       localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(history.slice(0, 50)));
     }
     localStorage.removeItem("unfiltr_chat_history");
+    // Also clear the in-session backup so new chat starts fresh
+    sessionStorage.removeItem("unfiltr_chat_messages");
+    sessionStorage.removeItem("unfiltr_returning_from_settings");
     const name = companion.displayName || companion.name;
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Hey";
@@ -76,6 +78,16 @@ export default function ChatHeader({
     a.download = `unfiltr-chat-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSettings = () => {
+    // Use the prop if provided (ChatPage sets the restore flag before navigating)
+    // Fall back to plain navigate for safety
+    if (onNavigateToSettings) {
+      onNavigateToSettings();
+    } else {
+      navigate("/settings");
+    }
   };
 
   return (
@@ -94,7 +106,7 @@ export default function ChatHeader({
     }}>
       {/* Left side: back + voice */}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <button onClick={() => navigate("/hub")}
+        <button onClick={() => navigate(-1)}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={18} color="white" />
         </button>
@@ -106,7 +118,6 @@ export default function ChatHeader({
 
       {/* Center: feature icons */}
       <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", scrollbarWidth: "none" }}>
-        {/* Topics — prominent pill button so users can actually see it */}
         <button onClick={onShowTopics}
           style={{
             height: 30, borderRadius: 999, border: "1px solid rgba(168,85,247,0.5)",
@@ -153,7 +164,7 @@ export default function ChatHeader({
           title="New chat">
           <RotateCcw size={14} color="white" />
         </button>
-        <button onClick={() => navigate("/settings")}
+        <button onClick={handleSettings}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Settings size={14} color="white" />
         </button>
