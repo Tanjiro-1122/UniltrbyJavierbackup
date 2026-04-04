@@ -248,25 +248,50 @@ export default function MeditatePage() {
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:24 }}>
-          <motion.div
-            animate={{ scale: breathwork.pattern.length > 0 ? breathScale : [1,1.1,1] }}
-            transition={ breathwork.pattern.length > 0
-              ? { duration: curPhaseDur, ease: curPhaseName.toLowerCase()==="inhale" ? "easeIn" : "easeOut" }
-              : { repeat:Infinity, duration:4, ease:"easeInOut" }
-            }
-            style={{ width:180, height:180, borderRadius:"50%",
-              background:"radial-gradient(circle at 40% 35%, rgba(168,85,247,0.65) 0%, rgba(219,39,119,0.3) 50%, rgba(6,2,15,0.2) 100%)",
-              boxShadow:"0 0 60px rgba(168,85,247,0.45), 0 0 120px rgba(168,85,247,0.18)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-            }}
-          >
-            {breathwork.pattern.length > 0 && (
-              <div style={{ textAlign:"center" }}>
-                <p style={{ color:"white", fontWeight:700, fontSize:18, margin:"0 0 2px" }}>{curPhaseName}</p>
-                <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, margin:0 }}>{curPhaseDur - breathCount}s</p>
-              </div>
-            )}
-          </motion.div>
+          {/* Outer pulse rings */}
+          <div style={{ position:"relative", width:220, height:220, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {/* Ring 3 — outermost ambient pulse */}
+            <motion.div
+              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.15, 1] : [1,1.22,1] }}
+              transition={ breathwork.pattern.length > 0
+                ? { duration: curPhaseDur * 1.1, ease:"easeInOut", repeat:0 }
+                : { repeat:Infinity, duration:4.5, ease:"easeInOut" }
+              }
+              style={{ position:"absolute", width:210, height:210, borderRadius:"50%",
+                border:"1px solid rgba(168,85,247,0.12)", pointerEvents:"none" }}
+            />
+            {/* Ring 2 — middle ring */}
+            <motion.div
+              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.08, 1] : [1,1.13,1] }}
+              transition={ breathwork.pattern.length > 0
+                ? { duration: curPhaseDur, ease:"easeInOut", repeat:0 }
+                : { repeat:Infinity, duration:4, ease:"easeInOut", delay:0.3 }
+              }
+              style={{ position:"absolute", width:196, height:196, borderRadius:"50%",
+                border:"1.5px solid rgba(168,85,247,0.22)", pointerEvents:"none" }}
+            />
+            {/* Core breathing orb */}
+            <motion.div
+              animate={{ scale: breathwork.pattern.length > 0 ? breathScale : [1,1.1,1] }}
+              transition={ breathwork.pattern.length > 0
+                ? { duration: curPhaseDur, ease: curPhaseName.toLowerCase()==="inhale" ? "easeIn" : "easeOut" }
+                : { repeat:Infinity, duration:4, ease:"easeInOut" }
+              }
+              style={{ width:180, height:180, borderRadius:"50%",
+                background:"radial-gradient(circle at 40% 35%, rgba(168,85,247,0.65) 0%, rgba(219,39,119,0.3) 50%, rgba(6,2,15,0.2) 100%)",
+                boxShadow:"0 0 60px rgba(168,85,247,0.45), 0 0 120px rgba(168,85,247,0.18)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                position:"relative", zIndex:2,
+              }}
+            >
+              {breathwork.pattern.length > 0 && (
+                <div style={{ textAlign:"center" }}>
+                  <p style={{ color:"white", fontWeight:700, fontSize:18, margin:"0 0 2px" }}>{curPhaseName}</p>
+                  <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, margin:0 }}>{curPhaseDur - breathCount}s</p>
+                </div>
+              )}
+            </motion.div>
+          </div>
           {breathwork.pattern.length > 0 && (
             <div style={{ display:"flex", gap:8 }}>
               {breathwork.phases.map((_,i) => (
