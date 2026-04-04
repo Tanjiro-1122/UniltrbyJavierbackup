@@ -18,98 +18,59 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
     return;
   }
 
-  // Always tear down any previous sign-in listener before starting a new one
-  if (window.__appleSignInCleanup) {
-    debugLog('[WEB] cleaning up previous sign-in listener');
-    window.__appleSignInCleanup();
-    window.__appleSignInCleanup = null;
+  // Unregister any leftover handlers from a previous tap
+  if (window.__nativeBus) {
+    window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
+    window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
+    window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
   }
 
-  let resolved = false;
-
-  const handleResult = (msg) => {
-    if (resolved) return;
-    if (msg.type === "APPLE_SIGN_IN_WAITING") {
-      debugLog('[WEB] 🍎 Waiting for user tap...');
-      return;
+  const done = (fn) => {
+    // Unregister all Apple sign-in handlers after first result
+    if (window.__nativeBus) {
+      window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
+      window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
+      window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
     }
+    fn();
+  };
 
-    // ACK the native retry mechanism so it stops resending
-    if (msg.__msgId && window.ReactNativeWebView) {
-      try {
-        if (!window.__nativeAcks) window.__nativeAcks = {};
-        window.__nativeAcks[msg.__msgId] = true;
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: '__ACK_CONFIRMED', msgId: msg.__msgId }));
-      } catch(e) {}
-    }
+  // Register handlers on the global bus — these survive re-renders
+  if (window.__nativeBus) {
+    window.__nativeBus.on("APPLE_SIGN_IN_SUCCESS", (msg) => {
+      done(() => {
+        const payload = msg.data || msg;
+        const appleUserId = payload.appleUserId || payload.user;
+        const email = payload.email;
+        const fullName = payload.fullName;
+        debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
+        if (!appleUserId) { setLoading(false); return; }
+        localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+        localStorage.setItem("unfiltr_user_id", appleUserId);
+        localStorage.setItem("unfiltr_auth_token", appleUserId);
+        if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
+        if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
+        if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
+        const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+        navigate(onboardingDone ? "/hub" : "/onboarding/consent");
+      });
+    });
 
-    resolved = true;
-    cleanup();
-
-    if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      const payload = msg.data || msg;
-      const appleUserId = payload.appleUserId || payload.user;
-      const email = payload.email;
-      const fullName = payload.fullName;
-      debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-      if (!appleUserId) {
-        debugLog('[WEB] ❌ No appleUserId in payload');
+    window.__nativeBus.on("APPLE_SIGN_IN_CANCELLED", () => {
+      done(() => {
+        debugLog('[WEB] 🚫 Apple sign-in cancelled');
         setLoading(false);
-        return;
-      }
-      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-      localStorage.setItem("unfiltr_user_id", appleUserId);
-      localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (!localStorage.getItem("userProfileId")) {
-        localStorage.setItem("userProfileId", appleUserId);
-      }
-      if (email) {
-        localStorage.setItem("unfiltr_apple_email", email);
-        localStorage.setItem("unfiltr_user_email", email);
-      }
-      if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
-      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      navigate(onboardingDone ? "/hub" : "/onboarding/consent");
-    } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      // Just reset the button — do NOT navigate away, let them try again
-      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
-      setLoading(false);
-    } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
-      debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
-      setLoading(false);
-    }
-  };
+      });
+    });
 
-  const prevHandler = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-      debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
-      handleResult(msg);
-    } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
-    if (typeof prevHandler === "function") prevHandler(jsonStr);
-  };
-
-  const windowHandler = (e) => {
-    try {
-      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
-        debugLog(`[WEB] window message fallback: ${msg.type}`);
-        handleResult(msg);
-      }
-    } catch {}
-  };
-  window.addEventListener("message", windowHandler);
-
-  const cleanup = () => {
-    window.__appleSignInCleanup = null;
-    window.onMessageFromRN = prevHandler;
-    window.removeEventListener("message", windowHandler);
-  };
-
-  // Store cleanup so next tap can tear down this listener first
-  window.__appleSignInCleanup = cleanup;
+    window.__nativeBus.on("APPLE_SIGN_IN_ERROR", (msg) => {
+      done(() => {
+        debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
+        setLoading(false);
+      });
+    });
+  }
 
   debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
