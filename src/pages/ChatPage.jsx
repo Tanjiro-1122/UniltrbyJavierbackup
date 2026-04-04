@@ -750,7 +750,7 @@ export default function ChatPage() {
     resumeAudioContext().catch(() => {});
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      alert("Voice input isn't supported on this device. Try typing instead!");
+      // Voice not supported — fail silently on iOS where it's never triggered
       return;
     }
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -1141,6 +1141,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
