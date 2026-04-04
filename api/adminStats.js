@@ -42,19 +42,25 @@ export default async function handler(req, res) {
       fetchEntity("Feedback").catch(() => []),
     ]);
 
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const weekAgo  = new Date(Date.now() - 7 * 86400000).toISOString();
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+    const weekAgo = new Date(now - 7 * 86400000).toISOString();
+    const fiveMinAgo = new Date(now - 5 * 60 * 1000).toISOString();
+    const onlineNow = allProfiles.filter(p => p.last_seen && p.last_seen >= fiveMinAgo).length;
+    const appleUsers = allProfiles.filter(p => p.apple_user_id && p.apple_user_id.trim() !== "").length;
 
     return res.status(200).json({
       totalUsers:          allProfiles.length,
       premiumUsers:        allProfiles.filter(p => p.is_premium || p.annual_plan || p.pro_plan).length,
       trialUsers:          allProfiles.filter(p => p.trial_active).length,
-      todayMessages:       allMessages.filter(m => (m.created_date || m.session_date || "").startsWith(todayKey)).length,
+      onlineNow,
+      appleUsers,
+      todayMessages:       allMessages.filter(m => (m.created_date || "").startsWith(todayKey)).length,
       totalMessages:       allMessages.length,
       totalJournalEntries: allMessages.filter(m => m.mood_mode === "journal").length,
       crisisFlags:         allMessages.filter(m => m.is_crisis_flagged).length,
       newThisWeek:         allProfiles.filter(p => (p.created_date || "") >= weekAgo).length,
-      activeThisWeek:      allProfiles.filter(p => (p.last_active || "") >= weekAgo).length,
+      activeThisWeek:      allProfiles.filter(p => (p.last_seen || p.last_active || "") >= weekAgo).length,
       companions:          0,
       feedbackCount:       allFeedback.length,
       openFeedback:        allFeedback.filter(f => f.status !== "resolved").length,
@@ -68,10 +74,12 @@ export default async function handler(req, res) {
           display_name: p.display_name || "Anonymous",
           user_id: p.user_id || p.id?.slice(0, 12),
           created_date: p.created_date,
-          last_active: p.last_active,
+          last_seen: p.last_seen || null,
           is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan),
           trial_active: p.trial_active,
           message_count: p.message_count || 0,
+          apple_user_id: p.apple_user_id ? "✅" : "—",
+          online: p.last_seen && p.last_seen >= fiveMinAgo,
         })),
       premiumList: [...allProfiles]
         .filter(p => p.is_premium || p.annual_plan || p.pro_plan)
