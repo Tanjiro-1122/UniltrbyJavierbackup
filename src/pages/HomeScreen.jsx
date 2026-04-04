@@ -159,23 +159,30 @@ export default function HomeScreen() {
 
         {/* Sign in with Apple */}
         {isNative && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleAppleSignIn}
-            disabled={loading}
-            style={{
-              width: "100%", padding: "18px",
-              background: "white", border: "none", borderRadius: 20,
-              color: "#000", fontWeight: 800, fontSize: 17,
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflow: "visible",
-              marginBottom: 12,
-              opacity: loading ? 0.7 : 1,
-            }}>
-            <span style={{fontSize: 20, lineHeight: 1, flexShrink: 0}}></span>
-            {loading ? "Signing in..." : "Sign in with Apple"}
-          </motion.button>
+          <>
+            <motion.button
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleAppleSignIn}
+              disabled={loading}
+              style={{
+                width: "100%", padding: "18px",
+                background: "white", border: "none", borderRadius: 20,
+                color: "#000", fontWeight: 800, fontSize: 17,
+                cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflow: "visible",
+                marginBottom: 6,
+                opacity: loading ? 0.7 : 1,
+              }}>
+              <span style={{fontSize: 20, lineHeight: 1, flexShrink: 0}}></span>
+              {loading ? "Signing in..." : "Sign in with Apple"}
+            </motion.button>
+            <motion.p
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+              style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center", margin: "0 0 10px", lineHeight: 1.4 }}>
+              First time? The app may take a moment to load — if nothing happens, wait 3 seconds and tap again.
+            </motion.p>
+          </>
         )}
 
         {/* Continue as Guest / Meet companion */}
@@ -243,4 +250,5 @@ export default function HomeScreen() {
     </div>
   );
 }
+
 
