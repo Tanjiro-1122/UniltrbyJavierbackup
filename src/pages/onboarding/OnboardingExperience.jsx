@@ -35,7 +35,7 @@ const EXPERIENCES = [
   },
   {
     id: "meditate",
-    emoji: `${NOTO}/1f9d8/512.webp`,
+    emoji: `${NOTO}/1faa4/512.webp`,
     label: "Meditate",
     sub: "Find your calm",
     desc: "Breathe. Reset. Recharge.\nGuided sessions to bring\nyou back to yourself.",
