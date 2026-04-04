@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Users, MessageSquare, Crown, ShieldAlert, Phone, Heart,
   RefreshCw, BookOpen, AlertTriangle, MessageSquareMore, LogOut, ChevronRight
@@ -15,6 +16,7 @@ export default function AdminDashboard() {
   const [loading, setLoading]     = useState(false);
   const [errorDetail, setErrorDetail] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
 
   // Load data once unlocked
   useEffect(() => { if (unlocked) loadData(); }, [unlocked]);
@@ -136,6 +138,9 @@ export default function AdminDashboard() {
             <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0 }}>Management Portal</p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => navigate("/settings")} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+              ←
+            </button>
             <button onClick={loadData} disabled={loading} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <RefreshCw size={15} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
             </button>
