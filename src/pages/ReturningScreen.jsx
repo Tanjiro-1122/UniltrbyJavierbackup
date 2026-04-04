@@ -23,11 +23,21 @@ function signInWithApple(navigate, setLoading) {
     cleanup();
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      const { appleUserId, email, fullName } = msg.data || {};
+      const payload = msg.data || msg;
+      const appleUserId = payload.appleUserId || payload.user;
+      const email = payload.email;
+      const fullName = payload.fullName;
+      if (!appleUserId) { setLoading && setLoading(false); return; }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (email) localStorage.setItem("unfiltr_apple_email", email);
+      if (!localStorage.getItem("userProfileId")) {
+        localStorage.setItem("userProfileId", appleUserId);
+      }
+      if (email) {
+        localStorage.setItem("unfiltr_apple_email", email);
+        localStorage.setItem("unfiltr_user_email", email);
+      }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
