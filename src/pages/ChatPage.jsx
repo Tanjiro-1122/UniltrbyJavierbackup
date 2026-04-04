@@ -207,9 +207,9 @@ export default function ChatPage() {
           const profile = await base44.entities.UserProfile.get(pid);
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
-          const premium = !!(profile?.is_premium || profile?.premium);
           const annual  = !!(profile?.annual_plan);
           const pro     = !!(profile?.pro_plan);
+          const premium = !!(profile?.is_premium || profile?.premium || annual || pro);
           setIsPremium(premium);
           setIsAnnual(annual);
           setIsPro(pro);
@@ -883,17 +883,17 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter */}
-            {!isPremium ? (
-              <button onClick={() => navigate('/Pricing')}
-                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
-              </button>
-            ) : (
-              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today
-              </div>
-            )}
+            {/* Msg counter — hidden for premium/annual/pro/family users */}
+            {(() => {
+              const isUnlimited = isPremium || isAnnual || isPro || localStorage.getItem("unfiltr_family_unlock") === "true";
+              if (isUnlimited) return null;
+              return (
+                <button onClick={() => navigate('/Pricing')}
+                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                  {remaining}/{FREE_LIMIT} msgs left today · Go Premium
+                </button>
+              );
+            })()}
 
             {/* Streak banner */}
             {showStreakBanner && !showStreakReward && (
@@ -931,7 +931,7 @@ export default function ChatPage() {
                 <MemoryCard
                   memorySummary={memorySummary}
                   companionName={companionDisplayName || "your companion"}
-                  isPremium={isPremium}
+                  isPremium={isPremium || isAnnual || isPro || localStorage.getItem("unfiltr_family_unlock") === "true"}
                   onUpgrade={() => navigate('/Pricing')}
                 />
               </div>
