@@ -99,6 +99,7 @@ export default function OnboardingBackground() {
       const profileData = {
         display_name: store.displayName?.trim() || "",
         companion_id: companion.id,
+        apple_user_id: localStorage.getItem("unfiltr_apple_user_id") || "",
         is_premium: !!(store.isTesterAccount),
         trial_active: !!(store.isTesterAccount),
         trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
