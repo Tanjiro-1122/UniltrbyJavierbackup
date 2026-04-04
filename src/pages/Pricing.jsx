@@ -252,6 +252,7 @@ export default function Pricing() {
   }, []);
 
   const selectedPlan = PLANS.find(p => p.id === planType) || PLANS[0];
+  const [purchaseTimedOut, setPurchaseTimedOut] = React.useState(false);
 
   // 5 taps on ✨ → opens IAP debug panel
   const handleSparkTap = () => {
@@ -267,20 +268,34 @@ export default function Pricing() {
   };
 
   const handleSubscribe = async () => {
-    const result = await purchase(selectedPlan.productId);
-    if (result?.success || result?.isSuccess) {
-      const profileId = localStorage.getItem('userProfileId');
-      if (profileId) {
-        await base44.entities.UserProfile.update(profileId, {
-          is_premium:  true,
-          annual_plan: selectedPlan.isAnnual,
-          pro_plan:    selectedPlan.isPro,
-        });
-        localStorage.setItem('unfiltr_is_premium', 'true');
-        localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
-        localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+    setPurchaseTimedOut(false);
+    // Safety timeout — if App Store never responds in 90s, show retry button
+    const timeoutId = setTimeout(() => {
+      setPurchaseTimedOut(true);
+    }, 90000);
+
+    try {
+      const result = await purchase(selectedPlan.productId);
+      clearTimeout(timeoutId);
+      if (result?.success || result?.isSuccess) {
+        const profileId = localStorage.getItem('userProfileId');
+        if (profileId) {
+          await base44.entities.UserProfile.update(profileId, {
+            is_premium:  true,
+            annual_plan: selectedPlan.isAnnual,
+            pro_plan:    selectedPlan.isPro,
+          });
+          localStorage.setItem('unfiltr_is_premium', 'true');
+          localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
+          localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+        }
+        navigate(-1);
+      } else if (result?.cancelled) {
+        // User cancelled — reset cleanly, no error message
+        clearTimeout(timeoutId);
       }
-      navigate(-1);
+    } catch(e) {
+      clearTimeout(timeoutId);
     }
   };
 
@@ -384,7 +399,7 @@ export default function Pricing() {
 
               {/* CTA */}
               <button
-                onClick={handleSubscribe}
+                onClick={() => { setPurchaseTimedOut(false); handleSubscribe(); }}
                 disabled={purchasing}
                 style={{
                   width: '100%', padding: '16px 0', borderRadius: 16,
@@ -400,6 +415,16 @@ export default function Pricing() {
                   ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
                   : `Start ${planType === 'annual' ? 'Annual' : planType === 'pro' ? 'Pro' : 'Plus'} — ${selectedPlan.label.split(' ')[0]}`}
               </button>
+
+              {purchaseTimedOut && (
+                <div style={{ marginTop: 10, padding: '12px 16px', background: 'rgba(239,68,68,0.15)', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
+                  <p style={{ color: '#fca5a5', fontSize: 13, margin: '0 0 8px', fontWeight: 600 }}>App Store isn't responding. Tap below to try again.</p>
+                  <button onClick={() => { setPurchaseTimedOut(false); handleSubscribe(); }}
+                    style={{ background: 'rgba(239,68,68,0.35)', border: 'none', borderRadius: 8, color: 'white', padding: '8px 20px', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
+                    Try Again
+                  </button>
+                </div>
+              )}
 
               <button onClick={handleRestore} style={{
                 width: '100%', padding: '12px 0', borderRadius: 14,
