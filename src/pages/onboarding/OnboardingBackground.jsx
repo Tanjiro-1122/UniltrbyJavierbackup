@@ -176,7 +176,7 @@ export default function OnboardingBackground() {
           <ChevronLeft size={20} color="white" />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 600 }}>Step 7 of 7</div>
+          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 600 }}>Step 6 of 6</div>
           <div style={{ height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 99, marginTop: 4, overflow: "hidden" }}>
             <div style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#7c3aed,#db2777)", borderRadius: 99 }} />
           </div>
