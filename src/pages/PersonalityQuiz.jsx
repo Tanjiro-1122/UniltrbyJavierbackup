@@ -82,7 +82,8 @@ export default function PersonalityQuiz() {
       await navigator.share({ title: "My Unfiltr Match", text });
     } else {
       await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
+      // Clipboard copied silently
+      
     }
   };
 
