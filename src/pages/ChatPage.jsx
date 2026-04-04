@@ -303,6 +303,19 @@ export default function ChatPage() {
   useEffect(() => {
     if (!companion) return;
 
+    // ── Restore chat if returning from Settings ───────────────────────────
+    try {
+      const saved = sessionStorage.getItem("unfiltr_chat_messages");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          sessionStorage.removeItem("unfiltr_chat_messages");
+          return;
+        }
+      }
+    } catch {}
+
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
     if (meditationRaw) {
