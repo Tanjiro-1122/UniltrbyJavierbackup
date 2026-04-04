@@ -73,6 +73,7 @@ export default function ChatPage() {
   const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium]       = useState(false);
   const [sessionMemory, setSessionMemory] = useState([]);
+  const [userFacts, setUserFacts]         = useState({});
   const [showMemoryBanner, setShowMemoryBanner] = useState(false);
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
@@ -603,7 +604,13 @@ export default function ChatPage() {
       let localMemSummary = memorySummary; // use existing state value
       try {
         const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); localMemSummary = prof?.memory_summary || ""; setMemorySummary(localMemSummary); }
+        if (pid2) {
+        const prof = await base44.entities.UserProfile.get(pid2);
+        localMemSummary = prof?.memory_summary || "";
+        setMemorySummary(localMemSummary);
+        if (prof?.user_facts) setUserFacts(prof.user_facts);
+        if (prof?.session_memory) setSessionMemory(prof.session_memory);
+      }
       } catch {}
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
@@ -636,6 +643,7 @@ export default function ChatPage() {
         systemPrompt, isPremium, isPro, isAnnual,
         sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
         memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
+        userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
         imageBase64: imgBase64,
         personality: personalityPayload,
       });
@@ -697,15 +705,21 @@ export default function ChatPage() {
       const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-      const summarizeInterval = isPremium ? 10 : 8;
-      if (profileId2 && userMsgCount >= 4 && userMsgCount % summarizeInterval === 0) {
+      // Save memory after every 5 user messages (was 8-10 — too infrequent)
+      // Also always save at end-of-session marker (4 messages for a meaningful note)
+      const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
+      if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         base44.functions.invoke("summarizeSession", {
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
-            base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); }).catch(() => {});
+            base44.entities.UserProfile.get(profileId2).then(p => {
+              if (p?.session_memory) setSessionMemory(p.session_memory);
+              if (p?.user_facts)     setUserFacts(p.user_facts);
+              if (p?.memory_summary) setMemorySummary(p.memory_summary);
+            }).catch(() => {});
           }
         }).catch(() => {});
       }
@@ -917,6 +931,8 @@ export default function ChatPage() {
               }}>
                 <MemoryCard
                   memorySummary={memorySummary}
+                  userFacts={userFacts}
+                  sessionMemory={sessionMemory}
                   companionName={companionDisplayName || "your companion"}
                   isPremium={isPremium}
                   onUpgrade={() => navigate('/Pricing')}
