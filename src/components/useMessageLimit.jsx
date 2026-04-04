@@ -27,20 +27,25 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     let daily   = FREE_DAILY;
     let monthly = FREE_MONTHLY;
 
-    if (isAnnual) {
+    // Family/admin override — unlimited if flag is set in localStorage
+    const hasOverride  = localStorage.getItem("unfiltr_msg_limit_override") === "true";
+    const hasFamilyKey = localStorage.getItem("unfiltr_family_unlock") === "true";
+    const lsPremium    = localStorage.getItem("unfiltr_is_premium") === "true";
+
+    if (hasOverride || hasFamilyKey || isAnnual) {
       daily   = ANNUAL_DAILY;
       monthly = ANNUAL_MONTHLY;
     } else if (isPro) {
       daily   = PRO_DAILY;
       monthly = PRO_MONTHLY;
-    } else if (isPremium) {
+    } else if (isPremium || lsPremium) {
       daily   = PLUS_DAILY;
       monthly = PLUS_MONTHLY;
     }
 
     // Bonus messages (admin grants)
     const bonus = parseInt(localStorage.getItem("unfiltr_bonus_messages") || "0", 10);
-    if (!isNaN(bonus) && bonus > 0) daily += bonus;
+    if (!isNaN(bonus) && bonus > 0 && daily < ANNUAL_DAILY) daily += bonus;
 
     setDailyLimit(daily);
     setMonthlyLimit(monthly);
