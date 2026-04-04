@@ -20,6 +20,11 @@ if (typeof window !== 'undefined') {
     try {
       const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
       debugLog(`📨 [RN→WEB] ${data.type}`);
+      // Auto-ACK any message that has a __msgId (stops native retry loop)
+      if (data.__msgId) {
+        if (!window.__nativeAcks) window.__nativeAcks = {};
+        window.__nativeAcks[data.__msgId] = true;
+      }
       const handlers = window._rnMessageHandlers[data.type] || [];
       handlers.forEach(fn => {
         try { fn(data); } catch(e) {}
