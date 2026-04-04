@@ -13,7 +13,7 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const APP_ID = "69b332a392004d139d4ba495";
 const B44_TOKEN = process.env.BASE44_SERVICE_TOKEN;
-const B44_BASE = `https://base44.app/api/apps/${APP_ID}/entities`;
+const B44_BASE = `https://api.base44.com/api/apps/${APP_ID}/entities`;
 
 async function b44Get(entity, id) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
