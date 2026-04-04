@@ -1,8 +1,24 @@
-import { createClient } from "@base44/sdk";
+const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
+const APP_ID = "69b332a392004d139d4ba495";
+const BASE44_API = "https://api.base44.com/api/apps";
 
-const ADMIN_TOKEN     = "unfiltr_admin_javier1122_secret";
-const APP_ID          = "69b22f8b58e45d23cafd78d2";
-const SERVICE_TOKEN   = process.env.BASE44_SERVICE_TOKEN;
+async function fetchEntity(entity, params = {}) {
+  const url = new URL(`${BASE44_API}/${APP_ID}/entities/${entity}`);
+  url.searchParams.set("limit", params.limit || 500);
+  if (params.skip) url.searchParams.set("skip", params.skip);
+  const res = await fetch(url.toString(), {
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": process.env.BASE44_SERVICE_TOKEN || "",
+    },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Base44 ${entity} fetch failed: ${res.status} ${err}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : (data.records || data.data || []);
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -13,16 +29,12 @@ export default async function handler(req, res) {
 
   const { adminToken } = req.body || {};
   if (adminToken !== ADMIN_TOKEN) return res.status(401).json({ error: "Unauthorized" });
-  if (!SERVICE_TOKEN)             return res.status(500).json({ error: "Service token not configured" });
 
   try {
-    const sdk = createClient({ appId: APP_ID, serviceToken: SERVICE_TOKEN });
-
-    const [allProfiles, allMessages, allFeedback, allCompanions] = await Promise.all([
-      sdk.asServiceRole.entities.UserProfile.list(),
-      sdk.asServiceRole.entities.Message.list(),
-      sdk.asServiceRole.entities.Feedback.list().catch(() => []),
-      sdk.asServiceRole.entities.Companion.list().catch(() => []),
+    const [allProfiles, allMessages, allFeedback] = await Promise.all([
+      fetchEntity("UserProfile"),
+      fetchEntity("Message"),
+      fetchEntity("Feedback").catch(() => []),
     ]);
 
     const todayKey = new Date().toISOString().slice(0, 10);
@@ -30,7 +42,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       totalUsers:          allProfiles.length,
-      premiumUsers:        allProfiles.filter(p => p.is_premium).length,
+      premiumUsers:        allProfiles.filter(p => p.is_premium || p.annual_plan || p.pro_plan).length,
       trialUsers:          allProfiles.filter(p => p.trial_active).length,
       todayMessages:       allMessages.filter(m => (m.created_date || m.session_date || "").startsWith(todayKey)).length,
       totalMessages:       allMessages.length,
@@ -38,7 +50,7 @@ export default async function handler(req, res) {
       crisisFlags:         allMessages.filter(m => m.is_crisis_flagged).length,
       newThisWeek:         allProfiles.filter(p => (p.created_date || "") >= weekAgo).length,
       activeThisWeek:      allProfiles.filter(p => (p.last_active || "") >= weekAgo).length,
-      companions:          allCompanions.length,
+      companions:          0,
       feedbackCount:       allFeedback.length,
       openFeedback:        allFeedback.filter(f => f.status !== "resolved").length,
       pausedAccounts:      allProfiles.filter(p => p.account_paused).length,
@@ -46,17 +58,42 @@ export default async function handler(req, res) {
       recentUsers: [...allProfiles]
         .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
         .slice(0, 20)
-        .map(p => ({ id: p.id, display_name: p.display_name || "Anonymous", user_id: p.user_id || "", created_date: p.created_date, last_active: p.last_active, is_premium: p.is_premium, trial_active: p.trial_active, message_count: p.message_count || 0 })),
+        .map(p => ({
+          id: p.id,
+          display_name: p.display_name || "Anonymous",
+          user_id: p.user_id || p.id?.slice(0, 12),
+          created_date: p.created_date,
+          last_active: p.last_active,
+          is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan),
+          trial_active: p.trial_active,
+          message_count: p.message_count || 0,
+        })),
       premiumList: [...allProfiles]
-        .filter(p => p.is_premium)
+        .filter(p => p.is_premium || p.annual_plan || p.pro_plan)
         .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
-        .map(p => ({ id: p.id, display_name: p.display_name || "Anonymous", user_id: p.user_id || "", created_date: p.created_date, is_premium: p.is_premium, trial_active: p.trial_active, annual_plan: p.annual_plan })),
+        .map(p => ({
+          id: p.id,
+          display_name: p.display_name || "Anonymous",
+          user_id: p.user_id || p.id?.slice(0, 12),
+          created_date: p.created_date,
+          is_premium: true,
+          annual_plan: p.annual_plan,
+          pro_plan: p.pro_plan,
+        })),
       allFeedback: [...allFeedback]
         .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
-        .map(f => ({ id: f.id, category: f.category || "general", message: f.message || "", rating: f.rating, status: f.status || "open", display_name: f.display_name || "Anonymous", created_date: f.created_date })),
+        .map(f => ({
+          id: f.id,
+          category: f.category || "general",
+          message: f.message || "",
+          rating: f.rating,
+          status: f.status || "open",
+          display_name: f.display_name || "Anonymous",
+          created_date: f.created_date,
+        })),
     });
   } catch (err) {
-    console.error("[adminStats]", err);
+    console.error("[adminStats] Error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
