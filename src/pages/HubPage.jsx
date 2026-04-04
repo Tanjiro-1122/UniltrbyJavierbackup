@@ -12,14 +12,13 @@ function getGreeting() {
   return "Up late?";
 }
 
-const EmojiIcon = ({ emoji, glow }) => (
+const ImgIcon = ({ src, glow }) => (
   <div style={{
-    width: 64, height: 64, flexShrink: 0,
+    width: 72, height: 72, flexShrink: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 46,
-    filter: `drop-shadow(0 0 18px ${glow})`,
+    filter: `drop-shadow(0 0 22px ${glow}) drop-shadow(0 4px 12px rgba(0,0,0,0.5))`,
   }}>
-    {emoji}
+    <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
   </div>
 );
 
@@ -39,7 +38,7 @@ export default function HubPage() {
 
   const cards = [
     {
-      emoji: "💬",
+      img: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/bbe7e7fa7_generated_image.png",
       glow: "rgba(168,85,247,0.7)",
       border: "rgba(168,85,247,0.5)",
       bg: "linear-gradient(160deg,rgba(124,58,237,0.18) 0%,rgba(168,85,247,0.06) 100%)",
@@ -52,7 +51,7 @@ export default function HubPage() {
       onClick: () => navigate("/vibe"),
     },
     {
-      emoji: "📓",
+      img: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/44915ae14_generated_image.png",
       glow: "rgba(52,211,153,0.6)",
       border: "rgba(52,211,153,0.5)",
       bg: "linear-gradient(160deg,rgba(16,185,129,0.18) 0%,rgba(52,211,153,0.06) 100%)",
@@ -65,7 +64,7 @@ export default function HubPage() {
       onClick: () => navigate("/mood?dest=journal"),
     },
     {
-      emoji: "🧘",
+      img: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/47037d196_generated_image.png",
       glow: "rgba(125,211,252,0.6)",
       border: "rgba(125,211,252,0.5)",
       bg: "linear-gradient(160deg,rgba(14,165,233,0.18) 0%,rgba(125,211,252,0.06) 100%)",
@@ -149,7 +148,7 @@ export default function HubPage() {
               textAlign: "left",
             }}
           >
-            <EmojiIcon emoji={card.emoji} glow={card.glow} />
+            <ImgIcon src={card.img} glow={card.glow} />
             <div>
               <div style={{ color: card.titleColor, fontWeight: 800, fontSize: 21, letterSpacing: "-0.3px" }}>
                 {card.title}
@@ -170,3 +169,4 @@ export default function HubPage() {
     </div>
   );
 }
+
