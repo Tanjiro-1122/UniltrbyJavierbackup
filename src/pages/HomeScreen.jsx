@@ -43,6 +43,12 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       const email = payload.email;
       const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
+
+      // ACK immediately so native side stops retrying
+      try {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" }));
+      } catch(e) {}
+
       if (!appleUserId) {
         debugLog('[WEB] ❌ No appleUserId in payload');
         setLoading(false);
@@ -69,11 +75,17 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
       navigate(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      // Just reset the button — do NOT navigate away, let them try again
-      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
+      // Reset button AND fully clear listener so next tap starts fresh
+      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting');
+      resolved = true; // prevent double-handling
+      cleanup();
+      window.__appleSignInCleanup = null;
       setLoading(false);
     } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
       debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
+      resolved = true;
+      cleanup();
+      window.__appleSignInCleanup = null;
       setLoading(false);
     }
   };
