@@ -48,6 +48,7 @@ import HubPage               from "./pages/HubPage";
 import { DebugPanel } from '@/components/DebugPanel';
 import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
+import { useHeartbeat } from "@/components/hooks/useHeartbeat";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -184,6 +185,7 @@ if (typeof window !== 'undefined' && !window.__nativeBusReady) {
 
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
+  useHeartbeat();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
