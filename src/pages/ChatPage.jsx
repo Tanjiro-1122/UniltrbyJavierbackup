@@ -555,7 +555,7 @@ export default function ChatPage() {
     const today = new Date().toDateString();
     const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
     const count = stored.date === today ? stored.count : 0;
-    if (count >= PHOTO_DAILY_LIMIT) { window.dispatchEvent(new CustomEvent('unfiltr_toast', { detail: { message: \`📸 You've hit the \${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow!\` } })); return; }
+    if (count >= PHOTO_DAILY_LIMIT) { window.dispatchEvent(new CustomEvent('unfiltr_toast', { detail: { message: `📸 You've hit the \${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow!` } })); return; }
     const seen = localStorage.getItem("unfiltr_photo_disclaimer_seen");
     if (!seen) { setShowPhotoDisclaimer(true); return; }
     fileInputRef.current?.click();
