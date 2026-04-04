@@ -13,12 +13,17 @@ function signInWithApple(navigate, setLoading) {
 
   let resolved = false;
 
+  const cleanup = () => {
+    if (window.__nativeBus) {
+      window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
+      window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
+      window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
+    }
+  };
+
   const handleResult = (msg) => {
     if (resolved) return;
-
-    // Ignore WAITING — just means the native overlay appeared
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
-
     resolved = true;
     cleanup();
 
@@ -47,31 +52,12 @@ function signInWithApple(navigate, setLoading) {
     }
   };
 
-  // PRIMARY: onMessageFromRN — matches our fixed bridge in index.tsx
-  const prevHandler = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-      handleResult(msg);
-    } catch {}
-    if (typeof prevHandler === "function") prevHandler(jsonStr);
-  };
-
-  // FALLBACK: window message event
-  const windowHandler = (e) => {
-    try {
-      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg.type)) {
-        handleResult(msg);
-      }
-    } catch {}
-  };
-  window.addEventListener("message", windowHandler);
-
-  const cleanup = () => {
-    window.onMessageFromRN = prevHandler;
-    window.removeEventListener("message", windowHandler);
-  };
+  // Use __nativeBus (set by App.jsx) — does NOT overwrite onMessageFromRN
+  if (window.__nativeBus) {
+    window.__nativeBus.on("APPLE_SIGN_IN_SUCCESS",   handleResult);
+    window.__nativeBus.on("APPLE_SIGN_IN_CANCELLED", handleResult);
+    window.__nativeBus.on("APPLE_SIGN_IN_ERROR",     handleResult);
+  }
 
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
 }
