@@ -4,6 +4,30 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const CRISIS_KEYWORDS = ["suicide","kill myself","end my life","self harm","cutting myself","want to die","hurt myself","don't want to live"];
 
+// ── Tier-based model selection ──────────────────────────────────────────────
+// FREE:   gpt-3.5-turbo  — fast, cheap, good enough
+// PLUS:   gpt-4o-mini    — noticeably better, default paid experience
+// PRO:    gpt-4o-mini    — same model but higher limits + more context
+// ANNUAL: gpt-4o-mini    — same model, full context, no restrictions
+function getModel(isPremium, isPro, isAnnual) {
+  if (!isPremium && !isPro && !isAnnual) return "gpt-3.5-turbo";
+  return "gpt-4o-mini";
+}
+
+// Max tokens by tier
+function getMaxTokens(isPremium, isPro, isAnnual) {
+  if (!isPremium && !isPro && !isAnnual) return 250;  // Free — short, snappy replies
+  if (isPro || isAnnual)                return 800;   // Pro/Annual — fuller replies
+  return 600;                                          // Plus — standard
+}
+
+// Context window (how many past messages to include)
+function getContextWindow(isPremium, isPro, isAnnual) {
+  if (!isPremium && !isPro && !isAnnual) return 4;   // Free — last 4 messages only
+  if (isPro || isAnnual)                return 20;   // Pro/Annual — rich context
+  return 10;                                          // Plus — standard
+}
+
 function buildPersonalityParagraph(p = {}) {
   if (!p || !Object.keys(p).length) return "";
 
@@ -37,11 +61,11 @@ function buildPersonalityParagraph(p = {}) {
   };
 
   const lines = [
-    vibeMap[p.vibe]        || "",
-    empathyMap[p.empathy]  || "",
-    humorMap[p.humor]      || "",
+    vibeMap[p.vibe]           || "",
+    empathyMap[p.empathy]     || "",
+    humorMap[p.humor]         || "",
     curiosityMap[p.curiosity] || "",
-    styleMap[p.style]      || "",
+    styleMap[p.style]         || "",
   ].filter(Boolean);
 
   return lines.length ? "\n\nPersonality traits:\n" + lines.join(" ") : "";
@@ -51,20 +75,48 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { messages, systemPrompt, memorySummary, sessionMemory, isPremium, personality } = req.body;
+    const {
+      messages,
+      systemPrompt,
+      memorySummary,
+      sessionMemory,
+      isPremium  = false,
+      isPro      = false,
+      isAnnual   = false,
+      personality,
+    } = req.body;
+
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
 
-    const system = systemPrompt || "You are a warm, supportive AI companion named Luna.";
-    const memCtx = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
+    const model      = getModel(isPremium, isPro, isAnnual);
+    const maxTokens  = getMaxTokens(isPremium, isPro, isAnnual);
+    const ctxWindow  = getContextWindow(isPremium, isPro, isAnnual);
+
+    const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
+    const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
     const personalityCtx = buildPersonalityParagraph(personality);
 
+    // Session memory context (paid tiers only)
+    let sessionCtx = "";
+    if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
+      const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
+      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
+    }
+
+    // Trim message history to tier context window
+    const trimmedMessages = messages.slice(-ctxWindow);
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       messages: [
-        { role: "system", content: system + memCtx + personalityCtx + `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>` },
-        ...(messages || []),
+        {
+          role: "system",
+          content: system + memCtx + personalityCtx + sessionCtx +
+            `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
+        },
+        ...trimmedMessages,
       ],
-      max_tokens: 600,
+      max_tokens: maxTokens,
       temperature: 0.85,
     });
 
@@ -72,14 +124,16 @@ export default async function handler(req, res) {
 
     // Extract mood tag from end of response
     const moodMatch = raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue)/i);
-    const mood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
+    const mood  = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
     // Crisis detection
-    const lower = reply.toLowerCase() + " " + (messages[messages.length-1]?.content || "").toLowerCase();
+    const lower  = reply.toLowerCase() + " " + (messages[messages.length - 1]?.content || "").toLowerCase();
     const crisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
 
-    res.status(200).json({ reply, mood, crisis });
+    // Return tier info so client can log it (optional, for debugging)
+    res.status(200).json({ reply, mood, crisis, _tier: model });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
