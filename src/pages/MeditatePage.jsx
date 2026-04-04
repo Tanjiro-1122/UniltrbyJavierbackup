@@ -225,7 +225,7 @@ export default function MeditatePage() {
           </p>
           <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
+            <motion.button whileTap={{ scale:0.97 }} onClick={() => { const hasChatSession = localStorage.getItem("unfiltr_chat_history"); navigate(hasChatSession ? "/chat" : "/hub"); }}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
               Choose Something Else ✦
             </motion.button>
@@ -375,3 +375,4 @@ export default function MeditatePage() {
     </div>
   );
 }
+
