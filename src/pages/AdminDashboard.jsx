@@ -190,6 +190,8 @@ function DashboardTab({ stats }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <StatCard icon={<Users size={18} color="#a855f7" />}  label="Total Users"     value={stats.totalUsers} />
         <StatCard icon={<Crown size={18} color="#facc15" />}  label="Premium"         value={stats.premiumUsers} sub={`${stats.totalUsers > 0 ? Math.round(stats.premiumUsers/stats.totalUsers*100) : 0}% of users`} />
+        <StatCard icon={<span style={{fontSize:14}}>🟢</span>} label="Online Now"      value={stats.onlineNow ?? 0} sub="active in last 5 min" />
+        <StatCard icon={<span style={{fontSize:14}}>🍎</span>} label="Apple Sign-In"   value={stats.appleUsers ?? 0} sub="linked Apple IDs" />
         <StatCard icon={<MessageSquare size={18} color="#34d399" />} label="Today's Messages" value={stats.todayMessages} />
         <StatCard icon={<Users size={18} color="#60a5fa" />}  label="Active This Week" value={stats.activeThisWeek} />
         <StatCard icon={<BookOpen size={18} color="#818cf8" />} label="Journal Entries" value={stats.journalEntries} />
