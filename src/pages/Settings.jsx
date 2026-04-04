@@ -205,6 +205,7 @@ export default function Settings() {
     setIapTesting(false);
   };
   const [tapCount, setTapCount]               = useState(0);
+  const [adminTapCount, setAdminTapCount]     = useState(0);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyCode, setFamilyCode]           = useState("");
   const [familyCodeError, setFamilyCodeError] = useState("");
@@ -304,8 +305,13 @@ export default function Settings() {
     const next = tapCount + 1; setTapCount(next);
     if (next >= 5) { setTapCount(0); setShowFamilyModal(true); }
   };
+
+  const handleAdminTap = () => {
+    const next = adminTapCount + 1; setAdminTapCount(next);
+    if (next >= 5) { setAdminTapCount(0); setShowCodeModal(true); }
+  };
   const handleCodeSubmit = () => {
-    if (adminCode.trim().toLowerCase() === "huertasfam") {
+    if (adminCode.trim().toLowerCase() === "javier1122admin") {
       // Persist admin unlock permanently in localStorage
       localStorage.setItem("unfiltr_admin_unlocked", "true");
       sessionStorage.setItem("unfiltr_admin_session", "true");
@@ -324,10 +330,21 @@ export default function Settings() {
     if (familyCode.trim().toLowerCase() === "huertasfam") {
       localStorage.setItem("unfiltr_is_premium", "true");
       localStorage.setItem("unfiltr_family_unlock", "true");
+      localStorage.setItem("unfiltr_msg_limit_override", "true");
+      localStorage.setItem("unfiltr_bonus_messages", "99999");
       try {
         const profileId = localStorage.getItem("userProfileId");
-        if (profileId) await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: true, bonus_messages: 99999 });
-      } catch {}
+        if (profileId) {
+          await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: true, bonus_messages: 99999 });
+        } else {
+          // No profile yet — create one so the flag persists server-side
+          const newProfile = await base44.entities.UserProfile.create({ is_premium: true, annual_plan: true, bonus_messages: 99999 });
+          if (newProfile?.id) {
+            localStorage.setItem("userProfileId", newProfile.id);
+            localStorage.setItem("unfiltr_user_id", newProfile.id);
+          }
+        }
+      } catch (e) { console.warn("[FAMILY CODE] DB update failed (non-fatal):", e); }
       setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
       setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2000);
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
@@ -781,7 +798,7 @@ export default function Settings() {
 
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none" }}>v1.2.0</span>
+          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.2.0</span>
         </div>
       </div>
 
