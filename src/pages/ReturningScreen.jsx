@@ -83,6 +83,17 @@ export default function ReturningScreen() {
   const companionRaw = localStorage.getItem("unfiltr_companion");
   const companion = companionRaw ? JSON.parse(companionRaw) : null;
   const nickname = localStorage.getItem("unfiltr_companion_nickname") || companion?.name || "your companion";
+
+  // Last message preview — pull from most recent chat session
+  const lastMessagePreview = (() => {
+    try {
+      const sessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
+      if (!sessions.length) return null;
+      const last = sessions[0];
+      const lastAI = [...(last.messages || [])].reverse().find(m => m.role === "assistant");
+      return lastAI?.content?.slice(0, 80) || null;
+    } catch { return null; }
+  })();
   const hasAppleId = !!localStorage.getItem("unfiltr_apple_user_id");
 
   const handleAppleSignIn = () => {
@@ -120,7 +131,10 @@ export default function ReturningScreen() {
       <motion.p
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
         style={{ color: "rgba(255,255,255,0.45)", fontSize: 16, textAlign: "center", margin: "0 0 20px" }}>
-        {nickname} has been waiting for you.
+        {lastMessagePreview
+          ? `"${lastMessagePreview.length > 70 ? lastMessagePreview.slice(0, 70) + '…' : lastMessagePreview}"`
+          : `${nickname} has been waiting for you.`
+        }
       </motion.p>
 
       {/* Stats pills */}
