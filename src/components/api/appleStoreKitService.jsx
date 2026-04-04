@@ -10,31 +10,36 @@ function isReactNativeWebView() {
   return typeof window !== 'undefined' && !!window.ReactNativeWebView;
 }
 
-// ── Register the global handler that native calls directly ───────────────────
-// Native wrapper calls: window.onMessageFromRN(jsonString)
-// This follows the proven Close.com pattern for native→web communication
+// ── Register _rnMessageHandlers (used by sendToNative promises) ──────────────
+// IMPORTANT: We do NOT overwrite window.onMessageFromRN here.
+// App.jsx already set it up to route to window.__nativeBus.
+// Instead, we hook into __nativeBus so our _rnMessageHandlers also fire.
 if (typeof window !== 'undefined') {
   window._rnMessageHandlers = window._rnMessageHandlers || {};
 
-  window.onMessageFromRN = function(jsonStr) {
-    try {
-      const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-      debugLog(`📨 [RN→WEB] ${data.type}`);
-      // Auto-ACK any message that has a __msgId (stops native retry loop)
-      if (data.__msgId) {
+  // Hook into __nativeBus (set by App.jsx) so purchase/restore results reach us
+  const _hookNativeBus = () => {
+    if (!window.__nativeBus) return; // not ready yet — retry
+    const origEmit = window.__nativeBus.emit.bind(window.__nativeBus);
+    window.__nativeBus.emit = (msg) => {
+      origEmit(msg);
+      // Auto-ACK
+      if (msg.__msgId) {
         if (!window.__nativeAcks) window.__nativeAcks = {};
-        window.__nativeAcks[data.__msgId] = true;
+        window.__nativeAcks[msg.__msgId] = true;
       }
-      const handlers = window._rnMessageHandlers[data.type] || [];
-      handlers.forEach(fn => {
-        try { fn(data); } catch(e) {}
-      });
-      // Also fire as window event for any legacy listeners
-      window.dispatchEvent(new MessageEvent('message', { data }));
-    } catch(e) {
-      debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
-    }
+      debugLog(`📨 [RN→WEB] ${msg.type}`);
+      const handlers = window._rnMessageHandlers[msg.type] || [];
+      handlers.forEach(fn => { try { fn(msg); } catch(e) {} });
+    };
   };
+  // __nativeBus is set at module-load time in App.jsx, so it should be ready.
+  // But if not (e.g. import order), retry after a tick.
+  if (window.__nativeBus) {
+    _hookNativeBus();
+  } else {
+    setTimeout(_hookNativeBus, 0);
+  }
 }
 
 function onceFromNative(types, timeoutMs) {
