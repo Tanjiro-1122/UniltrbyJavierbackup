@@ -219,7 +219,7 @@ export default function OnboardingVibe() {
               What's your vibe?
             </h1>
             <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 500 }}>
-              Step 6 of 7
+              Step 5 of 6
             </span>
           </div>
           <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: 0 }}>
