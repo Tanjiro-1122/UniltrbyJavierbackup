@@ -163,12 +163,8 @@ export default async function handler(req, res) {
         const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "";
         const relevant = await retrieveRelevantMemories(profileId, lastUserMsg, isPremium, isPro, isAnnual);
         if (relevant.length) {
-          const lines = relevant.map(m => ).join("
-");
-          vectorMemoryBlock = "
-
-=== Memories relevant to this moment ===
-" + lines;
+          const lines = relevant.map(m => `[${m.type || "memory"}] ${m.text}`).join("\n");
+          vectorMemoryBlock = "\n\n=== Memories relevant to this moment ===\n" + lines;
         }
       } catch(e) {
         console.warn("[vector memory]", e.message);
@@ -204,7 +200,21 @@ export default async function handler(req, res) {
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
     const lower  = reply.toLowerCase() + " " + (messages[messages.length - 1]?.content || "").toLowerCase();
-    const crisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
+    // Keyword check (fast, synchronous) — catches explicit phrases
+    const keywordCrisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
+    // Moderation API check (async, catches subtler language)
+    let moderationCrisis = false;
+    try {
+      const lastUserMsg = messages[messages.length - 1]?.content || "";
+      if (lastUserMsg.length > 5) {
+        const modRes = await openai.moderations.create({ input: lastUserMsg });
+        const flagged = modRes.results?.[0];
+        moderationCrisis = flagged?.flagged &&
+          (flagged.categories?.["self-harm"] || flagged.categories?.["self-harm/intent"] ||
+           flagged.categories?.["violence"] || flagged.categories?.["self-harm/instructions"]);
+      }
+    } catch(e) { /* non-fatal */ }
+    const crisis = keywordCrisis || moderationCrisis;
 
     res.status(200).json({ reply, mood, crisis, _tier: model });
 
