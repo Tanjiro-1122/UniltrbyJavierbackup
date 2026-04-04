@@ -33,6 +33,7 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
+import OnboardingExperience   from "./pages/onboarding/OnboardingExperience";
 import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
@@ -262,6 +263,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
+        <Route path="/onboarding/experience" element={<OnboardingExperience />} />
         <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
