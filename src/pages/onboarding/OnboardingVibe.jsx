@@ -46,15 +46,6 @@ const VIBES = [
     orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
     bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
   },
-  {
-    id: "journal",
-    emoji: `${NOTO}/270f/512.webp`,
-    label: "Journal", sub: "Private",
-    desc: "Write freely.\nSpeak your truth. Save it.",
-    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
-    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
-    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
-  },
 ];
 
 export default function OnboardingVibe() {
@@ -96,82 +87,12 @@ export default function OnboardingVibe() {
     isSwiping.current = false;
   };
 
-  const finishOnboardingForJournal = async () => {
-    setLoading(true);
-    try {
-      const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
-      const defaultBg = BACKGROUNDS[0];
-      const finalName = store.companionNickname?.trim() || companionData.name;
-
-      // ✅ Set ALL localStorage keys FIRST — before any async DB calls
-      // This ensures ChatPage & JournalHome always have what they need
-      localStorage.setItem("unfiltr_companion", JSON.stringify({
-        id: companionData.id, name: companionData.name, displayName: finalName,
-        systemPrompt: `You are ${finalName}, a supportive AI companion. ${companionData.tagline}`,
-      }));
-      localStorage.setItem("unfiltr_companion_nickname", finalName);
-      localStorage.setItem("unfiltr_env", JSON.stringify({
-        id: defaultBg.id, label: defaultBg.label, bg: defaultBg.url,
-      }));
-      localStorage.setItem("unfiltr_vibe", "journal");
-      localStorage.setItem("unfiltr_onboarding_complete", "true");
-
-      // Navigate immediately — don't wait for DB
-      setLoading(false);
-      navigate("/mood?dest=journal");
-
-      // Fire-and-forget DB calls in background
-      (async () => {
-        try {
-          const companion = await base44.entities.Companion.create({
-            name: companionData.name,
-            avatar_id: companionData.id,
-            avatar_gender: companionData.gender || "female",
-            personality_preset: companionData.personality || companionData.tagline || "friendly",
-            mood_mode: "neutral",
-            is_active: true,
-          });
-          const profileData = {
-            display_name: store.displayName || "",
-            is_premium: !!(store.isTesterAccount),
-            trial_active: !!(store.isTesterAccount),
-            trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
-            onboarding_complete: true,
-            session_memory: [],
-            message_count: 0,
-            last_active: new Date().toISOString(),
-          };
-          let userProfile;
-          if (store.pendingProfileId) {
-            userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-          } else {
-            userProfile = await base44.entities.UserProfile.create(profileData);
-          }
-          localStorage.setItem("userProfileId", userProfile.id);
-          localStorage.setItem("companionId", companion.id);
-          resetOnboardingStore();
-        } catch (err) {
-          console.error("Journal onboarding DB error (non-blocking):", err);
-          resetOnboardingStore();
-        }
-      })();
-    } catch (err) {
-      console.error("Journal onboarding error:", err);
-      setLoading(false);
-      navigate("/mood?dest=journal");
-    }
-  };
-
   const handleContinue = () => {
     updateOnboardingStore({ selectedVibe: vibe.id });
-    if (vibe.id === "journal") {
-      finishOnboardingForJournal();
-    } else {
-      navigate("/onboarding/background");
-    }
+    navigate("/onboarding/background");
   };
 
-  const btnLabel = loading ? "Setting up…" : vibe.id === "journal" ? "Start journaling →" : "Pick your world →";
+  const btnLabel = loading ? "Setting up…" : "Pick your world →";
 
   return (
     <div
@@ -287,13 +208,6 @@ export default function OnboardingVibe() {
                     textAlign: "center", margin: 0, whiteSpace: "pre-line",
                   }}
                 >{v.desc}</motion.p>
-              )}
-              {isActive && v.id === "journal" && (
-                <div style={{
-                  marginTop: 12, padding: "3px 10px", borderRadius: 999,
-                  background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.35)",
-                  color: "#34d399", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-                }}>PRIVATE</div>
               )}
             </motion.div>
           );
