@@ -633,9 +633,9 @@ export default function ChatPage() {
 
       const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
-        systemPrompt, isPremium,
-        sessionMemory: isPremium ? sessionMemory : [],
-        memorySummary: localMemSummary || "",
+        systemPrompt, isPremium, isPro, isAnnual,
+        sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
+        memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
         imageBase64: imgBase64,
         personality: personalityPayload,
       });
