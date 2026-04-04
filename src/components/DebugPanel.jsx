@@ -57,8 +57,8 @@ export function DebugPanel() {
     }
   };
 
-  const isNative = !!window.ReactNativeWebView;
-  if (!isNative && !window.location.search.includes('debug=1')) return null;
+  // Debug panel disabled in production
+  return null;
 
   return (
     <>
