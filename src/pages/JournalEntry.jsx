@@ -207,10 +207,11 @@ export default function JournalEntry() {
     const limit = getJournalLimit();
     const used  = getJournalUsage();
     if (used >= limit) {
-      alert(limit === JOURNAL_LIMITS.free
-        ? `You've used all ${limit} free journal entries this month. Upgrade to write more 💜`
-        : `You've reached your ${limit} journal entries for this month.`
-      );
+      window.dispatchEvent(new CustomEvent('unfiltr_toast', { detail: {
+        message: limit === JOURNAL_LIMITS.free
+          ? `You've used all ${limit} free journal entries this month. Upgrade to write more 💜`
+          : `You've reached your ${limit} journal entries for this month.`
+      }}));
       return;
     }
     setSaving(true);
@@ -372,4 +373,6 @@ export default function JournalEntry() {
     </div>
   );
 }
+
+
 
