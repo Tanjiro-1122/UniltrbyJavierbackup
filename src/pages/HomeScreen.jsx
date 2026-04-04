@@ -31,12 +31,28 @@ function doAppleSignIn(navigate, setLoading) {
     cleanup();
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      const { appleUserId, email, fullName } = msg.data || {};
+      // Support both nested (msg.data.appleUserId) and flat (msg.appleUserId) payloads
+      const payload = msg.data || msg;
+      const appleUserId = payload.appleUserId || payload.user;
+      const email = payload.email;
+      const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
+      if (!appleUserId) {
+        debugLog('[WEB] ❌ No appleUserId in payload — sign in failed silently');
+        setLoading(false);
+        return;
+      }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (email) localStorage.setItem("unfiltr_apple_email", email);
+      // userProfileId defaults to appleUserId if not already set
+      if (!localStorage.getItem("userProfileId")) {
+        localStorage.setItem("userProfileId", appleUserId);
+      }
+      if (email) {
+        localStorage.setItem("unfiltr_apple_email", email);
+        localStorage.setItem("unfiltr_user_email", email);
+      }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
