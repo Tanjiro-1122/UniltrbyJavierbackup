@@ -16,14 +16,19 @@ function doAppleSignIn(navigate, setLoading) {
     return;
   }
 
+  // Always tear down any previous sign-in listener before starting a new one
+  if (window.__appleSignInCleanup) {
+    debugLog('[WEB] cleaning up previous sign-in listener');
+    window.__appleSignInCleanup();
+    window.__appleSignInCleanup = null;
+  }
+
   let resolved = false;
 
   const handleResult = (msg) => {
     if (resolved) return;
-
-    // Ignore WAITING — it's just an ack that the native overlay appeared
     if (msg.type === "APPLE_SIGN_IN_WAITING") {
-      debugLog('[WEB] 🍎 Native Apple button shown — waiting for tap...');
+      debugLog('[WEB] 🍎 Waiting for user tap...');
       return;
     }
 
@@ -31,21 +36,19 @@ function doAppleSignIn(navigate, setLoading) {
     cleanup();
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      // Support both nested (msg.data.appleUserId) and flat (msg.appleUserId) payloads
       const payload = msg.data || msg;
       const appleUserId = payload.appleUserId || payload.user;
       const email = payload.email;
       const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
       if (!appleUserId) {
-        debugLog('[WEB] ❌ No appleUserId in payload — sign in failed silently');
+        debugLog('[WEB] ❌ No appleUserId in payload');
         setLoading(false);
         return;
       }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
-      // userProfileId defaults to appleUserId if not already set
       if (!localStorage.getItem("userProfileId")) {
         localStorage.setItem("userProfileId", appleUserId);
       }
@@ -58,17 +61,15 @@ function doAppleSignIn(navigate, setLoading) {
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
       navigate(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      debugLog('[WEB] 🚫 Apple sign-in cancelled');
+      // Just reset the button — do NOT navigate away, let them try again
+      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
       setLoading(false);
-      navigate("/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
       debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
       setLoading(false);
-      navigate("/onboarding/consent");
     }
   };
 
-  // PRIMARY: onMessageFromRN — used by appleStoreKitService and our fixed bridge
   const prevHandler = window.onMessageFromRN;
   window.onMessageFromRN = (jsonStr) => {
     try {
@@ -76,15 +77,13 @@ function doAppleSignIn(navigate, setLoading) {
       debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
       handleResult(msg);
     } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
-    // Chain to any existing handler (appleStoreKitService global)
     if (typeof prevHandler === "function") prevHandler(jsonStr);
   };
 
-  // FALLBACK: window message event (older path)
   const windowHandler = (e) => {
     try {
       const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg.type)) {
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
         debugLog(`[WEB] window message fallback: ${msg.type}`);
         handleResult(msg);
       }
@@ -93,9 +92,13 @@ function doAppleSignIn(navigate, setLoading) {
   window.addEventListener("message", windowHandler);
 
   const cleanup = () => {
+    window.__appleSignInCleanup = null;
     window.onMessageFromRN = prevHandler;
     window.removeEventListener("message", windowHandler);
   };
+
+  // Store cleanup so next tap can tear down this listener first
+  window.__appleSignInCleanup = cleanup;
 
   debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
