@@ -11,27 +11,30 @@ function signInWithApple(navigate, setLoading) {
     return;
   }
 
-  let resolved = false;
+  // Tear down any leftover listener from a previous attempt
+  if (window.__appleSignInCleanup) {
+    window.__appleSignInCleanup();
+    window.__appleSignInCleanup = null;
+  }
 
-  const cleanup = () => {
-    if (window.__nativeBus) {
-      window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
-      window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
-      window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
-    }
-  };
+  let resolved = false;
 
   const handleResult = (msg) => {
     if (resolved) return;
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
     resolved = true;
     cleanup();
+    window.__appleSignInCleanup = null;
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
       const payload = msg.data || msg;
       const appleUserId = payload.appleUserId || payload.user;
       const email = payload.email;
       const fullName = payload.fullName;
+
+      // ACK immediately so native stops retrying
+      try { bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" })); } catch {}
+
       if (!appleUserId) { setLoading && setLoading(false); return; }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
@@ -44,20 +47,44 @@ function signInWithApple(navigate, setLoading) {
         localStorage.setItem("unfiltr_user_email", email);
       }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      if (payload.isPremium) {
+        localStorage.setItem("unfiltr_is_premium", "true");
+        localStorage.setItem("unfiltr_plan", "pro_plan");
+      }
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
       setLoading(false);
-      navigate("/hub");
+      // Stay on returning screen — let them try again or continue as guest
     }
   };
 
-  // Use __nativeBus (set by App.jsx) — does NOT overwrite onMessageFromRN
-  if (window.__nativeBus) {
-    window.__nativeBus.on("APPLE_SIGN_IN_SUCCESS",   handleResult);
-    window.__nativeBus.on("APPLE_SIGN_IN_CANCELLED", handleResult);
-    window.__nativeBus.on("APPLE_SIGN_IN_ERROR",     handleResult);
-  }
+  // Primary listener — same pattern as HomeScreen
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      handleResult(msg);
+    } catch {}
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
+  };
+
+  // Fallback: window message event
+  const windowHandler = (e) => {
+    try {
+      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
+        handleResult(msg);
+      }
+    } catch {}
+  };
+  window.addEventListener("message", windowHandler);
+
+  const cleanup = () => {
+    window.onMessageFromRN = prevHandler;
+    window.removeEventListener("message", windowHandler);
+  };
+  window.__appleSignInCleanup = cleanup;
 
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
 }
