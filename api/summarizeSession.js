@@ -2,9 +2,10 @@ import OpenAI from "openai";
 import { storeMemoryVectors } from "./memoryEmbed.js";
 
 const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const B44_APP  = process.env.VITE_BASE44_APP_ID;
+// Production Unfiltr app ID — hardcoded as fallback in case env var is missing
+const B44_APP  = process.env.VITE_BASE44_APP_ID || "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_API_KEY || "";
+const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 async function b44Get(entity, id) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
