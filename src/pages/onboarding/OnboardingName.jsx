@@ -47,8 +47,8 @@ export default function OnboardingName() {
 
   return (
     <OnboardingLayout
-      totalSteps={7}
-      step={3}
+      totalSteps={6}
+      step={2}
       onBack={() => navigate("/onboarding/consent")}
       onNext={handleNext}
       canAdvance={displayName.trim().length > 0}
