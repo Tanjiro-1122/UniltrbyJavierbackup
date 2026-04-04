@@ -1,10 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, BookOpen, PenLine, Globe } from "lucide-react";
 
 export default function JournalHome() {
   const navigate = useNavigate();
+  const [entryCount, setEntryCount] = useState(0);
+  const [monthCount, setMonthCount] = useState(0);
+
+  useEffect(() => {
+    try {
+      const entries = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
+      setEntryCount(entries.length);
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      setMonthCount(entries.filter(e => e.date?.startsWith(thisMonth)).length);
+    } catch {}
+  }, []);
 
   return (
     <div
@@ -116,7 +127,9 @@ export default function JournalHome() {
           </div>
           <div>
             <p className="text-white font-bold text-lg">Saved Entries</p>
-            <p className="text-white/40 text-sm">Read your past journal entries</p>
+            <p className="text-white/40 text-sm">
+              {entryCount > 0 ? `${entryCount} entr${entryCount === 1 ? "y" : "ies"} · ${monthCount} this month` : "Read your past journal entries"}
+            </p>
           </div>
         </motion.button>
 
