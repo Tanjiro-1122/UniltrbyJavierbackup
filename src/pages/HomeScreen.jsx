@@ -3,74 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
 import { debugLog } from "@/components/DebugPanel";
-import { base44 } from "@/api/base44Client";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
-
-// ── Restore a returning user's data from DB into localStorage ─────────────────
-async function restoreProfileFromDB(appleUserId, email, fullName) {
-  try {
-    // Look up UserProfile by apple_user_id
-    const profiles = await base44.entities.UserProfile.filter({ apple_user_id: appleUserId });
-    const profile = profiles?.[0];
-    if (!profile) return false; // new user
-
-    debugLog(`[WEB] ✅ Found existing profile for Apple ID: ${appleUserId}`);
-
-    // Restore identity keys
-    localStorage.setItem("userProfileId", profile.id);
-    localStorage.setItem("unfiltr_user_id", profile.id);
-    localStorage.setItem("unfiltr_auth_token", profile.id);
-    localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-    if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
-    if (profile.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
-    if (fullName && !profile.display_name) localStorage.setItem("unfiltr_display_name", fullName);
-
-    // Restore premium status
-    localStorage.setItem("unfiltr_is_premium", String(!!profile.is_premium));
-    localStorage.setItem("unfiltr_is_annual", String(!!profile.annual_plan));
-    localStorage.setItem("unfiltr_is_pro", String(!!profile.pro_plan));
-    if (profile.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
-
-    // Restore companion
-    if (profile.companion_id) {
-      localStorage.setItem("companionId", profile.companion_id);
-      localStorage.setItem("unfiltr_companion_id", profile.companion_id);
-      try {
-        const companion = await base44.entities.Companion.get(profile.companion_id);
-        if (companion) {
-          const displayName = localStorage.getItem("unfiltr_companion_nickname") || companion.name;
-          localStorage.setItem("unfiltr_companion", JSON.stringify({
-            id: companion.avatar_id || companion.id,
-            name: companion.name,
-            displayName,
-            systemPrompt: `You are ${displayName}, a supportive AI companion.`,
-          }));
-          localStorage.setItem("unfiltr_companion_nickname", displayName);
-          if (companion.personality_vibe)      localStorage.setItem("unfiltr_personality_vibe",      companion.personality_vibe);
-          if (companion.personality_empathy)   localStorage.setItem("unfiltr_personality_empathy",   companion.personality_empathy);
-          if (companion.personality_humor)     localStorage.setItem("unfiltr_personality_humor",     companion.personality_humor);
-          if (companion.personality_curiosity) localStorage.setItem("unfiltr_personality_curiosity", companion.personality_curiosity);
-          if (companion.personality_style)     localStorage.setItem("unfiltr_personality_style",     companion.personality_style);
-        }
-      } catch (e) { debugLog('[WEB] Companion fetch failed (non-blocking):', e); }
-    }
-
-    // Mark onboarding complete so they skip straight to hub
-    localStorage.setItem("unfiltr_onboarding_complete", "true");
-    if (profile.preferred_mood) localStorage.setItem("unfiltr_vibe", profile.preferred_mood);
-
-    // Update last_active in background
-    base44.entities.UserProfile.update(profile.id, { last_active: new Date().toISOString() }).catch(() => {});
-
-    window.dispatchEvent(new Event("unfiltr_auth_updated"));
-    return true; // returning user — go to hub
-
-  } catch (e) {
-    debugLog('[WEB] Profile lookup failed:', e);
-    return false; // treat as new user on error
-  }
-}
 
 function doAppleSignIn(navigateRef, setLoadingRef) {
   const navigate = (...args) => navigateRef.current(...args);
@@ -84,68 +18,95 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
     return;
   }
 
-  // Unregister any leftover handlers from a previous tap
-  if (window.__nativeBus) {
-    window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
-    window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
-    window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
+  // Always tear down any previous sign-in listener before starting a new one
+  if (window.__appleSignInCleanup) {
+    debugLog('[WEB] cleaning up previous sign-in listener');
+    window.__appleSignInCleanup();
+    window.__appleSignInCleanup = null;
   }
 
-  const done = (fn) => {
-    if (window.__nativeBus) {
-      window.__nativeBus.off("APPLE_SIGN_IN_SUCCESS");
-      window.__nativeBus.off("APPLE_SIGN_IN_CANCELLED");
-      window.__nativeBus.off("APPLE_SIGN_IN_ERROR");
+  let resolved = false;
+
+  const handleResult = (msg) => {
+    if (resolved) return;
+    if (msg.type === "APPLE_SIGN_IN_WAITING") {
+      debugLog('[WEB] 🍎 Waiting for user tap...');
+      return;
     }
-    fn();
+
+    resolved = true;
+    cleanup();
+
+    if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
+      const payload = msg.data || msg;
+      const appleUserId = payload.appleUserId || payload.user;
+      const email = payload.email;
+      const fullName = payload.fullName;
+      debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
+      if (!appleUserId) {
+        debugLog('[WEB] ❌ No appleUserId in payload');
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+      localStorage.setItem("unfiltr_user_id", appleUserId);
+      localStorage.setItem("unfiltr_auth_token", appleUserId);
+      if (!localStorage.getItem("userProfileId")) {
+        localStorage.setItem("userProfileId", appleUserId);
+      }
+      if (email) {
+        localStorage.setItem("unfiltr_apple_email", email);
+        localStorage.setItem("unfiltr_user_email", email);
+      }
+      if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      // If RevenueCat confirmed premium at sign-in time, set it immediately
+      if (payload.isPremium) {
+        localStorage.setItem("unfiltr_is_premium", "true");
+        localStorage.setItem("unfiltr_plan", "pro_plan");
+        debugLog("[WEB] 💎 Premium status restored from RevenueCat on sign-in");
+      }
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
+      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+      navigate(onboardingDone ? "/hub" : "/onboarding/consent");
+    } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
+      // Just reset the button — do NOT navigate away, let them try again
+      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
+      setLoading(false);
+    } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
+      debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
+      setLoading(false);
+    }
   };
 
-  if (window.__nativeBus) {
-    window.__nativeBus.on("APPLE_SIGN_IN_SUCCESS", (msg) => {
-      done(async () => {
-        const payload = msg.data || msg;
-        const appleUserId = payload.appleUserId || payload.user;
-        const email = payload.email;
-        const fullName = payload.fullName;
-        debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-        if (!appleUserId) { setLoading(false); return; }
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
+      handleResult(msg);
+    } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
+  };
 
-        // Always persist Apple ID locally first
-        localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-        localStorage.setItem("unfiltr_user_id", appleUserId);
-        localStorage.setItem("unfiltr_auth_token", appleUserId);
-        if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
-        if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+  const windowHandler = (e) => {
+    try {
+      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
+        debugLog(`[WEB] window message fallback: ${msg.type}`);
+        handleResult(msg);
+      }
+    } catch {}
+  };
+  window.addEventListener("message", windowHandler);
 
-        // ── Cross-device sync: look up existing profile in DB ──
-        const isReturningUser = await restoreProfileFromDB(appleUserId, email, fullName);
-        window.dispatchEvent(new Event("unfiltr_auth_updated"));
+  const cleanup = () => {
+    window.__appleSignInCleanup = null;
+    window.onMessageFromRN = prevHandler;
+    window.removeEventListener("message", windowHandler);
+  };
 
-        if (isReturningUser) {
-          debugLog('[WEB] Returning user — going to hub');
-          navigate("/hub");
-        } else {
-          debugLog('[WEB] New user — going to onboarding');
-          if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
-          navigate("/onboarding/consent");
-        }
-      });
-    });
-
-    window.__nativeBus.on("APPLE_SIGN_IN_CANCELLED", () => {
-      done(() => {
-        debugLog('[WEB] 🚫 Apple sign-in cancelled');
-        setLoading(false);
-      });
-    });
-
-    window.__nativeBus.on("APPLE_SIGN_IN_ERROR", (msg) => {
-      done(() => {
-        debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
-        setLoading(false);
-      });
-    });
-  }
+  // Store cleanup so next tap can tear down this listener first
+  window.__appleSignInCleanup = cleanup;
 
   debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
@@ -211,7 +172,7 @@ export default function HomeScreen() {
             <svg width="20" height="20" viewBox="0 0 814 1000" fill="black">
               <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3.1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3.4 6 .6 9.7.6 29.7 0 67.9-19.5 85.7-47.1z"/>
             </svg>
-            {loading ? "Restoring your account..." : "Sign in with Apple"}
+            {loading ? "Signing in..." : "Sign in with Apple"}
           </motion.button>
         )}
 
@@ -264,15 +225,18 @@ export default function HomeScreen() {
               { icon: Star,           label: "Rate Us",        path: null,             color: "#a855f7",
                 action: () => window.open("https://apps.apple.com/app/id6760604917", "_blank") },
             ].map(({ icon: Icon, label, path, color, action }) => (
-              <button key={label}
-                style={{ padding: "12px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
-                onClick={() => action ? action() : navigate(path)}>
-                <Icon size={16} color={color} />
-                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 600 }}>{label}</span>
-              </button>
+              <motion.button key={label} whileTap={{ scale: 0.96 }}
+                onClick={() => action ? action() : navigate(path)}
+                style={{ padding: "14px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}22`, border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={18} color={color} />
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, textAlign: "center" }}>{label}</span>
+              </motion.button>
             ))}
           </div>
         </motion.div>
+        <div style={{ height: "max(24px,env(safe-area-inset-bottom))" }} />
       </div>
     </div>
   );
