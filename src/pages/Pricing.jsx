@@ -268,7 +268,7 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     const result = await purchase(selectedPlan.productId);
-    if (result?.success) {
+    if (result?.success || result?.isSuccess) {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
         await base44.entities.UserProfile.update(profileId, {
@@ -286,7 +286,7 @@ export default function Pricing() {
 
   const handleRestore = async () => {
     const result = await restore();
-    if (result?.success) {
+    if (result?.success || result?.isSuccess) {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
         const profile = await base44.entities.UserProfile.get(profileId);
