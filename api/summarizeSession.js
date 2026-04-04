@@ -34,8 +34,10 @@ export default async function handler(req, res) {
       .map(m => `${m.role === "user" ? "User" : companionName || "Companion"}: ${m.content}`)
       .join("\n");
 
+    // Use cheaper model for free users, better model for paid tiers
+    const summaryModel = (isPremium || isPro || isAnnual) ? "gpt-4o-mini" : "gpt-3.5-turbo";
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: summaryModel,
       messages: [
         { role: "system", content: "Summarize this conversation in 2-3 sentences. Focus on emotional themes, key topics, and anything important to remember about the user. Be warm and concise." },
         { role: "user", content: transcript },
