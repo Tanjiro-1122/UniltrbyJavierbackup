@@ -304,6 +304,32 @@ export default function ChatPage() {
   useEffect(() => {
     if (!companion) return;
 
+    // ── Restore active chat if coming back from Settings ─────────────────
+    // When user navigates Chat → Settings → Back, ChatPage remounts.
+    // We use a flag to detect this case and restore the in-progress session.
+    const returningFromSettings = sessionStorage.getItem("unfiltr_returning_from_settings");
+    if (returningFromSettings) {
+      sessionStorage.removeItem("unfiltr_returning_from_settings");
+      try {
+        const savedMsgs = sessionStorage.getItem("unfiltr_chat_messages");
+        if (savedMsgs) {
+          const parsed = JSON.parse(savedMsgs);
+          if (parsed?.length > 0) {
+            setMessages(parsed);
+            // Also re-read companion from localStorage in case user changed it in Settings
+            const freshC = localStorage.getItem("unfiltr_companion");
+            if (freshC) {
+              const freshParsed = JSON.parse(freshC);
+              const savedNick = localStorage.getItem("unfiltr_companion_nickname");
+              freshParsed.displayName = (savedNick && savedNick.trim()) ? savedNick.trim() : freshParsed.name;
+              setCompanion(freshParsed);
+            }
+            return; // Don't show a greeting — restore the chat
+          }
+        }
+      } catch {}
+    }
+
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
     if (meditationRaw) {
@@ -835,6 +861,11 @@ export default function ChatPage() {
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            onNavigateToSettings={() => {
+              // Flag so ChatPage knows to restore messages on return
+              sessionStorage.setItem("unfiltr_returning_from_settings", "1");
+              navigate("/settings");
+            }}
             onShowGames={() => setShowGames(true)}
             onShowMeditation={() => setShowMeditation(true)}
             onShowAchievements={() => setShowAchievements(true)}
