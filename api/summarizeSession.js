@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { storeMemoryVectors } from "./memoryEmbed.js";
 
 const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const B44_APP  = process.env.VITE_BASE44_APP_ID;
@@ -188,6 +189,10 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       memory_summary:  richSummary,
       updated_date:    new Date().toISOString(),
     });
+
+    // ── Store memories as embeddings for vector search (premium+) ──────────
+    storeMemoryVectors(profileId, updatedFacts, sessionNote, isPremium, isPro, isAnnual)
+      .catch(e => console.warn("[embed store]", e.message));
 
     res.status(200).json({
       ok:      true,
