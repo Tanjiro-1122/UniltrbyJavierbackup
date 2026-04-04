@@ -128,7 +128,7 @@ export default function ChatPage() {
             localStorage.setItem('unfiltr_is_premium', 'true');
             localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
             localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
-            () => {};
+
           }
         }
       } catch (e) { console.error('Native message error:', e); }
@@ -1141,6 +1141,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
