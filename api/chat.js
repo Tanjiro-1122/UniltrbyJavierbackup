@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { retrieveRelevantMemories } from "./memoryEmbed.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -138,7 +139,8 @@ export default async function handler(req, res) {
       systemPrompt,
       memorySummary,
       sessionMemory,
-      userFacts,        // NEW: structured fact object from UserProfile
+      userFacts,
+      profileId,        // needed for vector memory retrieval
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
@@ -154,7 +156,26 @@ export default async function handler(req, res) {
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
     const personalityCtx = buildPersonalityParagraph(personality);
 
-    // ── Rich structured memory block (replaces the old flat string) ──────────
+    // ── Vector memory: fetch relevant memories based on current user message ─
+    let vectorMemoryBlock = "";
+    if (profileId && (isPremium || isPro || isAnnual)) {
+      try {
+        const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "";
+        const relevant = await retrieveRelevantMemories(profileId, lastUserMsg, isPremium, isPro, isAnnual);
+        if (relevant.length) {
+          const lines = relevant.map(m => ).join("
+");
+          vectorMemoryBlock = "
+
+=== Memories relevant to this moment ===
+" + lines;
+        }
+      } catch(e) {
+        console.warn("[vector memory]", e.message);
+      }
+    }
+
+    // ── Rich structured memory block ──────────────────────────────────────────
     const memoryBlock = buildMemoryBlock(
       memorySummary, userFacts, sessionMemory, isPremium, isPro, isAnnual
     );
@@ -167,7 +188,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + personalityCtx + memoryBlock +
+          content: system + personalityCtx + memoryBlock + vectorMemoryBlock +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
