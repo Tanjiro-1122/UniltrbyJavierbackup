@@ -85,6 +85,7 @@ export default function ReturningScreen() {
   const handleAppleSignIn = () => {
     setLoading(true);
     signInWithApple(navigate, setLoading);
+    setTimeout(() => setLoading(false), 30000);
   };
 
   return (
@@ -166,9 +167,7 @@ export default function ReturningScreen() {
             marginBottom: 12,
             opacity: loading ? 0.7 : 1,
           }}>
-          <svg width="20" height="20" viewBox="0 0 814 1000" fill="black">
-            <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3 .1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3 .4 6 .6 9.7 .6 29.7 0 67.9-19.5 85.7-47.1z"/>
-          </svg>
+          <span style={{fontSize: 18, lineHeight: 1}}></span>
           {loading ? "Linking..." : "Link Apple ID"}
         </motion.button>
       )}
@@ -190,3 +189,4 @@ export default function ReturningScreen() {
     </div>
   );
 }
+
