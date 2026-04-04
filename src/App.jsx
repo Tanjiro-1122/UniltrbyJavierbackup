@@ -33,6 +33,7 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
+import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
 import HomeScreen             from "./pages/HomeScreen";
@@ -200,6 +201,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Onboarding */}
         <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
+        <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
@@ -269,7 +271,6 @@ function App() {
 }
 
 export default App;
-
 
 
 
