@@ -162,6 +162,11 @@ if (typeof window !== 'undefined' && !window.__nativeBusReady) {
   window.onMessageFromRN = (jsonStr) => {
     try {
       const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      // Auto-ACK any retryUntilAck message (stops native retry loop)
+      if (msg.__msgId) {
+        if (!window.__nativeAcks) window.__nativeAcks = {};
+        window.__nativeAcks[msg.__msgId] = true;
+      }
       window.__nativeBus.emit(msg);
     } catch(e) { console.warn('[Bridge] parse error:', e.message); }
   };
