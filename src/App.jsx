@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -68,6 +69,14 @@ const PUBLIC_PATHS = [
 ];
 
 function SafeAreaFix() {
+  useEffect(() => {
+    const handleToast = (e) => {
+      const msg = e.detail?.message;
+      if (msg) toast(msg, { duration: 3500 });
+    };
+    window.addEventListener("unfiltr_toast", handleToast);
+    return () => window.removeEventListener("unfiltr_toast", handleToast);
+  }, []);
   useEffect(() => {
     const color = "#06020f";
     let meta = document.querySelector("meta[name=theme-color]");
@@ -337,6 +346,8 @@ function App() {
 }
 
 export default App;
+
+
 
 
 
