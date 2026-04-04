@@ -119,6 +119,63 @@ function useProfileRecovery() {
   }, []);
 }
 
+// ── Global Native Bridge ─────────────────────────────────────────────────────
+// Set ONCE at startup. Pages register handlers via window.__nativeBus.
+// This survives re-renders, navigation, and page changes.
+if (typeof window !== 'undefined' && !window.__nativeBusReady) {
+  window.__nativeBusReady = true;
+  window.__nativeBusHandlers = {};
+
+  // Register a handler: window.__nativeBus.on('APPLE_SIGN_IN_SUCCESS', fn)
+  window.__nativeBus = {
+    on:  (type, fn) => { window.__nativeBusHandlers[type] = fn; },
+    off: (type)     => { delete window.__nativeBusHandlers[type]; },
+    emit: (msg) => {
+      const fn = window.__nativeBusHandlers[msg.type];
+      if (fn) {
+        fn(msg);
+      } else {
+        // Queue it for 2s in case a handler registers shortly after
+        if (!window.__nativeBusQueue) window.__nativeBusQueue = [];
+        window.__nativeBusQueue.push({ msg, ts: Date.now() });
+      }
+    },
+  };
+
+  // Flush any queued messages when a new handler registers
+  const origOn = window.__nativeBus.on.bind(window.__nativeBus);
+  window.__nativeBus.on = (type, fn) => {
+    origOn(type, fn);
+    if (window.__nativeBusQueue) {
+      window.__nativeBusQueue = window.__nativeBusQueue.filter(({ msg, ts }) => {
+        if (msg.type === type && Date.now() - ts < 2000) {
+          fn(msg);
+          return false;
+        }
+        return true;
+      });
+    }
+  };
+
+  // The actual listener — receives from native injectJavaScript
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      window.__nativeBus.emit(msg);
+    } catch(e) { console.warn('[Bridge] parse error:', e.message); }
+  };
+
+  // Fallback: window message event
+  window.addEventListener('message', (e) => {
+    try {
+      const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (msg && msg.type && !msg.type.startsWith('webpack') && !msg.type.startsWith('hmr')) {
+        window.__nativeBus.emit(msg);
+      }
+    } catch {}
+  });
+}
+
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
