@@ -186,7 +186,7 @@ export default function JournalEntry() {
       return;
     }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Speech recognition not supported on this device."); return; }
+    if (!SR) { return; } // Speech recognition not available — fail silently
     const r = new SR();
     recognitionRef.current = r;
     r.continuous = true;
@@ -372,3 +372,4 @@ export default function JournalEntry() {
     </div>
   );
 }
+
