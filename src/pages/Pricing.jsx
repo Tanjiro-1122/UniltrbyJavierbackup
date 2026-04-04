@@ -1,3 +1,4 @@
+aa105432e128f49e23966775a91e9acd3e7ea6c5
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
@@ -54,7 +55,7 @@ const PLANS = [
 
 const PERKS = [
   { icon: Brain,         label: 'Memory — your companion finally knows you' },
-  { icon: MessageCircle, label: 'Unlimited messages, every day' },
+  { icon: MessageCircle, label: 'Up to 200 msgs/day (vs 20 free)' },
   { icon: Mic,           label: 'Voice responses (TTS)' },
   { icon: BookOpen,      label: 'Full conversation history' },
   { icon: Zap,           label: 'Priority responses' },
@@ -234,7 +235,6 @@ export default function Pricing() {
   const [planType, setPlanType]   = useState('annual');
   const [countdown, setCountdown] = useState(getMidnightCountdown());
   const [tab, setTab]             = useState('upgrade');
-  const [showDebug, setShowDebug] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [tapCount, setTapCount]   = useState(0);
   const tapTimer                  = useRef(null);
@@ -297,7 +297,7 @@ export default function Pricing() {
 
   return (
     <AppShell hideNav>
-      {showDebug && <IAPDebugPanel onClose={() => setShowDebug(false)} />}
+       />}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} navigate={navigate} />}
 
       <div style={{
@@ -445,3 +445,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
