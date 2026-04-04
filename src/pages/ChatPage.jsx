@@ -616,7 +616,15 @@ export default function ChatPage() {
       let localMemSummary = memorySummary; // use existing state value
       try {
         const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) { const prof = await base44.entities.UserProfile.get(pid2); localMemSummary = prof?.memory_summary || ""; setMemorySummary(localMemSummary); }
+        if (pid2) {
+          const prof = await base44.entities.UserProfile.get(pid2);
+          localMemSummary = prof?.memory_summary || "";
+          setMemorySummary(localMemSummary);
+          // Cache structured facts so the chat API can use them for deep memory
+          if (prof?.user_facts) {
+            try { localStorage.setItem("unfiltr_user_facts", JSON.stringify(prof.user_facts)); } catch {}
+          }
+        }
       } catch {}
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
@@ -644,11 +652,17 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
+      // Load userFacts for memory injection
+      let userFacts = {};
+      try { userFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch {}
+
       const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium, isPro, isAnnual,
         sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
         memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
+        userFacts: (isPremium || isPro || isAnnual) ? userFacts : {},
+        profileId: profileId || "",
         imageBase64: imgBase64,
         personality: personalityPayload,
       });
