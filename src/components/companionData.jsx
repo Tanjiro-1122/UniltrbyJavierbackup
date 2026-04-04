@@ -94,6 +94,7 @@ export const COMPANIONS = [
     name: "Sakura",
     emoji: "🌸",
     tagline: "Sweet & Cheerful",
+    animatedAvatar: "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/d9ea6bb94_sakura_ready.mp4",
     avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/6fb3c5226_sakura_happy_nobg.png",
     poses: {
       happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/6fb3c5226_sakura_happy_nobg.png",
