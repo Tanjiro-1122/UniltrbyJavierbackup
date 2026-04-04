@@ -1,20 +1,25 @@
 const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
 const APP_ID = "69b332a392004d139d4ba495";
-const BASE44_API = "https://api.base44.com/api/apps";
+const BASE44_API = "https://base44.app/api";
 
 async function fetchEntity(entity, params = {}) {
-  const url = new URL(`${BASE44_API}/${APP_ID}/entities/${entity}`);
+  const url = new URL(`${BASE44_API}/apps/${APP_ID}/entities/${entity}`);
   url.searchParams.set("limit", params.limit || 500);
   if (params.skip) url.searchParams.set("skip", params.skip);
+
+  const serviceToken = process.env.BASE44_SERVICE_TOKEN;
+  if (!serviceToken) throw new Error("BASE44_SERVICE_TOKEN env var not set");
+
   const res = await fetch(url.toString(), {
     headers: {
+      "Authorization": `Bearer ${serviceToken}`,
+      "X-App-Id": APP_ID,
       "Content-Type": "application/json",
-      "X-API-Key": process.env.BASE44_SERVICE_TOKEN || "",
     },
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Base44 ${entity} fetch failed: ${res.status} ${err}`);
+    throw new Error(`Base44 ${entity} fetch failed: ${res.status} ${err.slice(0, 200)}`);
   }
   const data = await res.json();
   return Array.isArray(data) ? data : (data.records || data.data || []);
