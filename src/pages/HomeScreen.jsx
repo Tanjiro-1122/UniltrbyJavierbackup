@@ -34,6 +34,15 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       return;
     }
 
+    // ACK the native retry mechanism so it stops resending
+    if (msg.__msgId && window.ReactNativeWebView) {
+      try {
+        if (!window.__nativeAcks) window.__nativeAcks = {};
+        window.__nativeAcks[msg.__msgId] = true;
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: '__ACK_CONFIRMED', msgId: msg.__msgId }));
+      } catch(e) {}
+    }
+
     resolved = true;
     cleanup();
 
@@ -235,3 +244,4 @@ export default function HomeScreen() {
     </div>
   );
 }
+
