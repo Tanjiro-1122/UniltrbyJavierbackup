@@ -6,7 +6,9 @@ import { debugLog } from "@/components/DebugPanel";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
-function doAppleSignIn(navigate, setLoading) {
+function doAppleSignIn(navigateRef, setLoadingRef) {
+  const navigate = (...args) => navigateRef.current(...args);
+  const setLoading = (...args) => setLoadingRef.current(...args);
   const bridge = window.ReactNativeWebView;
   debugLog(`[WEB] signInWithApple called, bridge=${!!bridge}`);
 
@@ -108,10 +110,14 @@ export default function HomeScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const isNative = !!window.ReactNativeWebView;
+  const navigateRef = React.useRef(navigate);
+  const setLoadingRef = React.useRef(setLoading);
+  React.useEffect(() => { navigateRef.current = navigate; }, [navigate]);
+  React.useEffect(() => { setLoadingRef.current = setLoading; }, [setLoading]);
 
   const handleAppleSignIn = () => {
     setLoading(true);
-    doAppleSignIn(navigate, setLoading);
+    doAppleSignIn(navigateRef, setLoadingRef);
   };
 
   return (
