@@ -19,7 +19,7 @@ function signInWithApple(navigate, setLoading) {
 
   let resolved = false;
 
-  const handleResult = (msg) => {
+  const handleResult = async (msg) => {
     if (resolved) return;
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
     resolved = true;
