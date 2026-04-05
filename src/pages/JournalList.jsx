@@ -65,21 +65,35 @@ export default function JournalList() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-2xl p-4"
+                className="rounded-2xl overflow-hidden"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-purple-400/70 text-xs uppercase tracking-widest mb-2">{formatDate(e.created_date)}</p>
-                    <p className="text-white/70 text-sm leading-relaxed" style={{ fontFamily: "'Georgia', serif" }}>
-                      {preview(e.content)}
-                    </p>
+                {/* Mood image banner */}
+                {e.mood_image && (
+                  <div style={{ position: "relative", width: "100%", height: 140, overflow: "hidden" }}>
+                    <img src={e.mood_image} alt="mood" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(6,2,15,0.95) 100%)" }} />
+                    {e.mood && (
+                      <span style={{ position: "absolute", top: 10, right: 10, fontSize: 20, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>
+                        {e.mood === "happy" ? "😊" : e.mood === "sad" ? "😢" : e.mood === "anxious" ? "😰" : e.mood === "grateful" ? "🙏" : e.mood === "reflective" ? "🌙" : e.mood === "excited" ? "🎉" : "✨"}
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={() => { if (window.confirm("Delete this journal entry?")) deleteEntry(e.id); }}
-                    className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-90 transition-transform"
-                  >
-                    <Trash2 className="w-4 h-4 text-white/30" />
-                  </button>
+                )}
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-purple-400/70 text-xs uppercase tracking-widest mb-2">{formatDate(e.created_date)}</p>
+                      <p className="text-white/70 text-sm leading-relaxed" style={{ fontFamily: "'Georgia', serif" }}>
+                        {preview(e.content)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { if (window.confirm("Delete this journal entry?")) deleteEntry(e.id); }}
+                      className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-90 transition-transform"
+                    >
+                      <Trash2 className="w-4 h-4 text-white/30" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
