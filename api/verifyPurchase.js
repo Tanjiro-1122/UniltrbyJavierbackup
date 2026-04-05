@@ -8,7 +8,7 @@ async function b44FindAndUpdate(appleUserId, data) {
   // Step 1: search for the profile by apple_user_id
   const searchRes = await fetch(
     `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: { "ApiKey": B44_API_KEY } }
+    { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
   );
   if (!searchRes.ok) {
     console.error("[verifyPurchase] b44 search failed:", searchRes.status);
@@ -25,7 +25,7 @@ async function b44FindAndUpdate(appleUserId, data) {
   // Step 2: update using the real record ID
   const updateRes = await fetch(`${B44_BASE}/UserProfile/${record.id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
     body: JSON.stringify(data),
   });
   console.log("[verifyPurchase] b44Update status:", updateRes.status, "for record:", record.id);
