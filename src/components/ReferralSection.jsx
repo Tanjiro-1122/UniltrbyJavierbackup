@@ -12,8 +12,10 @@ export default function ReferralSection({ profileId }) {
   useEffect(() => {
     if (!profileId) return;
     base44.functions.invoke("generateReferralCode", { profileId }).then(res => {
-      if (res.data?.code) {
-        setCode(res.data.code);
+      // ✅ Fixed: API returns referral_code (not code)
+      const c = res.data?.referral_code || res.data?.code;
+      if (c) {
+        setCode(c);
         setReferralCount(res.data.referral_count || 0);
         setBonusMessages(res.data.bonus_messages || 0);
       }
@@ -43,6 +45,12 @@ export default function ReferralSection({ profileId }) {
     </div>
   );
 
+  if (!code) return (
+    <div style={{ padding: "16px", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13 }}>
+      Referral code unavailable
+    </div>
+  );
+
   return (
     <div>
       <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
@@ -60,40 +68,38 @@ export default function ReferralSection({ profileId }) {
             background: "rgba(168,85,247,0.08)", borderRadius: 14,
             border: "1px solid rgba(168,85,247,0.15)",
           }}>
-            <p style={{ fontSize: 18, margin: 0 }}>{s.icon}</p>
-            <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 18, margin: "2px 0 0" }}>{s.value}</p>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, margin: "2px 0 0" }}>{s.label}</p>
+            <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
+            <div style={{ color: "white", fontWeight: 700, fontSize: 18 }}>{s.value}</div>
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Code display */}
       <div style={{
-        padding: "14px 16px", borderRadius: 14,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.3)",
+        borderRadius: 14, padding: "14px 16px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 10,
       }}>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: "0 0 4px" }}>Your referral code</p>
-        <p style={{ color: "white", fontWeight: 800, fontSize: 20, letterSpacing: "0.05em", margin: 0 }}>{code}</p>
+        <div>
+          <div style={{ color: "rgba(196,181,253,0.6)", fontSize: 11, marginBottom: 3 }}>Your referral code</div>
+          <div style={{ color: "white", fontWeight: 800, fontSize: 20, letterSpacing: "0.06em" }}>{code}</div>
+        </div>
+        <button onClick={handleCopy} style={{
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "9px 16px", borderRadius: 10,
+          background: copied ? "rgba(34,197,94,0.2)" : "rgba(139,92,246,0.25)",
+          border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "rgba(139,92,246,0.4)"}`,
+          color: copied ? "#4ade80" : "#c4b5fd", fontSize: 13, fontWeight: 600, cursor: "pointer",
+        }}>
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? "Shared!" : "Share"}
+        </button>
       </div>
 
-      <button
-        onClick={handleCopy}
-        style={{
-          width: "100%", padding: "13px",
-          background: copied ? "rgba(34,197,94,0.15)" : "linear-gradient(135deg, #7c3aed, #db2777)",
-          border: copied ? "1px solid rgba(34,197,94,0.4)" : "none",
-          borderRadius: 14, color: "white", fontWeight: 700, fontSize: 14,
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          transition: "all 0.2s",
-        }}
-      >
-        {copied ? <Check size={16} /> : <Copy size={16} />}
-        {copied ? "Copied to clipboard!" : "Copy & Share"}
-      </button>
-      <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-        Each friend who joins gets 50 bonus messages. So do you! 🎁
+      <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center", margin: 0 }}>
+        Each friend who joins with your code earns you +50 bonus messages
       </p>
     </div>
   );
