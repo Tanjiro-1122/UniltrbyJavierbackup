@@ -1,6 +1,8 @@
-const B44_APP  = process.env.VITE_BASE44_APP_ID;
+// ✅ Hardcoded production app ID — VITE_ vars are NOT available in Vercel serverless functions
+const B44_APP  = "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_API_KEY || "";
+// ✅ Use BASE44_SERVICE_TOKEN (not BASE44_API_KEY which may not be set)
+const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 async function b44Update(entity, id, data) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
