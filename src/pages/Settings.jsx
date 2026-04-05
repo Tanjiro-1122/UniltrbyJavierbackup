@@ -105,6 +105,36 @@ export default function Settings() {
   const [showDebug, setShowDebug]             = useState(false);
   const [debugLog, setDebugLog]               = useState([]);
   const [iapTesting, setIapTesting]           = useState(false);
+  const [notifEnabled, setNotifEnabled]           = useState(() => localStorage.getItem("unfiltr_notif_enabled") === "true");
+  const [morningTime, setMorningTime]             = useState(() => localStorage.getItem("unfiltr_notif_morning") || "08:00");
+  const [nightTime, setNightTime]                 = useState(() => localStorage.getItem("unfiltr_notif_night") || "22:00");
+  const [savingNotif, setSavingNotif]             = useState(false);
+  const [notifSaved, setNotifSaved]               = useState(false);
+
+
+  const saveNotifPrefs = async (enabled, morning, night) => {
+    setSavingNotif(true);
+    const appleUserId = localStorage.getItem("unfiltr_user_id");
+    const tzOffset = -(new Date().getTimezoneOffset() / 60);
+    localStorage.setItem("unfiltr_notif_enabled", enabled ? "true" : "false");
+    localStorage.setItem("unfiltr_notif_morning", morning);
+    localStorage.setItem("unfiltr_notif_night", night);
+    if (window.ReactNativeWebView && appleUserId) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "SAVE_PUSH_TOKEN", appleUserId }));
+    }
+    if (appleUserId) {
+      try {
+        await fetch("/api/utils", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "updateNotifPrefs", appleUserId, notif_enabled: enabled, notif_morning_time: morning, notif_night_time: night, notif_tz_offset: tzOffset }),
+        });
+      } catch(e) { console.warn("saveNotifPrefs failed:", e); }
+    }
+    setSavingNotif(false);
+    setNotifSaved(true);
+    setTimeout(() => setNotifSaved(false), 2000);
+  };
 
   const addLog = (msg, type = "info") => {
     const ts = new Date().toLocaleTimeString();
@@ -582,6 +612,51 @@ export default function Settings() {
       </SubScreen>
     ),
 
+    notifications: (
+      <SubScreen title="Daily Check-ins 🔔" onBack={() => setScreen(null)}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+          Let your companion send you a personal good morning and goodnight message every day. Each one is uniquely written — never the same line twice.
+        </p>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", marginBottom: 12 }}>
+          <div>
+            <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>Daily Check-ins</p>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "3px 0 0" }}>Morning + goodnight from {companion?.name || "your companion"}</p>
+          </div>
+          <button
+            onClick={() => { const next = !notifEnabled; setNotifEnabled(next); saveNotifPrefs(next, morningTime, nightTime); }}
+            style={{ width: 48, height: 27, borderRadius: 999, border: "none", cursor: "pointer", transition: "background 0.2s", background: notifEnabled ? "linear-gradient(135deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.12)", position: "relative", flexShrink: 0 }}>
+            <div style={{ position: "absolute", top: 3, left: notifEnabled ? 23 : 3, width: 21, height: 21, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
+          </button>
+        </div>
+
+        {notifEnabled && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px" }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1 }}>☀️ Good Morning</p>
+              <input type="time" value={morningTime} onChange={e => setMorningTime(e.target.value)}
+                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, padding: "10px 14px", color: "white", fontSize: 18, fontWeight: 700, width: "100%", outline: "none", WebkitAppearance: "none" }} />
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px" }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1 }}>🌙 Goodnight</p>
+              <input type="time" value={nightTime} onChange={e => setNightTime(e.target.value)}
+                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, padding: "10px 14px", color: "white", fontSize: 18, fontWeight: 700, width: "100%", outline: "none", WebkitAppearance: "none" }} />
+            </div>
+            <button onClick={() => saveNotifPrefs(notifEnabled, morningTime, nightTime)} disabled={savingNotif}
+              style={{ padding: "13px", background: notifSaved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: savingNotif ? 0.6 : 1 }}>
+              {notifSaved ? "✓ Saved!" : savingNotif ? "Saving…" : "Save Times"}
+            </button>
+          </motion.div>
+        )}
+
+        <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: 12, padding: "12px 14px" }}>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0, lineHeight: 1.6 }}>
+            💡 Notifications require the Unfiltr iOS app. Make sure you allowed notifications when first prompted.
+          </p>
+        </div>
+      </SubScreen>
+    ),
+
     howto: (
       <SubScreen title="How to Use Unfiltr" onBack={() => setScreen(null)}>
         <HowToGuide />
@@ -782,6 +857,7 @@ export default function Settings() {
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
+          <Row icon={<Bell size={15} color="white" />} iconBg="#1a3040" label="Daily Check-ins" value={notifEnabled ? "On 🔔" : "Off"} onPress={() => setScreen("notifications")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
         </Section>
 
