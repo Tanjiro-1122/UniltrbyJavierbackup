@@ -43,43 +43,57 @@ export default async function handler(req, res) {
 
   const BASE44_API_KEY = process.env.BASE44_API_KEY;
   const BASE44_APP_ID = "69b332a392004d139d4ba495";
+  const B44_BASE = `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities`;
 
   if (!BASE44_API_KEY) {
     console.error("[RC Webhook] Missing BASE44_API_KEY");
     return res.status(500).json({ error: "Server config error" });
   }
 
-  // Find the user profile by user_id
-  // Try appUserId and all aliases
+  // ── Find user profile by apple_user_id first, then user_id, then aliases ──
+  // RevenueCat sends the Apple User ID as app_user_id after Purchases.logIn()
   const userIds = [appUserId, ...aliases].filter(Boolean);
   let profile = null;
   let profileId = null;
 
   for (const uid of userIds) {
+    // Try apple_user_id field first (this is where we store the Apple User ID)
     try {
-      const filterRes = await fetch(
-        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?user_id=${encodeURIComponent(uid)}`,
-        {
-          headers: {
-            "Authorization": `Bearer ${BASE44_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const r1 = await fetch(
+        `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(uid)}&limit=1`,
+        { headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" } }
       );
-      const profiles = await filterRes.json();
-      if (Array.isArray(profiles) && profiles.length > 0) {
-        profile = profiles[0];
+      const p1 = await r1.json();
+      if (Array.isArray(p1) && p1.length > 0) {
+        profile = p1[0];
         profileId = profile.id;
-        console.log(`[RC Webhook] Found profile ${profileId} for user ${uid}`);
+        console.log(`[RC Webhook] Found profile ${profileId} via apple_user_id for ${uid}`);
         break;
       }
     } catch (e) {
-      console.error(`[RC Webhook] Error looking up user ${uid}:`, e.message);
+      console.warn(`[RC Webhook] apple_user_id lookup failed for ${uid}:`, e.message);
+    }
+
+    // Fallback: try user_id field
+    try {
+      const r2 = await fetch(
+        `${B44_BASE}/UserProfile?user_id=${encodeURIComponent(uid)}&limit=1`,
+        { headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" } }
+      );
+      const p2 = await r2.json();
+      if (Array.isArray(p2) && p2.length > 0) {
+        profile = p2[0];
+        profileId = profile.id;
+        console.log(`[RC Webhook] Found profile ${profileId} via user_id for ${uid}`);
+        break;
+      }
+    } catch (e) {
+      console.warn(`[RC Webhook] user_id lookup failed for ${uid}:`, e.message);
     }
   }
 
   if (!profileId) {
-    console.warn(`[RC Webhook] No profile found for user ${appUserId} — ignoring event`);
+    console.warn(`[RC Webhook] No profile found for user ${appUserId} or aliases [${aliases.join(", ")}] — ignoring event`);
     return res.status(200).json({ status: "user_not_found" });
   }
 
@@ -89,17 +103,18 @@ export default async function handler(req, res) {
     const isAnnual = event?.event?.product_id?.includes("annual");
     const isPro    = !isAnnual && event?.event?.product_id?.includes("pro");
     updateData = {
-      is_premium: true,
+      is_premium:   true,
       trial_active: false,
-      annual_plan: isAnnual ? true : (profile.annual_plan || false),
-      pro_plan:    isPro    ? true : (profile.pro_plan    || false),
+      annual_plan:  isAnnual ? true : (profile.annual_plan || false),
+      pro_plan:     isPro    ? true : (profile.pro_plan    || false),
     };
-    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual})`);
+    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual}, pro: ${isPro})`);
   } else if (REVOKE_EVENTS.includes(eventType)) {
     updateData = {
-      is_premium: false,
+      is_premium:   false,
       trial_active: false,
-      annual_plan: false,
+      annual_plan:  false,
+      pro_plan:     false,
     };
     console.log(`[RC Webhook] Revoking premium from ${profileId}`);
   } else {
@@ -110,7 +125,7 @@ export default async function handler(req, res) {
   // Update the UserProfile in Base44
   try {
     const updateRes = await fetch(
-      `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile/${profileId}`,
+      `${B44_BASE}/UserProfile/${profileId}`,
       {
         method: "PUT",
         headers: {
