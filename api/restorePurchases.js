@@ -1,14 +1,12 @@
-const B44_APP     = process.env.VITE_BASE44_APP_ID;
+// ✅ Hardcoded production app ID — VITE_ vars are NOT available in Vercel serverless functions
+const B44_APP     = "69b332a392004d139d4ba495";
 const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_API_KEY || "";
+const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 async function b44Update(entity, id, data) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "ApiKey": B44_API_KEY,           // ✅ fixed: was missing before
-    },
+    headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
     body: JSON.stringify(data),
   });
   return res.ok;
@@ -47,11 +45,10 @@ export default async function handler(req, res) {
     if (isActive) {
       await b44Update("UserProfile", appUserId, {
         is_premium:   true,
-        pro_plan:     plan === "pro",       // ✅ fixed: was missing before
+        pro_plan:     plan === "pro",
         annual_plan:  plan === "annual",
         updated_date: new Date().toISOString(),
       });
-      // Mirror to localStorage so app reacts immediately
     }
 
     return res.status(200).json({
