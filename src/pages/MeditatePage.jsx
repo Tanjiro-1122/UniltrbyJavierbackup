@@ -218,14 +218,14 @@ export default function MeditatePage() {
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1fab7/512.webp" alt="" style={{ width:80, height:80, objectFit:"contain", marginBottom:16 }} />
+          <div style={{ fontSize:72, marginBottom:16 }}>🧘</div>
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
           </p>
           <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => { const hasChatSession = localStorage.getItem("unfiltr_chat_history"); navigate(hasChatSession ? "/chat" : "/hub"); }}
+            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
               Choose Something Else ✦
             </motion.button>
@@ -320,7 +320,7 @@ export default function MeditatePage() {
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1fab7/512.webp" alt="" style={{ width:28, height:28, objectFit:"contain" }} />
+        <span style={{ fontSize:24 }}>🧘</span>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
@@ -375,5 +375,4 @@ export default function MeditatePage() {
     </div>
   );
 }
-
 
