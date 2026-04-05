@@ -70,6 +70,31 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
         localStorage.setItem("unfiltr_plan", "pro_plan");
         debugLog("[WEB] 💎 Premium status restored from RevenueCat on sign-in");
       }
+
+      // Sync profile to DB: write apple_user_id and get real record ID
+      try {
+        const syncRes = await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appleUserId, email, fullName, isPremium: !!payload.isPremium }),
+        });
+        const syncData = await syncRes.json();
+        if (syncData?.data?.profileId) {
+          localStorage.setItem("userProfileId", syncData.data.profileId);
+          if (syncData.data.is_premium) {
+            localStorage.setItem("unfiltr_is_premium", "true");
+            if (syncData.data.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
+            if (syncData.data.pro_plan)    localStorage.setItem("unfiltr_is_pro",    "true");
+          }
+          if (syncData.data.display_name && !localStorage.getItem("unfiltr_display_name")) {
+            localStorage.setItem("unfiltr_display_name", syncData.data.display_name);
+          }
+          debugLog("[WEB] ✅ Profile synced: " + syncData.data.profileId);
+        }
+      } catch(syncErr) {
+        debugLog("[WEB] ⚠️ syncProfile failed (non-fatal): " + syncErr.message);
+      }
+
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
       navigate(onboardingDone ? "/hub" : "/onboarding/consent");
