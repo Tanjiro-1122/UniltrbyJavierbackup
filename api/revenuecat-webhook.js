@@ -6,10 +6,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // AUTH TEMPORARILY DISABLED FOR DEBUGGING
+  // Verify auth — accept raw token with or without Bearer prefix
+  const EXPECTED_TOKEN = "6f37a8fa3662b4c34560ad597eed83907d28f08dbafe77b44cb1d62d6771a852";
   const rawAuth = req.headers["authorization"] || "";
-  console.log("[RC Webhook] Auth header received:", JSON.stringify(rawAuth));
-  console.log("[RC Webhook] Env var value:", JSON.stringify(process.env.REVENUECAT_WEBHOOK_AUTH_HEADER));
+  const receivedToken = rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : rawAuth.replace(/^Bearer_/, "");
+  if (!receivedToken || receivedToken !== EXPECTED_TOKEN) {
+    console.error("[RC Webhook] Unauthorized. Received:", receivedToken.slice(0,8));
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   const event = req.body;
   const eventType = event?.event?.type;
