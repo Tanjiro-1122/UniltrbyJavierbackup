@@ -10,56 +10,26 @@ function isReactNativeWebView() {
   return typeof window !== 'undefined' && !!window.ReactNativeWebView;
 }
 
-// ── Listen for native messages via BOTH channels ─────────────────────────────
-// Channel 1: window.onMessageFromRN (direct injection from native sendToWeb)
-// Channel 2: window message event (dispatchEvent fallback)
-// Channel 3: window.__nativeBus (App.jsx bus, if present)
+// ── Register the global handler that native calls directly ───────────────────
+// Native wrapper calls: window.onMessageFromRN(jsonString)
+// This follows the proven Close.com pattern for native→web communication
 if (typeof window !== 'undefined') {
   window._rnMessageHandlers = window._rnMessageHandlers || {};
 
-  const _dispatchToHandlers = (msg) => {
-    if (!msg?.type) return;
-    const handlers = window._rnMessageHandlers[msg.type] || [];
-    handlers.forEach(fn => { try { fn(msg); } catch(e) {} });
-  };
-
-  // Hook into __nativeBus if available
-  const _hookNativeBus = () => {
-    if (!window.__nativeBus) return;
-    const origEmit = window.__nativeBus.emit.bind(window.__nativeBus);
-    window.__nativeBus.emit = (msg) => {
-      origEmit(msg);
-      debugLog(`📨 [RN→WEB via bus] ${msg.type}`);
-      _dispatchToHandlers(msg);
-    };
-  };
-  if (window.__nativeBus) {
-    _hookNativeBus();
-  } else {
-    setTimeout(_hookNativeBus, 0);
-  }
-
-  // Hook into onMessageFromRN — this is the primary delivery channel now
-  const _origOnMessage = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
+  window.onMessageFromRN = function(jsonStr) {
     try {
-      const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-      debugLog(`📨 [RN→WEB via onMessageFromRN] ${msg.type}`);
-      _dispatchToHandlers(msg);
-    } catch(e) {}
-    if (typeof _origOnMessage === 'function') _origOnMessage(jsonStr);
+      const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`📨 [RN→WEB] ${data.type}`);
+      const handlers = window._rnMessageHandlers[data.type] || [];
+      handlers.forEach(fn => {
+        try { fn(data); } catch(e) {}
+      });
+      // Also fire as window event for any legacy listeners
+      window.dispatchEvent(new MessageEvent('message', { data }));
+    } catch(e) {
+      debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
+    }
   };
-
-  // Also listen on window 'message' events (dispatchEvent fallback)
-  window.addEventListener('message', (e) => {
-    try {
-      const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      if (msg?.type) {
-        debugLog(`📨 [RN→WEB via window.message] ${msg.type}`);
-        _dispatchToHandlers(msg);
-      }
-    } catch(e) {}
-  });
 }
 
 function onceFromNative(types, timeoutMs) {
@@ -77,6 +47,7 @@ function onceFromNative(types, timeoutMs) {
 
     const handler = (data) => {
       if (resolved) return;
+      // WAITING is just an ack — keep listening, don't resolve yet
       if (data.type === 'APPLE_SIGN_IN_WAITING') {
         debugLog('🍎 Apple overlay shown — waiting for user tap...');
         return;
@@ -124,9 +95,8 @@ function sendToNative(type, payload = {}) {
     'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
   };
 
-  // PURCHASE has a long timeout (120s) so the finally{} in purchase() can reset the button
-  // SIGN_IN_WITH_APPLE stays null — user-driven, no hard timeout
-  const timeoutMs = type === 'SIGN_IN_WITH_APPLE' ? null : type === 'PURCHASE' ? 120000 : 30000;
+  // PURCHASE and SIGN_IN_WITH_APPLE have no timeout — user-driven flows
+  const timeoutMs = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : 30000;
   const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
 
   try {
@@ -186,9 +156,7 @@ export class AppleStoreKitService {
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
-      // Pass appleUserId so native can logIn to RevenueCat before purchasing
-      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, appleUserId });
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
