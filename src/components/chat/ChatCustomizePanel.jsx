@@ -101,6 +101,13 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     setCurrentBg(bgId);
     localStorage.setItem("unfiltr_background", bgId);
     window.dispatchEvent(new CustomEvent("unfiltr_background_change", { detail: bgId }));
+    // Also update unfiltr_env so Settings and ChatPage stay in sync
+    const bg = BACKGROUNDS.find(b => b.id === bgId);
+    if (bg) {
+      const envObj = { id: bg.id, label: bg.label, bg: bg.url };
+      localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
+      window.dispatchEvent(new CustomEvent("unfiltr_env_change", { detail: envObj }));
+    }
   };
 
   const handleSaveVoice = () => {
@@ -362,3 +369,4 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     </>
   );
 }
+
