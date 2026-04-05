@@ -427,20 +427,42 @@ export default function ChatPage() {
       return;
     }
 
-    // Brand new conversation — use personality-specific greetings
+    // Brand new conversation — use personality-specific greetings + mood awareness
     const isLateNight = hour >= 23 || hour < 5;
     const lateNightSuffix = isLateNight ? "\n\nIt's late — I'm glad you're here though. Take it easy tonight 🌙" : "";
-    
+
+    // Check if user just came from MoodPicker (mood set this session)
+    const todaysMood = localStorage.getItem("unfiltr_mood");
+    const moodSession = sessionStorage.getItem("unfiltr_mood_session");
+    const moodSetToday = moodSession === new Date().toDateString() && todaysMood;
+
+    const MOOD_CHAT_OPENERS = {
+      happy:       "You picked happy today — I love that! ✨ What's got you in such a good mood?",
+      contentment: "Content and at peace — that's such a good place to be 🍃 What's keeping you grounded today?",
+      neutral:     "Just here today — that's totally valid 😌 Anything on your mind you want to talk through?",
+      sad:         "You said you're feeling sad today 💙 I'm really glad you showed up. Do you want to talk about what's going on?",
+      fear:        "Feeling anxious today? I've got you 💜 What's weighing on you right now?",
+      anger:       "Sounds like something got under your skin today 🔥 What happened? I want to hear it.",
+      surprise:    "Something caught you off guard today 😮 Tell me everything — what happened?",
+      disgust:     "Something really didn't sit right with you today. What was it?",
+      fatigue:     "You're tired today 🌙 That's okay. What's draining you the most right now?",
+    };
+
     const personality = COMPANION_PERSONALITIES[companion.id];
     const vibeGreeting = personality?.vibeGreetings?.[vibe];
     const defaultGreeting = personality?.greeting;
     
-    const greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
-      vibe === "chill" ? "What's good? Just vibing here 😌" :
-      vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
-      vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
-      "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-    }`;
+    let greetingText;
+    if (moodSetToday && MOOD_CHAT_OPENERS[todaysMood]) {
+      greetingText = MOOD_CHAT_OPENERS[todaysMood];
+    } else {
+      greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
+        vibe === "chill" ? "What's good? Just vibing here 😌" :
+        vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
+        vibe === "hype"  ? "YO LET'S GOOO!! I'M SO ready for this!! 🔥🔥" :
+        "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
+      }`;
+    }
 
     const greeting = {
       role: "assistant",
