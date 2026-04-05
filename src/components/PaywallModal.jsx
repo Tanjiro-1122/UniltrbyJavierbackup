@@ -98,11 +98,26 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
   };
 
   const handleRestore = async () => {
-    await restore();
+    const result = await restore();
     const profileId = localStorage.getItem("userProfileId");
+    // If the native restore succeeded, update localStorage immediately so UI refreshes
+    if (result?.success || result?.isPremium) {
+      localStorage.setItem("unfiltr_is_premium", "true");
+      if (result?.plan === "annual") localStorage.setItem("unfiltr_is_annual", "true");
+      if (result?.plan === "pro")    localStorage.setItem("unfiltr_is_pro",    "true");
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
+      if (onRestore) onRestore();
+      onClose();
+      return;
+    }
+    // Fallback: check DB (may have been updated via webhook)
     if (profileId) {
       const profile = await base44.entities.UserProfile.get(profileId);
       if (profile?.is_premium || profile?.premium) {
+        localStorage.setItem("unfiltr_is_premium", "true");
+        if (profile.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
+        if (profile.pro_plan)    localStorage.setItem("unfiltr_is_pro",    "true");
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
         if (onRestore) onRestore();
         onClose();
       }
