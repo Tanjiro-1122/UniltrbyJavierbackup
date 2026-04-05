@@ -500,6 +500,46 @@ export default function ChatPage() {
     return () => clearInterval(iv);
   }, [avatarState, loading, isSpeaking]);
 
+  /* ─── PREMIUM REFRESH: re-check when returning from Pricing ─── */
+  useEffect(() => {
+    const refreshPremium = async () => {
+      const lsPremium = localStorage.getItem("unfiltr_is_premium") === "true";
+      const lsAnnual  = localStorage.getItem("unfiltr_is_annual")  === "true";
+      const lsPro     = localStorage.getItem("unfiltr_is_pro")     === "true";
+      if (lsPremium || lsAnnual || lsPro) {
+        setIsPremium(lsPremium || lsAnnual || lsPro);
+        setIsAnnual(lsAnnual);
+        setIsPro(lsPro);
+      }
+      // Also re-check DB if we have a profileId
+      const pid = localStorage.getItem("userProfileId");
+      if (pid) {
+        try {
+          const profile = await base44.entities.UserProfile.get(pid);
+          if (profile) {
+            const annual  = !!(profile.annual_plan);
+            const pro     = !!(profile.pro_plan);
+            const premium = !!(profile.is_premium || profile.premium || annual || pro);
+            setIsPremium(premium);
+            setIsAnnual(annual);
+            setIsPro(pro);
+            localStorage.setItem("unfiltr_is_premium", String(premium));
+            localStorage.setItem("unfiltr_is_annual",  String(annual));
+            localStorage.setItem("unfiltr_is_pro",     String(pro));
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener("unfiltr_auth_updated", refreshPremium);
+    // Also fire on storage change (cross-tab / navigate back triggers storage event)
+    const onStorage = (e) => { if (e.key === "unfiltr_is_premium") refreshPremium(); };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("unfiltr_auth_updated", refreshPremium);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
   const triggerAnim = (state, ms = 1200) => {
     if (stateTimeout.current) clearTimeout(stateTimeout.current);
     setAvatarState(state);
@@ -1141,6 +1181,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
