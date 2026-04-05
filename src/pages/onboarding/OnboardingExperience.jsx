@@ -80,10 +80,54 @@ export default function OnboardingExperience() {
     setIsSwiping(false);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (exp.id === "chat") {
       navigate("/onboarding/vibe");
-    } else if (exp.id === "journal") {
+      return;
+    }
+
+    // For Journal and Meditate: complete onboarding inline so the app
+    // doesn't loop back to onboarding on next launch.
+    // (Chat path completes in OnboardingBackground — this covers the other two paths.)
+    const store = getOnboardingStore();
+    const companionObj = store.selectedCompanion
+      ? (await import("@/components/companionData").then(m => m.COMPANIONS.find(c => c.id === store.selectedCompanion)))
+      : null;
+    const companionName = store.companionNickname?.trim() || companionObj?.name || "Aria";
+
+    if (companionObj && !localStorage.getItem("unfiltr_companion")) {
+      localStorage.setItem("unfiltr_companion", JSON.stringify({
+        id: companionObj.id,
+        name: companionObj.name,
+        displayName: companionName,
+        systemPrompt: `You are ${companionName}, a supportive AI companion. ${companionObj.tagline}`,
+      }));
+      localStorage.setItem("unfiltr_companion_nickname", companionName);
+    }
+    if (store.displayName?.trim()) {
+      localStorage.setItem("unfiltr_display_name", store.displayName.trim());
+    }
+    localStorage.setItem("unfiltr_onboarding_complete", "true");
+    // Create a minimal DB profile in the background (non-blocking)
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      if (!localStorage.getItem("userProfileId")) {
+        const profile = await base44.entities.UserProfile.create({
+          display_name: store.displayName?.trim() || "",
+          apple_user_id: localStorage.getItem("unfiltr_apple_user_id") || "",
+          onboarding_complete: true,
+          session_memory: [],
+          message_count: 0,
+          last_active: new Date().toISOString(),
+        });
+        localStorage.setItem("userProfileId", profile.id);
+        localStorage.setItem("unfiltr_user_id", profile.id);
+        localStorage.setItem("unfiltr_auth_token", profile.id);
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
+      }
+    } catch (e) { console.warn("[Onboarding] DB profile creation failed (non-fatal):", e); }
+
+    if (exp.id === "journal") {
       navigate("/mood?dest=journal&onboarding=1");
     } else if (exp.id === "meditate") {
       navigate("/meditate");
@@ -265,3 +309,4 @@ export default function OnboardingExperience() {
     </div>
   );
 }
+
