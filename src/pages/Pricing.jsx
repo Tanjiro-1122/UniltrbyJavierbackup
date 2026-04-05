@@ -289,6 +289,8 @@ export default function Pricing() {
           localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
           localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
         }
+        // Notify any mounted pages (ChatPage) to refresh premium state immediately
+        window.dispatchEvent(new Event('unfiltr_auth_updated'));
         navigate(-1);
       } else if (result?.cancelled) {
         // User cancelled — reset cleanly, no error message
@@ -470,4 +472,5 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
