@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark, MessageCircle } from "lucide-react";
+import { Volume2, VolumeX, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Trophy, Moon, TrendingUp, Clock, Bookmark, MessageCircle } from "lucide-react";
+import ChatCustomizePanel from "@/components/chat/ChatCustomizePanel";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
-  isPremium, messages, companion, navigate,
-  setMessages, vibe,
+  isPremium, messages, companion, setCompanion, navigate,
+  setMessages, vibe, userProfile,
   onShowGames, onShowMeditation, onShowAchievements,
   onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
 }) {
@@ -153,10 +154,13 @@ export default function ChatHeader({
           title="New chat">
           <RotateCcw size={14} color="white" />
         </button>
-        <button onClick={() => navigate("/settings")}
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <Settings size={14} color="white" />
-        </button>
+        <ChatCustomizePanel
+          companion={companion}
+          setCompanion={setCompanion}
+          voiceEnabled={voiceEnabled}
+          setVoiceEnabled={setVoiceEnabled}
+          userProfile={userProfile}
+        />
       </div>
     </div>
   );
