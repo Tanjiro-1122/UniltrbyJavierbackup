@@ -89,6 +89,8 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
         localStorage.setItem("unfiltr_is_premium", "true");
         localStorage.setItem("unfiltr_is_annual",  String(selectedPlan.isAnnual));
         localStorage.setItem("unfiltr_is_pro",     String(selectedPlan.isPro));
+        // Notify mounted pages (ChatPage) to refresh premium state immediately
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
       }
       if (onSubscribe) onSubscribe();
       onClose();
@@ -262,3 +264,4 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
     </AnimatePresence>
   );
 }
+
