@@ -103,6 +103,7 @@ export default function Settings() {
   const [daysSince, setDaysSince]             = useState(0);
   const [moodHistory, setMoodHistory]         = useState([]);
   const [isAdmin, setIsAdmin]                 = useState(() => localStorage.getItem("unfiltr_admin_unlocked") === "true");
+  const [appleUserId]                          = useState(() => localStorage.getItem("unfiltr_user_id"));
   const [showDebug, setShowDebug]             = useState(false);
   const [debugLog, setDebugLog]               = useState([]);
   const [iapTesting, setIapTesting]           = useState(false);
@@ -383,6 +384,13 @@ export default function Settings() {
   const handleSignOut = () => {
     Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
     navigate("/", { replace: true });
+  };
+  const handleAppleSignIn = () => {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "APPLE_SIGN_IN" }));
+    } else {
+      toast("Sign in is only available in the app 📱");
+    }
   };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
@@ -794,7 +802,6 @@ export default function Settings() {
     account: (
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
-          <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
           <Row icon={<PauseCircle size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)"
             label={userProfile?.account_paused ? "Account Paused 💙" : "Pause My Account"}
             onPress={() => setShowPauseModal(true)} last />
@@ -811,9 +818,7 @@ export default function Settings() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#06020f", flexShrink: 0 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <ChevronLeft size={20} color="white" />
-        </button>
+
         <div onClick={handleTriquetraTap} style={{ cursor: "default", userSelect: "none" }}>
           <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ opacity: 0.5 }}>
             <path d="M50 15 C30 15 15 30 15 50 C15 65 25 77 38 82 C28 72 25 58 30 45 C35 32 46 25 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
@@ -859,10 +864,13 @@ export default function Settings() {
         {/* Main menu */}
         <Section>
           <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
+          {appleUserId ? (
+            <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
+          ) : (
+            <Row icon={<span style={{fontSize:15}}>🍎</span>} iconBg="rgba(0,0,0,0.3)" label="Sign In with Apple" onPress={handleAppleSignIn} />
+          )}
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
-          <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
-          <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
           <Row icon={<Bell size={15} color="white" />} iconBg="#1a3040" label="Daily Check-ins" value={notifEnabled ? "On 🔔" : "Off"} onPress={() => setScreen("notifications")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
