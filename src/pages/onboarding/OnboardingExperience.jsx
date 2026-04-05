@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { getOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
-const NOTO = "https://fonts.gstatic.com/s/e/notoemoji/latest";
+// Hub-matched Pixar icons
 
 const EXPERIENCES = [
   {
     id: "chat",
-    emoji: `${NOTO}/1f4ac/512.webp`,
+    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/bbe7e7fa7_generated_image.png",
     label: "Chat",
     sub: "Talk it out",
     desc: "Have a real conversation.\nYour companion listens, responds,\nand actually gets you.",
@@ -22,7 +22,7 @@ const EXPERIENCES = [
   },
   {
     id: "journal",
-    emoji: `${NOTO}/270f/512.webp`,
+    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/44915ae14_generated_image.png",
     label: "Journal",
     sub: "Write freely",
     desc: "Your private space.\nWrite down your thoughts,\nfeelings, and moments.",
@@ -35,7 +35,7 @@ const EXPERIENCES = [
   },
   {
     id: "meditate",
-    emoji: `${NOTO}/1faa4/512.webp`,
+    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/47037d196_generated_image.png",
     label: "Meditate",
     sub: "Find your calm",
     desc: "Breathe. Reset. Recharge.\nGuided sessions to bring\nyou back to yourself.",
@@ -225,7 +225,7 @@ export default function OnboardingExperience() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 filter: isActive ? `drop-shadow(0 0 28px ${e.glow}) drop-shadow(0 6px 18px rgba(0,0,0,0.6))` : "none",
               }}>
-                <img src={e.emoji} alt={e.label} style={{ width: "100%", height: "100%", objectFit: "contain", opacity: isActive ? 1 : 0.55 }} />
+                <img src={e.emoji} alt={e.label} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16, opacity: isActive ? 1 : 0.55 }} />
               </div>
               <p style={{
                 fontWeight: 900, fontSize: 26, margin: "0 0 3px", letterSpacing: "-0.5px",
