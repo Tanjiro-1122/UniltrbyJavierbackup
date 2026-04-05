@@ -109,35 +109,7 @@ export default function ChatPage() {
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
-  /* ─── NATIVE PURCHASE LISTENER ─── */
-  useEffect(() => {
-    const handleNativeMessage = async (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.action === 'purchase_success' || data.action === 'restore_success') {
-          // Set localStorage immediately — UI updates right away
-          localStorage.setItem('unfiltr_is_premium', 'true');
-          setIsPremium(true);
-          // Fire verifyPurchase to update the DB in the background
-          try {
-            const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
-            if (appleUserId) {
-              const res = await fetch('/api/verifyPurchase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ profileId: appleUserId, userId: appleUserId, platform: data.platform || 'ios', productId: data.productId }),
-              });
-              const result = await res.json();
-              if (result?.data?.plan === 'annual') { setIsAnnual(true); localStorage.setItem('unfiltr_is_annual', 'true'); }
-              if (result?.data?.plan === 'pro')    { setIsPro(true);    localStorage.setItem('unfiltr_is_pro',    'true'); }
-            }
-          } catch(e) { console.warn('[ChatPage] verifyPurchase background call failed:', e); }
-        }
-      } catch (e) { console.error('Native message error:', e); }
-    };
-    window.addEventListener('message', handleNativeMessage);
-    return () => window.removeEventListener('message', handleNativeMessage);
-  }, []);
+  /* Purchase events are handled by the unified __nativeBus in App.jsx — no duplicate listener needed here */
 
   const particleId     = useRef(0);
   const stateTimeout   = useRef(null);
@@ -1237,6 +1209,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
