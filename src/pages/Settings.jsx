@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
-} from "lucide-react";
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Image} from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
@@ -870,6 +869,8 @@ export default function Settings() {
             <Row icon={<span style={{fontSize:15}}>🍎</span>} iconBg="rgba(0,0,0,0.3)" label="Sign In with Apple" onPress={handleAppleSignIn} />
           )}
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
+          <Row icon={<Image size={15} color="white" />} iconBg="#1a3d1a" label="Chat Background" onPress={() => setScreen("background")} />
+          <Row icon={<Sparkles size={15} color="white" />} iconBg="#2a1a5e" label="Personality Style" onPress={() => setScreen("personality")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
           <Row icon={<Bell size={15} color="white" />} iconBg="#1a3040" label="Daily Check-ins" value={notifEnabled ? "On 🔔" : "Off"} onPress={() => setScreen("notifications")} />
