@@ -887,9 +887,11 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
+            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            userProfile={userProfile}
             onShowGames={() => setShowGames(true)}
             onShowMeditation={() => setShowMeditation(true)}
             onShowAchievements={() => setShowAchievements(true)}
