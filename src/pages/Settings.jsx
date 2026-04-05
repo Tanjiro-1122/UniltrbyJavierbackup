@@ -798,7 +798,7 @@ export default function Settings() {
 
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.7.0</span>
+          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.8.0</span>
         </div>
       </div>
 
