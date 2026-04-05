@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
   isPremium, messages, companion, setCompanion, navigate,
-  setMessages, vibe, userProfile,
+  setMessages, vibe,
   onShowGames, onShowMeditation, onShowAchievements,
   onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
 }) {
@@ -159,7 +159,6 @@ export default function ChatHeader({
           setCompanion={setCompanion}
           voiceEnabled={voiceEnabled}
           setVoiceEnabled={setVoiceEnabled}
-          userProfile={userProfile}
         />
       </div>
     </div>
