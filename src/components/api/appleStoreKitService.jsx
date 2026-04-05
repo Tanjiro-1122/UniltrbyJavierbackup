@@ -124,7 +124,9 @@ function sendToNative(type, payload = {}) {
     'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
   };
 
-  const timeoutMs = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : 30000;
+  // PURCHASE has a long timeout (120s) so the finally{} in purchase() can reset the button
+  // SIGN_IN_WITH_APPLE stays null — user-driven, no hard timeout
+  const timeoutMs = type === 'SIGN_IN_WITH_APPLE' ? null : type === 'PURCHASE' ? 120000 : 30000;
   const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
 
   try {
