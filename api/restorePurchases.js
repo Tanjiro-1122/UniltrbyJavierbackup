@@ -5,7 +5,7 @@ const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_K
 async function b44FindAndUpdate(appleUserId, data) {
   const searchRes = await fetch(
     `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: { "ApiKey": B44_API_KEY } }
+    { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
   );
   if (!searchRes.ok) return false;
   const records = await searchRes.json();
@@ -13,7 +13,7 @@ async function b44FindAndUpdate(appleUserId, data) {
   if (!record?.id) { console.error("[restorePurchases] No UserProfile found for:", appleUserId); return false; }
   const updateRes = await fetch(`${B44_BASE}/UserProfile/${record.id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
     body: JSON.stringify(data),
   });
   console.log("[restorePurchases] b44Update status:", updateRes.status, "record:", record.id);
