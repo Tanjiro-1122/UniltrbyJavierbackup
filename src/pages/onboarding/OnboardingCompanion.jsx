@@ -144,37 +144,21 @@ export default function OnboardingCompanion() {
               }}>
                 <span style={{ fontSize: 48 }}>{c.emoji}</span>
               </div>
-              {c.animatedAvatar && i === idx ? (
-                <video
-                  key={c.id}
-                  src={c.animatedAvatar}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  style={{
-                    height: 260, width: "auto", maxWidth: 180,
-                    objectFit: "contain", objectPosition: "bottom",
-                    filter: "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))",
-                  }}
-                />
-              ) : (
-                <img
-                  src={c.avatar}
-                  alt={c.name}
-                  style={{
-                    height: 260, width: "auto", maxWidth: 180,
-                    objectFit: "contain", objectPosition: "bottom",
-                    opacity: imgLoaded[c.id] ? 1 : 0,
-                    transition: "opacity 0.3s, filter 0.3s",
-                    filter: i === idx
-                      ? "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))"
-                      : "none",
-                  }}
-                  onLoad={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
-                  onError={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
-                />
-              )}
+              <img
+                src={c.avatar}
+                alt={c.name}
+                style={{
+                  height: 260, width: "auto", maxWidth: 180,
+                  objectFit: "contain", objectPosition: "bottom",
+                  opacity: imgLoaded[c.id] ? 1 : 0,
+                  transition: "opacity 0.3s, filter 0.3s",
+                  filter: i === idx
+                    ? "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))"
+                    : "none",
+                }}
+                onLoad={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
+                onError={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
+              />
             </motion.div>
           );
         })}
