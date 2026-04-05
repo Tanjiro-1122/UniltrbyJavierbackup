@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
+import { base44 } from "@/api/base44Client";
 
 // Journal entry limits per tier
 const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
@@ -201,7 +202,7 @@ export default function JournalEntry() {
     r.start();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!entry.trim() || saving) return;
     // Enforce monthly journal entry limit
     const limit = getJournalLimit();
@@ -215,11 +216,31 @@ export default function JournalEntry() {
       return;
     }
     setSaving(true);
+
+    // 🎨 Generate a DALL-E mood image for premium users
+    let moodImageUrl = null;
+    const userIsPremium = localStorage.getItem("unfiltr_is_premium") === "true" ||
+                          localStorage.getItem("unfiltr_is_pro")     === "true" ||
+                          localStorage.getItem("unfiltr_is_annual")  === "true";
+    if (userIsPremium) {
+      try {
+        const imgRes = await base44.functions.invoke("utils", {
+          action: "generateMoodImage",
+          mood: currentMood || "neutral",
+          content: entry.trim().slice(0, 150),
+        });
+        if (imgRes?.data?.url) moodImageUrl = imgRes.data.url;
+      } catch (imgErr) {
+        console.warn("[Journal] Mood image generation failed (non-fatal):", imgErr);
+      }
+    }
+
     const newEntry = {
       id: Date.now().toString(),
       title: entry.trim().slice(0, 50),
       content: entry.trim(),
       mood: currentMood,
+      mood_image: moodImageUrl,
       images: uploadedImages,
       stickers: placedStickers,
       created_date: new Date().toISOString(),
