@@ -45,7 +45,7 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, userProfile }) {
+export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("Companion");
 
@@ -82,7 +82,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChangeCompanion = async (c) => {
     setSavingCompanion(true);
-    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    const companionId = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
     try {
       if (companionId) {
         await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female" });
@@ -117,7 +117,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
     localStorage.setItem("unfiltr_personality_style",     pStyle);
     localStorage.setItem("unfiltr_personality_humor",     pHumor);
-    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    const companionId = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
     if (companionId) {
       try {
         await base44.entities.Companion.update(companionId, {
