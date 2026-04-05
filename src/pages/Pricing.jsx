@@ -269,31 +269,34 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     setPurchaseTimedOut(false);
-    // Safety timeout — if App Store never responds in 90s, show retry button
-    const timeoutId = setTimeout(() => {
-      setPurchaseTimedOut(true);
-    }, 90000);
+    const timeoutId = setTimeout(() => { setPurchaseTimedOut(true); }, 90000);
 
     try {
       const result = await purchase(selectedPlan.productId);
       clearTimeout(timeoutId);
       if (result?.success || result?.isSuccess) {
-        const profileId = localStorage.getItem('userProfileId');
-        if (profileId) {
-          await base44.entities.UserProfile.update(profileId, {
-            is_premium:  true,
-            annual_plan: selectedPlan.isAnnual,
-            pro_plan:    selectedPlan.isPro,
-          });
-          localStorage.setItem('unfiltr_is_premium', 'true');
-          localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
-          localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+        // Set localStorage immediately so UI updates right away
+        localStorage.setItem('unfiltr_is_premium', 'true');
+        localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
+        localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+
+        // Call verifyPurchase to write to the correct DB record via apple_user_id lookup
+        try {
+          const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
+          if (appleUserId) {
+            await fetch('/api/verifyPurchase', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ profileId: appleUserId, userId: appleUserId, platform: 'ios', productId: selectedPlan.productId }),
+            });
+          }
+        } catch(dbErr) {
+          console.warn('[Pricing] DB update failed (non-fatal):', dbErr);
         }
-        // Notify any mounted pages (ChatPage) to refresh premium state immediately
+
         window.dispatchEvent(new Event('unfiltr_auth_updated'));
         navigate(-1);
       } else if (result?.cancelled) {
-        // User cancelled — reset cleanly, no error message
         clearTimeout(timeoutId);
       }
     } catch(e) {
@@ -304,11 +307,9 @@ export default function Pricing() {
   const handleRestore = async () => {
     const result = await restore();
     if (result?.success || result?.isSuccess) {
-      const profileId = localStorage.getItem('userProfileId');
-      if (profileId) {
-        const profile = await base44.entities.UserProfile.get(profileId);
-        if (profile?.is_premium) navigate(-1);
-      }
+      localStorage.setItem('unfiltr_is_premium', 'true');
+      window.dispatchEvent(new Event('unfiltr_auth_updated'));
+      navigate(-1);
     }
   };
 
@@ -472,5 +473,6 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
