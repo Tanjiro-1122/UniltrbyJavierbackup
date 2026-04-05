@@ -184,7 +184,9 @@ export class AppleStoreKitService {
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
+      // Pass appleUserId so native can logIn to RevenueCat before purchasing
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
