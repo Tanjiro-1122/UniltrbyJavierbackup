@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
     const byApple = await fetch(
       `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-      { headers: { "ApiKey": B44_API_KEY } }
+      { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
     );
     const appleRecords = await byApple.json();
     if (Array.isArray(appleRecords) && appleRecords.length > 0) {
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     if (!profile && email) {
       const byEmail = await fetch(
         `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
-        { headers: { "ApiKey": B44_API_KEY } }
+        { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
       );
       const emailRecords = await byEmail.json();
       if (Array.isArray(emailRecords) && emailRecords.length > 0) {
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
       await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
         body: JSON.stringify(updateData),
       });
 
