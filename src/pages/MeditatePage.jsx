@@ -218,7 +218,7 @@ export default function MeditatePage() {
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1faa4/512.webp" alt="" style={{ width:80, height:80, objectFit:"contain", marginBottom:16 }} />
+          <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1fab7/512.webp" alt="" style={{ width:80, height:80, objectFit:"contain", marginBottom:16 }} />
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
@@ -320,7 +320,7 @@ export default function MeditatePage() {
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1faa4/512.webp" alt="" style={{ width:28, height:28, objectFit:"contain" }} />
+        <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1fab7/512.webp" alt="" style={{ width:28, height:28, objectFit:"contain" }} />
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
@@ -375,4 +375,5 @@ export default function MeditatePage() {
     </div>
   );
 }
+
 
