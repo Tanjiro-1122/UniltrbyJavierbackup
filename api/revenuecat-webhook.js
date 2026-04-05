@@ -58,10 +58,10 @@ export default async function handler(req, res) {
   for (const uid of userIds) {
     try {
       const filterRes = await fetch(
-        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?user_id=${encodeURIComponent(uid)}`,
+        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?apple_user_id=${encodeURIComponent(uid)}`,
         {
           headers: {
-            "ApiKey": BASE44_API_KEY,
+            "Authorization": `Bearer ${BASE44_API_KEY}`,
             "Content-Type": "application/json",
           },
         }
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     try {
       const filterRes = await fetch(
         `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?apple_user_id=${encodeURIComponent(appUserId)}`,
-        { headers: { "ApiKey": BASE44_API_KEY, "Content-Type": "application/json" } }
+        { headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" } }
       );
       const profiles = await filterRes.json();
       if (Array.isArray(profiles) && profiles.length > 0) {
@@ -130,7 +130,7 @@ export default async function handler(req, res) {
       `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile/${profileId}`,
       {
         method: "PUT",
-        headers: { "ApiKey": BASE44_API_KEY, "Content-Type": "application/json" },
+        headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       }
     );
