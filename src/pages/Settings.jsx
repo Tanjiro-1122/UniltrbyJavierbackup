@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Image} from "lucide-react";
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
+} from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import HowToGuide from "@/components/settings/HowToGuide";
-import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { getMoodWeek } from "@/components/utils/moodTracker";
@@ -102,40 +102,9 @@ export default function Settings() {
   const [daysSince, setDaysSince]             = useState(0);
   const [moodHistory, setMoodHistory]         = useState([]);
   const [isAdmin, setIsAdmin]                 = useState(() => localStorage.getItem("unfiltr_admin_unlocked") === "true");
-  const [appleUserId]                          = useState(() => localStorage.getItem("unfiltr_user_id"));
   const [showDebug, setShowDebug]             = useState(false);
   const [debugLog, setDebugLog]               = useState([]);
   const [iapTesting, setIapTesting]           = useState(false);
-  const [notifEnabled, setNotifEnabled]           = useState(() => localStorage.getItem("unfiltr_notif_enabled") === "true");
-  const [morningTime, setMorningTime]             = useState(() => localStorage.getItem("unfiltr_notif_morning") || "08:00");
-  const [nightTime, setNightTime]                 = useState(() => localStorage.getItem("unfiltr_notif_night") || "22:00");
-  const [savingNotif, setSavingNotif]             = useState(false);
-  const [notifSaved, setNotifSaved]               = useState(false);
-
-
-  const saveNotifPrefs = async (enabled, morning, night) => {
-    setSavingNotif(true);
-    const appleUserId = localStorage.getItem("unfiltr_user_id");
-    const tzOffset = -(new Date().getTimezoneOffset() / 60);
-    localStorage.setItem("unfiltr_notif_enabled", enabled ? "true" : "false");
-    localStorage.setItem("unfiltr_notif_morning", morning);
-    localStorage.setItem("unfiltr_notif_night", night);
-    if (window.ReactNativeWebView && appleUserId) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "SAVE_PUSH_TOKEN", appleUserId }));
-    }
-    if (appleUserId) {
-      try {
-        await fetch("/api/utils", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "updateNotifPrefs", appleUserId, notif_enabled: enabled, notif_morning_time: morning, notif_night_time: night, notif_tz_offset: tzOffset }),
-        });
-      } catch(e) { console.warn("saveNotifPrefs failed:", e); }
-    }
-    setSavingNotif(false);
-    setNotifSaved(true);
-    setTimeout(() => setNotifSaved(false), 2000);
-  };
 
   const addLog = (msg, type = "info") => {
     const ts = new Date().toLocaleTimeString();
@@ -269,7 +238,10 @@ export default function Settings() {
   useEffect(() => {
     const todayStr = new Date().toDateString();
     const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
-    setStreak(sd.date === todayStr || sd.date === new Date(Date.now() - 86400000).toDateString() ? sd.count : 0);
+    const isActiveStreak = sd.date === todayStr || sd.date === new Date(Date.now() - 86400000).toDateString();
+    setStreak(isActiveStreak ? sd.count : 0);
+    // Also store longest for display
+    if (!window.__unfiltr_longest_streak) window.__unfiltr_longest_streak = sd.longest || sd.count || 0;
     const created = localStorage.getItem("unfiltr_companion_created");
     if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
     setMoodHistory(getMoodWeek());
@@ -384,13 +356,6 @@ export default function Settings() {
     Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
     navigate("/", { replace: true });
   };
-  const handleAppleSignIn = () => {
-    if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "APPLE_SIGN_IN" }));
-    } else {
-      toast("Sign in is only available in the app 📱");
-    }
-  };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
     setSavingCompanion(true);
@@ -410,13 +375,7 @@ export default function Settings() {
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
-    const envObj = { id: bg.id, label: bg.label, bg: bg.url };
-    localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
-    localStorage.setItem("unfiltr_background", bg.id);
-    // Notify ChatPage + any listener to update background in real time
-    window.dispatchEvent(new CustomEvent("unfiltr_background_change", { detail: bg.id }));
-    window.dispatchEvent(new CustomEvent("unfiltr_env_change", { detail: envObj }));
-    toast.success(bg.label + " set ✨");
+    localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
     setUserProfile(p => ({ ...p }));
   };
   const handlePauseAccount = async () => {
@@ -626,51 +585,6 @@ export default function Settings() {
       </SubScreen>
     ),
 
-    notifications: (
-      <SubScreen title="Daily Check-ins 🔔" onBack={() => setScreen(null)}>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-          Let your companion send you a personal good morning and goodnight message every day. Each one is uniquely written — never the same line twice.
-        </p>
-
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", marginBottom: 12 }}>
-          <div>
-            <p style={{ color: "white", fontWeight: 600, fontSize: 15, margin: 0 }}>Daily Check-ins</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "3px 0 0" }}>Morning + goodnight from {companion?.name || "your companion"}</p>
-          </div>
-          <button
-            onClick={() => { const next = !notifEnabled; setNotifEnabled(next); saveNotifPrefs(next, morningTime, nightTime); }}
-            style={{ width: 48, height: 27, borderRadius: 999, border: "none", cursor: "pointer", transition: "background 0.2s", background: notifEnabled ? "linear-gradient(135deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.12)", position: "relative", flexShrink: 0 }}>
-            <div style={{ position: "absolute", top: 3, left: notifEnabled ? 23 : 3, width: 21, height: 21, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
-          </button>
-        </div>
-
-        {notifEnabled && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1 }}>☀️ Good Morning</p>
-              <input type="time" value={morningTime} onChange={e => setMorningTime(e.target.value)}
-                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, padding: "10px 14px", color: "white", fontSize: 18, fontWeight: 700, width: "100%", outline: "none", WebkitAppearance: "none" }} />
-            </div>
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: 1 }}>🌙 Goodnight</p>
-              <input type="time" value={nightTime} onChange={e => setNightTime(e.target.value)}
-                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 10, padding: "10px 14px", color: "white", fontSize: 18, fontWeight: 700, width: "100%", outline: "none", WebkitAppearance: "none" }} />
-            </div>
-            <button onClick={() => saveNotifPrefs(notifEnabled, morningTime, nightTime)} disabled={savingNotif}
-              style={{ padding: "13px", background: notifSaved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: savingNotif ? 0.6 : 1 }}>
-              {notifSaved ? "✓ Saved!" : savingNotif ? "Saving…" : "Save Times"}
-            </button>
-          </motion.div>
-        )}
-
-        <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.15)", borderRadius: 12, padding: "12px 14px" }}>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0, lineHeight: 1.6 }}>
-            💡 Notifications require the Unfiltr iOS app. Make sure you allowed notifications when first prompted.
-          </p>
-        </div>
-      </SubScreen>
-    ),
-
     howto: (
       <SubScreen title="How to Use Unfiltr" onBack={() => setScreen(null)}>
         <HowToGuide />
@@ -801,6 +715,7 @@ export default function Settings() {
     account: (
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
+          <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
           <Row icon={<PauseCircle size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)"
             label={userProfile?.account_paused ? "Account Paused 💙" : "Pause My Account"}
             onPress={() => setShowPauseModal(true)} last />
@@ -817,7 +732,9 @@ export default function Settings() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#06020f", flexShrink: 0 }}>
-
+        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <ChevronLeft size={20} color="white" />
+        </button>
         <div onClick={handleTriquetraTap} style={{ cursor: "default", userSelect: "none" }}>
           <svg width="26" height="26" viewBox="0 0 100 100" fill="none" style={{ opacity: 0.5 }}>
             <path d="M50 15 C30 15 15 30 15 50 C15 65 25 77 38 82 C28 72 25 58 30 45 C35 32 46 25 50 15Z" stroke="#a855f7" strokeWidth="3" fill="none"/>
@@ -833,14 +750,73 @@ export default function Settings() {
       {/* ── Main scroll ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 100px" }}>
 
-        {/* Stats */}
-        <div style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(219,39,119,0.1))", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 16, padding: "14px 16px", display: "flex", marginBottom: 20 }}>
+        {/* ── Streak Card ── */}
+        {(() => {
+          const longestStreak = window.__unfiltr_longest_streak || streak;
+          const streakColor = streak >= 30 ? "#f59e0b" : streak >= 7 ? "#a855f7" : "#f97316";
+          const streakLabel = streak >= 100 ? "🚀 Legend" : streak >= 30 ? "🏆 On Fire" : streak >= 7 ? "⚡ Weekly" : streak >= 3 ? "🔥 Going!" : "Start your streak";
+          // Mini calendar: last 7 days, show which had activity
+          const today = new Date();
+          const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{}');
+          const lastDate = sd.date ? new Date(sd.date) : null;
+          const days = ["S","M","T","W","T","F","S"];
+          const dayDots = Array.from({length:7}, (_,i) => {
+            const d = new Date(today); d.setDate(today.getDate() - (6 - i));
+            const dStr = d.toDateString();
+            let active = false;
+            if (lastDate && streak > 0) {
+              const diff = Math.round((lastDate - d) / 86400000);
+              active = diff >= 0 && diff < streak;
+            }
+            return { label: days[d.getDay()], active, isToday: dStr === today.toDateString() };
+          });
+          return (
+            <div style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(219,39,119,0.1))", border: `1px solid ${streakColor}33`, borderRadius: 20, padding: 16, marginBottom: 16 }}>
+              {/* Top row */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div>
+                  <div style={{ color: streakColor, fontWeight: 900, fontSize: 32, lineHeight: 1 }}>
+                    {streak} 🔥
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 2 }}>Day Streak</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 18 }}>{longestStreak} 👑</div>
+                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>Personal Best</div>
+                </div>
+              </div>
+              {/* 7-day dot calendar */}
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                {dayDots.map((d, i) => (
+                  <div key={i} style={{ textAlign: "center", flex: 1 }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%", margin: "0 auto 4px",
+                      background: d.active ? streakColor : "rgba(255,255,255,0.06)",
+                      border: d.isToday ? `2px solid ${streakColor}` : "none",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {d.active && <span style={{ fontSize: 13 }}>🔥</span>}
+                    </div>
+                    <div style={{ color: d.isToday ? streakColor : "rgba(255,255,255,0.25)", fontSize: 9, fontWeight: d.isToday ? 700 : 400 }}>{d.label}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Badge label */}
+              <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>
+                {streakLabel} · {daysSince} days together
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Stats row */}
+        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "12px 16px", display: "flex", marginBottom: 16 }}>
           {[
-            { label: "Day Streak", value: streak > 0 ? `${streak} 🔥` : "0", sub: "consecutive days" },
-            { label: "Days Together", value: daysSince, sub: "with companion" },
             { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
+            { label: "Days Together", value: daysSince, sub: "with companion" },
+            { label: "Moods Tracked", value: moodHistory.filter(Boolean).length, sub: "this week" },
           ].map((s, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
               <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 18, margin: 0 }}>{s.value}</p>
               <p style={{ color: "white", fontWeight: 600, fontSize: 11, margin: "2px 0 0" }}>{s.label}</p>
               <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, margin: "1px 0 0" }}>{s.sub}</p>
@@ -863,17 +839,11 @@ export default function Settings() {
         {/* Main menu */}
         <Section>
           <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
-          {appleUserId ? (
-            <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
-          ) : (
-            <Row icon={<span style={{fontSize:15}}>🍎</span>} iconBg="rgba(0,0,0,0.3)" label="Sign In with Apple" onPress={handleAppleSignIn} />
-          )}
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
-          <Row icon={<Image size={15} color="white" />} iconBg="#1a3d1a" label="Chat Background" onPress={() => setScreen("background")} />
-          <Row icon={<Sparkles size={15} color="white" />} iconBg="#2a1a5e" label="Personality Style" onPress={() => setScreen("personality")} />
+          <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
+          <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
-          <Row icon={<Bell size={15} color="white" />} iconBg="#1a3040" label="Daily Check-ins" value={notifEnabled ? "On 🔔" : "Off"} onPress={() => setScreen("notifications")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
         </Section>
 
@@ -890,7 +860,7 @@ export default function Settings() {
 
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.8.0</span>
+          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.2.0</span>
         </div>
       </div>
 
@@ -1076,13 +1046,3 @@ export default function Settings() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
