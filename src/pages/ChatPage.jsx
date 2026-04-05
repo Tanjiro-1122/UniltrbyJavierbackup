@@ -799,7 +799,7 @@ export default function ChatPage() {
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
-            base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); }).catch(() => {});
+            base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); if (p?.user_facts) { try { localStorage.setItem("unfiltr_user_facts", JSON.stringify(p.user_facts)); } catch {} } }).catch(() => {});
           }
         }).catch(() => {});
       }
@@ -1209,6 +1209,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
