@@ -11,17 +11,14 @@ function signInWithApple(navigate, setLoading) {
     return;
   }
 
-  // Tear down any leftover listener from a previous attempt
-  if (window.__appleSignInCleanup) {
-    window.__appleSignInCleanup();
-    window.__appleSignInCleanup = null;
-  }
-
   let resolved = false;
 
-  const handleResult = async (msg) => {
+  const handleResult = (msg) => {
     if (resolved) return;
+
+    // Ignore WAITING — just means the native overlay appeared
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
+
     resolved = true;
     cleanup();
 
@@ -30,10 +27,6 @@ function signInWithApple(navigate, setLoading) {
       const appleUserId = payload.appleUserId || payload.user;
       const email = payload.email;
       const fullName = payload.fullName;
-
-      // ACK immediately so native stops retrying
-      try { bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" })); } catch {}
-
       if (!appleUserId) { setLoading && setLoading(false); return; }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
@@ -46,72 +39,39 @@ function signInWithApple(navigate, setLoading) {
         localStorage.setItem("unfiltr_user_email", email);
       }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-      if (payload.isPremium) {
-        localStorage.setItem("unfiltr_is_premium", "true");
-        localStorage.setItem("unfiltr_plan", "pro_plan");
-      }
-
-      // Sync profile — write apple_user_id to DB and get real record ID
-      try {
-        const syncRes = await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appleUserId, email, fullName, isPremium: !!payload.isPremium }),
-        });
-        const syncData = await syncRes.json();
-        if (syncData?.data?.profileId) {
-          localStorage.setItem("userProfileId", syncData.data.profileId);
-          if (syncData.data.is_premium) {
-            localStorage.setItem("unfiltr_is_premium", "true");
-            if (syncData.data.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
-            if (syncData.data.pro_plan)    localStorage.setItem("unfiltr_is_pro",    "true");
-          }
-        }
-      } catch(syncErr) {
-        console.warn("[ReturningScreen] syncProfile failed:", syncErr.message);
-      }
-
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
       setLoading(false);
+      navigate("/hub");
     }
   };
 
-  // ── Use __nativeBus — do NOT overwrite window.onMessageFromRN ──
-  const cleanup = () => {
-    if (window.__nativeBus) {
-      window.__nativeBus.off('APPLE_SIGN_IN_SUCCESS');
-      window.__nativeBus.off('APPLE_SIGN_IN_CANCELLED');
-      window.__nativeBus.off('APPLE_SIGN_IN_ERROR');
-      window.__nativeBus.off('APPLE_SIGN_IN_WAITING');
-    }
-    window.__appleSignInCleanup = null;
+  // PRIMARY: onMessageFromRN — matches our fixed bridge in index.tsx
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      handleResult(msg);
+    } catch {}
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
   };
 
-  if (window.__nativeBus) {
-    window.__nativeBus.on('APPLE_SIGN_IN_SUCCESS',   handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_CANCELLED', handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_ERROR',     handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_WAITING',   handleResult);
-  } else {
-    // Fallback: direct onMessageFromRN (safety net only)
-    const prevHandler = window.onMessageFromRN;
-    window.onMessageFromRN = (jsonStr) => {
-      try {
-        const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+  // FALLBACK: window message event
+  const windowHandler = (e) => {
+    try {
+      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg.type)) {
         handleResult(msg);
-      } catch {}
-      if (typeof prevHandler === "function") prevHandler(jsonStr);
-    };
-    const origCleanup = cleanup;
-    window.__appleSignInCleanup = () => {
-      window.onMessageFromRN = prevHandler;
-      origCleanup();
-    };
-  }
+      }
+    } catch {}
+  };
+  window.addEventListener("message", windowHandler);
 
-  window.__appleSignInCleanup = cleanup;
+  const cleanup = () => {
+    window.onMessageFromRN = prevHandler;
+    window.removeEventListener("message", windowHandler);
+  };
 
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
 }
@@ -124,6 +84,7 @@ export default function ReturningScreen() {
   const companion = companionRaw ? JSON.parse(companionRaw) : null;
   const nickname = localStorage.getItem("unfiltr_companion_nickname") || companion?.name || "your companion";
 
+  // Last message preview — pull from most recent chat session
   const lastMessagePreview = (() => {
     try {
       const sessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
@@ -138,7 +99,6 @@ export default function ReturningScreen() {
   const handleAppleSignIn = () => {
     setLoading(true);
     signInWithApple(navigate, setLoading);
-    setTimeout(() => setLoading(false), 30000);
   };
 
   return (
@@ -203,7 +163,7 @@ export default function ReturningScreen() {
         })()}
       </motion.div>
 
-      {/* Link Apple ID — only shown on native if not yet linked */}
+      {/* Sign in with Apple — shown if native and no apple ID stored yet */}
       {isNative && !hasAppleId && (
         <motion.button
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
@@ -220,8 +180,10 @@ export default function ReturningScreen() {
             marginBottom: 12,
             opacity: loading ? 0.7 : 1,
           }}>
-          <span style={{fontSize: 18, lineHeight: 1}}>🍎</span>
-          {loading ? "Linking..." : "Link Apple ID"}
+          <svg width="20" height="20" viewBox="0 0 814 1000" fill="black">
+            <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3 .1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3 .4 6 .6 9.7 .6 29.7 0 67.9-19.5 85.7-47.1z"/>
+          </svg>
+          {loading ? "Signing in..." : "Sign in with Apple"}
         </motion.button>
       )}
 
@@ -237,7 +199,7 @@ export default function ReturningScreen() {
           cursor: "pointer",
           boxShadow: "0 0 40px rgba(168,85,247,0.45)",
         }}>
-        Continue Your Journey →
+        {hasAppleId ? "Continue Your Journey →" : "Continue as Guest →"}
       </motion.button>
     </div>
   );
