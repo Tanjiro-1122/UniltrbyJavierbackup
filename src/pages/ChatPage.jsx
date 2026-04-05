@@ -145,6 +145,7 @@ export default function ChatPage() {
   const recognitionRef = useRef(null);
   // audioRef removed — using shared AudioContext via audioUnlock module
   const fileInputRef   = useRef(null);
+  const chatInitializedRef = useRef(false); // guards greeting — prevents reset on companion swap
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
@@ -313,10 +314,15 @@ export default function ChatPage() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
           sessionStorage.removeItem("unfiltr_chat_messages");
+          chatInitializedRef.current = true;
           return;
         }
       }
     } catch {}
+
+    // ── Skip if chat already initialized (companion swapped mid-chat) ─────
+    if (chatInitializedRef.current) return;
+    chatInitializedRef.current = true;
 
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
