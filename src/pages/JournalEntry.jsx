@@ -150,6 +150,7 @@ export default function JournalEntry() {
   const [saving, setSaving] = useState(false);
   const [today, setToday] = useState("");
   const [currentMood, setCurrentMood] = useState("neutral");
+  const [moodPrompt, setMoodPrompt] = useState("What's on your mind today...");
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const [companionData, setCompanionData] = useState(null);
@@ -167,6 +168,20 @@ export default function JournalEntry() {
     // Load mood set from MoodPicker
     const savedMood = localStorage.getItem("unfiltr_mood") || "neutral";
     setCurrentMood(savedMood);
+
+    // Set a mood-aware writing prompt for the textarea placeholder
+    const MOOD_JOURNAL_PROMPTS = {
+      happy:       "You're glowing today — write about what's making you feel this good...",
+      contentment: "You seem settled and at peace. What's grounding you right now...",
+      neutral:     "What's on your mind today...",
+      sad:         "What's weighing on you? This is your safe space — let it out...",
+      fear:        "What's making you anxious right now? Get it out of your head...",
+      anger:       "Something got you fired up. Let it out — no judgment here...",
+      surprise:    "Something unexpected happened. Write it all out...",
+      disgust:     "Something bothered you today. What crossed a line...",
+      fatigue:     "You're tired. What's draining you and what do you need most right now...",
+    };
+    setMoodPrompt(MOOD_JOURNAL_PROMPTS[savedMood] || "What's on your mind today...");
     // Load companion with matching mood pose
     try {
       const raw = localStorage.getItem("unfiltr_companion");
@@ -332,7 +347,7 @@ export default function JournalEntry() {
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.04) 31px, rgba(255,255,255,0.04) 32px)", backgroundPositionY: "48px" }} />
             <textarea value={entry} onChange={(e) => setEntry(e.target.value)}
-              placeholder="What's on your mind today..."
+              placeholder={moodPrompt}
               className="w-full h-full resize-none bg-transparent text-white/90 placeholder-white/20 text-base px-5 pt-4 pb-5 focus:outline-none overflow-y-auto"
               style={{ fontFamily: "'Georgia', 'Times New Roman', serif", lineHeight: "32px", position: "relative", zIndex: 1 }}
               autoFocus />
