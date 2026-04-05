@@ -1,26 +1,32 @@
-// useHeartbeat.jsx — pings last_seen every 60s so admin can see who's online
+// useHeartbeat.jsx
+// Drop this in src/components/hooks/
+// Pings the server every 60 seconds to update last_seen on UserProfile
+// Add <Heartbeat /> anywhere inside your logged-in layout (e.g. Layout.jsx or App.jsx)
+
 import { useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/entities";
 
-const PING_MS = 60 * 1000;
+const PING_INTERVAL_MS = 60 * 1000; // 60 seconds
 
-export function useHeartbeat() {
+export function useHeartbeat(isLoggedIn) {
   useEffect(() => {
-    const profileId = localStorage.getItem("userProfileId");
-    if (!profileId) return;
+    if (!isLoggedIn) return;
 
     const ping = async () => {
       try {
-        await base44.entities.UserProfile.update(profileId, {
-          last_seen: new Date().toISOString(),
-        });
+        const profiles = await UserProfile.list();
+        if (profiles && profiles.length > 0) {
+          await UserProfile.update(profiles[0].id, {
+            last_seen: new Date().toISOString(),
+          });
+        }
       } catch (e) {
-        // silent — heartbeat is non-critical
+        // Silent fail — heartbeat is non-critical
       }
     };
 
-    ping();
-    const iv = setInterval(ping, PING_MS);
-    return () => clearInterval(iv);
-  }, []);
+    ping(); // ping immediately on mount
+    const interval = setInterval(ping, PING_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 }
