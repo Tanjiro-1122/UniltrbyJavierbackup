@@ -25,7 +25,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing app_user_id" });
   }
 
-  // Events that grant premium
   const PREMIUM_EVENTS = [
     "INITIAL_PURCHASE",
     "RENEWAL",
@@ -34,23 +33,23 @@ export default async function handler(req, res) {
     "SUBSCRIBER_ALIAS",
   ];
 
-  // Events that revoke premium
   const REVOKE_EVENTS = [
     "CANCELLATION",
     "EXPIRATION",
     "BILLING_ISSUE",
   ];
 
-  const BASE44_API_KEY = process.env.BASE44_API_KEY;
-  const BASE44_APP_ID = "69b22f8b58e45d23cafd78d2";
+  // ✅ Fixed: was hardcoded to wrong app ID (69b22f8b = Superagent app, NOT production)
+  // Production user data lives in 69b332a392004d139d4ba495
+  const BASE44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY;
+  const BASE44_APP_ID = "69b332a392004d139d4ba495";
 
   if (!BASE44_API_KEY) {
-    console.error("[RC Webhook] Missing BASE44_API_KEY");
+    console.error("[RC Webhook] Missing BASE44_SERVICE_TOKEN / BASE44_API_KEY");
     return res.status(500).json({ error: "Server config error" });
   }
 
-  // Find the user profile by user_id
-  // Try appUserId and all aliases
+  // Try appUserId and all aliases to find the profile
   const userIds = [appUserId, ...aliases].filter(Boolean);
   let profile = null;
   let profileId = null;
@@ -79,6 +78,22 @@ export default async function handler(req, res) {
   }
 
   if (!profileId) {
+    // Also try looking up by apple_user_id field
+    try {
+      const filterRes = await fetch(
+        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?apple_user_id=${encodeURIComponent(appUserId)}`,
+        { headers: { "ApiKey": BASE44_API_KEY, "Content-Type": "application/json" } }
+      );
+      const profiles = await filterRes.json();
+      if (Array.isArray(profiles) && profiles.length > 0) {
+        profile = profiles[0];
+        profileId = profile.id;
+        console.log(`[RC Webhook] Found profile by apple_user_id: ${profileId}`);
+      }
+    } catch (e) {}
+  }
+
+  if (!profileId) {
     console.warn(`[RC Webhook] No profile found for user ${appUserId} — ignoring event`);
     return res.status(200).json({ status: "user_not_found" });
   }
@@ -86,20 +101,22 @@ export default async function handler(req, res) {
   let updateData = null;
 
   if (PREMIUM_EVENTS.includes(eventType)) {
-    const isAnnual = event?.event?.product_id?.includes("annual");
-    const isPro    = !isAnnual && event?.event?.product_id?.includes("pro");
+    const productId = event?.event?.product_id || "";
+    const isAnnual = productId.includes("annual");
+    const isPro    = !isAnnual && productId.includes("tier.pro");
     updateData = {
-      is_premium: true,
+      is_premium:   true,
       trial_active: false,
-      annual_plan: isAnnual ? true : (profile.annual_plan || false),
-      pro_plan:    isPro    ? true : (profile.pro_plan    || false),
+      annual_plan:  isAnnual ? true : (profile.annual_plan || false),
+      pro_plan:     isPro    ? true : (profile.pro_plan    || false),
     };
-    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual})`);
+    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual}, pro: ${isPro})`);
   } else if (REVOKE_EVENTS.includes(eventType)) {
     updateData = {
-      is_premium: false,
+      is_premium:   false,
       trial_active: false,
-      annual_plan: false,
+      annual_plan:  false,
+      pro_plan:     false,
     };
     console.log(`[RC Webhook] Revoking premium from ${profileId}`);
   } else {
@@ -107,16 +124,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: "ignored", eventType });
   }
 
-  // Update the UserProfile in Base44
   try {
     const updateRes = await fetch(
       `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile/${profileId}`,
       {
         method: "PUT",
-        headers: {
-          "ApiKey": BASE44_API_KEY,
-          "Content-Type": "application/json",
-        },
+        headers: { "ApiKey": BASE44_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       }
     );
