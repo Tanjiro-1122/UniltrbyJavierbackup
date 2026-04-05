@@ -198,7 +198,7 @@ function AdminPanel({ onClose, navigate }) {
       localStorage.setItem('unfiltr_is_premium', 'true');
       localStorage.setItem('unfiltr_is_annual', 'true');
       onClose();
-      alert('✅ Family access unlocked!');
+      window.dispatchEvent(new CustomEvent('unfiltr_toast', { detail: { message: '✅ Family access unlocked! Welcome to the family 💜' } }));
     } else {
       setErr('Invalid code');
     }
@@ -444,3 +444,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
