@@ -29,7 +29,6 @@ import AdminAvatarProcessor   from "./pages/AdminAvatarProcessor";
 import AdminDashboard         from "./pages/AdminDashboard";
 import FeedbackAdmin          from "./pages/admin/FeedbackAdmin";
 import OnboardingBackground   from "./pages/onboarding/OnboardingBackground";
-import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import OnboardingCompanion    from "./pages/onboarding/OnboardingCompanion";
 import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
@@ -58,7 +57,7 @@ const HIDE_TABS_ON = [
   "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
-  "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
+  "/Pricing", "/pricing", "/chat", "/feedback", "/PersonalityQuiz",
   "/chat-history",
 ];
 
@@ -105,11 +104,7 @@ function useProfileRecovery() {
         if (displayName) {
           profiles = await base44.entities.UserProfile.filter({ display_name: displayName });
         }
-        // If no match by name, grab the most recent profile (last resort)
-        if (!profiles || profiles.length === 0) {
-          const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" });
-          profiles = all || [];
-        }
+        // If no match by name, do NOT grab a random profile — bail safely
         if (profiles.length > 0) {
           const p = profiles[0];
           localStorage.setItem("userProfileId", p.id);
@@ -298,7 +293,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Onboarding */}
         <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
-        <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
@@ -369,6 +363,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
