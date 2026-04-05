@@ -35,6 +35,8 @@ import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion
 import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
 import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRewardBanner";
+import { useStreak } from "@/components/useStreak";
+import StreakMilestoneModal from "@/components/StreakMilestoneModal";
 import MemoryCard from "@/components/chat/MemoryCard";
 import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
 import MissYouBanner from "@/components/chat/MissYouBanner";
@@ -73,10 +75,12 @@ export default function ChatPage() {
   const [companionDbId, setCompanionDbId] = useState(null);
   const [isPremium, setIsPremium]       = useState(false);
   const [sessionMemory, setSessionMemory] = useState([]);
+  const [userFacts, setUserFacts]         = useState({});
   const [showMemoryBanner, setShowMemoryBanner] = useState(false);
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
-  const [streak, setStreak]             = useState(0);
+  // ── Streak system (useStreak hook) ──
+  const { streak, longestStreak, milestone: streakMilestone, clearMilestone: clearStreakMilestone, syncStreak } = useStreak();
   const [showStreakBanner, setShowStreakBanner] = useState(false);
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
@@ -99,7 +103,6 @@ export default function ChatPage() {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showMeditationNudge, setShowMeditationNudge] = useState(false);
-  const [showStreakReward, setShowStreakReward] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -109,7 +112,33 @@ export default function ChatPage() {
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
-  /* Purchase events are handled by the unified __nativeBus in App.jsx — no duplicate listener needed here */
+  /* ─── NATIVE PURCHASE LISTENER ─── */
+  useEffect(() => {
+    const handleNativeMessage = async (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.action === 'purchase_success' || data.action === 'restore_success') {
+          const { platform, receiptData, productId, purchaseToken } = data;
+          const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
+          const result = res.data;
+          if ((result.isPremium || result.valid) && profileId) {
+            const isAnnualPurchase = result.plan === 'annual';
+            const isProPurchase    = result.plan === 'pro';
+            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
+            setIsPremium(true);
+            if (isAnnualPurchase) setIsAnnual(true);
+            if (isProPurchase)   setIsPro(true);
+            localStorage.setItem('unfiltr_is_premium', 'true');
+            localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
+            localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
+            () => {};
+          }
+        }
+      } catch (e) { console.error('Native message error:', e); }
+    };
+    window.addEventListener('message', handleNativeMessage);
+    return () => window.removeEventListener('message', handleNativeMessage);
+  }, [profileId]);
 
   const particleId     = useRef(0);
   const stateTimeout   = useRef(null);
@@ -117,7 +146,6 @@ export default function ChatPage() {
   const recognitionRef = useRef(null);
   // audioRef removed — using shared AudioContext via audioUnlock module
   const fileInputRef   = useRef(null);
-  const chatInitializedRef = useRef(false); // guards greeting — prevents reset on companion swap
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
@@ -182,9 +210,9 @@ export default function ChatPage() {
           const profile = await base44.entities.UserProfile.get(pid);
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
+          const premium = !!(profile?.is_premium || profile?.premium);
           const annual  = !!(profile?.annual_plan);
           const pro     = !!(profile?.pro_plan);
-          const premium = !!(profile?.is_premium || profile?.premium || annual || pro);
           setIsPremium(premium);
           setIsAnnual(annual);
           setIsPro(pro);
@@ -217,25 +245,8 @@ export default function ChatPage() {
         } catch {}
       }
 
-      // Streak
-      const todayStr = new Date().toDateString();
-      const streakData = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      let newStreak = 1;
-      if (streakData.date === yesterday.toDateString()) newStreak = streakData.count + 1;
-      else if (streakData.date === todayStr) newStreak = streakData.count;
-      if (streakData.date !== todayStr) {
-        localStorage.setItem("unfiltr_streak", JSON.stringify({ date: todayStr, count: newStreak }));
-        if (newStreak > 1) {
-          setStreak(newStreak);
-          // Show streak reward if it's a milestone, otherwise just show streak banner
-          if (getStreakReward(newStreak)) {
-            setShowStreakReward(true); setTimeout(() => setShowStreakReward(false), 5000);
-          } else {
-            setShowStreakBanner(true); setTimeout(() => setShowStreakBanner(false), 4000);
-          }
-        } else setStreak(newStreak);
-      } else { setStreak(streakData.count); }
+      // Streak — handled by useStreak hook; just call syncStreak once on load
+      syncStreak();
 
       // Mood check-in disabled — mood is set via MoodPicker before entering chat
       
@@ -278,23 +289,31 @@ export default function ChatPage() {
   useEffect(() => {
     if (!companion) return;
 
-    // ── Restore chat if returning from Settings ───────────────────────────
-    try {
-      const saved = sessionStorage.getItem("unfiltr_chat_messages");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          sessionStorage.removeItem("unfiltr_chat_messages");
-          chatInitializedRef.current = true;
-          return;
+    // ── Restore active chat if coming back from Settings ─────────────────
+    // When user navigates Chat → Settings → Back, ChatPage remounts.
+    // We use a flag to detect this case and restore the in-progress session.
+    const returningFromSettings = sessionStorage.getItem("unfiltr_returning_from_settings");
+    if (returningFromSettings) {
+      sessionStorage.removeItem("unfiltr_returning_from_settings");
+      try {
+        const savedMsgs = sessionStorage.getItem("unfiltr_chat_messages");
+        if (savedMsgs) {
+          const parsed = JSON.parse(savedMsgs);
+          if (parsed?.length > 0) {
+            setMessages(parsed);
+            // Also re-read companion from localStorage in case user changed it in Settings
+            const freshC = localStorage.getItem("unfiltr_companion");
+            if (freshC) {
+              const freshParsed = JSON.parse(freshC);
+              const savedNick = localStorage.getItem("unfiltr_companion_nickname");
+              freshParsed.displayName = (savedNick && savedNick.trim()) ? savedNick.trim() : freshParsed.name;
+              setCompanion(freshParsed);
+            }
+            return; // Don't show a greeting — restore the chat
+          }
         }
-      }
-    } catch {}
-
-    // ── Skip if chat already initialized (companion swapped mid-chat) ─────
-    if (chatInitializedRef.current) return;
-    chatInitializedRef.current = true;
+      } catch {}
+    }
 
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
@@ -399,42 +418,20 @@ export default function ChatPage() {
       return;
     }
 
-    // Brand new conversation — use personality-specific greetings + mood awareness
+    // Brand new conversation — use personality-specific greetings
     const isLateNight = hour >= 23 || hour < 5;
     const lateNightSuffix = isLateNight ? "\n\nIt's late — I'm glad you're here though. Take it easy tonight 🌙" : "";
-
-    // Check if user just came from MoodPicker (mood set this session)
-    const todaysMood = localStorage.getItem("unfiltr_mood");
-    const moodSession = sessionStorage.getItem("unfiltr_mood_session");
-    const moodSetToday = moodSession === new Date().toDateString() && todaysMood;
-
-    const MOOD_CHAT_OPENERS = {
-      happy:       "You picked happy today — I love that! ✨ What's got you in such a good mood?",
-      contentment: "Content and at peace — that's such a good place to be 🍃 What's keeping you grounded today?",
-      neutral:     "Just here today — that's totally valid 😌 Anything on your mind you want to talk through?",
-      sad:         "You said you're feeling sad today 💙 I'm really glad you showed up. Do you want to talk about what's going on?",
-      fear:        "Feeling anxious today? I've got you 💜 What's weighing on you right now?",
-      anger:       "Sounds like something got under your skin today 🔥 What happened? I want to hear it.",
-      surprise:    "Something caught you off guard today 😮 Tell me everything — what happened?",
-      disgust:     "Something really didn't sit right with you today. What was it?",
-      fatigue:     "You're tired today 🌙 That's okay. What's draining you the most right now?",
-    };
-
+    
     const personality = COMPANION_PERSONALITIES[companion.id];
     const vibeGreeting = personality?.vibeGreetings?.[vibe];
     const defaultGreeting = personality?.greeting;
     
-    let greetingText;
-    if (moodSetToday && MOOD_CHAT_OPENERS[todaysMood]) {
-      greetingText = MOOD_CHAT_OPENERS[todaysMood];
-    } else {
-      greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
-        vibe === "chill" ? "What's good? Just vibing here 😌" :
-        vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
-        vibe === "hype"  ? "YO LET'S GOOO!! I'M SO ready for this!! 🔥🔥" :
-        "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
-      }`;
-    }
+    const greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
+      vibe === "chill" ? "What's good? Just vibing here 😌" :
+      vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
+      vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
+      "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
+    }`;
 
     const greeting = {
       role: "assistant",
@@ -502,71 +499,6 @@ export default function ChatPage() {
     return () => clearInterval(iv);
   }, [avatarState, loading, isSpeaking]);
 
-  /* ─── PREMIUM REFRESH: re-check when returning from Pricing ─── */
-  useEffect(() => {
-    const refreshPremium = async () => {
-      const lsPremium = localStorage.getItem("unfiltr_is_premium") === "true";
-      const lsAnnual  = localStorage.getItem("unfiltr_is_annual")  === "true";
-      const lsPro     = localStorage.getItem("unfiltr_is_pro")     === "true";
-      if (lsPremium || lsAnnual || lsPro) {
-        setIsPremium(lsPremium || lsAnnual || lsPro);
-        setIsAnnual(lsAnnual);
-        setIsPro(lsPro);
-      }
-      // Also verify against RevenueCat via our API
-      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id");
-      if (appleUserId) {
-        try {
-          const res = await fetch('/api/verifyPurchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId: appleUserId, userId: appleUserId, platform: 'ios' }),
-          });
-          const result = await res.json();
-          if (result?.data?.isPremium) {
-            setIsPremium(true);
-            localStorage.setItem("unfiltr_is_premium", 'true');
-            if (result.data.plan === 'annual') { setIsAnnual(true); localStorage.setItem("unfiltr_is_annual", 'true'); }
-            if (result.data.plan === 'pro')    { setIsPro(true);    localStorage.setItem("unfiltr_is_pro",    'true'); }
-          }
-        } catch {}
-      }
-    };
-    window.addEventListener("unfiltr_auth_updated", refreshPremium);
-    // Listen for background changes from Settings or ChatCustomizePanel
-    const handleEnvChange = (e) => {
-      const envObj = e.detail;
-      if (envObj && envObj.bg) {
-        setEnvironment(envObj);
-        localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
-      }
-    };
-    const handleBgChange = (e) => {
-      const bgId = e.detail;
-      if (!bgId) return;
-      // Import backgrounds and find the matching one
-      import("@/components/companionData").then(({ BACKGROUNDS }) => {
-        const bg = BACKGROUNDS.find(b => b.id === bgId);
-        if (bg) {
-          const envObj = { id: bg.id, label: bg.label, bg: bg.url };
-          setEnvironment(envObj);
-          localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
-        }
-      });
-    };
-    window.addEventListener("unfiltr_env_change", handleEnvChange);
-    window.addEventListener("unfiltr_background_change", handleBgChange);
-    // Also fire on storage change (cross-tab / navigate back triggers storage event)
-    const onStorage = (e) => { if (e.key === "unfiltr_is_premium") refreshPremium(); };
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener("unfiltr_auth_updated", refreshPremium);
-    window.removeEventListener("unfiltr_env_change", handleEnvChange);
-    window.removeEventListener("unfiltr_background_change", handleBgChange);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-
   const triggerAnim = (state, ms = 1200) => {
     if (stateTimeout.current) clearTimeout(stateTimeout.current);
     setAvatarState(state);
@@ -622,7 +554,7 @@ export default function ChatPage() {
     const today = new Date().toDateString();
     const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
     const count = stored.date === today ? stored.count : 0;
-    if (count >= PHOTO_DAILY_LIMIT) { window.dispatchEvent(new CustomEvent('unfiltr_toast', { detail: { message: `📸 You've hit the \${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow!` } })); return; }
+    if (count >= PHOTO_DAILY_LIMIT) { alert(`You've reached your ${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow! 📸`); return; }
     const seen = localStorage.getItem("unfiltr_photo_disclaimer_seen");
     if (!seen) { setShowPhotoDisclaimer(true); return; }
     fileInputRef.current?.click();
@@ -684,14 +616,12 @@ export default function ChatPage() {
       try {
         const pid2 = localStorage.getItem("userProfileId");
         if (pid2) {
-          const prof = await base44.entities.UserProfile.get(pid2);
-          localMemSummary = prof?.memory_summary || "";
-          setMemorySummary(localMemSummary);
-          // Cache structured facts so the chat API can use them for deep memory
-          if (prof?.user_facts) {
-            try { localStorage.setItem("unfiltr_user_facts", JSON.stringify(prof.user_facts)); } catch {}
-          }
-        }
+        const prof = await base44.entities.UserProfile.get(pid2);
+        localMemSummary = prof?.memory_summary || "";
+        setMemorySummary(localMemSummary);
+        if (prof?.user_facts) setUserFacts(prof.user_facts);
+        if (prof?.session_memory) setSessionMemory(prof.session_memory);
+      }
       } catch {}
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
@@ -719,17 +649,12 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
-      // Load userFacts for memory injection
-      let userFacts = {};
-      try { userFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch {}
-
       const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium, isPro, isAnnual,
         sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
         memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
-        userFacts: (isPremium || isPro || isAnnual) ? userFacts : {},
-        profileId: profileId || "",
+        userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
         imageBase64: imgBase64,
         personality: personalityPayload,
       });
@@ -791,15 +716,21 @@ export default function ChatPage() {
       const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-      const summarizeInterval = isPremium ? 10 : 8;
-      if (profileId2 && userMsgCount >= 4 && userMsgCount % summarizeInterval === 0) {
+      // Save memory after every 5 user messages (was 8-10 — too infrequent)
+      // Also always save at end-of-session marker (4 messages for a meaningful note)
+      const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
+      if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         base44.functions.invoke("summarizeSession", {
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
-            base44.entities.UserProfile.get(profileId2).then(p => { if (p?.session_memory) setSessionMemory(p.session_memory); if (p?.user_facts) { try { localStorage.setItem("unfiltr_user_facts", JSON.stringify(p.user_facts)); } catch {} } }).catch(() => {});
+            base44.entities.UserProfile.get(profileId2).then(p => {
+              if (p?.session_memory) setSessionMemory(p.session_memory);
+              if (p?.user_facts)     setUserFacts(p.user_facts);
+              if (p?.memory_summary) setMemorySummary(p.memory_summary);
+            }).catch(() => {});
           }
         }).catch(() => {});
       }
@@ -817,7 +748,7 @@ export default function ChatPage() {
     resumeAudioContext().catch(() => {});
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      // Voice not supported — fail silently on iOS where it's never triggered
+      alert("Voice input isn't supported on this device. Try typing instead!");
       return;
     }
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -912,10 +843,14 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
-            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            onNavigateToSettings={() => {
+              // Flag so ChatPage knows to restore messages on return
+              sessionStorage.setItem("unfiltr_returning_from_settings", "1");
+              navigate("/settings");
+            }}
             onShowGames={() => setShowGames(true)}
             onShowMeditation={() => setShowMeditation(true)}
             onShowAchievements={() => setShowAchievements(true)}
@@ -925,6 +860,7 @@ export default function ChatPage() {
             onShowMoodInsights={() => setShowMoodInsights(true)}
             onShowTimeCapsule={() => setShowTimeCapsule(true)}
             onShowBookmarks={() => setShowBookmarks(true)}
+            streak={streak}
           />
 
           {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
@@ -965,33 +901,25 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter — hidden for premium/annual/pro/family users */}
-            {(() => {
-              const isUnlimited = isPremium || isAnnual || isPro || localStorage.getItem("unfiltr_family_unlock") === "true";
-              if (isUnlimited) return null;
-              return (
-                <button onClick={() => navigate('/Pricing')}
-                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                  {remaining}/{FREE_LIMIT} msgs left today · Go Premium
-                </button>
-              );
-            })()}
-
-            {/* Streak banner */}
-            {showStreakBanner && !showStreakReward && (
-              <div style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(234,88,12,0.9), rgba(239,68,68,0.9))",
-                backdropFilter: "blur(12px)", borderRadius: 999,
-                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 20px rgba(239,68,68,0.4)",
-              }}>
-                <span style={{ color: "white", fontWeight: 700, fontSize: 11 }}>🔥 {streak} day streak!</span>
+            {/* Msg counter */}
+            {!isPremium ? (
+              <button onClick={() => navigate('/Pricing')}
+                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
+              </button>
+            ) : (
+              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left today
               </div>
             )}
-            {/* Streak reward milestone */}
-            <StreakRewardBanner streak={streak} visible={showStreakReward} />
+
+            {/* Streak milestone celebration modal */}
+            <StreakMilestoneModal
+              milestone={streakMilestone}
+              streak={streak}
+              longestStreak={longestStreak}
+              onDismiss={clearStreakMilestone}
+            />
             {showAnniversary && anniversary && (
               <div style={{
                 position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
@@ -1012,8 +940,10 @@ export default function ChatPage() {
               }}>
                 <MemoryCard
                   memorySummary={memorySummary}
+                  userFacts={userFacts}
+                  sessionMemory={sessionMemory}
                   companionName={companionDisplayName || "your companion"}
-                  isPremium={isPremium || isAnnual || isPro || localStorage.getItem("unfiltr_family_unlock") === "true"}
+                  isPremium={isPremium}
                   onUpgrade={() => navigate('/Pricing')}
                 />
               </div>
@@ -1209,20 +1139,3 @@ export default function ChatPage() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
