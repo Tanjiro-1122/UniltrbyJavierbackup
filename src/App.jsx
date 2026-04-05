@@ -201,6 +201,29 @@ const AuthenticatedApp = ({ splashDone }) => {
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
 
+
+  // Handle bridge messages that need navigation (e.g. tapping a push notification)
+  useEffect(() => {
+    const handleOpenChat = () => {
+      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+      if (onboardingDone) navigate("/chat-enter");
+    };
+    const handlePushToken = (msg) => {
+      // iOS wrapper sent us the push token — save it to localStorage for later use in Settings
+      if (msg.token) localStorage.setItem("unfiltr_push_token", msg.token);
+    };
+    if (window.__nativeBus) {
+      window.__nativeBus.on('OPEN_CHAT', handleOpenChat);
+      window.__nativeBus.on('PUSH_TOKEN', handlePushToken);
+    }
+    return () => {
+      if (window.__nativeBus) {
+        window.__nativeBus.off('OPEN_CHAT');
+        window.__nativeBus.off('PUSH_TOKEN');
+      }
+    };
+  }, [navigate]);
+
   // Step 1: Age gate — always first
   useEffect(() => {
     if (!splashDone) return;
