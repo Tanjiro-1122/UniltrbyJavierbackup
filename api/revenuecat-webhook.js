@@ -6,14 +6,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Verify auth header
-  const authHeader = req.headers["authorization"];
-  const expectedAuth = process.env.REVENUECAT_WEBHOOK_AUTH_HEADER;
-  console.log("[RC Webhook] Auth received:", JSON.stringify(authHeader));
-  console.log("[RC Webhook] Auth expected:", JSON.stringify(expectedAuth));
-  if (!authHeader || authHeader !== expectedAuth) {
-    console.error("[RC Webhook] Unauthorized — bad auth header");
-    return res.status(401).json({ error: "Unauthorized", received: authHeader, expected_length: expectedAuth ? expectedAuth.length : 0 });
+  // Verify auth header — strip Bearer prefix for comparison so env var can be raw token
+  const rawAuth = req.headers["authorization"] || "";
+  const token = rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : rawAuth;
+  const expectedAuth = (process.env.REVENUECAT_WEBHOOK_AUTH_HEADER || "").replace(/^Bearer_/, "").replace(/^Bearer /, "");
+  console.log("[RC Webhook] Token received (first 8):", token.slice(0,8));
+  console.log("[RC Webhook] Token expected (first 8):", expectedAuth.slice(0,8));
+  if (!token || token !== expectedAuth) {
+    console.error("[RC Webhook] Unauthorized — token mismatch");
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const event = req.body;
