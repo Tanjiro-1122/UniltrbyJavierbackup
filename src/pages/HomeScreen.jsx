@@ -18,7 +18,7 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
     return;
   }
 
-  // Tear down any previous sign-in listener before starting fresh
+  // Always tear down any previous sign-in listener before starting a new one
   if (window.__appleSignInCleanup) {
     debugLog('[WEB] cleaning up previous sign-in listener');
     window.__appleSignInCleanup();
@@ -27,7 +27,7 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
 
   let resolved = false;
 
-  const handleResult = async (msg) => {
+  const handleResult = (msg) => {
     if (resolved) return;
     if (msg.type === "APPLE_SIGN_IN_WAITING") {
       debugLog('[WEB] 🍎 Waiting for user tap...');
@@ -43,12 +43,6 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       const email = payload.email;
       const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-
-      // ACK immediately so native side stops retrying
-      try {
-        window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" }));
-      } catch(e) {}
-
       if (!appleUserId) {
         debugLog('[WEB] ❌ No appleUserId in payload');
         setLoading(false);
@@ -65,41 +59,18 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
         localStorage.setItem("unfiltr_user_email", email);
       }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      // If RevenueCat confirmed premium at sign-in time, set it immediately
       if (payload.isPremium) {
         localStorage.setItem("unfiltr_is_premium", "true");
         localStorage.setItem("unfiltr_plan", "pro_plan");
         debugLog("[WEB] 💎 Premium status restored from RevenueCat on sign-in");
       }
-
-      // Sync profile to DB: write apple_user_id and get real record ID
-      try {
-        const syncRes = await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appleUserId, email, fullName, isPremium: !!payload.isPremium }),
-        });
-        const syncData = await syncRes.json();
-        if (syncData?.data?.profileId) {
-          localStorage.setItem("userProfileId", syncData.data.profileId);
-          if (syncData.data.is_premium) {
-            localStorage.setItem("unfiltr_is_premium", "true");
-            if (syncData.data.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
-            if (syncData.data.pro_plan)    localStorage.setItem("unfiltr_is_pro",    "true");
-          }
-          if (syncData.data.display_name && !localStorage.getItem("unfiltr_display_name")) {
-            localStorage.setItem("unfiltr_display_name", syncData.data.display_name);
-          }
-          debugLog("[WEB] ✅ Profile synced: " + syncData.data.profileId);
-        }
-      } catch(syncErr) {
-        debugLog("[WEB] ⚠️ syncProfile failed (non-fatal): " + syncErr.message);
-      }
-
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
       navigate(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting');
+      // Just reset the button — do NOT navigate away, let them try again
+      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
       setLoading(false);
     } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
       debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
@@ -107,42 +78,34 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
     }
   };
 
-  // ── Use __nativeBus (the unified bridge) — do NOT overwrite window.onMessageFromRN ──
-  const cleanup = () => {
-    if (window.__nativeBus) {
-      window.__nativeBus.off('APPLE_SIGN_IN_SUCCESS');
-      window.__nativeBus.off('APPLE_SIGN_IN_CANCELLED');
-      window.__nativeBus.off('APPLE_SIGN_IN_ERROR');
-      window.__nativeBus.off('APPLE_SIGN_IN_WAITING');
-    }
-    window.__appleSignInCleanup = null;
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
+      handleResult(msg);
+    } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
   };
 
-  if (window.__nativeBus) {
-    window.__nativeBus.on('APPLE_SIGN_IN_SUCCESS',   handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_CANCELLED', handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_ERROR',     handleResult);
-    window.__nativeBus.on('APPLE_SIGN_IN_WAITING',   handleResult);
-    debugLog('[WEB] ✅ Registered on __nativeBus');
-  } else {
-    // Fallback: direct onMessageFromRN (should not be needed but kept as safety net)
-    debugLog('[WEB] ⚠️ __nativeBus not ready — falling back to onMessageFromRN');
-    const prevHandler = window.onMessageFromRN;
-    window.onMessageFromRN = (jsonStr) => {
-      try {
-        const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-        debugLog(`[WEB] onMessageFromRN fallback: ${msg.type}`);
+  const windowHandler = (e) => {
+    try {
+      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
+        debugLog(`[WEB] window message fallback: ${msg.type}`);
         handleResult(msg);
-      } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
-      if (typeof prevHandler === "function") prevHandler(jsonStr);
-    };
-    const origCleanup = cleanup;
-    window.__appleSignInCleanup = () => {
-      window.onMessageFromRN = prevHandler;
-      origCleanup();
-    };
-  }
+      }
+    } catch {}
+  };
+  window.addEventListener("message", windowHandler);
 
+  const cleanup = () => {
+    window.__appleSignInCleanup = null;
+    window.onMessageFromRN = prevHandler;
+    window.removeEventListener("message", windowHandler);
+  };
+
+  // Store cleanup so next tap can tear down this listener first
   window.__appleSignInCleanup = cleanup;
 
   debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
@@ -161,10 +124,6 @@ export default function HomeScreen() {
   const handleAppleSignIn = () => {
     setLoading(true);
     doAppleSignIn(navigateRef, setLoadingRef);
-    // Safety timeout — if no response in 30s, reset button
-    setTimeout(() => {
-      setLoadingRef.current(false);
-    }, 30000);
   };
 
   return (
@@ -196,30 +155,25 @@ export default function HomeScreen() {
 
         {/* Sign in with Apple */}
         {isNative && (
-          <>
-            <motion.button
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleAppleSignIn}
-              disabled={loading}
-              style={{
-                width: "100%", padding: "18px",
-                background: "white", border: "none", borderRadius: 20,
-                color: "#000", fontWeight: 800, fontSize: 17,
-                cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflow: "visible",
-                marginBottom: 6,
-                opacity: loading ? 0.7 : 1,
-              }}>
-              <span style={{fontSize: 20, lineHeight: 1, flexShrink: 0}}>🍎</span>
-              {loading ? "Signing in..." : "Sign in with Apple"}
-            </motion.button>
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-              style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center", margin: "0 0 10px", lineHeight: 1.4 }}>
-              First time? The app may take a moment to load — if nothing happens, wait 3 seconds and tap again.
-            </motion.p>
-          </>
+          <motion.button
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleAppleSignIn}
+            disabled={loading}
+            style={{
+              width: "100%", padding: "18px",
+              background: "white", border: "none", borderRadius: 20,
+              color: "#000", fontWeight: 800, fontSize: 17,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflow: "visible",
+              marginBottom: 12,
+              opacity: loading ? 0.7 : 1,
+            }}>
+            <svg width="22" height="22" viewBox="0 0 814 1000" fill="black" style={{flexShrink: 0, overflow: 'visible'}}>
+              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3.1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3.4 6 .6 9.7.6 29.7 0 67.9-19.5 85.7-47.1z"/>
+            </svg>
+            {loading ? "Signing in..." : "Sign in with Apple"}
+          </motion.button>
         )}
 
         {/* Continue as Guest / Meet companion */}
@@ -249,34 +203,40 @@ export default function HomeScreen() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
             {[
-              { emoji: "💜", title: "Pick your companion", desc: "Choose from 12 unique AI companions with their own personality and vibe." },
-              { emoji: "🧠", title: "It remembers you", desc: "Your companion learns your story over time and brings it into every conversation." },
-              { emoji: "🔒", title: "No judgment, ever", desc: "This is your private space. Talk freely — it's just you and your companion." },
-            ].map((item, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 16px", background: "rgba(255,255,255,0.04)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.06)" }}>
-                <span style={{ fontSize: 24, flexShrink: 0 }}>{item.emoji}</span>
+              { emoji: "💜", title: "Pick your companion", desc: "Choose from 12 unique personalities built just for you." },
+              { emoji: "💬", title: "Talk about anything", desc: "No scripts. No judgment. Just real conversation." },
+              { emoji: "🧠", title: "They remember you", desc: "Your companion grows with you over time." },
+              { emoji: "🔒", title: "Always private", desc: "Your conversations stay yours. Always." },
+            ].map(({ emoji, title, desc }) => (
+              <div key={title} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16 }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
                 <div>
-                  <div style={{ color: "white", fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{item.title}</div>
-                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.5 }}>{item.desc}</div>
+                  <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: "0 0 2px" }}>{title}</p>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>{desc}</p>
                 </div>
               </div>
             ))}
           </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
+            {[
+              { icon: Shield,         label: "Privacy Policy", path: "/PrivacyPolicy", color: "#22c55e" },
+              { icon: FileText,       label: "Terms of Use",   path: "/TermsOfUse",    color: "#3b82f6" },
+              { icon: HeadphonesIcon, label: "Support",        path: "/support",       color: "#f59e0b" },
+              { icon: Star,           label: "Rate Us",        path: null,             color: "#a855f7",
+                action: () => window.open("https://apps.apple.com/app/id6760604917", "_blank") },
+            ].map(({ icon: Icon, label, path, color, action }) => (
+              <motion.button key={label} whileTap={{ scale: 0.96 }}
+                onClick={() => action ? action() : navigate(path)}
+                style={{ padding: "14px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}22`, border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={18} color={color} />
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, textAlign: "center" }}>{label}</span>
+              </motion.button>
+            ))}
+          </div>
         </motion.div>
-
-        <div style={{ display: "flex", justifyContent: "center", gap: 20, paddingBottom: "max(1rem,env(safe-area-inset-bottom))" }}>
-          {[
-            { icon: <Shield size={13}/>, label: "Privacy Policy", path: "/PrivacyPolicy" },
-            { icon: <FileText size={13}/>, label: "Terms of Use", path: "/TermsOfUse" },
-            { icon: <HeadphonesIcon size={13}/>, label: "Support", path: "/support" },
-          ].map((item, i) => (
-            <button key={i} onClick={() => navigate(item.path)}
-              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-              {item.icon}{item.label}
-            </button>
-          ))}
-        </div>
-
+        <div style={{ height: "max(24px,env(safe-area-inset-bottom))" }} />
       </div>
     </div>
   );
