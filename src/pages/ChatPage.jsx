@@ -561,11 +561,36 @@ export default function ChatPage() {
       }
     };
     window.addEventListener("unfiltr_auth_updated", refreshPremium);
+    // Listen for background changes from Settings or ChatCustomizePanel
+    const handleEnvChange = (e) => {
+      const envObj = e.detail;
+      if (envObj && envObj.bg) {
+        setEnvironment(envObj);
+        localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
+      }
+    };
+    const handleBgChange = (e) => {
+      const bgId = e.detail;
+      if (!bgId) return;
+      // Import backgrounds and find the matching one
+      import("@/components/companionData").then(({ BACKGROUNDS }) => {
+        const bg = BACKGROUNDS.find(b => b.id === bgId);
+        if (bg) {
+          const envObj = { id: bg.id, label: bg.label, bg: bg.url };
+          setEnvironment(envObj);
+          localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
+        }
+      });
+    };
+    window.addEventListener("unfiltr_env_change", handleEnvChange);
+    window.addEventListener("unfiltr_background_change", handleBgChange);
     // Also fire on storage change (cross-tab / navigate back triggers storage event)
     const onStorage = (e) => { if (e.key === "unfiltr_is_premium") refreshPremium(); };
     window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener("unfiltr_auth_updated", refreshPremium);
+    window.removeEventListener("unfiltr_env_change", handleEnvChange);
+    window.removeEventListener("unfiltr_background_change", handleBgChange);
       window.removeEventListener("storage", onStorage);
     };
   }, []);
@@ -1212,6 +1237,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
