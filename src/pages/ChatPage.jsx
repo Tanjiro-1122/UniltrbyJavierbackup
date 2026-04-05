@@ -115,27 +115,29 @@ export default function ChatPage() {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data.action === 'purchase_success' || data.action === 'restore_success') {
-          const { platform, receiptData, productId, purchaseToken } = data;
-          const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
-          const result = res.data;
-          if ((result.isPremium || result.valid) && profileId) {
-            const isAnnualPurchase = result.plan === 'annual';
-            const isProPurchase    = result.plan === 'pro';
-            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
-            setIsPremium(true);
-            if (isAnnualPurchase) setIsAnnual(true);
-            if (isProPurchase)   setIsPro(true);
-            localStorage.setItem('unfiltr_is_premium', 'true');
-            localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
-            localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
-
-          }
+          // Set localStorage immediately — UI updates right away
+          localStorage.setItem('unfiltr_is_premium', 'true');
+          setIsPremium(true);
+          // Fire verifyPurchase to update the DB in the background
+          try {
+            const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
+            if (appleUserId) {
+              const res = await fetch('/api/verifyPurchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profileId: appleUserId, userId: appleUserId, platform: data.platform || 'ios', productId: data.productId }),
+              });
+              const result = await res.json();
+              if (result?.data?.plan === 'annual') { setIsAnnual(true); localStorage.setItem('unfiltr_is_annual', 'true'); }
+              if (result?.data?.plan === 'pro')    { setIsPro(true);    localStorage.setItem('unfiltr_is_pro',    'true'); }
+            }
+          } catch(e) { console.warn('[ChatPage] verifyPurchase background call failed:', e); }
         }
       } catch (e) { console.error('Native message error:', e); }
     };
     window.addEventListener('message', handleNativeMessage);
     return () => window.removeEventListener('message', handleNativeMessage);
-  }, [profileId]);
+  }, []);
 
   const particleId     = useRef(0);
   const stateTimeout   = useRef(null);
@@ -511,21 +513,21 @@ export default function ChatPage() {
         setIsAnnual(lsAnnual);
         setIsPro(lsPro);
       }
-      // Also re-check DB if we have a profileId
-      const pid = localStorage.getItem("userProfileId");
-      if (pid) {
+      // Also verify against RevenueCat via our API
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id");
+      if (appleUserId) {
         try {
-          const profile = await base44.entities.UserProfile.get(pid);
-          if (profile) {
-            const annual  = !!(profile.annual_plan);
-            const pro     = !!(profile.pro_plan);
-            const premium = !!(profile.is_premium || profile.premium || annual || pro);
-            setIsPremium(premium);
-            setIsAnnual(annual);
-            setIsPro(pro);
-            localStorage.setItem("unfiltr_is_premium", String(premium));
-            localStorage.setItem("unfiltr_is_annual",  String(annual));
-            localStorage.setItem("unfiltr_is_pro",     String(pro));
+          const res = await fetch('/api/verifyPurchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profileId: appleUserId, userId: appleUserId, platform: 'ios' }),
+          });
+          const result = await res.json();
+          if (result?.data?.isPremium) {
+            setIsPremium(true);
+            localStorage.setItem("unfiltr_is_premium", 'true');
+            if (result.data.plan === 'annual') { setIsAnnual(true); localStorage.setItem("unfiltr_is_annual", 'true'); }
+            if (result.data.plan === 'pro')    { setIsPro(true);    localStorage.setItem("unfiltr_is_pro",    'true'); }
           }
         } catch {}
       }
