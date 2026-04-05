@@ -1,6 +1,8 @@
-const B44_APP  = process.env.VITE_BASE44_APP_ID;
+// ✅ Fixed: hardcoded production app ID — VITE_ vars are NOT available in Vercel serverless functions
+const B44_APP  = "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_API_KEY || "";
+// ✅ Fixed: use BASE44_SERVICE_TOKEN (reliable server-side) with BASE44_API_KEY as fallback
+const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 async function b44Update(entity, id, data) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
@@ -77,12 +79,14 @@ export default async function handler(req, res) {
     const expiresDate     = premiumEnt.expires_date;
 
     // Update Base44 UserProfile — set the correct tier flags
-    await b44Update("UserProfile", appUserId, {
+    const updated = await b44Update("UserProfile", appUserId, {
       is_premium:   true,
       pro_plan:     plan === "pro",
       annual_plan:  plan === "annual",
       updated_date: new Date().toISOString(),
     });
+
+    if (!updated) console.error("[IAP] b44Update failed — check BASE44_SERVICE_TOKEN and app ID");
 
     return res.status(200).json({ data: { success: true, plan, expiresDate, productId: activeProductId } });
   } catch (err) {
