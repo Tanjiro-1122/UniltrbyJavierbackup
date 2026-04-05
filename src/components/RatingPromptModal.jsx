@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, X } from "lucide-react";
 
-const APP_STORE_URL = "https://apps.apple.com/app/unfiltr/id000000000"; // replace with real ID
+const APP_STORE_URL = "https://apps.apple.com/app/unfiltr-by-javier/id6760604917"; // replace with real ID
 
 export default function RatingPromptModal({ visible, onClose }) {
   const handleRate = () => {
