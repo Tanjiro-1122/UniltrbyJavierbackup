@@ -24,7 +24,6 @@ function signInWithApple(navigate, setLoading) {
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
     resolved = true;
     cleanup();
-    window.__appleSignInCleanup = null;
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
       const payload = msg.data || msg;
@@ -55,35 +54,42 @@ function signInWithApple(navigate, setLoading) {
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
       setLoading(false);
-      // Stay on returning screen — let them try again or continue as guest
     }
   };
 
-  // Primary listener — same pattern as HomeScreen
-  const prevHandler = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-      handleResult(msg);
-    } catch {}
-    if (typeof prevHandler === "function") prevHandler(jsonStr);
-  };
-
-  // Fallback: window message event
-  const windowHandler = (e) => {
-    try {
-      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
-        handleResult(msg);
-      }
-    } catch {}
-  };
-  window.addEventListener("message", windowHandler);
-
+  // ── Use __nativeBus — do NOT overwrite window.onMessageFromRN ──
   const cleanup = () => {
-    window.onMessageFromRN = prevHandler;
-    window.removeEventListener("message", windowHandler);
+    if (window.__nativeBus) {
+      window.__nativeBus.off('APPLE_SIGN_IN_SUCCESS');
+      window.__nativeBus.off('APPLE_SIGN_IN_CANCELLED');
+      window.__nativeBus.off('APPLE_SIGN_IN_ERROR');
+      window.__nativeBus.off('APPLE_SIGN_IN_WAITING');
+    }
+    window.__appleSignInCleanup = null;
   };
+
+  if (window.__nativeBus) {
+    window.__nativeBus.on('APPLE_SIGN_IN_SUCCESS',   handleResult);
+    window.__nativeBus.on('APPLE_SIGN_IN_CANCELLED', handleResult);
+    window.__nativeBus.on('APPLE_SIGN_IN_ERROR',     handleResult);
+    window.__nativeBus.on('APPLE_SIGN_IN_WAITING',   handleResult);
+  } else {
+    // Fallback: direct onMessageFromRN (safety net only)
+    const prevHandler = window.onMessageFromRN;
+    window.onMessageFromRN = (jsonStr) => {
+      try {
+        const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+        handleResult(msg);
+      } catch {}
+      if (typeof prevHandler === "function") prevHandler(jsonStr);
+    };
+    const origCleanup = cleanup;
+    window.__appleSignInCleanup = () => {
+      window.onMessageFromRN = prevHandler;
+      origCleanup();
+    };
+  }
+
   window.__appleSignInCleanup = cleanup;
 
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
@@ -97,7 +103,6 @@ export default function ReturningScreen() {
   const companion = companionRaw ? JSON.parse(companionRaw) : null;
   const nickname = localStorage.getItem("unfiltr_companion_nickname") || companion?.name || "your companion";
 
-  // Last message preview — pull from most recent chat session
   const lastMessagePreview = (() => {
     try {
       const sessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
@@ -194,7 +199,7 @@ export default function ReturningScreen() {
             marginBottom: 12,
             opacity: loading ? 0.7 : 1,
           }}>
-          <span style={{fontSize: 18, lineHeight: 1}}></span>
+          <span style={{fontSize: 18, lineHeight: 1}}>🍎</span>
           {loading ? "Linking..." : "Link Apple ID"}
         </motion.button>
       )}
@@ -211,9 +216,8 @@ export default function ReturningScreen() {
           cursor: "pointer",
           boxShadow: "0 0 40px rgba(168,85,247,0.45)",
         }}>
-        "Continue Your Journey →"
+        Continue Your Journey →
       </motion.button>
     </div>
   );
 }
-
