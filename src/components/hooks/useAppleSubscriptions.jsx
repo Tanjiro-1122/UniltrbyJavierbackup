@@ -69,18 +69,14 @@ export function useAppleSubscriptions() {
     }
   };
 
-  // ✅ Fixed: restore() now returns the result so callers (Pricing, PaywallModal) can act on it
   const restore = async () => {
     try {
       setStatusMessage('Restoring...');
       const result = await AppleStoreKitService.restorePurchases();
-      const didRestore = result?.isSuccess || result?.triggered || false;
-      setStatusMessage(didRestore ? '✅ Restored!' : 'Nothing to restore');
+      setStatusMessage(result.isSuccess ? '✅ Restored!' : 'Nothing to restore');
       setTimeout(() => setStatusMessage(''), 3000);
-      return { success: didRestore, isSuccess: didRestore };
     } catch (e) {
       setStatusMessage('Restore failed');
-      return { success: false, isSuccess: false };
     }
   };
 
