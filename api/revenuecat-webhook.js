@@ -1,4 +1,4 @@
-// api/revenuecat-webhook.js — v2
+// api/revenuecat-webhook.js
 // Receives RevenueCat subscription events and syncs premium status in Base44
 
 export default async function handler(req, res) {
@@ -6,12 +6,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Verify auth — accept raw token with or without Bearer prefix
-  const EXPECTED_TOKEN = "6f37a8fa3662b4c34560ad597eed83907d28f08dbafe77b44cb1d62d6771a852";
-  const rawAuth = req.headers["authorization"] || "";
-  const receivedToken = rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : rawAuth.replace(/^Bearer_/, "");
-  if (!receivedToken || receivedToken !== EXPECTED_TOKEN) {
-    console.error("[RC Webhook] Unauthorized. Received:", receivedToken.slice(0,8));
+  // Verify auth header
+  const authHeader = req.headers["authorization"];
+  const expectedAuth = process.env.REVENUECAT_WEBHOOK_AUTH_HEADER;
+  if (!authHeader || authHeader !== expectedAuth) {
+    console.error("[RC Webhook] Unauthorized — bad auth header");
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -26,6 +25,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing app_user_id" });
   }
 
+  // Events that grant premium
   const PREMIUM_EVENTS = [
     "INITIAL_PURCHASE",
     "RENEWAL",
@@ -34,23 +34,23 @@ export default async function handler(req, res) {
     "SUBSCRIBER_ALIAS",
   ];
 
+  // Events that revoke premium
   const REVOKE_EVENTS = [
     "CANCELLATION",
     "EXPIRATION",
     "BILLING_ISSUE",
   ];
 
-  // ✅ Fixed: was hardcoded to wrong app ID (69b22f8b = Superagent app, NOT production)
-  // Production user data lives in 69b332a392004d139d4ba495
-  const BASE44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY;
+  const BASE44_API_KEY = process.env.BASE44_API_KEY;
   const BASE44_APP_ID = "69b332a392004d139d4ba495";
 
   if (!BASE44_API_KEY) {
-    console.error("[RC Webhook] Missing BASE44_SERVICE_TOKEN / BASE44_API_KEY");
+    console.error("[RC Webhook] Missing BASE44_API_KEY");
     return res.status(500).json({ error: "Server config error" });
   }
 
-  // Try appUserId and all aliases to find the profile
+  // Find the user profile by user_id
+  // Try appUserId and all aliases
   const userIds = [appUserId, ...aliases].filter(Boolean);
   let profile = null;
   let profileId = null;
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
   for (const uid of userIds) {
     try {
       const filterRes = await fetch(
-        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?apple_user_id=${encodeURIComponent(uid)}`,
+        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?user_id=${encodeURIComponent(uid)}`,
         {
           headers: {
             "Authorization": `Bearer ${BASE44_API_KEY}`,
@@ -79,22 +79,6 @@ export default async function handler(req, res) {
   }
 
   if (!profileId) {
-    // Also try looking up by apple_user_id field
-    try {
-      const filterRes = await fetch(
-        `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile?apple_user_id=${encodeURIComponent(appUserId)}`,
-        { headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" } }
-      );
-      const profiles = await filterRes.json();
-      if (Array.isArray(profiles) && profiles.length > 0) {
-        profile = profiles[0];
-        profileId = profile.id;
-        console.log(`[RC Webhook] Found profile by apple_user_id: ${profileId}`);
-      }
-    } catch (e) {}
-  }
-
-  if (!profileId) {
     console.warn(`[RC Webhook] No profile found for user ${appUserId} — ignoring event`);
     return res.status(200).json({ status: "user_not_found" });
   }
@@ -102,22 +86,20 @@ export default async function handler(req, res) {
   let updateData = null;
 
   if (PREMIUM_EVENTS.includes(eventType)) {
-    const productId = event?.event?.product_id || "";
-    const isAnnual = productId.includes("annual");
-    const isPro    = !isAnnual && productId.includes("tier.pro");
+    const isAnnual = event?.event?.product_id?.includes("annual");
+    const isPro    = !isAnnual && event?.event?.product_id?.includes("pro");
     updateData = {
-      is_premium:   true,
+      is_premium: true,
       trial_active: false,
-      annual_plan:  isAnnual ? true : (profile.annual_plan || false),
-      pro_plan:     isPro    ? true : (profile.pro_plan    || false),
+      annual_plan: isAnnual ? true : (profile.annual_plan || false),
+      pro_plan:    isPro    ? true : (profile.pro_plan    || false),
     };
-    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual}, pro: ${isPro})`);
+    console.log(`[RC Webhook] Granting premium to ${profileId} (annual: ${isAnnual})`);
   } else if (REVOKE_EVENTS.includes(eventType)) {
     updateData = {
-      is_premium:   false,
+      is_premium: false,
       trial_active: false,
-      annual_plan:  false,
-      pro_plan:     false,
+      annual_plan: false,
     };
     console.log(`[RC Webhook] Revoking premium from ${profileId}`);
   } else {
@@ -125,12 +107,16 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: "ignored", eventType });
   }
 
+  // Update the UserProfile in Base44
   try {
     const updateRes = await fetch(
       `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/UserProfile/${profileId}`,
       {
         method: "PUT",
-        headers: { "Authorization": `Bearer ${BASE44_API_KEY}`, "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${BASE44_API_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(updateData),
       }
     );
