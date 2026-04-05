@@ -295,7 +295,7 @@ export default function Pricing() {
         }
 
         window.dispatchEvent(new Event('unfiltr_auth_updated'));
-        navigate(-1);
+        if (window.history.length > 1) { navigate(-1); } else { navigate("/chat"); }
       } else if (result?.cancelled) {
         clearTimeout(timeoutId);
       }
@@ -309,7 +309,7 @@ export default function Pricing() {
     if (result?.success || result?.isSuccess) {
       localStorage.setItem('unfiltr_is_premium', 'true');
       window.dispatchEvent(new Event('unfiltr_auth_updated'));
-      navigate(-1);
+      if (window.history.length > 1) { navigate(-1); } else { navigate("/chat"); }
     }
   };
 
