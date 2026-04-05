@@ -1,15 +1,14 @@
 import OpenAI from "openai";
-import { storeMemoryVectors } from "./memoryEmbed.js";
 
 const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-// Production Unfiltr app ID — hardcoded as fallback in case env var is missing
-const B44_APP  = "69b332a392004d139d4ba495"; // hardcoded — VITE_ vars are NOT available in Vercel serverless
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+// ✅ Hardcoded prod app ID — VITE_ vars unavailable in serverless
+const B44_APP     = "69b332a392004d139d4ba495";
+const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+const B44_API_KEY = process.env.BASE44_API_KEY || "";
 
 async function b44Get(entity, id) {
   const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
+    headers: { "Authorization": `Bearer ${B44_API_KEY}` },
   });
   if (!res.ok) return null;
   return res.json();
@@ -190,10 +189,6 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       memory_summary:  richSummary,
       updated_date:    new Date().toISOString(),
     });
-
-    // ── Store memories as embeddings for vector search (premium+) ──────────
-    storeMemoryVectors(profileId, updatedFacts, sessionNote, isPremium, isPro, isAnnual)
-      .catch(e => console.warn("[embed store]", e.message));
 
     res.status(200).json({
       ok:      true,
