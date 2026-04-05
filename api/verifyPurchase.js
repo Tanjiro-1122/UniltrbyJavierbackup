@@ -1,7 +1,7 @@
 // ✅ Hardcoded prod app ID — VITE_ vars are unavailable in serverless
 const B44_APP     = "69b332a392004d139d4ba495";
 const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+const B44_API_KEY = process.env.BASE44_API_KEY || "";
 
 async function b44FindAndUpdate(appleUserId, data) {
   // Step 1: find profile by apple_user_id field
