@@ -1,4 +1,4 @@
-// api/revenuecat-webhook.js
+// api/revenuecat-webhook.js — v2
 // Receives RevenueCat subscription events and syncs premium status in Base44
 
 export default async function handler(req, res) {
