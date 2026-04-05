@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster"
-import { toast } from "sonner"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -34,7 +33,7 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
-import OnboardingExperience   from "./pages/onboarding/OnboardingExperience";
+import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
 import HomeScreen             from "./pages/HomeScreen";
@@ -48,7 +47,6 @@ import HubPage               from "./pages/HubPage";
 import { DebugPanel } from '@/components/DebugPanel';
 import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
-import { useHeartbeat } from "@/components/hooks/useHeartbeat";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -57,7 +55,7 @@ const HIDE_TABS_ON = [
   "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
-  "/Pricing", "/pricing", "/chat", "/feedback", "/PersonalityQuiz",
+  "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
   "/chat-history",
 ];
 
@@ -68,14 +66,6 @@ const PUBLIC_PATHS = [
 ];
 
 function SafeAreaFix() {
-  useEffect(() => {
-    const handleToast = (e) => {
-      const msg = e.detail?.message;
-      if (msg) toast(msg, { duration: 3500 });
-    };
-    window.addEventListener("unfiltr_toast", handleToast);
-    return () => window.removeEventListener("unfiltr_toast", handleToast);
-  }, []);
   useEffect(() => {
     const color = "#06020f";
     let meta = document.querySelector("meta[name=theme-color]");
@@ -104,7 +94,11 @@ function useProfileRecovery() {
         if (displayName) {
           profiles = await base44.entities.UserProfile.filter({ display_name: displayName });
         }
-        // If no match by name, do NOT grab a random profile — bail safely
+        // If no match by name, grab the most recent profile (last resort)
+        if (!profiles || profiles.length === 0) {
+          const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" });
+          profiles = all || [];
+        }
         if (profiles.length > 0) {
           const p = profiles[0];
           localStorage.setItem("userProfileId", p.id);
@@ -125,99 +119,13 @@ function useProfileRecovery() {
   }, []);
 }
 
-// ── Global Native Bridge ─────────────────────────────────────────────────────
-// Set ONCE at startup. Pages register handlers via window.__nativeBus.
-// This survives re-renders, navigation, and page changes.
-if (typeof window !== 'undefined' && !window.__nativeBusReady) {
-  window.__nativeBusReady = true;
-  window.__nativeBusHandlers = {};
-
-  // Register a handler: window.__nativeBus.on('APPLE_SIGN_IN_SUCCESS', fn)
-  window.__nativeBus = {
-    on:  (type, fn) => { window.__nativeBusHandlers[type] = fn; },
-    off: (type)     => { delete window.__nativeBusHandlers[type]; },
-    emit: (msg) => {
-      const fn = window.__nativeBusHandlers[msg.type];
-      if (fn) {
-        fn(msg);
-      } else {
-        // Queue it for 2s in case a handler registers shortly after
-        if (!window.__nativeBusQueue) window.__nativeBusQueue = [];
-        window.__nativeBusQueue.push({ msg, ts: Date.now() });
-      }
-    },
-  };
-
-  // Flush any queued messages when a new handler registers
-  const origOn = window.__nativeBus.on.bind(window.__nativeBus);
-  window.__nativeBus.on = (type, fn) => {
-    origOn(type, fn);
-    if (window.__nativeBusQueue) {
-      window.__nativeBusQueue = window.__nativeBusQueue.filter(({ msg, ts }) => {
-        if (msg.type === type && Date.now() - ts < 2000) {
-          fn(msg);
-          return false;
-        }
-        return true;
-      });
-    }
-  };
-
-  // The actual listener — receives from native injectJavaScript
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-      // Auto-ACK any retryUntilAck message (stops native retry loop)
-      if (msg.__msgId) {
-        if (!window.__nativeAcks) window.__nativeAcks = {};
-        window.__nativeAcks[msg.__msgId] = true;
-      }
-      window.__nativeBus.emit(msg);
-    } catch(e) { console.warn('[Bridge] parse error:', e.message); }
-  };
-
-  // Fallback: window message event
-  window.addEventListener('message', (e) => {
-    try {
-      const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      if (msg && msg.type && !msg.type.startsWith('webpack') && !msg.type.startsWith('hmr')) {
-        window.__nativeBus.emit(msg);
-      }
-    } catch {}
-  });
-}
-
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
-  useHeartbeat();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
-
-
-  // Handle bridge messages that need navigation (e.g. tapping a push notification)
-  useEffect(() => {
-    const handleOpenChat = () => {
-      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      if (onboardingDone) navigate("/chat-enter");
-    };
-    const handlePushToken = (msg) => {
-      // iOS wrapper sent us the push token — save it to localStorage for later use in Settings
-      if (msg.token) localStorage.setItem("unfiltr_push_token", msg.token);
-    };
-    if (window.__nativeBus) {
-      window.__nativeBus.on('OPEN_CHAT', handleOpenChat);
-      window.__nativeBus.on('PUSH_TOKEN', handlePushToken);
-    }
-    return () => {
-      if (window.__nativeBus) {
-        window.__nativeBus.off('OPEN_CHAT');
-        window.__nativeBus.off('PUSH_TOKEN');
-      }
-    };
-  }, [navigate]);
 
   // Step 1: Age gate — always first
   useEffect(() => {
@@ -293,10 +201,10 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Onboarding */}
         <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
+        <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
-        <Route path="/onboarding/experience" element={<OnboardingExperience />} />
         <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
@@ -363,9 +271,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
