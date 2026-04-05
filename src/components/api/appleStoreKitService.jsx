@@ -10,36 +10,56 @@ function isReactNativeWebView() {
   return typeof window !== 'undefined' && !!window.ReactNativeWebView;
 }
 
-// ── Register _rnMessageHandlers (used by sendToNative promises) ──────────────
-// IMPORTANT: We do NOT overwrite window.onMessageFromRN here.
-// App.jsx already set it up to route to window.__nativeBus.
-// Instead, we hook into __nativeBus so our _rnMessageHandlers also fire.
+// ── Listen for native messages via BOTH channels ─────────────────────────────
+// Channel 1: window.onMessageFromRN (direct injection from native sendToWeb)
+// Channel 2: window message event (dispatchEvent fallback)
+// Channel 3: window.__nativeBus (App.jsx bus, if present)
 if (typeof window !== 'undefined') {
   window._rnMessageHandlers = window._rnMessageHandlers || {};
 
-  // Hook into __nativeBus (set by App.jsx) so purchase/restore results reach us
+  const _dispatchToHandlers = (msg) => {
+    if (!msg?.type) return;
+    const handlers = window._rnMessageHandlers[msg.type] || [];
+    handlers.forEach(fn => { try { fn(msg); } catch(e) {} });
+  };
+
+  // Hook into __nativeBus if available
   const _hookNativeBus = () => {
-    if (!window.__nativeBus) return; // not ready yet — retry
+    if (!window.__nativeBus) return;
     const origEmit = window.__nativeBus.emit.bind(window.__nativeBus);
     window.__nativeBus.emit = (msg) => {
       origEmit(msg);
-      // Auto-ACK
-      if (msg.__msgId) {
-        if (!window.__nativeAcks) window.__nativeAcks = {};
-        window.__nativeAcks[msg.__msgId] = true;
-      }
-      debugLog(`📨 [RN→WEB] ${msg.type}`);
-      const handlers = window._rnMessageHandlers[msg.type] || [];
-      handlers.forEach(fn => { try { fn(msg); } catch(e) {} });
+      debugLog(`📨 [RN→WEB via bus] ${msg.type}`);
+      _dispatchToHandlers(msg);
     };
   };
-  // __nativeBus is set at module-load time in App.jsx, so it should be ready.
-  // But if not (e.g. import order), retry after a tick.
   if (window.__nativeBus) {
     _hookNativeBus();
   } else {
     setTimeout(_hookNativeBus, 0);
   }
+
+  // Hook into onMessageFromRN — this is the primary delivery channel now
+  const _origOnMessage = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`📨 [RN→WEB via onMessageFromRN] ${msg.type}`);
+      _dispatchToHandlers(msg);
+    } catch(e) {}
+    if (typeof _origOnMessage === 'function') _origOnMessage(jsonStr);
+  };
+
+  // Also listen on window 'message' events (dispatchEvent fallback)
+  window.addEventListener('message', (e) => {
+    try {
+      const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      if (msg?.type) {
+        debugLog(`📨 [RN→WEB via window.message] ${msg.type}`);
+        _dispatchToHandlers(msg);
+      }
+    } catch(e) {}
+  });
 }
 
 function onceFromNative(types, timeoutMs) {
@@ -57,7 +77,6 @@ function onceFromNative(types, timeoutMs) {
 
     const handler = (data) => {
       if (resolved) return;
-      // WAITING is just an ack — keep listening, don't resolve yet
       if (data.type === 'APPLE_SIGN_IN_WAITING') {
         debugLog('🍎 Apple overlay shown — waiting for user tap...');
         return;
@@ -105,7 +124,6 @@ function sendToNative(type, payload = {}) {
     'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
   };
 
-  // PURCHASE and SIGN_IN_WITH_APPLE have no timeout — user-driven flows
   const timeoutMs = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : 30000;
   const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
 
@@ -249,4 +267,3 @@ export class AppleStoreKitService {
     return result;
   }
 }
-
