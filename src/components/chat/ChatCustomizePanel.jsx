@@ -45,7 +45,7 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled }) {
+export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion" }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("Companion");
 
@@ -287,20 +287,28 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
 
   return (
     <>
-      {/* Trigger icon button */}
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          width: 36, height: 36, borderRadius: "50%",
-          background: open ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.12)",
-          border: open ? "1.5px solid rgba(168,85,247,0.6)" : "none",
-          display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-          transition: "all 0.2s",
-        }}
-        title="Customize"
-      >
-        <SlidersHorizontal size={15} color={open ? "#c084fc" : "white"} />
-      </button>
+      {/* Trigger — icon mode (default) or name mode (used in header center) */}
+      {triggerMode === "name" ? (
+        <button onClick={() => setOpen(true)}
+          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, padding: "2px 8px" }}>
+          <span style={{ color: "white", fontWeight: 700, fontSize: 15, letterSpacing: "-0.2px" }}>{companionName}</span>
+          <span style={{ color: "rgba(168,85,247,0.8)", fontSize: 10, fontWeight: 600, letterSpacing: "0.04em" }}>Tap to customize ✦</span>
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: open ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.12)",
+            border: open ? "1.5px solid rgba(168,85,247,0.6)" : "none",
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          title="Customize"
+        >
+          <SlidersHorizontal size={15} color={open ? "#c084fc" : "white"} />
+        </button>
+      )}
 
       {/* Backdrop */}
       <AnimatePresence>
