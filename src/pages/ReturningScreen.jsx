@@ -50,6 +50,27 @@ function signInWithApple(navigate, setLoading) {
         localStorage.setItem("unfiltr_is_premium", "true");
         localStorage.setItem("unfiltr_plan", "pro_plan");
       }
+
+      // Sync profile — write apple_user_id to DB and get real record ID
+      try {
+        const syncRes = await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appleUserId, email, fullName, isPremium: !!payload.isPremium }),
+        });
+        const syncData = await syncRes.json();
+        if (syncData?.data?.profileId) {
+          localStorage.setItem("userProfileId", syncData.data.profileId);
+          if (syncData.data.is_premium) {
+            localStorage.setItem("unfiltr_is_premium", "true");
+            if (syncData.data.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
+            if (syncData.data.pro_plan)    localStorage.setItem("unfiltr_is_pro",    "true");
+          }
+        }
+      } catch(syncErr) {
+        console.warn("[ReturningScreen] syncProfile failed:", syncErr.message);
+      }
+
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
