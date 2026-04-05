@@ -9,9 +9,11 @@ export default async function handler(req, res) {
   // Verify auth header
   const authHeader = req.headers["authorization"];
   const expectedAuth = process.env.REVENUECAT_WEBHOOK_AUTH_HEADER;
+  console.log("[RC Webhook] Auth received:", JSON.stringify(authHeader));
+  console.log("[RC Webhook] Auth expected:", JSON.stringify(expectedAuth));
   if (!authHeader || authHeader !== expectedAuth) {
     console.error("[RC Webhook] Unauthorized — bad auth header");
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: "Unauthorized", received: authHeader, expected_length: expectedAuth ? expectedAuth.length : 0 });
   }
 
   const event = req.body;
