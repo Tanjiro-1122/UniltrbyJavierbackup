@@ -9,6 +9,7 @@ import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import HowToGuide from "@/components/settings/HowToGuide";
+import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { getMoodWeek } from "@/components/utils/moodTracker";
@@ -402,7 +403,13 @@ export default function Settings() {
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
-    localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
+    const envObj = { id: bg.id, label: bg.label, bg: bg.url };
+    localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
+    localStorage.setItem("unfiltr_background", bg.id);
+    // Notify ChatPage + any listener to update background in real time
+    window.dispatchEvent(new CustomEvent("unfiltr_background_change", { detail: bg.id }));
+    window.dispatchEvent(new CustomEvent("unfiltr_env_change", { detail: envObj }));
+    toast.success(bg.label + " set ✨");
     setUserProfile(p => ({ ...p }));
   };
   const handlePauseAccount = async () => {
@@ -1060,6 +1067,7 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
 
