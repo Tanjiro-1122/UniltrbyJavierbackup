@@ -1,15 +1,23 @@
-// ✅ Hardcoded production app ID — VITE_ vars are NOT available in Vercel serverless functions
 const B44_APP     = "69b332a392004d139d4ba495";
 const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
-async function b44Update(entity, id, data) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+async function b44FindAndUpdate(appleUserId, data) {
+  const searchRes = await fetch(
+    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: { "ApiKey": B44_API_KEY } }
+  );
+  if (!searchRes.ok) return false;
+  const records = await searchRes.json();
+  const record = Array.isArray(records) ? records[0] : records?.data?.[0];
+  if (!record?.id) { console.error("[restorePurchases] No UserProfile found for:", appleUserId); return false; }
+  const updateRes = await fetch(`${B44_BASE}/UserProfile/${record.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
     body: JSON.stringify(data),
   });
-  return res.ok;
+  console.log("[restorePurchases] b44Update status:", updateRes.status, "record:", record.id);
+  return updateRes.ok;
 }
 
 const RC_SECRET_KEY  = process.env.REVENUECAT_SECRET_KEY;
@@ -27,10 +35,12 @@ export default async function handler(req, res) {
 
   try {
     const { profileId, userId } = req.body;
-    const appUserId = profileId || userId;
-    if (!appUserId) return res.status(400).json({ error: "No user ID" });
+    const appleUserId = profileId || userId;
+    if (!appleUserId) return res.status(400).json({ error: "No user ID" });
 
-    const rcRes = await fetch(`${RC_API_BASE}/subscribers/${encodeURIComponent(appUserId)}`, {
+    console.log("[restorePurchases] called for:", appleUserId);
+
+    const rcRes = await fetch(`${RC_API_BASE}/subscribers/${encodeURIComponent(appleUserId)}`, {
       headers: { "Authorization": `Bearer ${RC_SECRET_KEY}` },
     });
 
@@ -42,8 +52,10 @@ export default async function handler(req, res) {
     const activeProductId = premiumEnt?.product_identifier || "";
     const plan            = PRODUCT_MAP[activeProductId] || (activeProductId.includes("annual") ? "annual" : "monthly");
 
+    console.log("[restorePurchases] RC isPremium:", isActive, "plan:", plan);
+
     if (isActive) {
-      await b44Update("UserProfile", appUserId, {
+      await b44FindAndUpdate(appleUserId, {
         is_premium:   true,
         pro_plan:     plan === "pro",
         annual_plan:  plan === "annual",
