@@ -1,16 +1,23 @@
-// ✅ Fixed: hardcoded production app ID — VITE_ vars are NOT available in Vercel serverless functions
 const B44_APP  = "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-// ✅ Fixed: use BASE44_SERVICE_TOKEN (reliable server-side) with BASE44_API_KEY as fallback
 const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
-async function b44Update(entity, id, data) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+async function b44FindAndUpdate(appleUserId, data) {
+  const searchRes = await fetch(
+    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: { "ApiKey": B44_API_KEY } }
+  );
+  if (!searchRes.ok) return false;
+  const records = await searchRes.json();
+  const record = Array.isArray(records) ? records[0] : records?.data?.[0];
+  if (!record?.id) { console.error("[handleAppleIAP] No UserProfile found for:", appleUserId); return false; }
+  const updateRes = await fetch(`${B44_BASE}/UserProfile/${record.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", "ApiKey": B44_API_KEY },
     body: JSON.stringify(data),
   });
-  return res.ok;
+  console.log("[handleAppleIAP] b44Update status:", updateRes.status, "record:", record.id);
+  return updateRes.ok;
 }
 
 const RC_SECRET_KEY  = process.env.REVENUECAT_SECRET_KEY;
@@ -18,9 +25,9 @@ const RC_API_BASE    = "https://api.revenuecat.com/v1";
 const ENTITLEMENT_ID = "unfiltr by javier Pro";
 
 const PRODUCT_MAP = {
-  "com.huertas.unfiltr.pro.monthly": "monthly",   // $9.99 Plus
-  "com.huertas.unfiltr.tier.pro":    "pro",        // $14.99 Pro
-  "com.huertas.unfiltr.pro.annual":  "annual",     // $59.99 Annual
+  "com.huertas.unfiltr.pro.monthly": "monthly",
+  "com.huertas.unfiltr.tier.pro":    "pro",
+  "com.huertas.unfiltr.pro.annual":  "annual",
 };
 
 async function postReceiptToRevenueCat(receiptData, appUserId, productId) {
@@ -61,13 +68,15 @@ export default async function handler(req, res) {
 
   try {
     const { receipt, productId, profileId, userId } = req.body;
-    const appUserId = profileId || userId;
-    if (!receipt)   return res.status(400).json({ error: "No receipt provided" });
-    if (!appUserId) return res.status(400).json({ error: "No user ID provided" });
+    const appleUserId = profileId || userId;
+    if (!receipt)      return res.status(400).json({ error: "No receipt provided" });
+    if (!appleUserId)  return res.status(400).json({ error: "No user ID provided" });
 
-    await postReceiptToRevenueCat(receipt, appUserId, productId);
+    console.log("[handleAppleIAP] called for:", appleUserId, "product:", productId);
 
-    const subscriberData = await getSubscriberInfo(appUserId);
+    await postReceiptToRevenueCat(receipt, appleUserId, productId);
+
+    const subscriberData = await getSubscriberInfo(appleUserId);
     const entitlements   = subscriberData?.subscriber?.entitlements || {};
     const premiumEnt     = entitlements[ENTITLEMENT_ID];
     const isActive       = premiumEnt && new Date(premiumEnt.expires_date) > new Date();
@@ -78,19 +87,16 @@ export default async function handler(req, res) {
     const plan            = PRODUCT_MAP[activeProductId] || "monthly";
     const expiresDate     = premiumEnt.expires_date;
 
-    // Update Base44 UserProfile — set the correct tier flags
-    const updated = await b44Update("UserProfile", appUserId, {
+    await b44FindAndUpdate(appleUserId, {
       is_premium:   true,
       pro_plan:     plan === "pro",
       annual_plan:  plan === "annual",
       updated_date: new Date().toISOString(),
     });
 
-    if (!updated) console.error("[IAP] b44Update failed — check BASE44_SERVICE_TOKEN and app ID");
-
     return res.status(200).json({ data: { success: true, plan, expiresDate, productId: activeProductId } });
   } catch (err) {
-    console.error("[IAP] error:", err);
+    console.error("[handleAppleIAP] error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
