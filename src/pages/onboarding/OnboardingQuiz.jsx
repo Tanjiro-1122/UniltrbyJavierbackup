@@ -97,7 +97,7 @@ export default function OnboardingQuiz() {
 
   const handleConfirmMatch = () => {
     applyMatch(result);
-    navigate("/onboarding/mode");
+    navigate("/onboarding/nickname");
   };
 
   const handlePickOwn = () => {
@@ -118,7 +118,7 @@ export default function OnboardingQuiz() {
   };
 
   return (
-    <OnboardingLayout totalSteps={7} step={4} onBack={() => navigate("/onboarding/nickname")} canAdvance={false}>
+    <OnboardingLayout totalSteps={7} step={3} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 32px" }}>
 
         <AnimatePresence mode="wait">
