@@ -33,6 +33,8 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
+import OnboardingQuiz         from "./pages/onboarding/OnboardingQuiz";
+import OnboardingMode         from "./pages/onboarding/OnboardingMode";
 import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
@@ -54,7 +56,7 @@ const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
-  "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
+  "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate", "/onboarding/quiz", "/onboarding/mode",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
@@ -207,6 +209,8 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
+        <Route path="/onboarding/quiz"       element={<OnboardingQuiz />} />
+        <Route path="/onboarding/mode"       element={<OnboardingMode />} />
         <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
