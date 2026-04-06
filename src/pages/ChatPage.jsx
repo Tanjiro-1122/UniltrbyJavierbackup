@@ -443,8 +443,21 @@ export default function ChatPage() {
     const personality = COMPANION_PERSONALITIES[companion.id];
     const vibeGreeting = personality?.vibeGreetings?.[vibe];
     const defaultGreeting = personality?.greeting;
+
+    // 🎭 Mood-aware opening — check if user picked a mood today
+    const todayMood = localStorage.getItem("unfiltr_mood") || "neutral";
+    const moodOpenings = {
+      happy:      `${name} here, and I can already feel the good energy ✨ What's got you in such a good mood today?`,
+      sad:        `Hey... I'm really glad you came. I'm here with you 💜 What's going on?`,
+      anxious:    `I noticed you checked in feeling anxious. Take a breath — you're safe here. What's on your mind?`,
+      frustrated: `Okay, I'm listening. Something's got you frustrated — let it out. What happened?`,
+      motivated:  `You came in ready to GO 🚀 I love that energy. What are we working on today?`,
+      calm:       `There's something nice about a calm day. What would you like to talk about? 🌿`,
+      loved:      `Feeling loved — that's everything 💕 What's making your heart full today?`,
+    };
+    const moodOpeningText = todayMood !== "neutral" ? moodOpenings[todayMood] : null;
     
-    const greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
+    const greetingText = moodOpeningText || vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
       vibe === "chill" ? "What's good? Just vibing here 😌" :
       vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
       vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
