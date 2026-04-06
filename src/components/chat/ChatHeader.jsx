@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
+  setCompanion,
   isPremium, messages, companion, navigate,
   setMessages, vibe,
   onNavigateToSettings,
@@ -185,6 +186,14 @@ export default function ChatHeader({
           title="New chat">
           <RotateCcw size={14} color="white" />
         </button>
+        <ChatCustomizePanel
+          companion={companion}
+          setCompanion={setCompanion}
+          voiceEnabled={voiceEnabled}
+          setVoiceEnabled={setVoiceEnabled}
+          triggerMode="icon"
+          companionName={companion?.name || "Companion"}
+        />
         <button onClick={handleSettings}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Settings size={14} color="white" />
