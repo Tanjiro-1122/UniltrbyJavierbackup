@@ -137,7 +137,25 @@ export default function ChatPage() {
       } catch (e) { console.error('Native message error:', e); }
     };
     window.addEventListener('message', handleNativeMessage);
-    return () => window.removeEventListener('message', handleNativeMessage);
+
+    // Listen for premium status update (fired after successful purchase)
+    const handlePremiumUpdate = () => {
+      const nowPremium = localStorage.getItem('unfiltr_is_premium') === 'true';
+      const nowAnnual  = localStorage.getItem('unfiltr_is_annual') === 'true';
+      const nowPro     = localStorage.getItem('unfiltr_is_pro') === 'true';
+      setIsPremium(nowPremium);
+      setIsAnnual(nowAnnual);
+      setIsPro(nowPro);
+      if (nowPremium) setShowMemoryBanner(false);
+    };
+    window.addEventListener('unfiltr_premium_updated', handlePremiumUpdate);
+    window.addEventListener('unfiltr_auth_updated', handlePremiumUpdate);
+
+    return () => {
+      window.removeEventListener('message', handleNativeMessage);
+      window.removeEventListener('unfiltr_premium_updated', handlePremiumUpdate);
+      window.removeEventListener('unfiltr_auth_updated', handlePremiumUpdate);
+    };
   }, [profileId]);
 
   const particleId     = useRef(0);
