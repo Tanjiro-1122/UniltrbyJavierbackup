@@ -18,14 +18,14 @@ export default function OnboardingNickname() {
 
   const handleNext = () => {
     updateOnboardingStore({ companionNickname: nickname });
-    navigate("/onboarding/vibe");
+    navigate("/onboarding/mode");
   };
 
   return (
     <OnboardingLayout
-      totalSteps={6}
-      step={4}
-      onBack={() => navigate("/onboarding/companion")}
+      totalSteps={7}
+      step={5}
+      onBack={() => navigate("/onboarding/quiz")}
       onNext={handleNext}
       canAdvance={true}
     >
