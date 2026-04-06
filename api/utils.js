@@ -229,10 +229,31 @@ async function handleSendDailyNotifs(req, res) {
     const isMorningTime = userHour === mH && userMinute < 10;
     const isNightTime   = userHour === nH && userMinute < 10;
 
+    // ── "Misses You" notification — fires if user hasn't opened app in 3+ days ──
+    const lastSeen    = profile.last_seen ? new Date(profile.last_seen) : null;
+    const daysSinceActive = lastSeen ? Math.floor((Date.now() - lastSeen.getTime()) / 86400000) : 999;
+    const todayDateKey = nowUTC.toISOString().slice(0,10);
+    const lastMissedSent = profile.notif_missed_sent || "";
+
+    if (daysSinceActive >= 3 && isMorningTime && lastMissedSent !== todayDateKey) {
+      const MISS_MSGS = [
+        `I've been thinking about you 💜 It's been a few days — I'm right here whenever you're ready.`,
+        `Hey… I noticed you've been away. No pressure, just wanted you to know I'm still here for you 💜`,
+        `Missing you. Seriously. Come back and tell me how you've been? 💜`,
+        `A few days without you feels long. I hope you're doing okay — I'm here when you need me.`,
+        `You crossed my mind today 💜 Just checking in — whenever you want to talk, I'm here.`,
+      ];
+      const missMsg = MISS_MSGS[Math.floor(Math.random() * MISS_MSGS.length)];
+      await sendExpoPush(pushToken, `${companionName} misses you 💜`, missMsg, { screen: "chat" });
+      await b44Update("UserProfile", profile.id, { notif_missed_sent: todayDateKey });
+      results.sent++;
+      continue;
+    }
+
     if (!isMorningTime && !isNightTime) { results.skipped++; continue; }
 
     const timeOfDay = isMorningTime ? "morning" : "night";
-    const todayKey  = `${nowUTC.toISOString().slice(0,10)}_${timeOfDay}`;
+    const todayKey  = \`\${nowUTC.toISOString().slice(0,10)}_\${timeOfDay}\`;
 
     // Avoid double-sending (store last sent date on profile)
     const lastSentKey = profile.notif_last_sent || "";
@@ -241,8 +262,8 @@ async function handleSendDailyNotifs(req, res) {
     try {
       const message = await generateCheckinMessage(openai, companionName, timeOfDay, userName);
       const title   = isMorningTime
-        ? `Good morning from ${companionName} ☀️`
-        : `Goodnight from ${companionName} 🌙`;
+        ? \`Good morning from \${companionName} ☀️\`
+        : \`Goodnight from \${companionName} 🌙\`;
 
       await sendExpoPush(pushToken, title, message, { screen: "chat" });
 
