@@ -3,7 +3,7 @@
 // and to return the real Base44 record ID for localStorage
 
 const B44_APP     = "69b332a392004d139d4ba495";
-const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+const B44_BASE    = `https://app.base44.com/api/apps/${B44_APP}/entities`;
 const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 export default async function handler(req, res) {
