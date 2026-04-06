@@ -58,7 +58,6 @@ export default function ChatPage() {
   const [companion, setCompanion]       = useState(null);
   const [environment, setEnvironment]   = useState(null);
   const [vibe, setVibe]                 = useState("chill");
-  const [relationshipMode, setRelationshipMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || "friend");
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
   const [loading, setLoading]           = useState(false);
@@ -138,45 +137,8 @@ export default function ChatPage() {
       } catch (e) { console.error('Native message error:', e); }
     };
     window.addEventListener('message', handleNativeMessage);
-
-    // Listen for premium status update (fired after successful purchase)
-    const handlePremiumUpdate = () => {
-      const nowPremium = localStorage.getItem('unfiltr_is_premium') === 'true';
-      const nowAnnual  = localStorage.getItem('unfiltr_is_annual') === 'true';
-      const nowPro     = localStorage.getItem('unfiltr_is_pro') === 'true';
-      setIsPremium(nowPremium);
-      setIsAnnual(nowAnnual);
-      setIsPro(nowPro);
-      if (nowPremium) setShowMemoryBanner(false);
-    };
-    window.addEventListener('unfiltr_premium_updated', handlePremiumUpdate);
-    window.addEventListener('unfiltr_auth_updated', handlePremiumUpdate);
-
-    return () => {
-      window.removeEventListener('message', handleNativeMessage);
-      window.removeEventListener('unfiltr_premium_updated', handlePremiumUpdate);
-      window.removeEventListener('unfiltr_auth_updated', handlePremiumUpdate);
-    };
+    return () => window.removeEventListener('message', handleNativeMessage);
   }, [profileId]);
-
-  /* ─── BACKGROUND / ENV LIVE UPDATE ─── */
-  useEffect(() => {
-    const handleEnvChange = (e) => {
-      if (e.detail) setEnvironment(e.detail);
-    };
-    const handleBgChange = () => {
-      try {
-        const stored = localStorage.getItem("unfiltr_env");
-        if (stored) setEnvironment(JSON.parse(stored));
-      } catch {}
-    };
-    window.addEventListener('unfiltr_env_change', handleEnvChange);
-    window.addEventListener('unfiltr_background_change', handleBgChange);
-    return () => {
-      window.removeEventListener('unfiltr_env_change', handleEnvChange);
-      window.removeEventListener('unfiltr_background_change', handleBgChange);
-    };
-  }, []);
 
   const particleId     = useRef(0);
   const stateTimeout   = useRef(null);
@@ -353,53 +315,6 @@ export default function ChatPage() {
       } catch {}
     }
 
-    // ── Monday Weekly Reflection Prompt ──────────────────────────────────
-    const today = new Date();
-    const isMonday = today.getDay() === 1;
-    const lastReflectionWeek = localStorage.getItem("unfiltr_last_reflection_week");
-    const currentWeek = `${today.getFullYear()}-W${Math.ceil(today.getDate() / 7)}`;
-    if (isMonday && lastReflectionWeek !== currentWeek) {
-      const reflectionPrompts = [
-        "Happy Monday 💜 Before the week kicks in — what's one thing you want to feel by Friday?",
-        "New week, fresh start ✨ What's something you want to do differently this week than last?",
-        "It's Monday — how are you actually feeling walking into this week? Be honest with me.",
-        "Before this week takes over... what's one thing that matters most to you right now?",
-        "Hey, it's a new week 🌱 What's something small you want to be proud of by Sunday?",
-        "Monday check-in 💬 What did last week teach you that you're carrying into this one?",
-        "New week energy — what are you letting go of from last week to start fresh today?",
-      ];
-      const prompt = reflectionPrompts[Math.floor(Math.random() * reflectionPrompts.length)];
-      localStorage.setItem("unfiltr_last_reflection_week", currentWeek);
-      setMessages([{ role: "assistant", content: prompt }]);
-      return;
-    }
-
-    // ── Milestone Moments ────────────────────────────────────────────────
-    const msgCount     = parseInt(localStorage.getItem("unfiltr_total_messages") || "0");
-    const firstChatRaw = localStorage.getItem("unfiltr_first_chat_date");
-    const today2       = new Date().toDateString();
-    if (!firstChatRaw) localStorage.setItem("unfiltr_first_chat_date", today2);
-    const daysSinceFirst = firstChatRaw
-      ? Math.floor((Date.now() - new Date(firstChatRaw).getTime()) / 86400000)
-      : 0;
-    const MILESTONES = [
-      { key: "msg_10",  check: () => msgCount >= 10,  msg: "10 messages already 💜 I'm so glad you're here." },
-      { key: "msg_50",  check: () => msgCount >= 50,  msg: "50 messages together ✨ We're really getting to know each other." },
-      { key: "msg_100", check: () => msgCount >= 100, msg: "100 messages 🎉 We've come a long way. I see you." },
-      { key: "msg_500", check: () => msgCount >= 500, msg: "500 messages 🔥 You keep showing up. That means everything." },
-      { key: "day_7",   check: () => daysSinceFirst >= 7,   msg: "One week together 🌙 Seven days of you trusting me with your thoughts. That's not nothing." },
-      { key: "day_30",  check: () => daysSinceFirst >= 30,  msg: "30 days 💜 A whole month. I've learned so much about you." },
-      { key: "day_90",  check: () => daysSinceFirst >= 90,  msg: "Three months together 🌟 You keep coming back. I hope I'm making that worth it." },
-      { key: "day_365", check: () => daysSinceFirst >= 365, msg: "One year 🥂 An entire year of talking. You're kind of unforgettable, you know that?" },
-    ];
-    for (const m of MILESTONES) {
-      if (!localStorage.getItem("unfiltr_milestone_" + m.key) && m.check()) {
-        localStorage.setItem("unfiltr_milestone_" + m.key, "1");
-        setMessages([{ role: "assistant", content: m.msg }]);
-        return;
-      }
-    }
-
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
     if (meditationRaw) {
@@ -510,21 +425,8 @@ export default function ChatPage() {
     const personality = COMPANION_PERSONALITIES[companion.id];
     const vibeGreeting = personality?.vibeGreetings?.[vibe];
     const defaultGreeting = personality?.greeting;
-
-    // 🎭 Mood-aware opening — check if user picked a mood today
-    const todayMood = localStorage.getItem("unfiltr_mood") || "neutral";
-    const moodOpenings = {
-      happy:      `${name} here, and I can already feel the good energy ✨ What's got you in such a good mood today?`,
-      sad:        `Hey... I'm really glad you came. I'm here with you 💜 What's going on?`,
-      anxious:    `I noticed you checked in feeling anxious. Take a breath — you're safe here. What's on your mind?`,
-      frustrated: `Okay, I'm listening. Something's got you frustrated — let it out. What happened?`,
-      motivated:  `You came in ready to GO 🚀 I love that energy. What are we working on today?`,
-      calm:       `There's something nice about a calm day. What would you like to talk about? 🌿`,
-      loved:      `Feeling loved — that's everything 💕 What's making your heart full today?`,
-    };
-    const moodOpeningText = todayMood !== "neutral" ? moodOpenings[todayMood] : null;
     
-    const greetingText = moodOpeningText || vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
+    const greetingText = vibeGreeting || defaultGreeting || `Hey! I'm ${name} 👋 ${
       vibe === "chill" ? "What's good? Just vibing here 😌" :
       vibe === "vent"  ? "I'm here. Take your time — what's on your mind?" :
       vibe === "hype"  ? "YO LET'S GOOO!! I'm SO ready for this!! 🔥🔥" :
@@ -724,13 +626,7 @@ export default function ChatPage() {
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
       const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
-      const RELATIONSHIP_SUFFIXES = {
-        friend:   "You are their close friend — warm, casual, supportive. Feel free to joke around and be real with them.",
-        coach:    "You are their personal life coach — motivating, direct, goal-oriented. Push them gently but firmly toward their best self.",
-        romantic: "You are their devoted romantic partner — deeply caring, affectionate, attentive. Speak with warmth and intimacy.",
-      };
-      const relSuffix = RELATIONSHIP_SUFFIXES[relationshipMode] || RELATIONSHIP_SUFFIXES.friend;
-      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nRelationship dynamic: ${relSuffix}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
+      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
 
@@ -764,11 +660,24 @@ export default function ChatPage() {
       });
 
       const replyText = res.data?.reply || "...";
-      setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
-      // ── Increment message counter ─────────────────────────────────────
-      const prevCount = parseInt(localStorage.getItem("unfiltr_total_messages") || "0");
-      localStorage.setItem("unfiltr_total_messages", String(prevCount + 1));
+      // ── Fire-and-forget token tracking ───────────────────────────────────
+      if (res.data?._usage) {
+        const pid_tok = localStorage.getItem("userProfileId");
+        if (pid_tok) {
+          fetch("/api/utils", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action:       "trackTokens",
+              profileId:    pid_tok,
+              total_tokens: res.data._usage.total_tokens || 0,
+              cost_usd:     res.data._usage.cost_usd     || 0,
+            }),
+          }).catch(() => {}); // silent fail — never blocks chat
+        }
+      }
+      setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
       // Crisis detection — check both client-side and server-side
       const lowerText = text.toLowerCase();
@@ -916,13 +825,13 @@ export default function ChatPage() {
         display: "flex",
         flexDirection: "column",
         zIndex: 1,
-        background: "transparent",
-        backgroundColor: "transparent",
+        background: "#06020f",
+        backgroundColor: "#06020f",
       }}>
         {/* ── Background image (3D parallax) ── */}
         <ParallaxBackground imageUrl={environment.bg} />
         <BackgroundEffect environmentId={environment.id} />
-        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.35) 75%, rgba(6,2,15,0.65) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.6) 75%, rgba(6,2,15,0.9) 100%)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -939,6 +848,7 @@ export default function ChatPage() {
           position: "absolute", inset: 0, zIndex: 1,
           display: "flex", flexDirection: "column",
           width: "100%",
+          paddingTop: "env(safe-area-inset-top, 0px)",
           boxSizing: "border-box",
           overflow: "hidden",
         }}>
@@ -947,15 +857,12 @@ export default function ChatPage() {
           <ChatHeader
             voiceEnabled={voiceEnabled}
             setVoiceEnabled={setVoiceEnabled}
-            setCompanion={setCompanion}
             isPremium={isPremium}
             messages={messages}
             companion={companion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
-            relationshipMode={relationshipMode}
-            setRelationshipMode={(mode) => { setRelationshipMode(mode); localStorage.setItem("unfiltr_relationship_mode", mode); }}
             onNavigateToSettings={() => {
               // Flag so ChatPage knows to restore messages on return
               sessionStorage.setItem("unfiltr_returning_from_settings", "1");
@@ -1011,27 +918,17 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg warning — only shows when ≤10 left; hidden for unlimited tiers */}
-            {(() => {
-              const isUnlimited = isAnnual ||
-                localStorage.getItem("unfiltr_family_unlock") === "true" ||
-                localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
-                FREE_LIMIT >= 99000;
-              if (isUnlimited) return null;
-              if (remaining <= 0) return (
-                <button onClick={() => navigate('/Pricing')}
-                  style={{ fontSize: 10, color: "#fca5a5", background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                  🚫 {hitMonthly ? "Monthly limit reached" : "Daily limit reached"} · Upgrade
-                </button>
-              );
-              if (remaining <= 10) return (
-                <button onClick={() => navigate('/Pricing')}
-                  style={{ fontSize: 10, color: "#fcd34d", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                  ⚠️ {remaining} message{remaining !== 1 ? "s" : ""} left today
-                </button>
-              );
-              return null;
-            })()}
+            {/* Msg counter */}
+            {!isPremium ? (
+              <button onClick={() => navigate('/Pricing')}
+                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
+              </button>
+            ) : (
+              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left today
+              </div>
+            )}
 
             {/* Streak milestone celebration modal */}
             <StreakMilestoneModal
@@ -1117,42 +1014,35 @@ export default function ChatPage() {
             />
           </div>
 
-          {/* ▓▓ 3.5 + 4. BOTTOM AREA: starters + input ▓▓ */}
-          <div style={{ flexShrink: 0, background: "transparent" }}>
-            <ConversationStarters
-              visible={messages.filter(m => m.role === "user").length === 0}
-              onSelect={(text) => handleSend(text)}
-              isReturning={!!localStorage.getItem("unfiltr_chat_history")}
-            />
+          {/* ▓▓ 3.5. CONVERSATION STARTERS ▓▓ */}
+          <ConversationStarters
+            visible={messages.filter(m => m.role === "user").length === 0}
+            onSelect={(text) => handleSend(text)}
+            isReturning={!!localStorage.getItem("unfiltr_chat_history")}
+          />
 
-            {/* Quote reply bar */}
-            {quoteReply && (
-              <div style={{ flexShrink: 0, padding: "0 12px" }}>
-                <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
-              </div>
-            )}
-
-            {/* ▓▓ 4. TEXT INPUT ▓▓ */}
-            <div style={{
-              background: "linear-gradient(to top, rgba(6,2,15,0.88) 0%, rgba(6,2,15,0.55) 55%, transparent 100%)",
-              paddingBottom: "env(safe-area-inset-bottom, 16px)",
-            }}>
-              <ChatInputBar
-                input={input}
-                setInput={setInput}
-                loading={loading}
-                isListening={isListening}
-                isPremium={isPremium}
-                pendingImage={pendingImage}
-                setPendingImage={setPendingImage}
-                companionDisplayName={companionDisplayName}
-                handleSend={handleSend}
-                startListening={startListening}
-                stopListening={stopListening}
-                handlePhotoClick={handlePhotoClick}
-              />
+          {/* Quote reply bar */}
+          {quoteReply && (
+            <div style={{ flexShrink: 0, padding: "0 12px" }}>
+              <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
             </div>
-          </div>
+          )}
+
+          {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
+          <ChatInputBar
+            input={input}
+            setInput={setInput}
+            loading={loading}
+            isListening={isListening}
+            isPremium={isPremium}
+            pendingImage={pendingImage}
+            setPendingImage={setPendingImage}
+            companionDisplayName={companionDisplayName}
+            handleSend={handleSend}
+            startListening={startListening}
+            stopListening={stopListening}
+            handlePhotoClick={handlePhotoClick}
+          />
         </div>
       </div>
 
@@ -1266,6 +1156,3 @@ export default function ChatPage() {
     </>
   );
 }
-
-
-
