@@ -26,7 +26,7 @@ const PERSONALITY_STYLES = [
   { id: "nurturing",emoji: "🌱", label: "Nurturing" },
 ];
 
-const TABS = ["Companion", "Background", "Voice", "Personality"];
+const TABS = ["Companion", "Background", "Voice", "Personality", "Mode"];
 
 // ── Chip button ──────────────────────────────────────────────────────────────
 function Chip({ active, onClick, children }) {
@@ -45,9 +45,10 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion" }) {
+export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion", relationshipMode: initRelMode = "friend", onRelationshipChange }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("Companion");
+  const [relMode, setRelMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || initRelMode || "friend");
 
   // ── Companion ──
   const [savingCompanion, setSavingCompanion] = useState(false);
@@ -282,6 +283,42 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           color: "white", fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
         }}>{saving ? "Saving..." : "Save Personality"}</button>
       </div>
+
+    Mode: (
+      <div>
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Relationship Dynamic</p>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 16 }}>How your companion relates to you</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { id: "friend",   emoji: "👋", label: "Friend",  desc: "Warm, casual, real with you" },
+            { id: "coach",    emoji: "🎯", label: "Coach",   desc: "Motivating, direct, goal-focused" },
+            { id: "romantic", emoji: "💜", label: "Romantic", desc: "Caring, affectionate, devoted" },
+          ].map(m => {
+            const sel = relMode === m.id;
+            return (
+              <button key={m.id} onClick={() => {
+                setRelMode(m.id);
+                localStorage.setItem("unfiltr_relationship_mode", m.id);
+                if (onRelationshipChange) onRelationshipChange(m.id);
+              }} style={{
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px", borderRadius: 14, border: "none", cursor: "pointer",
+                background: sel ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.05)",
+                outline: sel ? "1.5px solid rgba(168,85,247,0.6)" : "1px solid rgba(255,255,255,0.07)",
+                textAlign: "left",
+              }}>
+                <span style={{ fontSize: 24 }}>{m.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: sel ? "#c084fc" : "white", fontWeight: 700, fontSize: 15 }}>{m.label}</div>
+                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 2 }}>{m.desc}</div>
+                </div>
+                {sel && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#a855f7", flexShrink: 0 }} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ),
     ),
   };
 
