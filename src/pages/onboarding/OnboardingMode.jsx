@@ -50,7 +50,7 @@ export default function OnboardingMode() {
   return (
     <OnboardingLayout
       totalSteps={7} step={5}
-      onBack={() => navigate("/onboarding/quiz")}
+      onBack={() => navigate("/onboarding/nickname")}
       canAdvance={true}
       onNext={handleNext}>
 
