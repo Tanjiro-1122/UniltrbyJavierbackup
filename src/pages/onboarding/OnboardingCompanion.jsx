@@ -57,7 +57,16 @@ export default function OnboardingCompanion() {
   const handleSelect = () => {
     const c = VISIBLE[idx];
     updateOnboardingStore({ selectedCompanion: c.id });
-    navigate("/onboarding/nickname");
+    // If coming from quiz "choose myself", go to mode selection
+    // otherwise normal onboarding path continues to nickname
+    const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
+    if (fromQuiz === null) {
+      // Normal path: they haven't taken quiz, still go to nickname
+      navigate("/onboarding/nickname");
+    } else {
+      // Came from quiz's "choose myself" — skip nickname, go to mode
+      navigate("/onboarding/mode");
+    }
   };
 
   const onTouchStart = (e) => { startX.current = e.touches[0].clientX; };
@@ -84,7 +93,10 @@ export default function OnboardingCompanion() {
 
   return (
     <OnboardingLayout
-      totalSteps={6} step={3} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
+      totalSteps={7} step={4} onBack={() => {
+              const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
+              navigate(fromQuiz !== null ? "/onboarding/quiz" : "/onboarding/name");
+            }} canAdvance={false}>
       {/* Title */}
       <div style={{ flexShrink: 0, padding: "0 24px 8px", textAlign: "center" }}>
         <h2 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: "0 0 4px", textShadow: "0 0 20px rgba(168,85,247,0.5)" }}>
