@@ -1012,17 +1012,27 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter */}
-            {!isPremium ? (
-              <button onClick={() => navigate('/Pricing')}
-                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
-              </button>
-            ) : (
-              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today
-              </div>
-            )}
+            {/* Msg warning — only shows when ≤10 left; hidden for unlimited tiers */}
+            {(() => {
+              const isUnlimited = isAnnual ||
+                localStorage.getItem("unfiltr_family_unlock") === "true" ||
+                localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+                FREE_LIMIT >= 99000;
+              if (isUnlimited) return null;
+              if (remaining <= 0) return (
+                <button onClick={() => navigate('/Pricing')}
+                  style={{ fontSize: 10, color: "#fca5a5", background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                  🚫 {hitMonthly ? "Monthly limit reached" : "Daily limit reached"} · Upgrade
+                </button>
+              );
+              if (remaining <= 10) return (
+                <button onClick={() => navigate('/Pricing')}
+                  style={{ fontSize: 10, color: "#fcd34d", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                  ⚠️ {remaining} message{remaining !== 1 ? "s" : ""} left today
+                </button>
+              );
+              return null;
+            })()}
 
             {/* Streak milestone celebration modal */}
             <StreakMilestoneModal
@@ -1252,4 +1262,5 @@ export default function ChatPage() {
     </>
   );
 }
+
 
