@@ -110,9 +110,14 @@ export default function OnboardingQuiz() {
       setSelectedIdx(null);
       setScores(newScores);
       if (step >= QUESTIONS.length - 1) {
-        const winnerId = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const sorted = Object.entries(newScores).sort((a, b) => b[1] - a[1]);
+        const winnerId = sorted[0]?.[0];
+        const top3 = sorted.slice(0, 3).map(([id, pts]) => ({
+          companion: COMPANIONS.find(c => c.id === id),
+          pts,
+        })).filter(x => x.companion);
         const match = COMPANIONS.find(c => c.id === winnerId) || COMPANIONS[0];
-        setResult(match);
+        setResult({ match, top3, maxPts: sorted[0]?.[1] || 1 });
         setPhase("calculating");
       } else {
         setStep(step + 1);
@@ -121,9 +126,11 @@ export default function OnboardingQuiz() {
   };
 
   const handleConfirmMatch = () => {
-    updateOnboardingStore({ selectedCompanion: result.id });
-    localStorage.setItem("unfiltr_quiz_companion_id", result.id);
-    const p = COMPANION_PERSONALITY[result.id] || COMPANION_PERSONALITY.luna;
+    const m = result?.match;
+    if (!m) return;
+    updateOnboardingStore({ selectedCompanion: m.id });
+    localStorage.setItem("unfiltr_quiz_companion_id", m.id);
+    const p = COMPANION_PERSONALITY[m.id] || COMPANION_PERSONALITY.luna;
     localStorage.setItem("unfiltr_personality_vibe",    p.vibe);
     localStorage.setItem("unfiltr_personality_style",   p.style);
     localStorage.setItem("unfiltr_personality_humor",   p.humor);
@@ -256,74 +263,102 @@ export default function OnboardingQuiz() {
           )}
 
           {/* ── RESULT ── */}
-          {phase === "result" && result && (
-            <motion.div key="result"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 14 }}>
+          {phase === "result" && result && (() => {
+            const { match, top3, maxPts } = result;
+            const MEDALS = ["🥇", "🥈", "🥉"];
+            const BAR_COLORS = [
+              "linear-gradient(90deg,#7c3aed,#db2777)",
+              "linear-gradient(90deg,#6d28d9,#9333ea)",
+              "linear-gradient(90deg,#4c1d95,#7c3aed)",
+            ];
+            return (
+              <motion.div key="result"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
 
-              <motion.p
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.14em", margin: 0 }}>
-                the universe has spoken 🔮
-              </motion.p>
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                  style={{ textAlign: "center" }}>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.14em", margin: "0 0 2px" }}>
+                    Survey says… 🎰
+                  </p>
+                  <h2 style={{ color: "white", fontWeight: 900, fontSize: 22, margin: 0 }}>
+                    Your top matches
+                  </h2>
+                </motion.div>
 
-              {/* Avatar with glow burst */}
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 180, damping: 14 }}
-                style={{ position: "relative" }}>
-                <div style={{
-                  position: "absolute", inset: -16,
-                  background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
-                  borderRadius: "50%", filter: "blur(8px)",
-                }} />
-                <div style={{
-                  width: 140, height: 140, borderRadius: 28, overflow: "hidden",
-                  border: "3px solid #a855f7", boxShadow: "0 0 48px rgba(168,85,247,0.5)",
-                  position: "relative",
-                }}>
-                  <img src={result.avatar} alt={result.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+                {/* Scoreboard */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {top3.map(({ companion: c, pts }, i) => (
+                    <motion.div key={c.id}
+                      initial={{ opacity: 0, x: -32 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 + i * 0.15, type: "spring", stiffness: 220, damping: 22 }}
+                      style={{
+                        padding: "12px 14px", borderRadius: 18,
+                        background: i === 0 ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.04)",
+                        border: `1.5px solid ${i === 0 ? "rgba(168,85,247,0.35)" : "rgba(255,255,255,0.07)"}`,
+                        boxShadow: i === 0 ? "0 4px 24px rgba(168,85,247,0.15)" : "none",
+                      }}>
+
+                      {/* Row: medal + avatar + name + score */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>{MEDALS[i]}</span>
+                        <img src={c.avatar} alt={c.name} style={{
+                          width: 44, height: 44, borderRadius: 12, objectFit: "cover", objectPosition: "top", flexShrink: 0,
+                          border: "1.5px solid rgba(168,85,247,0.3)",
+                        }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: "white", fontWeight: 800, fontSize: 15, margin: "0 0 1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {c.emoji} {c.name}
+                          </p>
+                          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {c.tagline}
+                          </p>
+                        </div>
+                        <span style={{ color: i === 0 ? "#c084fc" : "rgba(255,255,255,0.3)", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                          {pts}pt{pts !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+
+                      {/* Animated bar */}
+                      <div style={{ height: 6, borderRadius: 8, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: `${Math.round((pts / maxPts) * 100)}%` }}
+                          transition={{ delay: 0.4 + i * 0.15, duration: 0.7, ease: "easeOut" }}
+                          style={{ height: "100%", borderRadius: 8, background: BAR_COLORS[i] }} />
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <h2 style={{ color: "white", fontWeight: 900, fontSize: 32, margin: "0 0 4px", letterSpacing: "-0.5px" }}>
-                  {result.emoji} {result.name}
-                </h2>
-                <p style={{ color: "#c084fc", fontSize: 14, fontWeight: 700, margin: "0 0 10px", letterSpacing: "0.03em" }}>
-                  {result.tagline}
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.55, margin: 0, maxWidth: 260 }}>
-                  You two are going to get along just fine. 💜
-                </p>
-              </motion.div>
+                {/* CTA */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingTop: 8 }}>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={handleConfirmMatch}
+                    style={{
+                      width: "100%", padding: "17px", borderRadius: 18, border: "none",
+                      background: "linear-gradient(135deg, #7c3aed, #db2777)",
+                      color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
+                      boxShadow: "0 8px 32px rgba(168,85,247,0.3)",
+                    }}>
+                    Let's go, {match.name}! 🙌
+                  </motion.button>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={handlePickOwn}
+                    style={{
+                      width: "100%", padding: "14px", borderRadius: 18,
+                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                      color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 13, cursor: "pointer",
+                    }}>
+                    Not feeling it — let me browse →
+                  </motion.button>
+                </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-                style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handleConfirmMatch}
-                  style={{
-                    width: "100%", padding: "17px", borderRadius: 18, border: "none",
-                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
-                    boxShadow: "0 8px 32px rgba(168,85,247,0.3)",
-                  }}>
-                  Let's go, {result.name}! 🙌
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handlePickOwn}
-                  style={{
-                    width: "100%", padding: "14px", borderRadius: 18,
-                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 13, cursor: "pointer",
-                  }}>
-                  Not feeling it — let me browse →
-                </motion.button>
               </motion.div>
-            </motion.div>
-          )}
+            );
+          })()}
 
         </AnimatePresence>
       </div>
