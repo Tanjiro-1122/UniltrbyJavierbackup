@@ -1119,7 +1119,7 @@ export default function ChatPage() {
           </div>
 
           {/* ▓▓ 3.5 + 4. BOTTOM AREA: starters + input ▓▓ */}
-          <div style={{ flexShrink: 0, background: "linear-gradient(to top, rgba(6,2,15,0.72) 0%, rgba(6,2,15,0.4) 55%, transparent 100%)" }}>
+          <div style={{ flexShrink: 0, background: "transparent" }}>
             <ConversationStarters
               visible={messages.filter(m => m.role === "user").length === 0}
               onSelect={(text) => handleSend(text)}
@@ -1134,20 +1134,25 @@ export default function ChatPage() {
             )}
 
             {/* ▓▓ 4. TEXT INPUT ▓▓ */}
-            <ChatInputBar
-              input={input}
-              setInput={setInput}
-              loading={loading}
-              isListening={isListening}
-              isPremium={isPremium}
-              pendingImage={pendingImage}
-              setPendingImage={setPendingImage}
-              companionDisplayName={companionDisplayName}
-              handleSend={handleSend}
-              startListening={startListening}
-              stopListening={stopListening}
-              handlePhotoClick={handlePhotoClick}
-            />
+            <div style={{
+              background: "linear-gradient(to top, rgba(6,2,15,0.75) 0%, rgba(6,2,15,0.4) 60%, transparent 100%)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}>
+              <ChatInputBar
+                input={input}
+                setInput={setInput}
+                loading={loading}
+                isListening={isListening}
+                isPremium={isPremium}
+                pendingImage={pendingImage}
+                setPendingImage={setPendingImage}
+                companionDisplayName={companionDisplayName}
+                handleSend={handleSend}
+                startListening={startListening}
+                stopListening={stopListening}
+                handlePhotoClick={handlePhotoClick}
+              />
+            </div>
           </div>
         </div>
       </div>
