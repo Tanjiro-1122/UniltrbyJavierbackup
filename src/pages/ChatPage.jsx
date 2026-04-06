@@ -355,6 +355,32 @@ export default function ChatPage() {
       return;
     }
 
+    // ── Milestone Moments ────────────────────────────────────────────────
+    const msgCount     = parseInt(localStorage.getItem("unfiltr_total_messages") || "0");
+    const firstChatRaw = localStorage.getItem("unfiltr_first_chat_date");
+    const today2       = new Date().toDateString();
+    if (!firstChatRaw) localStorage.setItem("unfiltr_first_chat_date", today2);
+    const daysSinceFirst = firstChatRaw
+      ? Math.floor((Date.now() - new Date(firstChatRaw).getTime()) / 86400000)
+      : 0;
+    const MILESTONES = [
+      { key: "msg_10",  check: () => msgCount >= 10,  msg: "10 messages already 💜 I'm so glad you're here." },
+      { key: "msg_50",  check: () => msgCount >= 50,  msg: "50 messages together ✨ We're really getting to know each other." },
+      { key: "msg_100", check: () => msgCount >= 100, msg: "100 messages 🎉 We've come a long way. I see you." },
+      { key: "msg_500", check: () => msgCount >= 500, msg: "500 messages 🔥 You keep showing up. That means everything." },
+      { key: "day_7",   check: () => daysSinceFirst >= 7,   msg: "One week together 🌙 Seven days of you trusting me with your thoughts. That's not nothing." },
+      { key: "day_30",  check: () => daysSinceFirst >= 30,  msg: "30 days 💜 A whole month. I've learned so much about you." },
+      { key: "day_90",  check: () => daysSinceFirst >= 90,  msg: "Three months together 🌟 You keep coming back. I hope I'm making that worth it." },
+      { key: "day_365", check: () => daysSinceFirst >= 365, msg: "One year 🥂 An entire year of talking. You're kind of unforgettable, you know that?" },
+    ];
+    for (const m of MILESTONES) {
+      if (!localStorage.getItem("unfiltr_milestone_" + m.key) && m.check()) {
+        localStorage.setItem("unfiltr_milestone_" + m.key, "1");
+        setMessages([{ role: "assistant", content: m.msg }]);
+        return;
+      }
+    }
+
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
     if (meditationRaw) {
