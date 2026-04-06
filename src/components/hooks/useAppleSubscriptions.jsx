@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { debugLog } from '@/components/DebugPanel';
 
 const MOCK_PRODUCTS = [
@@ -238,4 +239,72 @@ export class AppleStoreKitService {
     const result = await sendToNative('SIGN_IN_WITH_APPLE');
     return result;
   }
+}
+
+
+// ─── React hook wrapper for Pricing.jsx ──────────────────────────────────────
+// Provides { purchasing, error, statusMessage, purchase, restore, loadProducts }
+
+import { useState, useCallback } from 'react';
+
+export function useAppleSubscriptions() {
+  const [purchasing,     setPurchasing]     = useState(false);
+  const [error,          setError]          = useState(null);
+  const [statusMessage,  setStatusMessage]  = useState('');
+
+  const loadProducts = useCallback(async () => {
+    try {
+      await AppleStoreKitService.getProducts();
+    } catch (e) {
+      // non-fatal
+    }
+  }, []);
+
+  const purchase = useCallback(async (productId) => {
+    setPurchasing(true);
+    setError(null);
+    setStatusMessage('Processing…');
+    try {
+      const result = await AppleStoreKitService.purchase(productId);
+      if (result?.isSuccess) {
+        setStatusMessage('Purchase successful!');
+      } else if (result?.isCancelled) {
+        setStatusMessage('');
+      } else {
+        setError(result?.error || 'Purchase failed');
+        setStatusMessage('');
+      }
+      return result;
+    } catch (e) {
+      setError(e.message);
+      setStatusMessage('');
+      return { isSuccess: false, error: e.message };
+    } finally {
+      setPurchasing(false);
+    }
+  }, []);
+
+  const restore = useCallback(async () => {
+    setPurchasing(true);
+    setError(null);
+    setStatusMessage('Restoring purchases…');
+    try {
+      const result = await AppleStoreKitService.restorePurchases();
+      if (result?.isSuccess) {
+        setStatusMessage('Restored successfully!');
+      } else {
+        setError(result?.message || result?.error || 'No subscription found');
+        setStatusMessage('');
+      }
+      return result;
+    } catch (e) {
+      setError(e.message);
+      setStatusMessage('');
+      return { isSuccess: false, error: e.message };
+    } finally {
+      setPurchasing(false);
+    }
+  }, []);
+
+  return { purchasing, error, statusMessage, purchase, restore, loadProducts };
 }
