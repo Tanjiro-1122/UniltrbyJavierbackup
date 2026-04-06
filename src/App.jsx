@@ -40,6 +40,7 @@ import HomeScreen             from "./pages/HomeScreen";
 import ReturningScreen        from "./pages/ReturningScreen";
 import ChatEnter              from "./pages/ChatEnter";
 import MoodPicker             from "./pages/MoodPicker";
+import MoodInsights           from "./pages/MoodInsights";
 import JournalEnter           from "./pages/JournalEnter";
 import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
@@ -216,6 +217,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Main app */}
         <Route path="/"                      element={<HomePage />} />
         <Route path="/chat"                  element={<ChatPage />} />
+        <Route path="/mood-insights" element={<MoodInsights />} />
         <Route path="/chat-history"          element={<ChatHistory />} />
         <Route path="/vibe"                  element={<VibePage />} />
         <Route path="/settings"              element={<Settings />} />
