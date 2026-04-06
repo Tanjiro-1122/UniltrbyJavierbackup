@@ -32,10 +32,12 @@ export default function OnboardingName() {
       if (store.pendingProfileId) {
         await base44.entities.UserProfile.update(store.pendingProfileId, { display_name: displayName });
       } else {
+        const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
         const profile = await base44.entities.UserProfile.create({
           display_name: displayName,
           companion_id: "pending",
           background_id: "pending",
+          ...(appleId ? { apple_user_id: appleId } : {}),
         });
         updateOnboardingStore({ pendingProfileId: profile.id });
         localStorage.setItem("userProfileId", profile.id);
