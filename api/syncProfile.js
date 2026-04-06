@@ -62,11 +62,14 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         data: {
-          profileId:  profile.id,
-          is_premium: isPremium || profile.is_premium || false,
-          annual_plan: profile.annual_plan || false,
-          pro_plan:    profile.pro_plan || false,
-          display_name: profile.display_name || fullName || null,
+          profileId:           profile.id,
+          is_premium:          isPremium || profile.is_premium || false,
+          annual_plan:         profile.annual_plan || false,
+          pro_plan:            profile.pro_plan || false,
+          display_name:        profile.display_name || fullName || null,
+          onboarding_complete: profile.onboarding_complete || false,
+          companion_id:        profile.companion_id || null,
+          preferred_mood:      profile.preferred_mood || null,
         }
       });
     }
