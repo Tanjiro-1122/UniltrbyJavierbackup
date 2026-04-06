@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, TrendingUp, SlidersHorizontal, Lock
 } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
@@ -841,6 +841,7 @@ export default function Settings() {
           <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
+          <Row icon={<TrendingUp size={15} color="white" />} iconBg="#0e3d2e" label="Mood Insights" value="Your patterns" onPress={() => navigate("/mood-insights")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
