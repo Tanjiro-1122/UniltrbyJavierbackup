@@ -58,6 +58,7 @@ export default function ChatPage() {
   const [companion, setCompanion]       = useState(null);
   const [environment, setEnvironment]   = useState(null);
   const [vibe, setVibe]                 = useState("chill");
+  const [relationshipMode, setRelationshipMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || "friend");
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
   const [loading, setLoading]           = useState(false);
@@ -657,7 +658,13 @@ export default function ChatPage() {
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
       const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
-      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
+      const RELATIONSHIP_SUFFIXES = {
+        friend:   "You are their close friend — warm, casual, supportive. Feel free to joke around and be real with them.",
+        coach:    "You are their personal life coach — motivating, direct, goal-oriented. Push them gently but firmly toward their best self.",
+        romantic: "You are their devoted romantic partner — deeply caring, affectionate, attentive. Speak with warmth and intimacy.",
+      };
+      const relSuffix = RELATIONSHIP_SUFFIXES[relationshipMode] || RELATIONSHIP_SUFFIXES.friend;
+      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nRelationship dynamic: ${relSuffix}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
 
@@ -878,6 +885,8 @@ export default function ChatPage() {
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            relationshipMode={relationshipMode}
+            setRelationshipMode={(mode) => { setRelationshipMode(mode); localStorage.setItem("unfiltr_relationship_mode", mode); }}
             onNavigateToSettings={() => {
               // Flag so ChatPage knows to restore messages on return
               sessionStorage.setItem("unfiltr_returning_from_settings", "1");
