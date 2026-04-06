@@ -134,7 +134,7 @@ export default function ChatHeader({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingTop: "max(14px, env(safe-area-inset-top, 14px))",
+        paddingTop: "10px",
         paddingBottom: "8px",
         paddingLeft: "12px",
         paddingRight: "12px",
