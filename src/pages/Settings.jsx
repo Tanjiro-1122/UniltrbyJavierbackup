@@ -84,6 +84,114 @@ function NicknameField() {
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
+// ─── Memory Vault Screen ──────────────────────────────────────────────────────
+function MemoryVaultScreen({ userProfile, isPremium, onUpgrade }) {
+  const facts       = userProfile?.user_facts  || {};
+  const summary     = userProfile?.memory_summary || "";
+  const sessionMem  = userProfile?.session_memory || [];
+  const hasMemory   = Object.keys(facts).length > 0 || summary || sessionMem.length > 0;
+
+  const CATEGORIES = [
+    { key: "about",    emoji: "👤", label: "About You",       fields: ["name","age","location","job","pronouns"] },
+    { key: "life",     emoji: "🌱", label: "Your Life",       fields: ["family","relationships","pets","home"] },
+    { key: "goals",    emoji: "🎯", label: "Goals & Dreams",  fields: ["goals","dreams","fears","aspirations"] },
+    { key: "patterns", emoji: "💭", label: "Your Patterns",   fields: ["mood_patterns","triggers","coping","hobbies","interests"] },
+    { key: "bond",     emoji: "💜", label: "Our Bond",        fields: ["first_chat","milestones","inside_jokes","favorite_topics"] },
+  ];
+
+  if (!isPremium) {
+    return (
+      <div style={{ padding: "0 4px" }}>
+        {/* Teaser — blurred cards */}
+        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+          Your companion has been quietly paying attention. Upgrade to see everything they know about you. 💜
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, filter: "blur(4px)", pointerEvents: "none", userSelect: "none", marginBottom: 24 }}>
+          {CATEGORIES.slice(0,3).map(cat => (
+            <div key={cat.key} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 18 }}>{cat.emoji}</span>
+                <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>{cat.label}</span>
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Your name, where you're from, what you do...</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={onUpgrade} style={{
+          width: "100%", padding: "14px", borderRadius: 14, border: "none", cursor: "pointer",
+          background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white",
+          fontSize: 15, fontWeight: 700,
+        }}>
+          🔓 Unlock Memory Vault
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "0 4px" }}>
+      {!hasMemory ? (
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>💜</div>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.6 }}>
+            Your companion is still learning about you. Keep chatting and they'll start remembering the things that matter.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {summary && (
+            <div style={{ background: "rgba(168,85,247,0.1)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(168,85,247,0.2)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 18 }}>✨</span>
+                <span style={{ color: "#c084fc", fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em" }}>What I Remember</span>
+              </div>
+              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>{summary}</p>
+            </div>
+          )}
+          {CATEGORIES.map(cat => {
+            const items = cat.fields
+              .filter(f => facts[f])
+              .map(f => ({ label: f.replace(/_/g," "), value: facts[f] }));
+            if (items.length === 0) return null;
+            return (
+              <div key={cat.key} style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18 }}>{cat.emoji}</span>
+                  <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>{cat.label}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {items.map(item => (
+                    <div key={item.label} style={{ display: "flex", gap: 8 }}>
+                      <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textTransform: "capitalize", minWidth: 90 }}>{item.label}</span>
+                      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, flex: 1 }}>{String(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {sessionMem.length > 0 && (
+            <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <span style={{ fontSize: 18 }}>📖</span>
+                <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>Recent Sessions</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {sessionMem.slice(-5).reverse().map((s, i) => (
+                  <div key={i} style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5, paddingBottom: 8, borderBottom: i < Math.min(sessionMem.length,5)-1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                    {typeof s === "string" ? s : s?.summary || JSON.stringify(s)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function Settings() {
   const navigate = useNavigate();
   const [screen, setScreen] = useState(null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
@@ -592,6 +700,12 @@ export default function Settings() {
     ),
 
 
+    memory: (
+      <SubScreen title="My Memory" onBack={() => setScreen(null)}>
+        <MemoryVaultScreen userProfile={userProfile} isPremium={isPremium} onUpgrade={() => setScreen("subscription")} />
+      </SubScreen>
+    ),
+
     personality: (
       <SubScreen title="Personality" onBack={() => setScreen(null)}>
         {/* Vibe */}
@@ -842,6 +956,7 @@ export default function Settings() {
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
           <Row icon={<TrendingUp size={15} color="white" />} iconBg="#0e3d2e" label="Mood Insights" value="Your patterns" onPress={() => navigate("/mood-insights")} />
+          <Row icon={<span style={{fontSize:13}}>🧠</span>} iconBg="#2e1a4d" label="Memory Vault" value={isPremium ? "What I know about you" : "🔒 Premium"} onPress={() => setScreen("memory")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
