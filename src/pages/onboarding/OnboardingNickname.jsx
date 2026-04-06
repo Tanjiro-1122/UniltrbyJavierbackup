@@ -10,7 +10,7 @@ export default function OnboardingNickname() {
   const [nickname, setNickname] = useState(store.companionNickname);
 
   if (!store.selectedCompanion) {
-    navigate("/onboarding/companion", { replace: true });
+    navigate("/onboarding/quiz", { replace: true });
     return null;
   }
 
@@ -24,7 +24,7 @@ export default function OnboardingNickname() {
   return (
     <OnboardingLayout
       totalSteps={7}
-      step={5}
+      step={4}
       onBack={() => navigate("/onboarding/quiz")}
       onNext={handleNext}
       canAdvance={true}
