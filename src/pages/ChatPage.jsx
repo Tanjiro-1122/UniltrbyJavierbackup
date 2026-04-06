@@ -916,13 +916,13 @@ export default function ChatPage() {
         display: "flex",
         flexDirection: "column",
         zIndex: 1,
-        background: "#06020f",
-        backgroundColor: "#06020f",
+        background: "transparent",
+        backgroundColor: "transparent",
       }}>
         {/* ── Background image (3D parallax) ── */}
         <ParallaxBackground imageUrl={environment.bg} />
         <BackgroundEffect environmentId={environment.id} />
-        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.6) 75%, rgba(6,2,15,0.9) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.1) 40%, rgba(6,2,15,0.35) 75%, rgba(6,2,15,0.65) 100%)" }} />
 
         <style>{`
           @keyframes particleFly { 0%{opacity:1;transform:translate(0,0) scale(1)} 100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3)} }
@@ -1119,7 +1119,7 @@ export default function ChatPage() {
           </div>
 
           {/* ▓▓ 3.5 + 4. BOTTOM AREA: starters + input ▓▓ */}
-          <div style={{ flexShrink: 0, background: "linear-gradient(to top, rgba(6,2,15,0.95) 0%, rgba(6,2,15,0.7) 60%, transparent 100%)" }}>
+          <div style={{ flexShrink: 0, background: "linear-gradient(to top, rgba(6,2,15,0.72) 0%, rgba(6,2,15,0.4) 55%, transparent 100%)" }}>
             <ConversationStarters
               visible={messages.filter(m => m.role === "user").length === 0}
               onSelect={(text) => handleSend(text)}
@@ -1262,5 +1262,6 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
