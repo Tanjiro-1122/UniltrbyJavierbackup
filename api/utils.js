@@ -1,4 +1,5 @@
 // api/utils.js
+// cache-bust: 2026-04-06T22:52:16.569578
 // Merged: generateReferralCode + ratingPrompt + generateMoodImage + sendDailyNotifs + savePushToken
 
 import OpenAI from "openai";
