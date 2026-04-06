@@ -310,7 +310,20 @@ export default function JournalEntry() {
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.04) 31px, rgba(255,255,255,0.04) 32px)", backgroundPositionY: "48px" }} />
             <textarea value={entry} onChange={(e) => setEntry(e.target.value)}
-              placeholder="What's on your mind today..."
+              placeholder={(() => {
+                const m = currentMood || "neutral";
+                const prompts = {
+                  happy:      "You're in a good place today — what's making you smile? ✨",
+                  sad:        "It's okay to let it out. What's weighing on you today? 💜",
+                  anxious:    "Take a breath. What's your mind racing about right now?",
+                  frustrated: "What happened? Get it all out — this is your space 🔥",
+                  motivated:  "You're fired up — what are you going after today? 🚀",
+                  calm:       "Peaceful day. What do you want to remember about this moment? 🌿",
+                  loved:      "You're feeling the love — who or what is behind that today? 💕",
+                  neutral:    "What's on your mind today...",
+                };
+                return prompts[m] || prompts.neutral;
+              })()}
               className="w-full h-full resize-none bg-transparent text-white/90 placeholder-white/20 text-base px-5 pt-4 pb-5 focus:outline-none overflow-y-auto"
               style={{ fontFamily: "'Georgia', 'Times New Roman', serif", lineHeight: "32px", position: "relative", zIndex: 1 }}
               autoFocus />
