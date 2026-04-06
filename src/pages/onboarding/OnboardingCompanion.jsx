@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -36,14 +36,12 @@ export default function OnboardingCompanion() {
             resolve();
           };
           img.onerror = () => {
-            if (!cancelled) setImgLoaded(prev => ({ ...prev, [c.id]: false }));
+            if (!cancelled) setImgLoaded(prev => ({ ...prev, [c.id]: true }));
             resolve();
           };
           img.src = c.avatar;
-          // Safety timeout — don't let one slow image block the rest
           setTimeout(resolve, 3000);
         });
-        // Small breathing room between loads to avoid memory spike
         if (i < VISIBLE.length - 1) await new Promise(r => setTimeout(r, 80));
       }
     };
@@ -75,9 +73,10 @@ export default function OnboardingCompanion() {
   const getStyle = (i) => {
     const diff = i - idx;
     if (Math.abs(diff) > 2) return null;
-    const scale = diff === 0 ? 1 : diff === -1 || diff === 1 ? 0.72 : 0.52;
+    const scale = diff === 0 ? 1 : Math.abs(diff) === 1 ? 0.72 : 0.52;
     const opacity = diff === 0 ? 1 : Math.abs(diff) === 1 ? 0.55 : 0.25;
     const x = diff * 160;
+    // FIX: zIndex must be set as inline style, NOT inside animate — framer can't interpolate it
     const zIndex = diff === 0 ? 10 : Math.abs(diff) === 1 ? 5 : 2;
     const brightness = diff === 0 ? 1 : 0.35;
     return { scale, opacity, x, zIndex, brightness };
@@ -121,16 +120,19 @@ export default function OnboardingCompanion() {
           return (
             <motion.div
               key={c.id}
-              animate={{ x: s.x, scale: s.scale, opacity: s.opacity, zIndex: s.zIndex }}
-              transition={{ type: "spring", stiffness: 280, damping: 28 }}
-              onClick={() => {
-                if (i !== idx) go(i - idx > 0 ? 1 : -1);
-              }}
+              // FIX: zIndex pulled OUT of animate and set as static inline style
+              // so it never mid-animates to a value that covers the whole screen
               style={{
                 position: "absolute",
                 display: "flex", flexDirection: "column", alignItems: "center",
                 cursor: i !== idx ? "pointer" : "default",
                 filter: `brightness(${s.brightness})`,
+                zIndex: s.zIndex,  // ← static, not animated
+              }}
+              animate={{ x: s.x, scale: s.scale, opacity: s.opacity }}
+              transition={{ type: "spring", stiffness: 280, damping: 28 }}
+              onClick={() => {
+                if (i !== idx) go(i - idx > 0 ? 1 : -1);
               }}
             >
               {/* Emoji placeholder — visible until image loads */}
@@ -155,6 +157,8 @@ export default function OnboardingCompanion() {
                   filter: i === idx
                     ? "drop-shadow(0 16px 40px rgba(168,85,247,0.7)) drop-shadow(0 0 80px rgba(168,85,247,0.3))"
                     : "none",
+                  // FIX: prevent image from being a click-blocker when off-screen
+                  pointerEvents: i === idx ? "auto" : "none",
                 }}
                 onLoad={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
                 onError={() => setImgLoaded(prev => ({ ...prev, [c.id]: true }))}
