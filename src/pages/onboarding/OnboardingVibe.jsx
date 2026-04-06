@@ -122,6 +122,7 @@ export default function OnboardingVibe() {
             mood_mode: "neutral",
             is_active: true,
           });
+          const _appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
           const profileData = {
             display_name: store.displayName || "",
             is_premium: !!(store.isTesterAccount),
@@ -131,6 +132,7 @@ export default function OnboardingVibe() {
             session_memory: [],
             message_count: 0,
             last_active: new Date().toISOString(),
+            ...(_appleId ? { apple_user_id: _appleId } : {}),
           };
           let userProfile;
           if (store.pendingProfileId) {
