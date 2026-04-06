@@ -56,7 +56,25 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
         debugLog("[WEB] 💎 Premium from RC on sign-in");
       }
 
-      // CRITICAL: Also sync from DB — restores premium after app reinstall
+      // STEP 1: Push name/email to DB via syncProfile so it persists across reinstalls
+      try {
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            appleUserId,
+            email:    email    || null,
+            fullName: fullName || null,
+            isPremium: payload.isPremium || false,
+            plan: payload.plan || null,
+          }),
+        });
+        debugLog("[WEB] 📝 syncProfile called — name/email written to DB");
+      } catch(syncErr) {
+        debugLog(`[WEB] ⚠️ syncProfile failed (non-fatal): ${syncErr.message}`);
+      }
+
+      // STEP 2: Also sync from DB — restores premium + profile after app reinstall
       // when localStorage is wiped but DB record still exists
       try {
         const API = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
