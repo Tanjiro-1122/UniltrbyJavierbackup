@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
 import { debugLog } from "@/components/DebugPanel";
+import { useStreak } from "@/components/useStreak";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
@@ -96,6 +97,8 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { streak, syncStreak } = useStreak();
+  useEffect(() => { syncStreak(); }, []);
   const isNative = !!window.ReactNativeWebView;
   const navigateRef = React.useRef(navigate);
   const setLoadingRef = React.useRef(setLoading);
@@ -128,6 +131,12 @@ export default function HomeScreen() {
             style={{ color: "white", fontWeight: 900, fontSize: 32, margin: "0 0 6px", letterSpacing: -0.5 }}>
             Unfiltr by Javier
           </motion.h1>
+          {streak > 0 && (
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,146,60,0.15)", border: "1px solid rgba(251,146,60,0.35)", borderRadius: 20, padding: "4px 14px", margin: "8px auto 0", color: "#fb923c", fontWeight: 700, fontSize: 14 }}>
+              🔥 {streak} day{streak !== 1 ? "s" : ""} streak
+            </motion.div>
+          )}
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
             style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, margin: 0 }}>
             Talk, vent, laugh — with a companion that actually gets you.
