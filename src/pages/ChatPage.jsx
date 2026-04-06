@@ -721,6 +721,10 @@ export default function ChatPage() {
       const replyText = res.data?.reply || "...";
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
+      // ── Increment message counter ─────────────────────────────────────
+      const prevCount = parseInt(localStorage.getItem("unfiltr_total_messages") || "0");
+      localStorage.setItem("unfiltr_total_messages", String(prevCount + 1));
+
       // Crisis detection — check both client-side and server-side
       const lowerText = text.toLowerCase();
       const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw)) || res.data?.crisis;
