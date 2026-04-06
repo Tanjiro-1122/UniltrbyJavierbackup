@@ -41,21 +41,63 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       const email = payload.email;
       const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-      if (!appleUserId) { debugLog('[WEB] ❌ No appleUserId'); setLoading(false); return; }
+      if (!appleUserId) { debugLog('[WEB] ❌ No appleUserId'); setLoadingRef.current(false); return; }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
       if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
       if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+
+      // Always set premium from RC payload first (fastest signal)
       if (payload.isPremium) {
         localStorage.setItem("unfiltr_is_premium", "true");
-        localStorage.setItem("unfiltr_plan", "pro_plan");
-        debugLog("[WEB] 💎 Premium restored from RC on sign-in");
+        localStorage.setItem("unfiltr_plan", payload.plan || "pro_plan");
+        debugLog("[WEB] 💎 Premium from RC on sign-in");
       }
+
+      // CRITICAL: Also sync from DB — restores premium after app reinstall
+      // when localStorage is wiped but DB record still exists
+      try {
+        const API = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
+        const res = await fetch(`${API}/filter`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer 1156284fb9144ad9ab95afc962e848d8" },
+          body: JSON.stringify({ apple_user_id: appleUserId })
+        });
+        if (res.ok) {
+          const profiles = await res.json();
+          const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+          if (profile?.id) {
+            localStorage.setItem("userProfileId", profile.id);
+            debugLog(`[WEB] 📋 Profile synced from DB: ${profile.id}`);
+            // Restore premium + plan from DB if not already set by RC
+            if (profile.is_premium) {
+              localStorage.setItem("unfiltr_is_premium", "true");
+              if (profile.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
+              if (profile.pro_plan) localStorage.setItem("unfiltr_is_pro", "true");
+              debugLog("[WEB] 💎 Premium restored from DB after reinstall");
+            }
+            // Restore companion/settings if localStorage was wiped
+            if (!localStorage.getItem("unfiltr_companion") && profile.companion_id) {
+              try {
+                const { COMPANIONS } = await import("@/components/companionData");
+                const comp = COMPANIONS.find(c => c.id === profile.companion_id);
+                if (comp) localStorage.setItem("unfiltr_companion", JSON.stringify(comp));
+              } catch(e) {}
+            }
+            if (!localStorage.getItem("unfiltr_onboarding_complete") && profile.onboarding_complete) {
+              localStorage.setItem("unfiltr_onboarding_complete", "true");
+            }
+          }
+        }
+      } catch(dbErr) {
+        debugLog(`[WEB] ⚠️ DB sync failed (non-fatal): ${dbErr.message}`);
+      }
+
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      navigate(onboardingDone ? "/hub" : "/onboarding/consent");
+      navigateRef.current(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
       debugLog('[WEB] 🚫 Cancelled — resetting button');
       setLoading(false);
