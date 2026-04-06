@@ -57,9 +57,15 @@ export default function OnboardingVibe() {
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
-  if (!store.selectedCompanion) {
-    navigate("/onboarding/nickname", { replace: true });
+  // Support both normal flow (store.selectedCompanion) and quiz flow (localStorage)
+  const quizCompanionId = localStorage.getItem("unfiltr_quiz_companion_id");
+  if (!store.selectedCompanion && !quizCompanionId) {
+    navigate("/onboarding/quiz", { replace: true });
     return null;
+  }
+  // If coming from quiz, inject companion into store so finish flow works
+  if (!store.selectedCompanion && quizCompanionId) {
+    updateOnboardingStore({ selectedCompanion: quizCompanionId });
   }
 
   const vibe = VIBES[idx];
@@ -212,7 +218,7 @@ export default function OnboardingVibe() {
               What's your vibe?
             </h1>
             <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 500 }}>
-              Step 5 of 6
+              Step 6 of 7
             </span>
           </div>
           <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: 0 }}>
