@@ -858,6 +858,7 @@ export default function ChatPage() {
           <ChatHeader
             voiceEnabled={voiceEnabled}
             setVoiceEnabled={setVoiceEnabled}
+            setCompanion={setCompanion}
             isPremium={isPremium}
             messages={messages}
             companion={companion}
