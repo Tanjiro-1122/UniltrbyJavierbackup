@@ -28,6 +28,17 @@ function getContextWindow(isPremium, isPro, isAnnual) {
   return 10;                                          // Plus — standard
 }
 
+// ── Cost estimate (USD) ─────────────────────────────────────────────────────
+// gpt-3.5-turbo:  $0.50 / 1M input,  $1.50 / 1M output
+// gpt-4o-mini:    $0.15 / 1M input,  $0.60 / 1M output
+function estimateCost(model, promptTokens, completionTokens) {
+  if (model === "gpt-3.5-turbo") {
+    return (promptTokens * 0.0000005) + (completionTokens * 0.0000015);
+  }
+  // gpt-4o-mini
+  return (promptTokens * 0.00000015) + (completionTokens * 0.0000006);
+}
+
 function buildPersonalityParagraph(p = {}) {
   if (!p || !Object.keys(p).length) return "";
 
@@ -80,7 +91,6 @@ export default async function handler(req, res) {
       systemPrompt,
       memorySummary,
       sessionMemory,
-      userFacts  = {},
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
@@ -95,38 +105,13 @@ export default async function handler(req, res) {
 
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
     const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
-    // Structured facts (name, age, occupation, etc.) — add as concise bullet list
-    let factsCtx = "";
-    if ((isPremium || isPro || isAnnual) && userFacts && Object.keys(userFacts).length > 0) {
-      const factLines = [];
-      if (userFacts.name)                factLines.push(`Name: ${userFacts.name}`);
-      if (userFacts.age)                 factLines.push(`Age: ${userFacts.age}`);
-      if (userFacts.location)            factLines.push(`Location: ${userFacts.location}`);
-      if (userFacts.occupation)          factLines.push(`Occupation: ${userFacts.occupation}`);
-      if (userFacts.relationship_status) factLines.push(`Relationship: ${userFacts.relationship_status}`);
-      if (userFacts.important_people?.length) {
-        factLines.push(`Important people: ${userFacts.important_people.map(p => `${p.name} (${p.role})`).join(", ")}`);
-      }
-      if (userFacts.recurring_struggles?.length) {
-        factLines.push(`Struggles: ${userFacts.recurring_struggles.join(", ")}`);
-      }
-      if (userFacts.core_values?.length) factLines.push(`Core values: ${userFacts.core_values.join(", ")}`);
-      if (userFacts.goals?.length)       factLines.push(`Goals: ${userFacts.goals.join(", ")}`);
-      if (userFacts.hobbies?.length)     factLines.push(`Hobbies: ${userFacts.hobbies.join(", ")}`);
-      if (factLines.length > 0) {
-        factsCtx = "\n\nKnown facts about this user:\n" + factLines.map(l => `• ${l}`).join("\n");
-      }
-    }
     const personalityCtx = buildPersonalityParagraph(personality);
 
     // Session memory context (paid tiers only)
     let sessionCtx = "";
     if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
       const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
-      // sessionMemory items are {date, summary} objects — render them properly
-      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s =>
-        typeof s === "object" ? `- [${s.date || "recent"}] ${s.summary || ""}` : `- ${s}`
-      ).join("\n");
+      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
     }
 
     // Trim message history to tier context window
@@ -137,7 +122,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + factsCtx + personalityCtx + sessionCtx +
+          content: system + memCtx + personalityCtx + sessionCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
@@ -149,7 +134,7 @@ export default async function handler(req, res) {
     const raw = response.choices[0]?.message?.content || "Hey, I am here for you 💜";
 
     // Extract mood tag from end of response
-    const moodMatch = raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue)/i);
+    const moodMatch = raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment,fatigue)/i);
     const mood  = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
@@ -157,8 +142,27 @@ export default async function handler(req, res) {
     const lower  = reply.toLowerCase() + " " + (messages[messages.length - 1]?.content || "").toLowerCase();
     const crisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
 
-    // Return tier info so client can log it (optional, for debugging)
-    res.status(200).json({ reply, mood, crisis, _tier: model });
+    // ── Token usage & cost ───────────────────────────────────────────────────
+    const usage = response.usage || {};
+    const promptTokens     = usage.prompt_tokens     || 0;
+    const completionTokens = usage.completion_tokens || 0;
+    const totalTokens      = usage.total_tokens      || 0;
+    const costUsd          = estimateCost(model, promptTokens, completionTokens);
+
+    res.status(200).json({
+      reply,
+      mood,
+      crisis,
+      _tier: model,
+      // Token data — client should fire-and-forget to /api/trackTokens
+      _usage: {
+        prompt_tokens:      promptTokens,
+        completion_tokens:  completionTokens,
+        total_tokens:       totalTokens,
+        cost_usd:           costUsd,
+        model,
+      },
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
