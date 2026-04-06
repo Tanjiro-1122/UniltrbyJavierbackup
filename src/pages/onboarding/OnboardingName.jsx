@@ -74,12 +74,12 @@ export default function OnboardingName() {
       }
     } catch { /* non-blocking */ }
 
-    navigate("/onboarding/companion");
+    navigate("/onboarding/quiz");
   };
 
   return (
     <OnboardingLayout
-      totalSteps={6}
+      totalSteps={7}
       step={2}
       onBack={() => navigate("/onboarding/consent")}
       onNext={handleNext}
