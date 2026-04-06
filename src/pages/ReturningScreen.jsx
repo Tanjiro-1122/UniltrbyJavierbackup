@@ -6,29 +6,22 @@ const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d6
 
 function signInWithApple(navigate, setLoading) {
   const bridge = window.ReactNativeWebView;
-  if (!bridge) {
-    navigate("/hub");
-    return;
-  }
+  if (!bridge) { navigate("/hub"); return; }
+
+  // Ensure the global handler registry exists (set up by appleStoreKitService)
+  window._rnMessageHandlers = window._rnMessageHandlers || {};
 
   let resolved = false;
 
   const handleResult = (msg) => {
     if (resolved) return;
-
-    // Ignore WAITING — just means the native overlay appeared
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
-
     resolved = true;
     cleanup();
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
       // Send ACK so native wrapper stops retrying
-      try {
-        if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" }));
-        }
-      } catch(e) {}
+      try { bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" })); } catch(e) {}
       const payload = msg.data || msg;
       const appleUserId = payload.appleUserId || payload.user;
       const email = payload.email;
@@ -37,14 +30,13 @@ function signInWithApple(navigate, setLoading) {
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (!localStorage.getItem("userProfileId")) {
-        localStorage.setItem("userProfileId", appleUserId);
-      }
-      if (email) {
-        localStorage.setItem("unfiltr_apple_email", email);
-        localStorage.setItem("unfiltr_user_email", email);
-      }
+      if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
+      if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      if (payload.isPremium) {
+        localStorage.setItem("unfiltr_is_premium", "true");
+        localStorage.setItem("unfiltr_plan", "pro_plan");
+      }
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
@@ -53,29 +45,28 @@ function signInWithApple(navigate, setLoading) {
     }
   };
 
-  // PRIMARY: onMessageFromRN — matches our fixed bridge in index.tsx
-  const prevHandler = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-      handleResult(msg);
-    } catch {}
-    if (typeof prevHandler === "function") prevHandler(jsonStr);
-  };
+  // Register using the shared _rnMessageHandlers pub/sub (does NOT break other listeners)
+  const TYPES = ["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"];
+  TYPES.forEach(t => {
+    window._rnMessageHandlers[t] = window._rnMessageHandlers[t] || [];
+    window._rnMessageHandlers[t].push(handleResult);
+  });
 
-  // FALLBACK: window message event
+  // Fallback: window message event
   const windowHandler = (e) => {
     try {
       const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg.type)) {
-        handleResult(msg);
-      }
+      if (TYPES.includes(msg?.type)) handleResult(msg);
     } catch {}
   };
   window.addEventListener("message", windowHandler);
 
   const cleanup = () => {
-    window.onMessageFromRN = prevHandler;
+    TYPES.forEach(t => {
+      if (window._rnMessageHandlers[t]) {
+        window._rnMessageHandlers[t] = window._rnMessageHandlers[t].filter(f => f !== handleResult);
+      }
+    });
     window.removeEventListener("message", windowHandler);
   };
 
