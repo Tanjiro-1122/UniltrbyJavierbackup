@@ -157,7 +157,8 @@ export class AppleStoreKitService {
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
