@@ -245,7 +245,6 @@ export class AppleStoreKitService {
 // ─── React hook wrapper for Pricing.jsx ──────────────────────────────────────
 // Provides { purchasing, error, statusMessage, purchase, restore, loadProducts }
 
-import { useState, useCallback } from 'react';
 
 export function useAppleSubscriptions() {
   const [purchasing,     setPurchasing]     = useState(false);
