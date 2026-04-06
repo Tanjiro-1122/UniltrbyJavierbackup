@@ -334,6 +334,27 @@ export default function ChatPage() {
       } catch {}
     }
 
+    // ── Monday Weekly Reflection Prompt ──────────────────────────────────
+    const today = new Date();
+    const isMonday = today.getDay() === 1;
+    const lastReflectionWeek = localStorage.getItem("unfiltr_last_reflection_week");
+    const currentWeek = `${today.getFullYear()}-W${Math.ceil(today.getDate() / 7)}`;
+    if (isMonday && lastReflectionWeek !== currentWeek) {
+      const reflectionPrompts = [
+        "Happy Monday 💜 Before the week kicks in — what's one thing you want to feel by Friday?",
+        "New week, fresh start ✨ What's something you want to do differently this week than last?",
+        "It's Monday — how are you actually feeling walking into this week? Be honest with me.",
+        "Before this week takes over... what's one thing that matters most to you right now?",
+        "Hey, it's a new week 🌱 What's something small you want to be proud of by Sunday?",
+        "Monday check-in 💬 What did last week teach you that you're carrying into this one?",
+        "New week energy — what are you letting go of from last week to start fresh today?",
+      ];
+      const prompt = reflectionPrompts[Math.floor(Math.random() * reflectionPrompts.length)];
+      localStorage.setItem("unfiltr_last_reflection_week", currentWeek);
+      setMessages([{ role: "assistant", content: prompt }]);
+      return;
+    }
+
     // ── Post-meditation check-in ──────────────────────────────────────────
     const meditationRaw = localStorage.getItem("unfiltr_just_meditated");
     if (meditationRaw) {
