@@ -1,195 +1,229 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
-// ── Companion personality mapping ──────────────────────────────────────────────
-// Each companion maps to personality slider presets that get auto-applied
 const COMPANION_PERSONALITY = {
-  luna:   { vibe: "chill",       style: "thoughtful",    humor: "subtle",   empathy: "high"     },
-  river:  { vibe: "chill",       style: "thoughtful",    humor: "none",     empathy: "high"     },
-  sage:   { vibe: "deep",        style: "philosophical", humor: "subtle",   empathy: "balanced" },
-  sakura: { vibe: "playful",     style: "casual",        humor: "moderate", empathy: "high"     },
-  ash:    { vibe: "chill",       style: "casual",        humor: "moderate", empathy: "balanced" },
-  kai:    { vibe: "motivating",  style: "hype",          humor: "subtle",   empathy: "balanced" },
-  ryuu:   { vibe: "motivating",  style: "thoughtful",    humor: "none",     empathy: "minimal"  },
-  nova:   { vibe: "playful",     style: "casual",        humor: "high",     empathy: "balanced" },
-  zara:   { vibe: "sarcastic",   style: "casual",        humor: "high",     empathy: "minimal"  },
-  echo:   { vibe: "deep",        style: "philosophical", humor: "subtle",   empathy: "high"     },
-  soleil: { vibe: "playful",     style: "hype",          humor: "moderate", empathy: "high"     },
-  juan:   { vibe: "playful",     style: "casual",        humor: "high",     empathy: "balanced" },
+  luna:   { vibe: "chill",      style: "thoughtful",    humor: "subtle",   empathy: "high"     },
+  river:  { vibe: "chill",      style: "thoughtful",    humor: "none",     empathy: "high"     },
+  sage:   { vibe: "deep",       style: "philosophical", humor: "subtle",   empathy: "balanced" },
+  sakura: { vibe: "playful",    style: "casual",        humor: "moderate", empathy: "high"     },
+  ash:    { vibe: "chill",      style: "casual",        humor: "moderate", empathy: "balanced" },
+  kai:    { vibe: "motivating", style: "hype",          humor: "subtle",   empathy: "balanced" },
+  ryuu:   { vibe: "motivating", style: "thoughtful",    humor: "none",     empathy: "minimal"  },
+  nova:   { vibe: "playful",    style: "casual",        humor: "high",     empathy: "balanced" },
+  zara:   { vibe: "sarcastic",  style: "casual",        humor: "high",     empathy: "minimal"  },
+  echo:   { vibe: "deep",       style: "philosophical", humor: "subtle",   empathy: "high"     },
+  soleil: { vibe: "playful",    style: "hype",          humor: "moderate", empathy: "high"     },
+  juan:   { vibe: "playful",    style: "casual",        humor: "high",     empathy: "balanced" },
 };
 
 const QUESTIONS = [
   {
-    q: "It's Friday night. What sounds best?",
+    q: "It's 2am. You're wide awake. What are you actually doing?",
+    sub: "be honest 👀",
     options: [
-      { label: "Cozy movie night 🎬",       scores: { luna: 3, river: 2, sage: 1 } },
-      { label: "Going OUT tonight 🔥",       scores: { kai: 3, nova: 2, zara: 1 } },
-      { label: "Gaming or anime session 🎮", scores: { ash: 3, ryuu: 2, sakura: 1 } },
-      { label: "Reading & journaling 📖",    scores: { sage: 3, river: 2, luna: 1 } },
+      { label: "Spiraling about something from 3 years ago 😭",   scores: { luna: 3, echo: 2, river: 1 } },
+      { label: "Watching videos until my eyes give up 📱",        scores: { ash: 3, nova: 2, juan: 1 } },
+      { label: "Making plans I'll never follow through on 📝",    scores: { nova: 3, kai: 2, zara: 1 } },
+      { label: "Journaling or just staring at the ceiling 🌙",   scores: { sage: 3, river: 2, luna: 1 } },
     ],
   },
   {
-    q: "Your friend is having a bad day. You...",
+    q: "Someone cancels plans last minute. Your gut reaction is:",
+    sub: "pick the most honest one",
     options: [
-      { label: "Listen and hold space 🫂",     scores: { luna: 3, river: 2, echo: 1 } },
-      { label: "Hype them back up 💪",         scores: { kai: 3, soleil: 2, nova: 1 } },
-      { label: "Make them laugh it off 😂",    scores: { ash: 3, juan: 2, sakura: 1 } },
-      { label: "Help them figure it out 🧠",   scores: { sage: 3, ryuu: 2, echo: 1 } },
+      { label: "Lowkey relieved 😅 (introvert win)",              scores: { ash: 3, river: 2, sage: 1 } },
+      { label: "Annoyed but I'll get over it 🙄",                 scores: { zara: 3, kai: 2, nova: 1 } },
+      { label: "Genuinely hurt but I say 'no worries!' 🥲",       scores: { luna: 3, sakura: 2, echo: 1 } },
+      { label: "Already rebooking with someone else 📲",          scores: { soleil: 3, juan: 2, kai: 1 } },
     ],
   },
   {
-    q: "What do you need most right now?",
+    q: "What do you actually need most right now?",
+    sub: "no judgment here",
     options: [
-      { label: "Someone to just listen 💜",    scores: { luna: 3, river: 2, echo: 1 } },
-      { label: "A push to get moving ⚡",      scores: { kai: 3, ryuu: 2 } },
-      { label: "Good vibes & laughs 😎",       scores: { ash: 3, juan: 2, nova: 1 } },
-      { label: "Real talk, no filter 🔥",      scores: { zara: 3, sage: 2, soleil: 1 } },
+      { label: "Someone to vent to — no advice, just listen 🫂",  scores: { luna: 3, river: 2, echo: 1 } },
+      { label: "A kick in the ass to get moving 💪",              scores: { kai: 3, ryuu: 2, zara: 1 } },
+      { label: "Distractions and good vibes only 😎",             scores: { ash: 3, juan: 2, nova: 1 } },
+      { label: "Someone to actually understand me 💜",            scores: { echo: 3, sage: 2, luna: 1 } },
     ],
   },
   {
-    q: "Your ideal energy is...",
+    q: "Pick the vibe that hits different:",
+    sub: "trust your gut",
     options: [
-      { label: "Calm & grounded 🌿",           scores: { river: 3, luna: 2, sage: 1 } },
-      { label: "Chaotic & spontaneous 🌀",     scores: { nova: 3, zara: 2, juan: 1 } },
-      { label: "Focused & driven 🎯",          scores: { ryuu: 3, kai: 2 } },
-      { label: "Warm & radiant ☀️",            scores: { soleil: 3, sakura: 2, luna: 1 } },
+      { label: "🌸 Cherry blossoms, soft music, no obligations",  scores: { sakura: 3, river: 2, luna: 1 } },
+      { label: "🌆 Neon lights, late night energy, anything goes", scores: { zara: 3, nova: 2, juan: 1 } },
+      { label: "🏔️ Mountains at sunrise, cold air, total clarity", scores: { ryuu: 3, kai: 2, sage: 1 } },
+      { label: "🛋️ Cozy inside, rain outside, literally no plans", scores: { ash: 3, luna: 2, river: 1 } },
     ],
   },
   {
-    q: "Pick a superpower:",
+    q: "Your friends would describe you as:",
+    sub: "the real version, not the LinkedIn version",
     options: [
-      { label: "Feel everyone's emotions 💫",  scores: { luna: 2, echo: 3 } },
-      { label: "Limitless strength & speed 💥", scores: { kai: 2, ryuu: 3 } },
-      { label: "Know everything instantly 🌌", scores: { nova: 3, sage: 2 } },
-      { label: "Make anyone smile 🌸",         scores: { sakura: 2, soleil: 3, juan: 1 } },
+      { label: "The therapist friend — always the listener 💙",   scores: { luna: 3, echo: 2, river: 1 } },
+      { label: "The chaos agent — unpredictable but lovable 🔥",  scores: { nova: 3, juan: 2, zara: 1 } },
+      { label: "The reliable one — shows up every time 🤝",       scores: { kai: 3, soleil: 2, ryuu: 1 } },
+      { label: "The quiet one who observes everything 👁️",        scores: { sage: 3, ash: 2, echo: 1 } },
     ],
   },
 ];
 
+// Fun loading messages shown during result calculation
+const LOADING_MSGS = [
+  "Consulting the universe… 🌌",
+  "Reading your energy… ✨",
+  "Checking the vibes… 👀",
+  "Almost there… 💜",
+];
+
 export default function OnboardingQuiz() {
   const navigate = useNavigate();
-  const [step, setStep]     = useState(0); // -1 = intro
+  const [phase, setPhase] = useState("intro"); // intro | quiz | calculating | result
+  const [step, setStep]   = useState(0);
   const [scores, setScores] = useState({});
   const [result, setResult] = useState(null);
-  const [showIntro, setShowIntro] = useState(true);
+  const [loadMsg, setLoadMsg] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState(null);
 
-  const handleAnswer = (option) => {
+  // Cycle loading messages
+  useEffect(() => {
+    if (phase !== "calculating") return;
+    const t = setInterval(() => setLoadMsg(m => (m + 1) % LOADING_MSGS.length), 700);
+    // After 2.2s reveal result
+    const done = setTimeout(() => setPhase("result"), 2200);
+    return () => { clearInterval(t); clearTimeout(done); };
+  }, [phase]);
+
+  const handleAnswer = (option, idx) => {
+    setSelectedIdx(idx);
     const newScores = { ...scores };
     Object.entries(option.scores || {}).forEach(([id, pts]) => {
       newScores[id] = (newScores[id] || 0) + pts;
     });
-    setScores(newScores);
 
-    if (step >= QUESTIONS.length - 1) {
-      // Tally and reveal match
-      const sorted = Object.entries(newScores).sort((a, b) => b[1] - a[1]);
-      const winnerId = sorted[0]?.[0];
-      const match = COMPANIONS.find(c => c.id === winnerId) || COMPANIONS[0];
-      setResult(match);
-    } else {
-      setStep(step + 1);
-    }
+    setTimeout(() => {
+      setSelectedIdx(null);
+      setScores(newScores);
+      if (step >= QUESTIONS.length - 1) {
+        const winnerId = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const match = COMPANIONS.find(c => c.id === winnerId) || COMPANIONS[0];
+        setResult(match);
+        setPhase("calculating");
+      } else {
+        setStep(step + 1);
+      }
+    }, 320);
   };
 
   const handleConfirmMatch = () => {
-    applyMatch(result);
-    navigate("/onboarding/nickname");
-  };
-
-  const handlePickOwn = () => {
-    navigate("/onboarding/companion");
-  };
-
-  const applyMatch = (companion) => {
-    // Save companion selection to onboarding store
-    updateOnboardingStore({ selectedCompanion: companion });
-    localStorage.setItem("unfiltr_quiz_companion_id", companion.id);
-
-    // Auto-apply personality sliders based on companion
-    const p = COMPANION_PERSONALITY[companion.id] || COMPANION_PERSONALITY.luna;
+    updateOnboardingStore({ selectedCompanion: result.id });
+    localStorage.setItem("unfiltr_quiz_companion_id", result.id);
+    const p = COMPANION_PERSONALITY[result.id] || COMPANION_PERSONALITY.luna;
     localStorage.setItem("unfiltr_personality_vibe",    p.vibe);
     localStorage.setItem("unfiltr_personality_style",   p.style);
     localStorage.setItem("unfiltr_personality_humor",   p.humor);
     localStorage.setItem("unfiltr_personality_empathy", p.empathy);
+    navigate("/onboarding/nickname");
+  };
+
+  const handlePickOwn = () => {
+    localStorage.setItem("unfiltr_quiz_companion_id", "manual");
+    navigate("/onboarding/companion");
   };
 
   return (
     <OnboardingLayout totalSteps={7} step={3} onBack={() => navigate("/onboarding/name")} canAdvance={false}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 32px" }}>
-
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 32px", minHeight: 0 }}>
         <AnimatePresence mode="wait">
 
-          {/* ── Intro screen ── */}
-          {showIntro && (
+          {/* ── INTRO ── */}
+          {phase === "intro" && (
             <motion.div key="intro"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }}
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 16 }}>
 
-              <div style={{ fontSize: 64, marginBottom: 8 }}>✨</div>
-              <h2 style={{ color: "white", fontWeight: 900, fontSize: 26, margin: 0, lineHeight: 1.3 }}>
-                Find your perfect<br />companion
+              <motion.div
+                animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                style={{ fontSize: 72, lineHeight: 1 }}>
+                🔮
+              </motion.div>
+
+              <h2 style={{ color: "white", fontWeight: 900, fontSize: 28, margin: 0, lineHeight: 1.25 }}>
+                Let's find your<br />
+                <span style={{ background: "linear-gradient(90deg,#a855f7,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  perfect match
+                </span>
               </h2>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 15, lineHeight: 1.6, maxWidth: 280, margin: 0 }}>
-                Answer 5 quick questions and we'll match you with the companion that gets you.
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, lineHeight: 1.65, maxWidth: 270, margin: 0 }}>
+                5 questions. No wrong answers.<br />
+                Just vibe with it. 😌
               </p>
 
-              <div style={{ width: "100%", maxWidth: 340, marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowIntro(false)}
+              <div style={{ width: "100%", maxWidth: 320, marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                <motion.button whileTap={{ scale: 0.96 }} onClick={() => setPhase("quiz")}
                   style={{
-                    width: "100%", padding: "16px", borderRadius: 16, border: "none",
+                    width: "100%", padding: "17px", borderRadius: 18, border: "none",
                     background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    color: "white", fontWeight: 700, fontSize: 16, cursor: "pointer",
+                    color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
+                    boxShadow: "0 8px 32px rgba(168,85,247,0.35)",
                   }}>
-                  Take the quiz ✨
+                  Let's go ✨
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={handlePickOwn}
+                <motion.button whileTap={{ scale: 0.96 }} onClick={handlePickOwn}
                   style={{
-                    width: "100%", padding: "16px", borderRadius: 16,
-                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-                    color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 15, cursor: "pointer",
+                    width: "100%", padding: "15px", borderRadius: 18,
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.45)", fontWeight: 600, fontSize: 14, cursor: "pointer",
                   }}>
-                  I'll choose myself →
+                  I'll browse them myself →
                 </motion.button>
               </div>
             </motion.div>
           )}
 
-          {/* ── Quiz questions ── */}
-          {!showIntro && !result && (
+          {/* ── QUIZ ── */}
+          {phase === "quiz" && (
             <motion.div key={`q${step}`}
-              initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 8 }}>
+              initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -48 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 4 }}>
 
-              {/* Progress bar */}
-              <div style={{ display: "flex", gap: 5, marginBottom: 28 }}>
+              {/* Progress dots */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 24, alignItems: "center" }}>
                 {QUESTIONS.map((_, i) => (
-                  <div key={i} style={{
-                    flex: 1, height: 4, borderRadius: 2,
-                    background: i <= step ? "linear-gradient(90deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.1)",
-                    transition: "background 0.3s",
-                  }} />
+                  <motion.div key={i}
+                    animate={{ width: i === step ? 24 : 8, background: i < step ? "#a855f7" : i === step ? "linear-gradient(90deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.12)" }}
+                    transition={{ duration: 0.3 }}
+                    style={{ height: 8, borderRadius: 4, background: i < step ? "#a855f7" : i === step ? "#a855f7" : "rgba(255,255,255,0.12)" }} />
                 ))}
+                <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, marginLeft: 4 }}>{step + 1}/5</span>
               </div>
 
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
-                Question {step + 1} of {QUESTIONS.length}
-              </p>
-              <p style={{ color: "white", fontWeight: 800, fontSize: 22, lineHeight: 1.4, marginBottom: 24 }}>
+              <p style={{ color: "white", fontWeight: 900, fontSize: 21, lineHeight: 1.4, marginBottom: 4 }}>
                 {QUESTIONS[step].q}
+              </p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginBottom: 20, fontStyle: "italic" }}>
+                {QUESTIONS[step].sub}
               </p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {QUESTIONS[step].options.map((opt, i) => (
-                  <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => handleAnswer(opt)}
+                  <motion.button key={i}
+                    whileTap={{ scale: 0.97 }}
+                    animate={selectedIdx === i ? { scale: [1, 0.97, 1.02, 1], background: "rgba(168,85,247,0.25)" } : {}}
+                    onClick={() => handleAnswer(opt, i)}
                     style={{
-                      padding: "16px 18px", borderRadius: 16, width: "100%",
-                      background: "rgba(139,92,246,0.08)", border: "1.5px solid rgba(139,92,246,0.2)",
-                      color: "white", fontWeight: 600, fontSize: 15, cursor: "pointer", textAlign: "left",
-                      transition: "all 0.15s",
+                      padding: "15px 18px", borderRadius: 16, width: "100%",
+                      background: selectedIdx === i ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.05)",
+                      border: `1.5px solid ${selectedIdx === i ? "rgba(168,85,247,0.6)" : "rgba(255,255,255,0.08)"}`,
+                      color: "white", fontWeight: 600, fontSize: 14, cursor: "pointer",
+                      textAlign: "left", lineHeight: 1.45, transition: "border-color 0.15s, background 0.15s",
                     }}>
                     {opt.label}
                   </motion.button>
@@ -198,53 +232,94 @@ export default function OnboardingQuiz() {
             </motion.div>
           )}
 
-          {/* ── Result reveal ── */}
-          {result && (
-            <motion.div key="result"
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 12 }}>
-
-              <motion.p
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textTransform: "uppercase", letterSpacing: "0.12em", margin: 0 }}>
-                Your perfect match is
-              </motion.p>
+          {/* ── CALCULATING ── */}
+          {phase === "calculating" && (
+            <motion.div key="calc"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
 
               <motion.div
-                initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.25, type: "spring", stiffness: 200 }}
-                style={{
-                  width: 130, height: 130, borderRadius: 26, overflow: "hidden",
-                  border: "3px solid #a855f7", boxShadow: "0 0 48px rgba(168,85,247,0.45)",
-                }}>
-                <img src={result.avatar} alt={result.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1.4, ease: "linear" }}
+                style={{ fontSize: 52 }}>
+                🔮
               </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <h2 style={{ color: "white", fontWeight: 900, fontSize: 30, margin: "0 0 4px" }}>
+              <AnimatePresence mode="wait">
+                <motion.p key={loadMsg}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                  style={{ color: "rgba(255,255,255,0.65)", fontSize: 16, fontWeight: 600, margin: 0, textAlign: "center" }}>
+                  {LOADING_MSGS[loadMsg]}
+                </motion.p>
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* ── RESULT ── */}
+          {phase === "result" && result && (
+            <motion.div key="result"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 14 }}>
+
+              <motion.p
+                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.14em", margin: 0 }}>
+                the universe has spoken 🔮
+              </motion.p>
+
+              {/* Avatar with glow burst */}
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 180, damping: 14 }}
+                style={{ position: "relative" }}>
+                <div style={{
+                  position: "absolute", inset: -16,
+                  background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+                  borderRadius: "50%", filter: "blur(8px)",
+                }} />
+                <div style={{
+                  width: 140, height: 140, borderRadius: 28, overflow: "hidden",
+                  border: "3px solid #a855f7", boxShadow: "0 0 48px rgba(168,85,247,0.5)",
+                  position: "relative",
+                }}>
+                  <img src={result.avatar} alt={result.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                <h2 style={{ color: "white", fontWeight: 900, fontSize: 32, margin: "0 0 4px", letterSpacing: "-0.5px" }}>
                   {result.emoji} {result.name}
                 </h2>
-                <p style={{ color: "#c084fc", fontSize: 14, fontWeight: 600, margin: 0 }}>{result.tagline}</p>
+                <p style={{ color: "#c084fc", fontSize: 14, fontWeight: 700, margin: "0 0 10px", letterSpacing: "0.03em" }}>
+                  {result.tagline}
+                </p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.55, margin: 0, maxWidth: 260 }}>
+                  You two are going to get along just fine. 💜
+                </p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-                style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+                style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
 
                 <motion.button whileTap={{ scale: 0.97 }} onClick={handleConfirmMatch}
                   style={{
-                    width: "100%", padding: "16px", borderRadius: 16, border: "none",
+                    width: "100%", padding: "17px", borderRadius: 18, border: "none",
                     background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    color: "white", fontWeight: 700, fontSize: 16, cursor: "pointer",
+                    color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
+                    boxShadow: "0 8px 32px rgba(168,85,247,0.3)",
                   }}>
-                  That's my match! 💜
+                  Let's go, {result.name}! 🙌
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={handlePickOwn}
                   style={{
-                    width: "100%", padding: "14px", borderRadius: 16,
-                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-                    color: "rgba(255,255,255,0.55)", fontWeight: 600, fontSize: 14, cursor: "pointer",
+                    width: "100%", padding: "14px", borderRadius: 18,
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 13, cursor: "pointer",
                   }}>
-                  I'll choose myself →
+                  Not feeling it — let me browse →
                 </motion.button>
               </motion.div>
             </motion.div>
