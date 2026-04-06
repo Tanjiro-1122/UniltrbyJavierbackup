@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { UserProfile } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 
 const DURATIONS = [
@@ -21,7 +21,7 @@ export default function TimeCapsulePage() {
   useEffect(() => {
     const pid = localStorage.getItem("userProfileId");
     if (!pid) return;
-    UserProfile.get(pid).then(p => {
+    base44.entities.UserProfile.get(pid).then(p => {
       setProfile(p);
       setCapsules(p?.time_capsules || []);
     }).catch(() => {});
@@ -41,7 +41,7 @@ export default function TimeCapsulePage() {
         delivered:  false,
       };
       const updated = [...existing, newCapsule];
-      await UserProfile.update(profile.id, { time_capsules: updated });
+      await base44.entities.UserProfile.update(profile.id, { time_capsules: updated });
       setCapsules(updated);
       setMessage("");
       setSaved(true);
@@ -152,3 +152,4 @@ export default function TimeCapsulePage() {
     </div>
   );
 }
+
