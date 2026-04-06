@@ -283,6 +283,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           color: "white", fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
         }}>{saving ? "Saving..." : "Save Personality"}</button>
       </div>
+    ),
 
     Mode: (
       <div>
@@ -318,7 +319,6 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           })}
         </div>
       </div>
-    ),
     ),
   };
 
@@ -414,4 +414,5 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     </>
   );
 }
+
 
