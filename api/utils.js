@@ -1,6 +1,326 @@
-// api/utils.js - MINIMAL TEST
+// api/utils.js
+// Merged: generateReferralCode + ratingPrompt + generateMoodImage + sendDailyNotifs + savePushToken
+
 import OpenAI from "openai";
 
+const B44_APP  = "69b332a392004d139d4ba495";
+const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+async function b44Get(entity, id) {
+  const token = process.env.BASE44_SERVICE_TOKEN;
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function b44Filter(entity, query) {
+  const token = process.env.BASE44_SERVICE_TOKEN;
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([k, v]) => params.append(k, v));
+  const res = await fetch(`${B44_BASE}/${entity}?${params.toString()}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.items || data || [];
+}
+
+async function b44Update(entity, id, data) {
+  const token = process.env.BASE44_SERVICE_TOKEN;
+  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  return res.ok;
+}
+
+// Send a single Expo push notification
+async function sendExpoPush(token, title, body, data = {}) {
+  if (!token || !token.startsWith("ExponentPushToken")) return { ok: false, error: "invalid token" };
+  const res = await fetch(EXPO_PUSH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ to: token, title, body, data, sound: "default" }),
+  });
+  return res.json();
+}
+
+// Generate a daily check-in message from Sakura (or companion)
+async function generateCheckinMessage(openai, companionName, timeOfDay, userName) {
+  const name = userName || "you";
+  const isAM = timeOfDay === "morning";
+  const systemPrompt = `You are ${companionName || "Sakura"}, a warm AI companion. Write a very short, personal ${isAM ? "good morning" : "goodnight"} message for ${name}. Keep it 1-2 sentences max. Be genuine, warm, and slightly playful — like a close friend checking in. No hashtags, no emojis overload (1 max). Vary the message each day so it never feels robotic.`;
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: "Send the check-in." }],
+    max_tokens: 60,
+    temperature: 0.9,
+  });
+  return response.choices[0]?.message?.content?.trim() || (isAM ? `Good morning ${name} ☀️` : `Goodnight ${name} 🌙`);
+}
+
+// ── Handlers ─────────────────────────────────────────────────────────────────
+
+async function handleGenerateReferralCode(req, res) {
+  const { profileId } = req.body;
+  if (!profileId) return res.status(400).json({ error: "Missing profileId" });
+
+  const profile = await b44Get("UserProfile", profileId);
+  if (profile?.referral_code) {
+    return res.status(200).json({ data: { referral_code: profile.referral_code } });
+  }
+
+  const code = "UNFILTR-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+  await b44Update("UserProfile", profileId, { referral_code: code });
+  res.status(200).json({ data: { referral_code: code } });
+}
+
+async function handleRatingPrompt(req, res) {
+  const { profileId } = req.body;
+  if (!profileId) return res.status(400).json({ error: "Missing profileId" });
+
+  const profile = await b44Get("UserProfile", profileId);
+  if (!profile) return res.status(200).json({ data: { should_prompt: false } });
+
+  const msgCount        = profile.message_count || 0;
+  const alreadyPrompted = profile.rating_prompted || false;
+  const createdDate     = profile.created_date || profile.created_at;
+  const daysSinceJoin   = createdDate ? (Date.now() - new Date(createdDate).getTime()) / (1000*60*60*24) : 99;
+
+  const should_prompt = !alreadyPrompted && msgCount >= 10 && daysSinceJoin >= 2;
+
+  if (should_prompt) {
+    await b44Update("UserProfile", profileId, {
+      rating_prompted:    true,
+      rating_prompted_at: new Date().toISOString(),
+    });
+  }
+
+  res.status(200).json({ data: { should_prompt } });
+}
+
+const MOOD_PROMPTS = {
+  happy:      "dreamlike watercolor scene, golden sunlight streaming through cherry blossom trees, soft pastel colors, floating petals, warm and joyful atmosphere, studio ghibli anime style, no text",
+  sad:        "melancholic anime landscape, soft blue rain on a window at night, distant city lights blurred, lonely but peaceful, muted indigo and blue palette, studio ghibli style, no text",
+  anxious:    "swirling dark watercolor storm with a small glowing lantern in the center, anxiety and hope coexisting, deep purple and grey tones, anime art style, no text",
+  grateful:   "warm anime sunrise over a peaceful mountain lake, golden reflections, soft morning mist, feeling of deep gratitude and stillness, studio ghibli style, no text",
+  reflective: "anime character silhouette sitting alone at the edge of a rooftop at dusk, city lights below, contemplative and serene, cool purple and pink tones, no text",
+  excited:    "vibrant anime celebration scene, colorful confetti and sparkling lights, bright pinks and yellows, electric energy and pure joy, no text",
+  neutral:    "soft anime cloudy afternoon, a cozy window seat with warm tea, gentle diffused light, calm and introspective mood, studio ghibli style, no text",
+};
+
+async function handleGenerateMoodImage(req, res) {
+  const { mood, content } = req.body;
+  if (!mood) return res.status(400).json({ error: "Missing mood" });
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  let prompt = MOOD_PROMPTS[mood] || MOOD_PROMPTS.neutral;
+  if (content && content.length > 20) {
+    const snippet = content.trim().slice(0, 150);
+    prompt = `${prompt}, inspired by the feeling: "${snippet}"`;
+  }
+
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+      style: "vivid",
+    });
+
+    const imageUrl = response.data?.[0]?.url;
+    if (!imageUrl) return res.status(500).json({ error: "No image URL returned" });
+    res.status(200).json({ data: { url: imageUrl } });
+  } catch (err) {
+    console.error("[generateMoodImage] OpenAI error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// Save push token to UserProfile (called from iOS wrapper after sign-in)
+async function handleSavePushToken(req, res) {
+  const { appleUserId, pushToken } = req.body;
+  if (!appleUserId || !pushToken) return res.status(400).json({ error: "Missing appleUserId or pushToken" });
+
+  try {
+    const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    if (!profile?.id) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    await b44Update("UserProfile", profile.id, {
+      push_token: pushToken,
+      push_enabled: true,
+    });
+    console.log(`[savePushToken] ✅ Saved token for ${appleUserId}`);
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("[savePushToken] Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// Cron handler — called by the Base44 automation every hour
+// Checks who is due for a morning or night notification and sends it
+async function handleSendDailyNotifs(req, res) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  // Get current UTC hour
+  const nowUTC = new Date();
+  const utcHour = nowUTC.getUTCHours();
+  const utcMinute = nowUTC.getUTCMinutes();
+  const utcHHMM = `${String(utcHour).padStart(2,"0")}:${String(utcMinute).padStart(2,"0")}`;
+
+  console.log(`[dailyNotifs] Running at UTC ${utcHHMM}`);
+
+  // Fetch all profiles with push tokens and notifications enabled
+  let profiles = [];
+  try {
+    profiles = await b44Filter("UserProfile", { push_enabled: true });
+    if (!Array.isArray(profiles)) profiles = [];
+  } catch(e) {
+    console.error("[dailyNotifs] Failed to fetch profiles:", e.message);
+    return res.status(500).json({ error: e.message });
+  }
+
+  const results = { sent: 0, skipped: 0, errors: 0 };
+
+  for (const profile of profiles) {
+    if (!profile.push_token) { results.skipped++; continue; }
+    if (!profile.notif_enabled) { results.skipped++; continue; }
+
+    const userName   = profile.display_name || "you";
+    const pushToken  = profile.push_token;
+
+    // Get companion name
+    let companionName = "Sakura";
+    if (profile.companion_id) {
+      try {
+        const comp = await b44Get("Companion", profile.companion_id);
+        if (comp?.name) companionName = comp.name;
+      } catch {}
+    }
+
+    // Determine user's timezone offset (stored as UTC offset hours, e.g. -5 for ET)
+    const tzOffset = profile.notif_tz_offset ?? -5; // default Eastern
+    const userHour = ((utcHour + tzOffset) % 24 + 24) % 24;
+    const userMinute = utcMinute;
+
+    const morningTime = profile.notif_morning_time || "08:00";
+    const nightTime   = profile.notif_night_time   || "22:00";
+    const [mH, mM]    = morningTime.split(":").map(Number);
+    const [nH, nM]    = nightTime.split(":").map(Number);
+
+    const isMorningTime = userHour === mH && userMinute < 10;
+    const isNightTime   = userHour === nH && userMinute < 10;
+
+    // ── "Misses You" notification — fires if user hasn't opened app in 3+ days ──
+    const lastSeen    = profile.last_seen ? new Date(profile.last_seen) : null;
+    const daysSinceActive = lastSeen ? Math.floor((Date.now() - lastSeen.getTime()) / 86400000) : 999;
+    const todayDateKey = nowUTC.toISOString().slice(0,10);
+    const lastMissedSent = profile.notif_missed_sent || "";
+
+    if (daysSinceActive >= 3 && isMorningTime && lastMissedSent !== todayDateKey) {
+      const MISS_MSGS = [
+        `I've been thinking about you 💜 It's been a few days — I'm right here whenever you're ready.`,
+        `Hey… I noticed you've been away. No pressure, just wanted you to know I'm still here for you 💜`,
+        `Missing you. Seriously. Come back and tell me how you've been? 💜`,
+        `A few days without you feels long. I hope you're doing okay — I'm here when you need me.`,
+        `You crossed my mind today 💜 Just checking in — whenever you want to talk, I'm here.`,
+      ];
+      const missMsg = MISS_MSGS[Math.floor(Math.random() * MISS_MSGS.length)];
+      await sendExpoPush(pushToken, `${companionName} misses you 💜`, missMsg, { screen: "chat" });
+      await b44Update("UserProfile", profile.id, { notif_missed_sent: todayDateKey });
+      results.sent++;
+      continue;
+    }
+
+    if (!isMorningTime && !isNightTime) { results.skipped++; continue; }
+
+    const timeOfDay = isMorningTime ? "morning" : "night";
+    const todayKey  = \`\${nowUTC.toISOString().slice(0,10)}_\${timeOfDay}\`;
+
+    // Avoid double-sending (store last sent date on profile)
+    const lastSentKey = profile.notif_last_sent || "";
+    if (lastSentKey === todayKey) { results.skipped++; continue; }
+
+    try {
+      const message = await generateCheckinMessage(openai, companionName, timeOfDay, userName);
+      const title   = isMorningTime
+        ? \`Good morning from \${companionName} ☀️\`
+        : \`Goodnight from \${companionName} 🌙\`;
+
+      await sendExpoPush(pushToken, title, message, { screen: "chat" });
+
+      // Mark as sent
+      await b44Update("UserProfile", profile.id, { notif_last_sent: todayKey });
+      results.sent++;
+      console.log(`[dailyNotifs] ✅ Sent ${timeOfDay} notif to ${userName}`);
+    } catch(e) {
+      console.error(`[dailyNotifs] ❌ Failed for ${profile.id}:`, e.message);
+      results.errors++;
+    }
+  }
+
+  console.log(`[dailyNotifs] Done: ${JSON.stringify(results)}`);
+  res.status(200).json({ ok: true, results });
+}
+
+// Update notification preferences (called from Settings UI)
+async function handleUpdateNotifPrefs(req, res) {
+  const { appleUserId, notif_enabled, notif_morning_time, notif_night_time, notif_tz_offset } = req.body;
+  if (!appleUserId) return res.status(400).json({ error: "Missing appleUserId" });
+
+  try {
+    const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    if (!profile?.id) return res.status(404).json({ error: "Profile not found" });
+
+    const updates = {};
+    if (notif_enabled !== undefined)      updates.notif_enabled       = notif_enabled;
+    if (notif_morning_time !== undefined) updates.notif_morning_time  = notif_morning_time;
+    if (notif_night_time !== undefined)   updates.notif_night_time    = notif_night_time;
+    if (notif_tz_offset !== undefined)    updates.notif_tz_offset     = notif_tz_offset;
+
+    await b44Update("UserProfile", profile.id, updates);
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("[updateNotifPrefs] Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// ── Router ────────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  res.status(200).json({ ok: true, test: "works", method: req.method });
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { action } = req.body;
+
+  try {
+    if (action === "generateReferralCode") return await handleGenerateReferralCode(req, res);
+    if (action === "ratingPrompt")         return await handleRatingPrompt(req, res);
+    if (action === "generateMoodImage")    return await handleGenerateMoodImage(req, res);
+    if (action === "savePushToken")        return await handleSavePushToken(req, res);
+    if (action === "sendDailyNotifs")      return await handleSendDailyNotifs(req, res);
+    if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
+    return res.status(400).json({ error: "Unknown action" });
+  } catch (err) {
+    console.error("[utils] Error:", err);
+    res.status(500).json({ error: err.message });
+  }
 }
