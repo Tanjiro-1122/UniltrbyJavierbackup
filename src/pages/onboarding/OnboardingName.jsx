@@ -33,14 +33,44 @@ export default function OnboardingName() {
         await base44.entities.UserProfile.update(store.pendingProfileId, { display_name: displayName });
       } else {
         const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
-        const profile = await base44.entities.UserProfile.create({
-          display_name: displayName,
-          companion_id: "pending",
-          background_id: "pending",
-          ...(appleId ? { apple_user_id: appleId } : {}),
-        });
-        updateOnboardingStore({ pendingProfileId: profile.id });
-        localStorage.setItem("userProfileId", profile.id);
+
+        // Check if a profile already exists for this Apple ID (prevents duplicates on reinstall)
+        let existingProfileId = null;
+        if (appleId && !appleId.startsWith("anonymous")) {
+          try {
+            const checkRes = await fetch(
+              `https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile?apple_user_id=${encodeURIComponent(appleId)}&limit=1`,
+              { headers: { "Content-Type": "application/json" } }
+            );
+            if (checkRes.ok) {
+              const existing = await checkRes.json();
+              if (Array.isArray(existing) && existing.length > 0) {
+                existingProfileId = existing[0].id;
+                // Restore display_name from DB if it exists
+                if (existing[0].display_name && !displayName.trim()) {
+                  setDisplayName(existing[0].display_name);
+                  updateOnboardingStore({ displayName: existing[0].display_name });
+                }
+              }
+            }
+          } catch { /* non-fatal */ }
+        }
+
+        if (existingProfileId) {
+          // Update existing profile — don't create a duplicate
+          await base44.entities.UserProfile.update(existingProfileId, { display_name: displayName });
+          updateOnboardingStore({ pendingProfileId: existingProfileId });
+          localStorage.setItem("userProfileId", existingProfileId);
+        } else {
+          const profile = await base44.entities.UserProfile.create({
+            display_name: displayName,
+            companion_id: "pending",
+            background_id: "pending",
+            ...(appleId && !appleId.startsWith("anonymous") ? { apple_user_id: appleId } : {}),
+          });
+          updateOnboardingStore({ pendingProfileId: profile.id });
+          localStorage.setItem("userProfileId", profile.id);
+        }
       }
     } catch { /* non-blocking */ }
 
@@ -84,3 +114,4 @@ export default function OnboardingName() {
     </OnboardingLayout>
   );
 }
+
