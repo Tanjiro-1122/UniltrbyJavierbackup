@@ -13,7 +13,7 @@ function signInWithApple(navigate, setLoading) {
 
   let resolved = false;
 
-  const handleResult = (msg) => {
+  const handleResult = async (msg) => {
     if (resolved) return;
     if (msg.type === "APPLE_SIGN_IN_WAITING") return;
     resolved = true;
@@ -35,8 +35,33 @@ function signInWithApple(navigate, setLoading) {
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
       if (payload.isPremium) {
         localStorage.setItem("unfiltr_is_premium", "true");
-        localStorage.setItem("unfiltr_plan", "pro_plan");
+        localStorage.setItem("unfiltr_plan", payload.plan || "pro_plan");
       }
+
+      // Sync name/email to DB + restore full profile (premium, companion, settings)
+      try {
+        const syncRes = await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appleUserId, email: email || null, fullName: fullName || null, isPremium: payload.isPremium || false, plan: payload.plan || null }),
+        });
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          const prof = syncData?.data;
+          if (prof?.profileId) {
+            localStorage.setItem("userProfileId", prof.profileId);
+            if (prof.is_premium || prof.annual_plan || prof.pro_plan) {
+              localStorage.setItem("unfiltr_is_premium", "true");
+              if (prof.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
+              if (prof.pro_plan)    localStorage.setItem("unfiltr_is_pro", "true");
+            }
+            if (prof.display_name) localStorage.setItem("unfiltr_display_name", prof.display_name);
+            // If they have onboarding_complete in DB, mark it locally too
+            localStorage.setItem("unfiltr_onboarding_complete", "true");
+          }
+        }
+      } catch(e) { /* non-fatal */ }
+
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
       navigate("/hub");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
