@@ -46,16 +46,7 @@ const VIBES = [
     orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
     bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
   },
-  {
-    id: "journal",
-    emoji: `${NOTO}/270f/512.webp`,
-    label: "Journal", sub: "Private",
-    desc: "Write freely.\nSpeak your truth. Save it.",
-    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
-    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
-    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
-  },
-];
+];  // journal removed — journal is selected from HubPage, not onboarding
 
 export default function OnboardingVibe() {
   const navigate = useNavigate();
