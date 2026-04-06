@@ -96,6 +96,7 @@ export default function OnboardingBackground() {
       localStorage.setItem("companionId", companion.id);
       localStorage.setItem("unfiltr_companion_id", companion.id);
 
+      const _appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
       const profileData = {
         display_name: store.displayName?.trim() || "",
         companion_id: companion.id,
@@ -107,6 +108,7 @@ export default function OnboardingBackground() {
         message_count: 0,
         last_active: new Date().toISOString(),
         preferred_mood: store.selectedVibe || "chill",
+        ...((_appleId && !_appleId.startsWith("anonymous")) ? { apple_user_id: _appleId } : {}),
       };
 
       // Create or update UserProfile
