@@ -9,6 +9,7 @@ export default function ChatHeader({
   setCompanion,
   isPremium, messages, companion, navigate,
   setMessages, vibe,
+  relationshipMode, setRelationshipMode,
   onNavigateToSettings,
   onShowGames, onShowMeditation, onShowAchievements,
   onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
@@ -193,6 +194,8 @@ export default function ChatHeader({
           setVoiceEnabled={setVoiceEnabled}
           triggerMode="icon"
           companionName={companion?.name || "Companion"}
+          relationshipMode={relationshipMode}
+          onRelationshipChange={setRelationshipMode}
         />
         <button onClick={handleSettings}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.12)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
