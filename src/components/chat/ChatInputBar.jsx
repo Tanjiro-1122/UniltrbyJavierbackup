@@ -17,7 +17,7 @@ export default function ChatInputBar({
       paddingTop: 8,
       paddingLeft: 12,
       paddingRight: 12,
-      paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
+      paddingBottom: 8,
     }}>
       {/* Pending image preview */}
       {pendingImage && (
