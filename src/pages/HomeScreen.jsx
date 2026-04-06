@@ -24,7 +24,7 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
 
   let resolved = false;
 
-  const handleResult = (msg) => {
+  const handleResult = async (msg) => {
     if (resolved) return;
     if (msg.type === "APPLE_SIGN_IN_WAITING") {
       debugLog('[WEB] 🍎 Waiting for user tap...');
