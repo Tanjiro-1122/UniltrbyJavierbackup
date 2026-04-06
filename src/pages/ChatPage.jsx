@@ -159,6 +159,25 @@ export default function ChatPage() {
     };
   }, [profileId]);
 
+  /* ─── BACKGROUND / ENV LIVE UPDATE ─── */
+  useEffect(() => {
+    const handleEnvChange = (e) => {
+      if (e.detail) setEnvironment(e.detail);
+    };
+    const handleBgChange = () => {
+      try {
+        const stored = localStorage.getItem("unfiltr_env");
+        if (stored) setEnvironment(JSON.parse(stored));
+      } catch {}
+    };
+    window.addEventListener('unfiltr_env_change', handleEnvChange);
+    window.addEventListener('unfiltr_background_change', handleBgChange);
+    return () => {
+      window.removeEventListener('unfiltr_env_change', handleEnvChange);
+      window.removeEventListener('unfiltr_background_change', handleBgChange);
+    };
+  }, []);
+
   const particleId     = useRef(0);
   const stateTimeout   = useRef(null);
   const messagesEndRef = useRef(null);
@@ -1089,35 +1108,37 @@ export default function ChatPage() {
             />
           </div>
 
-          {/* ▓▓ 3.5. CONVERSATION STARTERS ▓▓ */}
-          <ConversationStarters
-            visible={messages.filter(m => m.role === "user").length === 0}
-            onSelect={(text) => handleSend(text)}
-            isReturning={!!localStorage.getItem("unfiltr_chat_history")}
-          />
+          {/* ▓▓ 3.5 + 4. BOTTOM AREA: starters + input ▓▓ */}
+          <div style={{ flexShrink: 0, background: "linear-gradient(to top, rgba(6,2,15,0.95) 0%, rgba(6,2,15,0.7) 60%, transparent 100%)" }}>
+            <ConversationStarters
+              visible={messages.filter(m => m.role === "user").length === 0}
+              onSelect={(text) => handleSend(text)}
+              isReturning={!!localStorage.getItem("unfiltr_chat_history")}
+            />
 
-          {/* Quote reply bar */}
-          {quoteReply && (
-            <div style={{ flexShrink: 0, padding: "0 12px" }}>
-              <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
-            </div>
-          )}
+            {/* Quote reply bar */}
+            {quoteReply && (
+              <div style={{ flexShrink: 0, padding: "0 12px" }}>
+                <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
+              </div>
+            )}
 
-          {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
-          <ChatInputBar
-            input={input}
-            setInput={setInput}
-            loading={loading}
-            isListening={isListening}
-            isPremium={isPremium}
-            pendingImage={pendingImage}
-            setPendingImage={setPendingImage}
-            companionDisplayName={companionDisplayName}
-            handleSend={handleSend}
-            startListening={startListening}
-            stopListening={stopListening}
-            handlePhotoClick={handlePhotoClick}
-          />
+            {/* ▓▓ 4. TEXT INPUT ▓▓ */}
+            <ChatInputBar
+              input={input}
+              setInput={setInput}
+              loading={loading}
+              isListening={isListening}
+              isPremium={isPremium}
+              pendingImage={pendingImage}
+              setPendingImage={setPendingImage}
+              companionDisplayName={companionDisplayName}
+              handleSend={handleSend}
+              startListening={startListening}
+              stopListening={stopListening}
+              handlePhotoClick={handlePhotoClick}
+            />
+          </div>
         </div>
       </div>
 
@@ -1231,3 +1252,4 @@ export default function ChatPage() {
     </>
   );
 }
+
