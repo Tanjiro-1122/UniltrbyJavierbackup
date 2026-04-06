@@ -78,13 +78,13 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       // when localStorage is wiped but DB record still exists
       try {
         const API = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
-        const res = await fetch(`${API}/filter`, {
-          method: "POST",
+        const res = await fetch(`${API}?apple_user_id=${encodeURIComponent(appleUserId)}`, {
+          method: "GET",
           headers: { "Content-Type": "application/json", "Authorization": "Bearer 1156284fb9144ad9ab95afc962e848d8" },
-          body: JSON.stringify({ apple_user_id: appleUserId })
         });
         if (res.ok) {
-          const profiles = await res.json();
+          const data = await res.json();
+          const profiles = data.items || data;
           const profile = Array.isArray(profiles) ? profiles[0] : profiles;
           if (profile?.id) {
             localStorage.setItem("userProfileId", profile.id);
