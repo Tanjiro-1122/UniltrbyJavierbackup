@@ -939,7 +939,6 @@ export default function ChatPage() {
           position: "absolute", inset: 0, zIndex: 1,
           display: "flex", flexDirection: "column",
           width: "100%",
-          paddingTop: "env(safe-area-inset-top, 0px)",
           boxSizing: "border-box",
           overflow: "hidden",
         }}>
@@ -1135,8 +1134,8 @@ export default function ChatPage() {
 
             {/* ▓▓ 4. TEXT INPUT ▓▓ */}
             <div style={{
-              background: "linear-gradient(to top, rgba(6,2,15,0.75) 0%, rgba(6,2,15,0.4) 60%, transparent 100%)",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              background: "linear-gradient(to top, rgba(6,2,15,0.88) 0%, rgba(6,2,15,0.55) 55%, transparent 100%)",
+              paddingBottom: "env(safe-area-inset-bottom, 16px)",
             }}>
               <ChatInputBar
                 input={input}
