@@ -269,15 +269,23 @@ export default function Pricing() {
     const result = await purchase(selectedPlan.productId);
     if (result?.success || result?.isSuccess) {
       const profileId = localStorage.getItem('userProfileId');
-      if (profileId) {
-        await base44.entities.UserProfile.update(profileId, {
-          is_premium:  true,
-          annual_plan: selectedPlan.isAnnual,
-          pro_plan:    selectedPlan.isPro,
-        });
-        localStorage.setItem('unfiltr_is_premium', 'true');
-        localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
-        localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+      const userId    = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
+      // Update localStorage immediately so chat page sees premium status
+      localStorage.setItem('unfiltr_is_premium', 'true');
+      localStorage.setItem('unfiltr_plan', selectedPlan.isAnnual ? 'annual_plan' : 'pro_plan');
+      localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
+      localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
+      // Notify rest of app
+      window.dispatchEvent(new Event('unfiltr_premium_updated'));
+      window.dispatchEvent(new Event('unfiltr_auth_updated'));
+      if (profileId || userId) {
+        try {
+          await base44.entities.UserProfile.update(profileId || userId, {
+            is_premium:  true,
+            annual_plan: selectedPlan.isAnnual,
+            pro_plan:    selectedPlan.isPro,
+          });
+        } catch(e) { console.warn('DB update non-fatal:', e); }
       }
       navigate(-1);
     }
