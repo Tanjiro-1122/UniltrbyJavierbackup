@@ -2,7 +2,7 @@
 // This bypasses CORS since the proxy runs server-side
 
 const APP_ID = "69b332a392004d139d4ba495";
-const BASE44_API = `https://api.base44.com/api/apps/${APP_ID}/entities`;
+const BASE44_API = `https://app.base44.com/api/apps/${APP_ID}/entities`;
 
 export default async function handler(req, res) {
   // Allow all origins (we control this)
