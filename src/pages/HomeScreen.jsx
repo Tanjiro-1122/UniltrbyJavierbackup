@@ -48,6 +48,8 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
       if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
+      // If fullName is null (Apple only returns it once), try to restore from DB
+      // This is handled below in the DB sync step
 
       // Always set premium from RC payload first (fastest signal)
       if (payload.isPremium) {
@@ -106,6 +108,17 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
             }
             if (!localStorage.getItem("unfiltr_onboarding_complete") && profile.onboarding_complete) {
               localStorage.setItem("unfiltr_onboarding_complete", "true");
+            }
+            // Restore display name from DB if Apple didn't return it this time
+            if (!fullName && profile.display_name) {
+              localStorage.setItem("unfiltr_display_name", profile.display_name);
+              debugLog(`[WEB] 👤 Name restored from DB: ${profile.display_name}`);
+            }
+            // Restore email from DB if Apple didn't return it this time
+            if (!email && profile.email) {
+              localStorage.setItem("unfiltr_apple_email", profile.email);
+              localStorage.setItem("unfiltr_user_email", profile.email);
+              debugLog(`[WEB] 📧 Email restored from DB: ${profile.email}`);
             }
           }
         }
