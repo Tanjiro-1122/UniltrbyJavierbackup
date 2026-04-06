@@ -41,12 +41,12 @@ export default async function handler(req, res) {
     "BILLING_ISSUE",
   ];
 
-  const BASE44_API_KEY = process.env.BASE44_API_KEY;
+  const BASE44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY;
   const BASE44_APP_ID = "69b332a392004d139d4ba495";
   const B44_BASE = `https://api.base44.com/api/apps/${BASE44_APP_ID}/entities`;
 
   if (!BASE44_API_KEY) {
-    console.error("[RC Webhook] Missing BASE44_API_KEY");
+    console.error("[RC Webhook] Missing BASE44_SERVICE_TOKEN / BASE44_API_KEY");
     return res.status(500).json({ error: "Server config error" });
   }
 
