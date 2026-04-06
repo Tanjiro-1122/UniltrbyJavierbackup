@@ -305,6 +305,38 @@ async function handleUpdateNotifPrefs(req, res) {
   }
 }
 
+
+async function handleTrackTokens(req, res) {
+  // Always respond 200 immediately — fire-and-forget, never blocks chat
+  res.status(200).json({ ok: true });
+
+  try {
+    const { profileId, total_tokens = 0, cost_usd = 0 } = req.body;
+    if (!profileId) return;
+
+    const profile = await b44Get("UserProfile", profileId);
+    if (!profile) return;
+
+    const today     = new Date().toISOString().slice(0, 10);
+    const lastReset = profile.tokens_reset_date || "";
+
+    const prevTotal = Number(profile.tokens_used_total)  || 0;
+    const prevToday = lastReset === today ? (Number(profile.tokens_used_today) || 0) : 0;
+    const prevCost  = Number(profile.estimated_cost_usd) || 0;
+
+    await b44Update("UserProfile", profileId, {
+      tokens_used_total:  prevTotal  + total_tokens,
+      tokens_used_today:  prevToday  + total_tokens,
+      tokens_reset_date:  today,
+      estimated_cost_usd: Math.round((prevCost + cost_usd) * 1000000) / 1000000,
+      last_active:        new Date().toISOString(),
+    });
+    console.log(`[trackTokens] +${total_tokens} tokens for ${profileId}`);
+  } catch (e) {
+    console.error("[trackTokens] error:", e.message);
+  }
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -318,6 +350,7 @@ export default async function handler(req, res) {
     if (action === "savePushToken")        return await handleSavePushToken(req, res);
     if (action === "sendDailyNotifs")      return await handleSendDailyNotifs(req, res);
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
+    if (action === "trackTokens")           return await handleTrackTokens(req, res);
     return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     console.error("[utils] Error:", err);
