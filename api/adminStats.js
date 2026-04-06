@@ -1,6 +1,6 @@
 const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
 const APP_ID = "69b332a392004d139d4ba495";
-const BASE44_API = "https://api.base44.com/api";  // ✅ fixed: was "https://base44.app/api"
+const BASE44_API = "https://app.base44.com/api";  // ✅ correct: app.base44.com not api.base44.com
 
 async function fetchEntity(entity, params = {}) {
   const url = new URL(`${BASE44_API}/apps/${APP_ID}/entities/${entity}`);
