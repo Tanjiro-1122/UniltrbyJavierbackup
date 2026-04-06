@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark, MessageCircle } from "lucide-react";
+import { Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft, RotateCcw, History, Gamepad2, Trophy, Moon, Sparkles, TrendingUp, Clock, Bookmark, MessageCircle, SlidersHorizontal } from "lucide-react";
+import ChatCustomizePanel from "@/components/chat/ChatCustomizePanel";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
