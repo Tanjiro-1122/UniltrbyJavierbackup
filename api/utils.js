@@ -253,7 +253,7 @@ async function handleSendDailyNotifs(req, res) {
     if (!isMorningTime && !isNightTime) { results.skipped++; continue; }
 
     const timeOfDay = isMorningTime ? "morning" : "night";
-    const todayKey  = \`\${nowUTC.toISOString().slice(0,10)}_\${timeOfDay}\`;
+    const todayKey  = `${nowUTC.toISOString().slice(0,10)}_${timeOfDay}`;
 
     // Avoid double-sending (store last sent date on profile)
     const lastSentKey = profile.notif_last_sent || "";
@@ -262,8 +262,8 @@ async function handleSendDailyNotifs(req, res) {
     try {
       const message = await generateCheckinMessage(openai, companionName, timeOfDay, userName);
       const title   = isMorningTime
-        ? \`Good morning from \${companionName} ☀️\`
-        : \`Goodnight from \${companionName} 🌙\`;
+        ? `Good morning from ${companionName} ☀️`
+        : `Goodnight from ${companionName} 🌙`;
 
       await sendExpoPush(pushToken, title, message, { screen: "chat" });
 
