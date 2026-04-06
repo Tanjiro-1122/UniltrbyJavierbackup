@@ -80,6 +80,7 @@ export default async function handler(req, res) {
       systemPrompt,
       memorySummary,
       sessionMemory,
+      userFacts  = {},
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
@@ -94,13 +95,38 @@ export default async function handler(req, res) {
 
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
     const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
+    // Structured facts (name, age, occupation, etc.) — add as concise bullet list
+    let factsCtx = "";
+    if ((isPremium || isPro || isAnnual) && userFacts && Object.keys(userFacts).length > 0) {
+      const factLines = [];
+      if (userFacts.name)                factLines.push(`Name: ${userFacts.name}`);
+      if (userFacts.age)                 factLines.push(`Age: ${userFacts.age}`);
+      if (userFacts.location)            factLines.push(`Location: ${userFacts.location}`);
+      if (userFacts.occupation)          factLines.push(`Occupation: ${userFacts.occupation}`);
+      if (userFacts.relationship_status) factLines.push(`Relationship: ${userFacts.relationship_status}`);
+      if (userFacts.important_people?.length) {
+        factLines.push(`Important people: ${userFacts.important_people.map(p => `${p.name} (${p.role})`).join(", ")}`);
+      }
+      if (userFacts.recurring_struggles?.length) {
+        factLines.push(`Struggles: ${userFacts.recurring_struggles.join(", ")}`);
+      }
+      if (userFacts.core_values?.length) factLines.push(`Core values: ${userFacts.core_values.join(", ")}`);
+      if (userFacts.goals?.length)       factLines.push(`Goals: ${userFacts.goals.join(", ")}`);
+      if (userFacts.hobbies?.length)     factLines.push(`Hobbies: ${userFacts.hobbies.join(", ")}`);
+      if (factLines.length > 0) {
+        factsCtx = "\n\nKnown facts about this user:\n" + factLines.map(l => `• ${l}`).join("\n");
+      }
+    }
     const personalityCtx = buildPersonalityParagraph(personality);
 
     // Session memory context (paid tiers only)
     let sessionCtx = "";
     if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
       const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
-      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
+      // sessionMemory items are {date, summary} objects — render them properly
+      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s =>
+        typeof s === "object" ? `- [${s.date || "recent"}] ${s.summary || ""}` : `- ${s}`
+      ).join("\n");
     }
 
     // Trim message history to tier context window
@@ -111,7 +137,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx +
+          content: system + memCtx + factsCtx + personalityCtx + sessionCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
