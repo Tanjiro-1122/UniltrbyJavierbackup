@@ -58,13 +58,8 @@ export default function OnboardingCompanion() {
     const c = VISIBLE[idx];
     updateOnboardingStore({ selectedCompanion: c.id });
     localStorage.setItem("unfiltr_selected_companion_id", c.id);  // persist for crash recovery
-    // If coming from quiz "choose myself", go to mode selection
-    // otherwise normal onboarding path continues to nickname
-    const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
-    if (fromQuiz === null) {
-      // Normal path: they haven't taken quiz, still go to nickname
-      navigate("/onboarding/nickname");
-    }
+    // Always navigate to nickname — works whether coming from quiz or manual selection
+    navigate("/onboarding/nickname");
   };
 
   const onTouchStart = (e) => { startX.current = e.touches[0].clientX; };
