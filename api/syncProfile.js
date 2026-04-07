@@ -155,6 +155,19 @@ export default async function handler(req, res) {
       });
 
     } else {
+      // ── NEW USER: dedup guard — wait 300ms and re-check before creating ──
+      // This prevents race conditions where two simultaneous calls both see no profile
+      await new Promise(r => setTimeout(r, 300));
+      const recheck = await findByAppleId(appleUserId);
+      if (recheck) {
+        // Another call already created it — treat as returning user
+        const companion = await getCompanion(recheck.companion_id);
+        console.log(`[syncProfile] Dedup: profile created by concurrent call ${recheck.id}`);
+        return res.status(200).json({
+          isNewUser: false,
+          data: buildProfileResponse(recheck, companion),
+        });
+      }
       // ── NEW USER: create minimal profile ─────────────────────────────────
       const newProfile = await createProfile({
         apple_user_id: appleUserId,
