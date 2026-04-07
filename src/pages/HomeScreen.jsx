@@ -6,7 +6,52 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { handleAppleSignIn } from "@/lib/db";
+import { base44 } from "@/api/base44Client";
+
+// Inline: find or create user profile in Base44 by Apple User ID
+async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC }) {
+  const B44_APP = "69b332a392004d139d4ba495";
+  const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+  const apiKey = import.meta.env.VITE_BASE44_API_KEY || "";
+
+  // Try to find existing profile
+  const searchRes = await fetch(
+    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: { "Content-Type": "application/json" } }
+  );
+  const searchData = await searchRes.json();
+  const records = Array.isArray(searchData) ? searchData : (searchData?.records || searchData?.data || []);
+  const existing = records[0];
+
+  if (existing) {
+    // Update last_seen
+    await fetch(`${B44_BASE}/UserProfile/${existing.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ last_seen: new Date().toISOString(), ...(isPremiumFromRC ? { is_premium: true } : {}) }),
+    }).catch(() => {});
+    localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+    return { profile: existing, isNewUser: false };
+  }
+
+  // Create new profile
+  const createRes = await fetch(`${B44_BASE}/UserProfile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      apple_user_id: appleUserId,
+      email: email || "",
+      full_name: fullName || "",
+      is_premium: isPremiumFromRC || false,
+      onboarding_complete: false,
+      created_at: new Date().toISOString(),
+      last_seen: new Date().toISOString(),
+    }),
+  });
+  const newProfile = await createRes.json();
+  localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+  return { profile: newProfile, isNewUser: true };
+}
 import { debugLog } from "@/components/DebugPanel";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
