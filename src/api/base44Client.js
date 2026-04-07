@@ -1,7 +1,7 @@
 import { createClient } from "@base44/sdk";
 
 // Base44 SDK client for entities + auth
-const _sdk = createClient({ appId: "69b22f8b58e45d23cafd78d2" }); // ✅ hardcoded production app ID
+const _sdk = createClient({ appId: "69b332a392004d139d4ba495" }); // ✅ hardcoded production app ID
 
 // Custom functions layer — routes to our Vercel /api/* serverless functions
 // instead of Base44 cloud functions (which we don't use)
