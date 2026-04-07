@@ -91,7 +91,7 @@ function useProfileRecovery() {
 
     (async () => {
       try {
-        const B44_APP = "69b332a392004d139d4ba495";
+        const B44_APP = "69b22f8b58e45d23cafd78d2";
         const TOKEN   = "1156284fb9144ad9ab95afc962e848d8";
         const res = await fetch(
           `https://base44.app/api/apps/${B44_APP}/entities/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
