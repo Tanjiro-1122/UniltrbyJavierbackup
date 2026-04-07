@@ -269,7 +269,7 @@ export default function HomeScreen() {
               </>
             ) : (
               <>
-                <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0, fontFamily: "-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif", color: "#000" }}>&#xF8FF;</span>
+                <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0, fontFamily: "-apple-system,BlinkMacSystemFont,SF Pro Display,sans-serif", color: "#000" }}>&#xF8FF;</span>
                 <span>Continue with Apple</span>
               </>
             )}
