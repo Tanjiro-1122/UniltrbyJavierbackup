@@ -1,377 +1,381 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Users, MessageSquare, Crown, ShieldAlert, Phone, Heart,
-  RefreshCw, BookOpen, AlertTriangle, MessageSquareMore, LogOut, ChevronRight
+  Users, MessageSquare, Crown, ShieldAlert,
+  RefreshCw, BookOpen, AlertTriangle, LogOut,
+  Trash2, PauseCircle, Star, Apple
 } from "lucide-react";
 
 const ADMIN_PASS = "javier1122admin";
+const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
 
-// ─── Standalone admin shell — no app chrome, no bottom nav ───────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
+const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const startOfWeek  = () => { const d = new Date(); d.setDate(d.getDate() - 7); return d; };
+const fmtDate = (s) => s ? new Date(s).toLocaleDateString("en-US", { month:"short", day:"numeric" }) : "—";
+
+// ── sub-components ────────────────────────────────────────────────────────────
+function StatCard({ icon, label, value, sub, color = "#a855f7" }) {
+  return (
+    <div style={{
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 14,
+      padding: "16px 14px",
+      display: "flex", flexDirection: "column", gap: 4,
+    }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+        {icon}
+        <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{label}</span>
+      </div>
+      <span style={{ fontSize:32, fontWeight:800, color, lineHeight:1 }}>{value ?? 0}</span>
+      {sub && <span style={{ fontSize:11, color:"rgba(255,255,255,0.35)" }}>{sub}</span>}
+    </div>
+  );
+}
+
+function Badge({ text, color }) {
+  return (
+    <span style={{
+      background: color + "22", color,
+      border: `1px solid ${color}44`,
+      borderRadius: 999, padding:"2px 9px",
+      fontSize:11, fontWeight:600, whiteSpace:"nowrap",
+    }}>{text}</span>
+  );
+}
+
+function SectionTitle({ children }) {
+  return <div style={{ fontSize:13, fontWeight:700, color:"#a855f7", marginBottom:12, marginTop:4 }}>{children}</div>;
+}
+
+// ── main ──────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [unlocked, setUnlocked]   = useState(() => sessionStorage.getItem("unfiltr_admin_session") === "true");
-  const [pwInput, setPwInput]     = useState("");
-  const [pwError, setPwError]     = useState(false);
-  const [stats, setStats]         = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [errorDetail, setErrorDetail] = useState("");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem("unfiltr_admin_session") === "true");
+  const [pwInput, setPwInput]   = useState("");
+  const [pwError, setPwError]   = useState(false);
+  const [stats, setStats]       = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [tab, setTab]           = useState("overview");
+  const [search, setSearch]     = useState("");
+  const [toast, setToast]       = useState("");
   const navigate = useNavigate();
 
-  // Load data once unlocked
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+
   useEffect(() => { if (unlocked) loadData(); }, [unlocked]);
 
   const handleUnlock = () => {
     if (pwInput.trim() === ADMIN_PASS) {
       sessionStorage.setItem("unfiltr_admin_session", "true");
-      setUnlocked(true);
-      setPwError(false);
+      setUnlocked(true); setPwError(false);
     } else {
-      setPwError(true);
-      setTimeout(() => setPwError(false), 1500);
+      setPwError(true); setTimeout(() => setPwError(false), 1500);
     }
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem("unfiltr_admin_session");
-    setUnlocked(false);
-    setStats(null);
-    setPwInput("");
+    localStorage.removeItem("unfiltr_admin_unlocked");
+    setUnlocked(false); setStats(null); setPwInput("");
   };
 
   const loadData = async () => {
-    setLoading(true);
-    setErrorDetail("");
+    setLoading(true); setError("");
     try {
-      // Call Base44 adminStats function with secret token — no user auth needed
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: "unfiltr_admin_javier1122_secret" }),
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Failed to load stats");
-      setStats({
-        totalUsers:      data.totalUsers       ?? 0,
-        premiumUsers:    data.premiumUsers      ?? 0,
-        todayMessages:   data.todayMessages     ?? 0,
-        totalMessages:   data.totalMessages     ?? 0,
-        journalEntries:  data.totalJournalEntries ?? 0,
-        crisisFlags:     data.crisisFlags       ?? 0,
-        newThisWeek:     data.newThisWeek       ?? 0,
-        activeThisWeek:  data.activeThisWeek    ?? 0,
-        companions:      data.companions        ?? 0,
-        feedbackCount:   data.feedbackCount     ?? 0,
-        openFeedback:    data.openFeedback      ?? 0,
-        appleUsers:      data.appleUsers        ?? 0,
-        onlineNow:       data.onlineNow         ?? 0,
-        recentUsers:     data.recentUsers       ?? [],
-        allFeedback:     data.allFeedback       ?? [],
-        premiumList:     data.premiumList       ?? [],
-        pausedAccounts:  Array(data.pausedAccounts  ?? 0).fill({}),
-        deleteRequested: Array(data.deleteRequested ?? 0).fill({}),
-        trialUsers:      Array(data.trialUsers       ?? 0).fill({}),
-      });
-    } catch (err) {
-      setErrorDetail(err?.message || "Failed to load stats");
-    }
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      setStats(data);
+    } catch (e) { setError(e.message); }
     setLoading(false);
   };
 
-  // ── Login screen ─────────────────────────────────────────────────────────
-  if (!unlocked) {
-    return (
-      <div style={{ position: "fixed", inset: 0, background: "#06020f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'SF Pro Display',system-ui,sans-serif" }}>
-        <div style={{ width: "100%", maxWidth: 360, padding: "0 28px", textAlign: "center" }}>
-          {/* Logo */}
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg,#7c3aed,#db2777)", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ShieldAlert style={{ width: 32, height: 32, color: "white" }} />
-          </div>
-          <h1 style={{ color: "white", fontWeight: 900, fontSize: 24, margin: "0 0 6px" }}>Unfiltr Admin</h1>
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, margin: "0 0 32px" }}>This portal is for app management only.</p>
+  const grantAccess = async (userId, type) => {
+    try {
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "grantAccess", userId, type }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showToast(`✅ ${type === "trial" ? "Trial" : "Family"} access granted`);
+      loadData();
+    } catch (e) { showToast("❌ " + e.message); }
+  };
 
-          <input
-            type="password"
-            value={pwInput}
-            onChange={e => setPwInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleUnlock()}
-            placeholder="Admin password"
-            autoFocus
-            style={{
-              width: "100%", boxSizing: "border-box",
-              padding: "14px 16px", borderRadius: 14,
-              border: pwError ? "1.5px solid #f87171" : "1.5px solid rgba(139,92,246,0.3)",
-              background: "rgba(139,92,246,0.07)", color: "white",
-              fontSize: 15, outline: "none", marginBottom: pwError ? 8 : 14,
-              transition: "border 0.2s",
-            }}
-          />
-          {pwError && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 10px" }}>Incorrect password</p>}
-          <button
-            onClick={handleUnlock}
-            style={{
-              width: "100%", padding: "14px", borderRadius: 14, border: "none",
-              background: "linear-gradient(135deg,#7c3aed,#db2777)",
-              color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer",
-            }}>
-            Sign In
-          </button>
+  const revokeAccess = async (userId) => {
+    try {
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "revokeAccess", userId }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showToast("✅ Access revoked");
+      loadData();
+    } catch (e) { showToast("❌ " + e.message); }
+  };
+
+  // ── LOGIN ─────────────────────────────────────────────────────────────────
+  if (!unlocked) return (
+    <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'SF Pro Display',system-ui,sans-serif" }}>
+      <div style={{ width:"100%", maxWidth:340, padding:"0 28px", textAlign:"center" }}>
+        <div style={{ width:64, height:64, borderRadius:18, background:"linear-gradient(135deg,#7c3aed,#db2777)", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <ShieldAlert style={{ width:32, height:32, color:"white" }} />
         </div>
+        <h1 style={{ color:"white", fontWeight:900, fontSize:24, margin:"0 0 6px" }}>Unfiltr Admin</h1>
+        <p style={{ color:"rgba(255,255,255,0.35)", fontSize:13, margin:"0 0 28px" }}>Management portal — authorized access only.</p>
+        <input
+          type="password" value={pwInput}
+          onChange={e => setPwInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleUnlock()}
+          placeholder="Admin password" autoFocus
+          style={{ width:"100%", boxSizing:"border-box", padding:"14px 16px", borderRadius:14, border: pwError ? "1.5px solid #f87171" : "1.5px solid rgba(139,92,246,0.3)", background:"rgba(139,92,246,0.07)", color:"white", fontSize:15, outline:"none", marginBottom: pwError ? 8 : 14 }}
+        />
+        {pwError && <p style={{ color:"#f87171", fontSize:12, margin:"0 0 10px" }}>Incorrect password</p>}
+        <button onClick={handleUnlock} style={{ width:"100%", padding:"14px", borderRadius:14, border:"none", background:"linear-gradient(135deg,#7c3aed,#db2877)", color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+          Sign In
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // ── Admin shell ───────────────────────────────────────────────────────────
-  const tabs = [
-    { id: "dashboard", label: "Overview"  },
-    { id: "users",     label: "Users"     },
-    { id: "feedback",  label: "Feedback"  },
-    { id: "safety",    label: "Safety"    },
-  ];
+  // ── TABS ──────────────────────────────────────────────────────────────────
+  const TABS = ["overview","users","messages","feedback"];
+
+  // ── derived ───────────────────────────────────────────────────────────────
+  const allUsers    = stats?.recentUsers    ?? [];
+  const allFeedback = stats?.allFeedback    ?? [];
+  const totalUsers  = stats?.totalUsers     ?? 0;
+  const proUsers    = stats?.premiumUsers   ?? 0;
+  const convRate    = totalUsers > 0 ? ((proUsers/totalUsers)*100).toFixed(1) : "0";
+
+  const filteredUsers = allUsers.filter(u =>
+    (u.display_name||"").toLowerCase().includes(search.toLowerCase()) ||
+    (u.email||"").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#06020f", fontFamily: "'SF Pro Display',system-ui,sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ position:"fixed", inset:0, background:"#06020f", fontFamily:"'SF Pro Display',system-ui,sans-serif", display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
-      {/* Top bar */}
-      <div style={{ padding: "max(1.2rem,env(safe-area-inset-top)) 20px 0", background: "rgba(6,2,15,0.95)", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      {/* ── TOP BAR ── */}
+      <div style={{ padding:"max(1.2rem,env(safe-area-inset-top)) 16px 0", background:"rgba(6,2,15,0.97)", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div>
-            <h1 style={{ color: "white", fontWeight: 900, fontSize: 20, margin: 0 }}>Unfiltr Admin</h1>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0 }}>Management Portal</p>
+            <div style={{ fontSize:18, fontWeight:800, background:"linear-gradient(135deg,#a855f7,#db2777)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+              ⚡ Control Panel
+            </div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:1 }}>
+              {totalUsers} users · {new Date().toLocaleTimeString()}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => navigate("/settings")} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={loadData} disabled={loading} style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.5)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+            </button>
+            <button onClick={() => navigate("/settings")} style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.5)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>
               ←
             </button>
-            <button onClick={loadData} disabled={loading} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <RefreshCw size={15} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-            </button>
-            <button onClick={handleLogout} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <LogOut size={15} />
+            <button onClick={handleLogout} style={{ width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.5)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <LogOut size={14} />
             </button>
           </div>
         </div>
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 0 }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-              padding: "7px 14px", borderRadius: "10px 10px 0 0", border: "none", cursor: "pointer",
-              background: activeTab === t.id ? "rgba(139,92,246,0.18)" : "transparent",
-              color: activeTab === t.id ? "#c4b5fd" : "rgba(255,255,255,0.35)",
-              fontSize: 13, fontWeight: activeTab === t.id ? 700 : 500, whiteSpace: "nowrap",
-              borderBottom: activeTab === t.id ? "2px solid #a855f7" : "2px solid transparent",
-              transition: "all 0.2s",
+        <div style={{ display:"flex", gap:0, overflowX:"auto" }}>
+          {TABS.map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding:"7px 16px", border:"none", cursor:"pointer", fontSize:13, fontWeight: tab===t ? 700 : 500,
+              background:"transparent", color: tab===t ? "#c4b5fd" : "rgba(255,255,255,0.35)",
+              borderBottom: tab===t ? "2px solid #a855f7" : "2px solid transparent",
+              whiteSpace:"nowrap", transition:"all .2s",
             }}>
-              {t.label}
+              {t.charAt(0).toUpperCase()+t.slice(1)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px max(1.4rem,env(safe-area-inset-bottom))" }}>
-        {loading && !stats && (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}>Loading...</div>
-        )}
-        {errorDetail && (
-          <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 12, padding: "12px 16px", color: "#f87171", fontSize: 13, marginBottom: 16 }}>
-            ⚠️ {errorDetail}
+      {/* ── CONTENT ── */}
+      <div style={{ flex:1, overflowY:"auto", padding:"16px 14px max(1.4rem,env(safe-area-inset-bottom))" }}>
+
+        {toast && (
+          <div style={{ background:"#a855f722", border:"1px solid #a855f7", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:13 }}>
+            {toast}
           </div>
         )}
 
-        {stats && activeTab === "dashboard" && <DashboardTab stats={stats} />}
-        {stats && activeTab === "users"     && <UsersTab stats={stats} />}
-        {stats && activeTab === "feedback"  && <FeedbackTab stats={stats} />}
-        {stats && activeTab === "safety"    && <SafetyTab />}
-      </div>
+        {error && (
+          <div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:10, padding:"10px 14px", color:"#f87171", fontSize:13, marginBottom:12 }}>
+            ⚠️ {error}
+          </div>
+        )}
 
+        {loading && !stats && (
+          <div style={{ textAlign:"center", padding:"60px 0", color:"rgba(255,255,255,0.3)" }}>Loading...</div>
+        )}
+
+        {/* ── OVERVIEW ── */}
+        {stats && tab === "overview" && (
+          <>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+              <StatCard icon={<Users size={14} color="#a855f7"/>}      label="Total Users"     value={stats.totalUsers}       color="#a855f7" />
+              <StatCard icon={<Crown size={14} color="#f59e0b"/>}      label="Pro Users"       value={stats.premiumUsers}     sub={convRate+"% conv"} color="#f59e0b" />
+              <StatCard icon={<span style={{fontSize:13}}>🆕</span>}   label="New This Week"   value={stats.newThisWeek}      color="#10b981" />
+              <StatCard icon={<span style={{fontSize:13}}>🟢</span>}   label="Online Now"      value={stats.onlineNow}        color="#22c55e" />
+              <StatCard icon={<MessageSquare size={14} color="#6366f1"/>} label="Today's Msgs" value={stats.todayMessages}    color="#6366f1" />
+              <StatCard icon={<MessageSquare size={14} color="#8b5cf6"/>} label="Total Msgs"   value={stats.totalMessages}    color="#8b5cf6" />
+              <StatCard icon={<BookOpen size={14} color="#ec4899"/>}   label="Journal Entries" value={stats.totalJournalEntries ?? 0} color="#ec4899" />
+              <StatCard icon={<AlertTriangle size={14} color="#f97316"/>} label="Crisis Flags" value={stats.crisisFlags}      color="#f97316" />
+              <StatCard icon={<span style={{fontSize:13}}>📅</span>}   label="Active / Week"   value={stats.activeThisWeek}   color="#3b82f6" />
+              <StatCard icon={<Apple size={14} color="#e2e8f0"/>}      label="Apple Sign-Ins"  value={stats.appleUsers}       color="#e2e8f0" />
+              <StatCard icon={<Trash2 size={14} color="#ef4444"/>}     label="Delete Requests" value={stats.deleteRequested}  color="#ef4444" />
+              <StatCard icon={<Star size={14} color="#14b8a6"/>}       label="Feedback"        value={stats.feedbackCount}    color="#14b8a6" />
+            </div>
+
+            {/* Recent users */}
+            <SectionTitle>👤 Recent Signups</SectionTitle>
+            <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, overflow:"hidden", marginBottom:16 }}>
+              {(stats.recentUsers||[]).slice(0,8).map((u,i) => (
+                <div key={u.id||i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{u.display_name||"—"}</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>{fmtDate(u.created_date)} · {u.message_count||0} msgs</div>
+                  </div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    {u.onboarding_complete ? <Badge text="✓ onboarded" color="#10b981"/> : <Badge text="pending" color="#f59e0b"/>}
+                    {(u.is_premium||u.annual_plan||u.pro_plan) ? <Badge text="PRO" color="#a855f7"/> : <Badge text="free" color="#6b7280"/>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Crisis flags alert */}
+            {(stats.crisisFlags > 0) && (
+              <>
+                <SectionTitle>🚨 Crisis Flags — Needs Review</SectionTitle>
+                <div style={{ background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
+                  <div style={{ fontSize:13, color:"#f87171" }}>{stats.crisisFlags} message(s) flagged as crisis. Check the Messages tab or reach out to affected users.</div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── USERS ── */}
+        {stats && tab === "users" && (
+          <>
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name or email..."
+              style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"10px 14px", color:"#fff", fontSize:13, outline:"none", marginBottom:12 }}
+            />
+            <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, overflow:"hidden" }}>
+              {filteredUsers.length === 0 && (
+                <div style={{ padding:"24px", textAlign:"center", color:"rgba(255,255,255,0.3)", fontSize:13 }}>No users found.</div>
+              )}
+              {filteredUsers.map((u,i) => (
+                <div key={u.id||i} style={{ padding:"12px 14px", borderBottom: i < filteredUsers.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name||"—"}</div>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>
+                        {u.email||"no email"} · {u.apple_user_id ? "🍎 Apple" : "no apple"} · {u.message_count||0} msgs
+                      </div>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginTop:1 }}>
+                        Last active: {fmtDate(u.last_active)} · Joined: {fmtDate(u.created_date)}
+                      </div>
+                    </div>
+                    <div>
+                      {u.annual_plan ? <Badge text="Annual" color="#10b981"/> :
+                       u.pro_plan    ? <Badge text="Pro" color="#a855f7"/> :
+                       u.is_premium  ? <Badge text="Premium" color="#f59e0b"/> :
+                                       <Badge text="Free" color="#6b7280"/>}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                    {!u.is_premium && (
+                      <>
+                        <button onClick={() => grantAccess(u.id, "trial")} style={{ padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:600, background:"#f59e0b22", color:"#f59e0b" }}>
+                          + Trial
+                        </button>
+                        <button onClick={() => grantAccess(u.id, "family")} style={{ padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:600, background:"#10b98122", color:"#10b981" }}>
+                          + Family
+                        </button>
+                      </>
+                    )}
+                    {u.is_premium && (
+                      <button onClick={() => revokeAccess(u.id)} style={{ padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:600, background:"#ef444422", color:"#ef4444" }}>
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── MESSAGES ── */}
+        {stats && tab === "messages" && (
+          <>
+            <SectionTitle>💬 Message Stats</SectionTitle>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+              <StatCard icon={<MessageSquare size={14} color="#6366f1"/>} label="Today" value={stats.todayMessages} color="#6366f1"/>
+              <StatCard icon={<MessageSquare size={14} color="#8b5cf6"/>} label="All Time" value={stats.totalMessages} color="#8b5cf6"/>
+              <StatCard icon={<AlertTriangle size={14} color="#f97316"/>} label="Crisis Flags" value={stats.crisisFlags} color="#f97316"/>
+              <StatCard icon={<BookOpen size={14} color="#ec4899"/>}      label="Journal Entries" value={stats.totalJournalEntries ?? 0} color="#ec4899"/>
+            </div>
+            <SectionTitle>📊 Per-User Message Counts</SectionTitle>
+            <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, overflow:"hidden" }}>
+              {(stats.recentUsers||[])
+                .filter(u => (u.message_count||0) > 0)
+                .sort((a,b) => (b.message_count||0) - (a.message_count||0))
+                .map((u,i,arr) => (
+                  <div key={u.id||i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"11px 14px", borderBottom: i < arr.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                    <span style={{ fontSize:13, color:"#fff" }}>{u.display_name||"—"}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"#8b5cf6" }}>{u.message_count} msgs</span>
+                  </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── FEEDBACK ── */}
+        {stats && tab === "feedback" && (
+          <>
+            <SectionTitle>📬 User Feedback ({allFeedback.length})</SectionTitle>
+            {allFeedback.length === 0 && (
+              <div style={{ textAlign:"center", color:"rgba(255,255,255,0.3)", fontSize:13, padding:"24px 0" }}>No feedback submitted yet.</div>
+            )}
+            <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, overflow:"hidden" }}>
+              {[...allFeedback].sort((a,b) => new Date(b.created_date)-new Date(a.created_date)).map((f,i,arr) => (
+                <div key={f.id||i} style={{ padding:"12px 14px", borderBottom: i < arr.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{f.display_name||"—"}</span>
+                    <div style={{ display:"flex", gap:6 }}>
+                      {f.rating && <Badge text={"⭐".repeat(f.rating)} color="#f59e0b"/>}
+                      <Badge text={f.status||"open"} color={f.status==="resolved"?"#10b981":"#f59e0b"}/>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:4 }}>{f.category||"general"} · {fmtDate(f.created_date)}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{f.message||"—"}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+      </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
-
-// ── OVERVIEW TAB ─────────────────────────────────────────────────────────────
-function DashboardTab({ stats }) {
-  return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-        <StatCard icon={<Users size={18} color="#a855f7" />}  label="Total Users"     value={stats.totalUsers} />
-        <StatCard icon={<Crown size={18} color="#facc15" />}  label="Premium"         value={stats.premiumUsers} sub={`${stats.totalUsers > 0 ? Math.round(stats.premiumUsers/stats.totalUsers*100) : 0}% of users`} />
-        <StatCard icon={<span style={{fontSize:14}}>🟢</span>} label="Online Now"      value={stats.onlineNow ?? 0} sub="active in last 5 min" />
-        <StatCard icon={<span style={{fontSize:14}}>🍎</span>} label="Apple Sign-In"   value={stats.appleUsers ?? 0} sub="linked Apple IDs" />
-        <StatCard icon={<MessageSquare size={18} color="#34d399" />} label="Today's Messages" value={stats.todayMessages} />
-        <StatCard icon={<Users size={18} color="#60a5fa" />}  label="Active This Week" value={stats.activeThisWeek} />
-        <StatCard icon={<BookOpen size={18} color="#818cf8" />} label="Journal Entries" value={stats.journalEntries} />
-        <StatCard icon={<AlertTriangle size={18} color="#f87171" />} label="Crisis Flags" value={stats.crisisFlags} />
-        <StatCard icon={<Users size={18} color="#fb923c" />}  label="New This Week"   value={stats.newThisWeek} />
-        <StatCard icon={<MessageSquareMore size={18} color="#f472b6" />} label="Open Feedback" value={stats.openFeedback} />
-      </div>
-
-      {/* Account alerts */}
-      {(stats.deleteRequested.length > 0 || stats.pausedAccounts.length > 0) && (
-        <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 16, padding: "14px 16px", marginBottom: 16 }}>
-          <p style={{ color: "#f87171", fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>⚠️ Action Needed</p>
-          {stats.deleteRequested.length > 0 && (
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: "0 0 4px" }}>• {stats.deleteRequested.length} account deletion request(s)</p>
-          )}
-          {stats.pausedAccounts.length > 0 && (
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0 }}>• {stats.pausedAccounts.length} paused account(s)</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── USERS TAB ─────────────────────────────────────────────────────────────────
-function UsersTab({ stats }) {
-  const [filter, setFilter] = useState("all");
-  const filters = [
-    { id: "all",     label: "All",      list: stats.recentUsers    },
-    { id: "premium", label: "Premium",  list: stats.premiumList    },
-    { id: "trial",   label: "Trials",   list: stats.trialUsers     },
-    { id: "paused",  label: "Paused",   list: stats.pausedAccounts },
-    { id: "delete",  label: "Delete Req", list: stats.deleteRequested },
-  ];
-  const active = filters.find(f => f.id === filter);
-
-  return (
-    <div>
-      {/* Filter pills */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 4 }}>
-        {filters.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} style={{
-            padding: "5px 12px", borderRadius: 999, border: "none", cursor: "pointer", whiteSpace: "nowrap",
-            background: filter === f.id ? "#7c3aed" : "rgba(255,255,255,0.07)",
-            color: filter === f.id ? "white" : "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 600,
-          }}>
-            {f.label} <span style={{ opacity: 0.7 }}>({f.list.length})</span>
-          </button>
-        ))}
-      </div>
-
-      {active.list.length === 0 ? (
-        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "40px 0" }}>No users in this category.</p>
-      ) : active.list.map(u => (
-        <div key={u.id} style={{ padding: "12px 14px", borderRadius: 14, background: u.account_delete_requested ? "rgba(239,68,68,0.07)" : "rgba(255,255,255,0.04)", border: u.account_delete_requested ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.06)", marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 2px" }}>{u.display_name || "Anonymous"}</p>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "0 0 2px", wordBreak: "break-all" }}>
-                {u.email
-                  ? u.email
-                  : u.apple_user_id
-                  ? `Apple ID: ${u.apple_user_id.slice(0, 8)}...`
-                  : "No email on file"}
-              </p>
-              {u.companion_id && (
-                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>
-                  {"Companion: "}{u.companion_id}{" · "}{u.message_count || 0}{" msgs"}
-                </p>
-              )}
-            </div>
-            <div style={{ textAlign: "right", marginLeft: 10, flexShrink: 0 }}>
-              {u.account_delete_requested ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#f87171", background: "rgba(239,68,68,0.15)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>DELETE REQ</span>
-              ) : u.subscription_tier === "Free" ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>FREE</span>
-              ) : u.subscription_tier === "Annual" ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399", background: "rgba(52,211,153,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>ANNUAL</span>
-              ) : u.subscription_tier === "Pro" ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>PRO</span>
-              ) : (
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#facc15", background: "rgba(250,204,21,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>MONTHLY</span>
-              )}
-              {u.trial_active && <span style={{ fontSize: 10, fontWeight: 700, color: "#60a5fa", background: "rgba(96,165,250,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>TRIAL</span>}
-              <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>{u.created_date ? new Date(u.created_date).toLocaleDateString() : ""}</p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── FEEDBACK TAB ─────────────────────────────────────────────────────────────
-function FeedbackTab({ stats }) {
-  return (
-    <div>
-      {stats.allFeedback.length === 0 ? (
-        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "40px 0" }}>No feedback yet.</p>
-      ) : stats.allFeedback.map(f => (
-        <div key={f.id} style={{ padding: "14px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-              background: f.status === "resolved" ? "rgba(52,211,153,0.15)" : "rgba(168,85,247,0.15)",
-              color: f.status === "resolved" ? "#34d399" : "#c4b5fd",
-            }}>
-              {(f.category || "general").toUpperCase()}
-            </span>
-            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{f.created_date ? new Date(f.created_date).toLocaleDateString() : ""}</span>
-          </div>
-          <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, margin: "0 0 4px", lineHeight: 1.5 }}>{f.message}</p>
-          {f.display_name && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, margin: 0 }}>— {f.display_name}</p>}
-          {typeof f.rating === "number" && <p style={{ color: "#facc15", fontSize: 11, margin: "4px 0 0" }}>{"★".repeat(f.rating)}{"☆".repeat(5 - f.rating)}</p>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── SAFETY TAB ───────────────────────────────────────────────────────────────
-function SafetyTab() {
-  return (
-    <div>
-      <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 16, padding: "16px", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Heart size={18} color="#f87171" />
-          <p style={{ color: "#f87171", fontWeight: 700, fontSize: 14, margin: 0 }}>Crisis Resources</p>
-        </div>
-        {[
-          ["988 Suicide & Crisis Lifeline", "988", "Call or text · 24/7 · US"],
-          ["Crisis Text Line", "Text HOME to 741741", "Text support · 24/7"],
-          ["SAMHSA Helpline", "1-800-662-4357", "Mental health & substance use"],
-          ["International Crisis Centres", "iasp.info/resources", "Global directory"],
-        ].map(([label, number, desc]) => (
-          <div key={label} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 10, marginBottom: 10 }}>
-            <p style={{ color: "white", fontWeight: 600, fontSize: 13, margin: "0 0 1px" }}>{label}</p>
-            <p style={{ color: "#f87171", fontSize: 13, margin: "0 0 1px", fontWeight: 700 }}>{number}</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0 }}>{desc}</p>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background: "rgba(251,146,60,0.07)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 16, padding: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Phone size={18} color="#fb923c" />
-          <p style={{ color: "#fb923c", fontWeight: 700, fontSize: 14, margin: 0 }}>Emergency</p>
-        </div>
-        {[
-          ["🇺🇸 US", "911", "Police / Fire / Medical"],
-          ["🇬🇧 UK", "999", "Emergency services"],
-          ["🇪🇺 Europe / International", "112", "Universal emergency"],
-        ].map(([flag, number, desc]) => (
-          <div key={flag} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 10, marginBottom: 10 }}>
-            <p style={{ color: "white", fontWeight: 600, fontSize: 13, margin: "0 0 1px" }}>{flag}</p>
-            <p style={{ color: "#fb923c", fontSize: 15, fontWeight: 900, margin: "0 0 1px" }}>{number}</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0 }}>{desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Shared components ─────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub }) {
-  return (
-    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "14px 14px 12px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>{icon}<span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600 }}>{label}</span></div>
-      <p style={{ color: "white", fontWeight: 900, fontSize: 28, margin: "0 0 2px" }}>{value ?? "—"}</p>
-      {sub && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, margin: 0 }}>{sub}</p>}
-    </div>
-  );
-}
-
-
