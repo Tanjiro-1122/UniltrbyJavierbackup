@@ -58,6 +58,33 @@ function signInWithApple(navigate, setLoading) {
             if (prof.display_name) localStorage.setItem("unfiltr_display_name", prof.display_name);
             // If they have onboarding_complete in DB, mark it locally too
             localStorage.setItem("unfiltr_onboarding_complete", "true");
+
+            // Restore companion from DB so new device gets the right character
+            if (prof.companion && prof.companion.avatar_id) {
+              const c = prof.companion;
+              try {
+                const { COMPANIONS } = await import("@/components/companionData");
+                const match = COMPANIONS.find(comp => comp.id === c.avatar_id);
+                if (match) {
+                  const nickname = c.nickname || c.name || match.name;
+                  localStorage.setItem("unfiltr_companion", JSON.stringify({
+                    id: match.id, name: match.name, displayName: nickname,
+                    systemPrompt: "You are " + nickname + ", a supportive AI companion. " + match.tagline,
+                    tagline: match.tagline, avatar: match.avatar,
+                  }));
+                  localStorage.setItem("unfiltr_companion_nickname", nickname);
+                  if (c.voice_gender)        localStorage.setItem("unfiltr_voice_gender", c.voice_gender);
+                  if (c.voice_personality)   localStorage.setItem("unfiltr_voice_personality", c.voice_personality);
+                  if (c.personality_vibe)    localStorage.setItem("unfiltr_personality_vibe", c.personality_vibe);
+                  if (c.personality_style)   localStorage.setItem("unfiltr_personality_style", c.personality_style);
+                  if (c.personality_humor)   localStorage.setItem("unfiltr_personality_humor", c.personality_humor);
+                  if (c.personality_empathy) localStorage.setItem("unfiltr_personality_empathy", c.personality_empathy);
+                  console.log("[ReturningScreen] Companion restored:", match.name);
+                }
+              } catch(compErr) {
+                console.warn("[ReturningScreen] Companion restore non-fatal:", compErr);
+              }
+            }
           }
         }
       } catch(e) { /* non-fatal */ }
@@ -214,7 +241,19 @@ export default function ReturningScreen() {
             opacity: loading ? 0.7 : 1,
           }}>
            
-          {loading ? "Signing in..." : "Sign in with Apple"}
+          {loading ? (
+            <>
+              <div style={{ width:18, height:18, border:"2px solid #000", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.8s linear infinite", flexShrink:0 }} />
+              <span>Signing in...</span>
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 814 1000" style={{ flexShrink:0 }}>
+                <path fill="#000" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 405.8 15.1 307.9 15.1 213.8c0-189.1 123.2-289.6 245-289.6 66.4 0 121.5 43.4 163.4 43.4 39.5 0 101.4-46 176.1-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/>
+              </svg>
+              <span>Sign in with Apple</span>
+            </>
+          )}
         </motion.button>
       )}
 
