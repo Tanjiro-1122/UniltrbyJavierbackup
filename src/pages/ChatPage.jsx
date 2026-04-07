@@ -883,6 +883,7 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
+            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
@@ -1228,6 +1229,7 @@ export default function ChatPage() {
     </>
   );
 }
+
 
 
 
