@@ -82,60 +82,48 @@ export default function OnboardingBackground() {
     if (store.selectedVibe) localStorage.setItem("unfiltr_vibe", store.selectedVibe);
     localStorage.setItem("unfiltr_onboarding_complete", "true");
 
-    // Step 2 — Save to DB and WAIT before navigating
+    // Step 2 — Save via /api/syncProfile (server-side, works for Apple Sign-In users)
     try {
-      // Create companion record
-      const companion = await base44.entities.Companion.create({
-        name: companionData.name,
-        avatar_id: companionData.id,
-        avatar_gender: companionData.gender || "female",
-        personality_preset: companionData.personality || companionData.tagline || "friendly",
-        mood_mode: "neutral",
-        is_active: true,
-      });
-      localStorage.setItem("companionId", companion.id);
-      localStorage.setItem("unfiltr_companion_id", companion.id);
-
       const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-      const profileData = {
-        display_name: store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
-        apple_user_id: appleUserId || null,
-        email: localStorage.getItem("unfiltr_apple_email") || null,
-        companion_id: companion.id,
-        is_premium: !!(store.isTesterAccount),
-        trial_active: !!(store.isTesterAccount),
-        trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
-        onboarding_complete: true,
-        session_memory: [],
-        message_count: 0,
-        last_active: new Date().toISOString(),
-        preferred_mood: store.selectedVibe || "chill",
-      };
+      const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
 
-      // Create or update UserProfile
-      let profileId;
-      if (store.pendingProfileId) {
-        await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
-        profileId = store.pendingProfileId;
+      const res = await fetch("/api/syncProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          profileId,
+          updateData: {
+            display_name:        store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
+            apple_user_id:       appleUserId || null,
+            email:               localStorage.getItem("unfiltr_apple_email") || null,
+            companion_id:        store.selectedCompanion || companionData.id,
+            onboarding_complete: true,
+            preferred_mood:      store.selectedVibe || "chill",
+            background_id:       selected,
+            nickname:            store.companionNickname?.trim() || "",
+            relationship_mode:   store.selectedMode || "",
+            last_active:         new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (res.ok) {
+        localStorage.setItem("userProfileId", profileId);
+        localStorage.setItem("unfiltr_user_id", profileId);
+        localStorage.setItem("unfiltr_auth_token", profileId);
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
+        console.log("[Onboarding] Profile saved successfully");
       } else {
-        const profile = await base44.entities.UserProfile.create(profileData);
-        profileId = profile.id;
+        console.error("[Onboarding] syncProfile failed:", await res.text());
       }
-
-      // Persist ALL identity keys
-      localStorage.setItem("userProfileId", profileId);
-      localStorage.setItem("unfiltr_user_id", profileId);
-      localStorage.setItem("unfiltr_auth_token", profileId);
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
       resetOnboardingStore();
-
     } catch (err) {
-      // DB failed — still allow entry, keys already set from Step 1
-      console.error("Onboarding DB error:", err);
+      console.error("[Onboarding] DB error:", err);
       resetOnboardingStore();
     }
 
-    // Navigate only AFTER DB is done (or failed)
+        // Navigate only AFTER DB is done (or failed)
     setLoading(false);
     navigate("/hub");
   };
