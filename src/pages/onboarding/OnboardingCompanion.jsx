@@ -86,7 +86,7 @@ export default function OnboardingCompanion() {
 
   return (
     <OnboardingLayout
-      totalSteps={7} step={3} onBack={() => {
+      totalSteps={5} step={3} onBack={() => {
               const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
               navigate(fromQuiz !== null ? "/onboarding/quiz" : "/onboarding/name");
             }} canAdvance={false}>
