@@ -11,26 +11,38 @@ function isReactNativeWebView() {
   return typeof window !== 'undefined' && !!window.ReactNativeWebView;
 }
 
-// ── Register the global handler that native calls directly ───────────────────
+// ── UNIFIED Global Bridge ────────────────────────────────────────────────────
 // Native wrapper calls: window.onMessageFromRN(jsonString)
-// This follows the proven Close.com pattern for native→web communication
+// This fan-out dispatcher routes to ALL listeners — never overwrites, always adds.
+// Both _rnMessageHandlers (IAP) and __nativeBus (Auth) receive every message.
 if (typeof window !== 'undefined') {
   window._rnMessageHandlers = window._rnMessageHandlers || {};
 
-  window.onMessageFromRN = function(jsonStr) {
-    try {
-      const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-      debugLog(`📨 [RN→WEB] ${data.type}`);
-      const handlers = window._rnMessageHandlers[data.type] || [];
-      handlers.forEach(fn => {
-        try { fn(data); } catch(e) {}
-      });
-      // Also fire as window event for any legacy listeners
-      window.dispatchEvent(new MessageEvent('message', { data }));
-    } catch(e) {
-      debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
-    }
-  };
+  // Use a single install guard so no two modules can overwrite each other
+  if (!window.__rnBridgeInstalled) {
+    window.__rnBridgeInstalled = true;
+
+    window.onMessageFromRN = function(jsonStr) {
+      try {
+        const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        debugLog(`📨 [RN→WEB] ${data.type}`);
+
+        // 1. Route to _rnMessageHandlers (IAP / useAppleSubscriptions)
+        const handlers = window._rnMessageHandlers[data.type] || [];
+        handlers.forEach(fn => { try { fn(data); } catch(e) {} });
+
+        // 2. Route to __nativeBus (HomeScreen / ReturningScreen auth)
+        if (typeof window.__nativeBus === 'function') {
+          try { window.__nativeBus(data); } catch(e) {}
+        }
+
+        // 3. Dispatch as window event for any remaining listeners
+        window.dispatchEvent(new MessageEvent('message', { data }));
+      } catch(e) {
+        debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
+      }
+    };
+  }
 }
 
 function onceFromNative(types, timeoutMs) {
