@@ -157,23 +157,26 @@ function OnboardingResume() {
 
 function useNativeBridge() {
   useEffect(() => {
-    window.onMessageFromRN = (jsonStr) => {
-      try {
-        const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-        // 1. Route to __nativeBus (HomeScreen, ReturningScreen, etc.)
-        if (typeof window.__nativeBus === 'function') {
-          window.__nativeBus(msg);
+    // The unified fan-out bridge is already installed by useAppleSubscriptions
+    // (with __rnBridgeInstalled guard). We only install here as a fallback
+    // in case that module hasn't loaded yet.
+    if (!window.__rnBridgeInstalled) {
+      window.__rnBridgeInstalled = true;
+      window.onMessageFromRN = (jsonStr) => {
+        try {
+          const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+          if (typeof window.__nativeBus === 'function') window.__nativeBus(msg);
+          if (window._rnMessageHandlers?.[msg.type]) {
+            window._rnMessageHandlers[msg.type].forEach(fn => { try { fn(msg); } catch(e) {} });
+          }
+          window.dispatchEvent(new MessageEvent('message', { data: msg }));
+        } catch (e) {
+          console.warn('[Bridge] Parse error:', e.message, String(jsonStr).slice(0, 100));
         }
-        // 2. Route to _rnMessageHandlers (useAppleSubscriptions IAP hook)
-        if (window._rnMessageHandlers && window._rnMessageHandlers[msg.type]) {
-          window._rnMessageHandlers[msg.type].forEach(fn => { try { fn(msg); } catch(e) {} });
-        }
-        // 3. Dispatch as window event for any legacy listeners
-        window.dispatchEvent(new MessageEvent('message', { data: msg }));
-      } catch (e) {
-        console.warn('[Bridge] Parse error:', e.message, String(jsonStr).slice(0, 100));
-      }
-    };
+      };
+    }
+    // Always ensure __nativeBus default exists so pages can safely chain onto it
+    if (!window.__nativeBus) window.__nativeBus = () => {};
   }, []);
 }
 
