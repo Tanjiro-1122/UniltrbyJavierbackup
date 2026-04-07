@@ -132,6 +132,23 @@ export default function OnboardingVibe() {
           const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
           const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
 
+          // Create a real Companion DB record first
+          let realCompanionId = store.selectedCompanion || companionData?.id || "pending";
+          try {
+            const { base44: b44 } = await import("@/api/base44Client");
+            const newComp = await b44.entities.Companion.create({
+              name:               companionData?.name || "Companion",
+              avatar_id:          companionData?.id   || "luna",
+              avatar_gender:      companionData?.gender || "female",
+              personality_preset: companionData?.tagline || "friendly",
+            });
+            realCompanionId = newComp.id;
+            localStorage.setItem("unfiltr_companion_id", realCompanionId);
+            localStorage.setItem("companionId", realCompanionId);
+          } catch(compErr) {
+            console.warn("[Vibe] Companion create failed:", compErr);
+          }
+
           const res = await fetch("/api/syncProfile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -142,7 +159,7 @@ export default function OnboardingVibe() {
                 display_name:        store.displayName || localStorage.getItem("unfiltr_display_name") || "",
                 apple_user_id:       appleUserId || null,
                 email:               localStorage.getItem("unfiltr_apple_email") || null,
-                companion_id:        store.selectedCompanion || companionData?.id || "pending",
+                companion_id:        realCompanionId,
                 onboarding_complete: true,
                 preferred_mood:      "journal",
                 last_active:         new Date().toISOString(),
@@ -367,3 +384,4 @@ export default function OnboardingVibe() {
     </div>
   );
 }
+
