@@ -523,7 +523,7 @@ export default function ChatPage() {
     try {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const cleanText = text.replace(/[\*\_\~\#\>\`]/g, "").slice(0, 400);
+      const cleanText = text.replace(/[\*\_\~\#\>]/g, "").slice(0, 400);
       if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
       
       // Always try to resume AudioContext before TTS — critical on iOS
