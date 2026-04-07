@@ -278,14 +278,30 @@ export default function Pricing() {
       // Notify rest of app
       window.dispatchEvent(new Event('unfiltr_premium_updated'));
       window.dispatchEvent(new Event('unfiltr_auth_updated'));
-      if (profileId || userId) {
+      // Save premium to DB — use profileId (record ID) if available, otherwise call API
+      if (profileId) {
         try {
-          await base44.entities.UserProfile.update(profileId || userId, {
+          await base44.entities.UserProfile.update(profileId, {
             is_premium:  true,
             annual_plan: selectedPlan.isAnnual,
             pro_plan:    selectedPlan.isPro,
           });
-        } catch(e) { console.warn('DB update non-fatal:', e); }
+          console.log('[Pricing] ✅ Premium saved to DB via profileId');
+        } catch(e) { console.warn('[Pricing] DB update non-fatal:', e); }
+      } else if (userId) {
+        // No profileId — call verifyPurchase which does apple_user_id field lookup
+        try {
+          await fetch('/api/verifyPurchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              profileId: userId,
+              userId:    userId,
+              productId: selectedPlan.productId,
+            }),
+          });
+          console.log('[Pricing] ✅ Premium saved to DB via verifyPurchase fallback');
+        } catch(e) { console.warn('[Pricing] verifyPurchase fallback non-fatal:', e); }
       }
       navigate(-1);
     }
@@ -304,7 +320,6 @@ export default function Pricing() {
 
   return (
     <AppShell hideNav>
-       />}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} navigate={navigate} />}
 
       <div style={{
