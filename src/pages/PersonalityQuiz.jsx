@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 import { motion } from "framer-motion";
 import { ChevronLeft, Share2 } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
@@ -70,6 +71,9 @@ export default function PersonalityQuiz() {
       // Calculate result
       const winnerId = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0]?.[0];
       const match = COMPANIONS.find(c => c.id === winnerId) || COMPANIONS[0];
+      // Save to onboarding store so OnboardingVibe doesn't redirect back
+      updateOnboardingStore({ selectedCompanion: match.id });
+      localStorage.setItem("unfiltr_quiz_companion_id", match.id);
       setResult(match);
     } else {
       setStep(step + 1);
