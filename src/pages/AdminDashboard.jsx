@@ -124,6 +124,21 @@ export default function AdminDashboard() {
     } catch (e) { showToast("❌ " + e.message); }
   };
 
+  const deleteUser = async (userId, name) => {
+    if (!window.confirm(`Delete "${name}" permanently? This cannot be undone.`)) return;
+    try {
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "deleteUser", userId }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      showToast("✅ User deleted");
+      loadData();
+    } catch (e) { showToast("❌ " + e.message); }
+  };
+
   // ── LOGIN ─────────────────────────────────────────────────────────────────
   if (!unlocked) return (
     <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'SF Pro Display',system-ui,sans-serif" }}>
@@ -317,6 +332,9 @@ export default function AdminDashboard() {
                         Revoke
                       </button>
                     )}
+                    <button onClick={() => deleteUser(u.id, u.display_name)} style={{ padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:600, background:"#ef444411", color:"#f87171" }}>
+                      🗑 Delete
+                    </button>
                   </div>
                 </div>
               ))}
@@ -379,3 +397,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
