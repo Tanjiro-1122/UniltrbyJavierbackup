@@ -1,173 +1,135 @@
-import React, { useState } from "react";
+/**
+ * HomeScreen.jsx — First launch sign-in screen.
+ * Uses the unified handleAppleSignIn() from db.js.
+ * After sign-in: new users → /onboarding/consent, returning → /hub
+ */
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
+import { handleAppleSignIn } from "@/lib/db";
 import { debugLog } from "@/components/DebugPanel";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
-function doAppleSignIn(navigateRef, setLoadingRef) {
-  const navigate = (...args) => navigateRef.current(...args);
-  const setLoading = (...args) => setLoadingRef.current(...args);
-  const bridge = window.ReactNativeWebView;
-  debugLog(`[WEB] signInWithApple called, bridge=${!!bridge}`);
-
-  if (!bridge) {
-    debugLog('[WEB] No native bridge — going to onboarding');
-    navigate("/onboarding/consent");
-    return;
-  }
-
-  // Always tear down any previous sign-in listener before starting a new one
-  if (window.__appleSignInCleanup) {
-    debugLog('[WEB] cleaning up previous sign-in listener');
-    window.__appleSignInCleanup();
-    window.__appleSignInCleanup = null;
-  }
-
-  let resolved = false;
-
-  const handleResult = async (msg) => {
-    if (resolved) return;
-    if (msg.type === "APPLE_SIGN_IN_WAITING") {
-      debugLog('[WEB] 🍎 Waiting for user tap...');
-      return;
-    }
-
-    resolved = true;
-    cleanup();
-
-    if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      const payload = msg.data || msg;
-      const appleUserId = payload.appleUserId || payload.user;
-      const email = payload.email;
-      const fullName = payload.fullName;
-      debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-      if (!appleUserId) {
-        debugLog('[WEB] ❌ No appleUserId in payload');
-        setLoading(false);
-        return;
-      }
-      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-      localStorage.setItem("unfiltr_user_id", appleUserId);
-      localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (email) {
-        localStorage.setItem("unfiltr_apple_email", email);
-        localStorage.setItem("unfiltr_user_email", email);
-      }
-      if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-      // If RevenueCat confirmed premium at sign-in time, set it immediately
-      if (payload.isPremium) {
-        localStorage.setItem("unfiltr_is_premium", "true");
-        localStorage.setItem("unfiltr_plan", "pro_plan");
-        debugLog("[WEB] 💎 Premium status restored from RevenueCat on sign-in");
-      }
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
-
-      // ── Sync Apple ID to database & restore profile ──
-      let onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      try {
-        const B44 = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
-        const TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-        const lookupRes = await fetch(`${B44}?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`, {
-          headers: { "Authorization": `Bearer ${TOKEN}` }
-        });
-        const lookupData = await lookupRes.json();
-        const existing = lookupData.records?.[0] || lookupData?.[0];
-        if (existing) {
-          // ✅ Returning user — restore everything from their profile
-          localStorage.setItem("userProfileId", existing.id);
-          if (existing.display_name) localStorage.setItem("unfiltr_display_name", existing.display_name);
-          if (existing.onboarding_complete) {
-            localStorage.setItem("unfiltr_onboarding_complete", "true");
-            onboardingDone = true;
-          }
-          if (existing.is_premium || existing.annual_plan) {
-            localStorage.setItem("unfiltr_is_premium", "true");
-            localStorage.setItem("unfiltr_plan", existing.annual_plan ? "annual_plan" : "pro_plan");
-          }
-          debugLog(`[WEB] ✅ Returning user profile restored: ${existing.display_name}`);
-        } else {
-          // 🆕 New user — create a stub profile so Apple ID is stored from the start
-          const createRes = await fetch(B44, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              apple_user_id: appleUserId,
-              email: email || null,
-              display_name: fullName || null,
-              companion_id: "pending",
-              background_id: "pending",
-              onboarding_complete: false,
-            })
-          });
-          const newProfile = await createRes.json();
-          if (newProfile?.id) localStorage.setItem("userProfileId", newProfile.id);
-          debugLog("[WEB] ✅ New profile stub created with Apple ID");
-        }
-      } catch(e) {
-        debugLog("[WEB] ⚠️ Profile DB sync failed (non-blocking): " + e.message);
-      }
-
-      // Wait a tick so AuthContext.checkAuth fires from unfiltr_auth_updated before App.jsx routing guard runs
-      await new Promise(r => setTimeout(r, 80));
-      navigate(onboardingDone ? "/hub" : "/onboarding/consent");
-    } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      // Just reset the button — do NOT navigate away, let them try again
-      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
-      setLoading(false);
-    } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
-      debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
-      setLoading(false);
-    }
-  };
-
-  const prevHandler = window.onMessageFromRN;
-  window.onMessageFromRN = (jsonStr) => {
-    try {
-      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
-      debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
-      handleResult(msg);
-    } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
-    if (typeof prevHandler === "function") prevHandler(jsonStr);
-  };
-
-  const windowHandler = (e) => {
-    try {
-      const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
-        debugLog(`[WEB] window message fallback: ${msg.type}`);
-        handleResult(msg);
-      }
-    } catch {}
-  };
-  window.addEventListener("message", windowHandler);
-
-  const cleanup = () => {
-    window.__appleSignInCleanup = null;
-    window.onMessageFromRN = prevHandler;
-    window.removeEventListener("message", windowHandler);
-  };
-
-  // Store cleanup so next tap can tear down this listener first
-  window.__appleSignInCleanup = cleanup;
-
-  debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
-  bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
-}
-
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const isNative = !!window.ReactNativeWebView;
-  const navigateRef = React.useRef(navigate);
-  const setLoadingRef = React.useRef(setLoading);
-  React.useEffect(() => { navigateRef.current = navigate; }, [navigate]);
-  React.useEffect(() => { setLoadingRef.current = setLoading; }, [setLoading]);
 
-  const handleAppleSignIn = () => {
+  // Safety: if somehow already authenticated, skip straight to hub
+  useEffect(() => {
+    const appleId = localStorage.getItem("unfiltr_apple_user_id");
+    const onboarded = localStorage.getItem("unfiltr_onboarding_complete");
+    if (appleId && onboarded) {
+      navigate("/hub", { replace: true });
+    }
+  }, []);
+
+  const handleAppleSignInClick = () => {
+    if (loading) return;
     setLoading(true);
-    doAppleSignIn(navigateRef, setLoadingRef);
+    setError(null);
+
+    const bridge = window.ReactNativeWebView;
+    if (!bridge) {
+      // Browser/dev mode — skip sign-in, go straight to onboarding
+      debugLog("[HomeScreen] No native bridge — dev mode, skipping to onboarding");
+      navigate("/onboarding/consent");
+      return;
+    }
+
+    let resolved = false;
+    let safetyTimer = null;
+
+    const finish = () => {
+      resolved = true;
+      clearTimeout(safetyTimer);
+      // Detach from __nativeBus
+      window.__nativeBus = prevBus;
+    };
+
+    const handleMsg = async (msg) => {
+      if (resolved) return;
+      if (msg.type === "APPLE_SIGN_IN_WAITING") {
+        debugLog("[HomeScreen] Native overlay shown — waiting for user...");
+        return;
+      }
+      if (msg.type !== "APPLE_SIGN_IN_SUCCESS" &&
+          msg.type !== "APPLE_SIGN_IN_CANCELLED" &&
+          msg.type !== "APPLE_SIGN_IN_ERROR") return;
+
+      finish();
+
+      if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
+        const payload = msg.data || msg;
+        const appleUserId = payload.appleUserId || payload.user;
+        debugLog(`[HomeScreen] ✅ Got Apple ID: ${appleUserId}`);
+
+        if (!appleUserId) {
+          setError("Sign-in failed — no user ID received.");
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const { profile, isNewUser } = await handleAppleSignIn({
+            appleUserId,
+            email: payload.email,
+            fullName: payload.fullName,
+            isPremiumFromRC: payload.isPremium,
+          });
+
+          // Send ACK back to native so it stops retrying
+          try {
+            bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" }));
+          } catch {}
+
+          // Routing logic:
+          // - Brand new user (no DB profile existed) → onboarding
+          // - Returning user (profile found in DB) → hub ALWAYS
+          //   (they may need to re-onboard their local settings, but DB profile exists)
+          const dbOnboarded = profile?.onboarding_complete === true;
+          const localOnboarded = !!localStorage.getItem("unfiltr_onboarding_complete");
+          const hasCompanion = profile?.companion_id && profile.companion_id !== "pending";
+          const onboardingDone = !isNewUser && (dbOnboarded || localOnboarded || hasCompanion);
+          debugLog(`[HomeScreen] Routing → ${onboardingDone ? "hub" : "onboarding"} | isNewUser=${isNewUser} dbOnboarded=${dbOnboarded} localOnboarded=${localOnboarded} hasCompanion=${hasCompanion}`);
+          navigate(onboardingDone ? "/hub" : "/onboarding/consent", { replace: true });
+        } catch (e) {
+          debugLog(`[HomeScreen] DB error: ${e.message}`);
+          // Non-blocking: still route them forward
+          navigate("/onboarding/consent", { replace: true });
+        }
+
+      } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
+        debugLog("[HomeScreen] Sign-in cancelled");
+        setLoading(false);
+      } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
+        debugLog(`[HomeScreen] Sign-in error: ${msg.error}`);
+        setError("Something went wrong. Please try again.");
+        setLoading(false);
+      }
+    };
+
+    // Hook into the unified __nativeBus (set up in App.jsx)
+    const prevBus = window.__nativeBus;
+    window.__nativeBus = (msg) => {
+      handleMsg(msg);
+      if (typeof prevBus === "function") prevBus(msg);
+    };
+
+    // Safety timeout — 30s
+    safetyTimer = setTimeout(() => {
+      if (!resolved) {
+        finish();
+        setLoading(false);
+        setError("Sign-in timed out. Please try again.");
+        debugLog("[HomeScreen] ⚠️ Sign-in timed out");
+      }
+    }, 30000);
+
+    debugLog("[HomeScreen] Sending SIGN_IN_WITH_APPLE to native...");
+    bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
   };
 
   return (
@@ -178,10 +140,19 @@ export default function HomeScreen() {
       fontFamily: "system-ui,-apple-system,sans-serif",
       overflow: "hidden",
     }}>
-      <div style={{ position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(168,85,247,0.18) 0%,transparent 70%)", pointerEvents: "none" }} />
+      <div style={{
+        position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
+        width: 300, height: 300, borderRadius: "50%",
+        background: "radial-gradient(circle,rgba(168,85,247,0.18) 0%,transparent 70%)",
+        pointerEvents: "none"
+      }} />
 
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", padding: "max(3rem,env(safe-area-inset-top)) 24px 24px" }}>
+      <div style={{
+        flex: 1, overflowY: "auto", display: "flex", flexDirection: "column",
+        padding: "max(3rem,env(safe-area-inset-top)) 24px 24px"
+      }}>
 
+        {/* Logo + Title */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <motion.img src={LOGO} alt="Unfiltr"
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}
@@ -197,91 +168,98 @@ export default function HomeScreen() {
           </motion.p>
         </div>
 
+        {/* Feature pills */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+          {[
+            { icon: "💬", label: "AI companions that remember you" },
+            { icon: "📓", label: "Private journaling with mood tracking" },
+            { icon: "🧘", label: "Guided meditation & breathing" },
+            { icon: "🔒", label: "100% private, never shared" },
+          ].map(({ icon, label }) => (
+            <div key={label} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}>
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 15 }}>{label}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Error message */}
+        {error && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+              borderRadius: 12, padding: "12px 16px", marginBottom: 16, textAlign: "center",
+              color: "#fca5a5", fontSize: 14 }}>
+            {error}
+          </motion.div>
+        )}
+
         {/* Sign in with Apple */}
-        {isNative && (
+        {isNative ? (
           <motion.button
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             whileTap={{ scale: 0.97 }}
-            onClick={handleAppleSignIn}
+            onClick={handleAppleSignInClick}
             disabled={loading}
+            style={{
+              width: "100%", padding: "18px",
+              background: loading ? "rgba(255,255,255,0.8)" : "white",
+              border: "none", borderRadius: 20,
+              color: "#000", fontWeight: 800, fontSize: 17,
+              cursor: loading ? "default" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              marginBottom: 12, transition: "all 0.2s",
+            }}>
+            {loading ? (
+              <>
+                <div style={{
+                  width: 20, height: 20, border: "2px solid #000",
+                  borderTopColor: "transparent", borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite"
+                }} />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 814 1000" style={{ flexShrink: 0 }}>
+                  <path fill="#000" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 405.8 15.1 307.9 15.1 213.8c0-189.1 123.2-289.6 245-289.6 66.4 0 121.5 43.4 163.4 43.4 39.5 0 101.4-46 176.1-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/>
+                </svg>
+                <span>Continue with Apple</span>
+              </>
+            )}
+          </motion.button>
+        ) : (
+          // Web/dev mode — just go straight to onboarding
+          <motion.button
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/onboarding/consent")}
             style={{
               width: "100%", padding: "18px",
               background: "white", border: "none", borderRadius: 20,
               color: "#000", fontWeight: 800, fontSize: 17,
               cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10, overflow: "visible",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
               marginBottom: 12,
-              opacity: loading ? 0.7 : 1,
             }}>
-            <svg width="22" height="22" viewBox="0 0 814 1000" fill="black" style={{flexShrink: 0, overflow: 'visible'}}>
-              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3.1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3.4 6 .6 9.7.6 29.7 0 67.9-19.5 85.7-47.1z"/>
-            </svg>
-            {loading ? "Signing in..." : "Sign in with Apple"}
+            <span style={{ fontSize: 20 }}>🚀</span>
+            <span>Get Started</span>
           </motion.button>
         )}
 
-        {/* Continue as Guest / Meet companion */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => navigate("/onboarding/consent")}
-          style={{
-            width: "100%", padding: "20px",
-            background: "linear-gradient(135deg,#7c3aed,#a855f7,#db2777)",
-            border: "none", borderRadius: 20,
-            color: "white", fontWeight: 800, fontSize: 18,
-            cursor: "pointer",
-            boxShadow: "0 0 40px rgba(168,85,247,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            marginBottom: 28,
-          }}>
-          <Users size={22} />
-          {isNative ? "Continue as Guest" : "✨ Meet Your Companion"}
-        </motion.button>
-
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, fontWeight: 600, letterSpacing: 2 }}>HOW IT WORKS</span>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-            {[
-              { emoji: "💜", title: "Pick your companion", desc: "Choose from 12 unique personalities built just for you." },
-              { emoji: "💬", title: "Talk about anything", desc: "No scripts. No judgment. Just real conversation." },
-              { emoji: "🧠", title: "They remember you", desc: "Your companion grows with you over time." },
-              { emoji: "🔒", title: "Always private", desc: "Your conversations stay yours. Always." },
-            ].map(({ emoji, title, desc }) => (
-              <div key={title} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16 }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
-                <div>
-                  <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: "0 0 2px" }}>{title}</p>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
-            {[
-              { icon: Shield,         label: "Privacy Policy", path: "/PrivacyPolicy", color: "#22c55e" },
-              { icon: FileText,       label: "Terms of Use",   path: "/TermsOfUse",    color: "#3b82f6" },
-              { icon: HeadphonesIcon, label: "Support",        path: "/support",       color: "#f59e0b" },
-              { icon: Star,           label: "Rate Us",        path: null,             color: "#a855f7",
-                action: () => window.open("https://apps.apple.com/app/id6760604917", "_blank") },
-            ].map(({ icon: Icon, label, path, color, action }) => (
-              <motion.button key={label} whileTap={{ scale: 0.96 }}
-                onClick={() => action ? action() : navigate(path)}
-                style={{ padding: "14px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}22`, border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={18} color={color} />
-                </div>
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, textAlign: "center" }}>{label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-        <div style={{ height: "max(24px,env(safe-area-inset-bottom))" }} />
+        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>
+          By continuing you agree to our{" "}
+          <span onClick={() => navigate("/TermsOfUse")} style={{ color: "rgba(168,85,247,0.7)", cursor: "pointer" }}>Terms</span>
+          {" & "}
+          <span onClick={() => navigate("/PrivacyPolicy")} style={{ color: "rgba(168,85,247,0.7)", cursor: "pointer" }}>Privacy Policy</span>
+        </p>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
