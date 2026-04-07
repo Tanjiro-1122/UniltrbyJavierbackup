@@ -29,48 +29,56 @@ export default function OnboardingName() {
     updateOnboardingStore({ displayName, isTesterAccount: isTester });
 
     try {
-      if (store.pendingProfileId) {
-        await base44.entities.UserProfile.update(store.pendingProfileId, { display_name: displayName });
+      // Prefer the profileId set by HomeScreen after Apple Sign-In
+      const storedProfileId = store.pendingProfileId || localStorage.getItem("userProfileId");
+      const appleId = localStorage.getItem("unfiltr_apple_user_id") || null;
+
+      if (storedProfileId) {
+        // Profile already exists — just update the display name via server-side API
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            profileId: storedProfileId,
+            updateData: { display_name: displayName },
+          }),
+        });
+        updateOnboardingStore({ pendingProfileId: storedProfileId });
+      } else if (appleId && !appleId.startsWith("anonymous")) {
+        // No stored ID — use server-side sync to find or create (prevents duplicates)
+        const res = await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "sync",
+            appleUserId: appleId,
+            fullName: displayName,
+          }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          const pid = result.data?.profileId;
+          if (pid) {
+            // Update display_name on the found/created profile
+            await fetch("/api/syncProfile", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "update", profileId: pid, updateData: { display_name: displayName } }),
+            });
+            updateOnboardingStore({ pendingProfileId: pid });
+            localStorage.setItem("userProfileId", pid);
+          }
+        }
       } else {
-        const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
-
-        // Check if a profile already exists for this Apple ID (prevents duplicates on reinstall)
-        let existingProfileId = null;
-        if (appleId && !appleId.startsWith("anonymous")) {
-          try {
-            const checkRes = await fetch(
-              `https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile?apple_user_id=${encodeURIComponent(appleId)}&limit=1`,
-              { headers: { "Content-Type": "application/json" } }
-            );
-            if (checkRes.ok) {
-              const existing = await checkRes.json();
-              if (Array.isArray(existing) && existing.length > 0) {
-                existingProfileId = existing[0].id;
-                // Restore display_name from DB if it exists
-                if (existing[0].display_name && !displayName.trim()) {
-                  setDisplayName(existing[0].display_name);
-                  updateOnboardingStore({ displayName: existing[0].display_name });
-                }
-              }
-            }
-          } catch { /* non-fatal */ }
-        }
-
-        if (existingProfileId) {
-          // Update existing profile — don't create a duplicate
-          await base44.entities.UserProfile.update(existingProfileId, { display_name: displayName });
-          updateOnboardingStore({ pendingProfileId: existingProfileId });
-          localStorage.setItem("userProfileId", existingProfileId);
-        } else {
-          const profile = await base44.entities.UserProfile.create({
-            display_name: displayName,
-            companion_id: "pending",
-            background_id: "pending",
-            ...(appleId && !appleId.startsWith("anonymous") ? { apple_user_id: appleId } : {}),
-          });
-          updateOnboardingStore({ pendingProfileId: profile.id });
-          localStorage.setItem("userProfileId", profile.id);
-        }
+        // Dev/browser mode — create via SDK (no Apple ID available)
+        const profile = await base44.entities.UserProfile.create({
+          display_name: displayName,
+          companion_id: "pending",
+          background_id: "pending",
+        });
+        updateOnboardingStore({ pendingProfileId: profile.id });
+        localStorage.setItem("userProfileId", profile.id);
       }
     } catch { /* non-blocking */ }
 
