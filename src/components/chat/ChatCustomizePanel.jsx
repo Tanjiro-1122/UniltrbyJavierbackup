@@ -83,17 +83,30 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChangeCompanion = async (c) => {
     setSavingCompanion(true);
-    const companionId = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
     try {
-      if (companionId) {
-        await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female" });
+      // Update localStorage immediately so UI feels instant
+      const updated = { ...c, systemPrompt: companion?.systemPrompt };
+      localStorage.setItem("unfiltr_companion", JSON.stringify(updated));
+      localStorage.setItem("unfiltr_companion_id", c.id);
+      localStorage.setItem("companionId", c.id);
+      setCompanion(updated);
+
+      // Persist to DB via syncProfile (server-side — avoids SDK scope issue)
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            profileId,
+            updateData: { companion_id: c.id },
+          }),
+        });
       }
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
-      setCompanion({ ...c, systemPrompt: companion?.systemPrompt });
       toast.success(`Switched to ${c.name} ✨`);
     } catch (e) {
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
-      setCompanion({ ...c, systemPrompt: companion?.systemPrompt });
+      console.warn("[Customize] Companion save failed:", e);
     }
     setSavingCompanion(false);
   };
@@ -125,14 +138,26 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
     localStorage.setItem("unfiltr_personality_style",     pStyle);
     localStorage.setItem("unfiltr_personality_humor",     pHumor);
-    const companionId = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
-    if (companionId) {
+
+    // Persist to DB via syncProfile (server-side — avoids SDK scope issue)
+    const profileId = localStorage.getItem("userProfileId");
+    if (profileId) {
       try {
-        await base44.entities.Companion.update(companionId, {
-          personality_vibe: pVibe, personality_empathy: pEmpathy,
-          personality_humor: pHumor, personality_style: pStyle,
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            profileId,
+            updateData: {
+              personality_vibe:    pVibe,
+              personality_empathy: pEmpathy,
+              personality_humor:   pHumor,
+              personality_style:   pStyle,
+            },
+          }),
         });
-      } catch (e) { /* localStorage is fine */ }
+      } catch (e) { /* localStorage fallback is fine */ }
     }
     setSaving(false);
     toast.success("Personality saved ✨");
@@ -414,5 +439,6 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     </>
   );
 }
+
 
 
