@@ -1,114 +1,184 @@
-// api/syncProfile.js
-// Called after Apple Sign-In to ensure apple_user_id is written to the UserProfile
-// and to return the real Base44 record ID + companion data for device restore
+// api/syncProfile.js  
+// Single source of truth for all UserProfile DB operations
+// Called from HomeScreen (sign-in) and onboarding steps
 
-const B44_APP     = "69b332a392004d139d4ba495";
-const B44_BASE    = `https://app.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+const B44_APP = "69b332a392004d139d4ba495";
+const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
+const getKey = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+
+const b44Headers = () => ({
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${getKey()}`,
+});
+
+async function findByAppleId(appleUserId) {
+  const res = await fetch(
+    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: b44Headers() }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return Array.isArray(data) && data.length > 0 ? data[0] : null;
+}
+
+async function findByEmail(email) {
+  const res = await fetch(
+    `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
+    { headers: b44Headers() }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return Array.isArray(data) && data.length > 0 ? data[0] : null;
+}
+
+async function updateProfile(id, data) {
+  const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
+    method: "PUT",
+    headers: b44Headers(),
+    body: JSON.stringify(data),
+  });
+  return res.ok ? await res.json() : null;
+}
+
+async function createProfile(data) {
+  const res = await fetch(`${B44_BASE}/UserProfile`, {
+    method: "POST",
+    headers: b44Headers(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Create failed: ${res.status} ${err}`);
+  }
+  return await res.json();
+}
+
+async function getCompanion(companionId) {
+  if (!companionId || companionId === "pending") return null;
+  try {
+    const res = await fetch(`${B44_BASE}/Companion/${companionId}`, { headers: b44Headers() });
+    if (!res.ok) return null;
+    const comp = await res.json();
+    return {
+      avatar_id:           comp.avatar_id          || null,
+      name:                comp.name               || null,
+      nickname:            comp.nickname           || comp.name || null,
+      voice_gender:        comp.voice_gender       || null,
+      voice_personality:   comp.voice_personality  || null,
+      personality_vibe:    comp.personality_vibe   || null,
+      personality_style:   comp.personality_style  || null,
+      personality_humor:   comp.personality_humor  || null,
+      personality_empathy: comp.personality_empathy|| null,
+    };
+  } catch { return null; }
+}
+
+function buildProfileResponse(profile, companionData) {
+  return {
+    profileId:           profile.id,
+    is_premium:          profile.is_premium || profile.premium || false,
+    annual_plan:         profile.annual_plan || false,
+    pro_plan:            profile.pro_plan    || false,
+    display_name:        profile.display_name || null,
+    onboarding_complete: profile.onboarding_complete || false,
+    companion_id:        profile.companion_id || null,
+    preferred_mood:      profile.preferred_mood || null,
+    apple_user_id:       profile.apple_user_id || null,
+    email:               profile.email || null,
+    message_count:       profile.message_count || 0,
+    companion:           companionData,
+  };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { appleUserId, email, fullName, isPremium, plan } = req.body;
-  if (!appleUserId) return res.status(400).json({ error: "No appleUserId" });
+  const {
+    action = "sync",         // "sync" | "update" | "create"
+    appleUserId,
+    email,
+    fullName,
+    isPremium,
+    plan,
+    profileId,               // for direct update by ID
+    updateData,              // fields to update (for action="update")
+    displayName,             // for onboarding name step
+  } = req.body || {};
 
-  console.log("[syncProfile] syncing:", appleUserId);
+  console.log(`[syncProfile] action=${action} appleUserId=${appleUserId?.slice(0,12)} profileId=${profileId}`);
 
   try {
-    // Step 1: Search for existing profile by apple_user_id
-    let profile = null;
-
-    const byApple = await fetch(
-      `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-      { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
-    );
-    const appleRecords = await byApple.json();
-    if (Array.isArray(appleRecords) && appleRecords.length > 0) {
-      profile = appleRecords[0];
-      console.log("[syncProfile] Found by apple_user_id:", profile.id);
+    // ── ACTION: update — update a specific profile by ID ──────────────────────
+    if (action === "update") {
+      if (!profileId) return res.status(400).json({ error: "profileId required for update" });
+      const updated = await updateProfile(profileId, updateData || {});
+      return res.status(200).json({ ok: true, data: updated });
     }
 
-    // Step 2: If not found, try by email
+    // ── ACTION: sync — find or create profile for Apple Sign-In ───────────────
+    if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
+
+    // 1. Search by apple_user_id
+    let profile = await findByAppleId(appleUserId);
+
+    // 2. Fallback: search by email
     if (!profile && email) {
-      const byEmail = await fetch(
-        `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
-        { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
-      );
-      const emailRecords = await byEmail.json();
-      if (Array.isArray(emailRecords) && emailRecords.length > 0) {
-        profile = emailRecords[0];
-        console.log("[syncProfile] Found by email:", profile.id);
-      }
+      profile = await findByEmail(email);
+      console.log(`[syncProfile] Found by email: ${profile?.id}`);
     }
+
+    const now = new Date().toISOString();
 
     if (profile) {
-      // Step 3: Update existing profile
-      const updateData = { apple_user_id: appleUserId };
+      // ── RETURNING USER: update apple_user_id + last_seen ──────────────────
+      const patch = {
+        apple_user_id: appleUserId,
+        last_seen: now,
+        last_active: now,
+      };
       if (isPremium) {
-        updateData.is_premium = true;
-        if (plan === 'annual') updateData.annual_plan = true;
-        if (plan === 'pro')    updateData.pro_plan = true;
+        patch.is_premium = true;
+        if (plan === "annual") patch.annual_plan = true;
+        if (plan === "pro")    patch.pro_plan    = true;
       }
-      if (email && !profile.email) updateData.email = email;
-      if (fullName && !profile.display_name) updateData.display_name = fullName;
+      if (email && !profile.email)        patch.email        = email;
+      if (fullName && !profile.display_name) patch.display_name = fullName;
 
-      await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
-        body: JSON.stringify(updateData),
+      await updateProfile(profile.id, patch);
+      Object.assign(profile, patch); // reflect updates locally
+
+      const companion = await getCompanion(profile.companion_id);
+      console.log(`[syncProfile] Returning user ${profile.id} updated`);
+      return res.status(200).json({
+        isNewUser: false,
+        data: buildProfileResponse(profile, companion),
       });
 
-      console.log("[syncProfile] Updated profile:", profile.id);
+    } else {
+      // ── NEW USER: create minimal profile ─────────────────────────────────
+      const newProfile = await createProfile({
+        apple_user_id: appleUserId,
+        email:              email    || "",
+        display_name:       fullName || "",
+        is_premium:         isPremium || false,
+        onboarding_complete: false,
+        companion_id:       "pending",
+        background_id:      "pending",
+        message_count:      0,
+        created_at:         now,
+        last_seen:          now,
+        last_active:        now,
+      });
 
-      // Step 4: Fetch companion data so the new device can restore the right character
-      let companionData = null;
-      if (profile.companion_id) {
-        try {
-          const compRes = await fetch(
-            `${B44_BASE}/Companion/${profile.companion_id}`,
-            { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
-          );
-          if (compRes.ok) {
-            const comp = await compRes.json();
-            companionData = {
-              avatar_id:          comp.avatar_id    || null,  // e.g. "ash", "luna"
-              name:               comp.name         || null,
-              nickname:           comp.nickname     || comp.name || null,
-              voice_gender:       comp.voice_gender || null,
-              voice_personality:  comp.voice_personality || null,
-              personality_vibe:   comp.personality_vibe  || null,
-              personality_style:  comp.personality_style || null,
-              personality_humor:  comp.personality_humor || null,
-              personality_empathy:comp.personality_empathy || null,
-            };
-            console.log("[syncProfile] Companion restored:", companionData.name, companionData.avatar_id);
-          }
-        } catch(e) {
-          console.warn("[syncProfile] Companion fetch failed (non-fatal):", e.message);
-        }
-      }
-
+      console.log(`[syncProfile] New user created: ${newProfile.id}`);
       return res.status(200).json({
-        data: {
-          profileId:           profile.id,
-          is_premium:          isPremium || profile.is_premium || false,
-          annual_plan:         profile.annual_plan || false,
-          pro_plan:            profile.pro_plan || false,
-          display_name:        profile.display_name || fullName || null,
-          onboarding_complete: profile.onboarding_complete || false,
-          companion_id:        profile.companion_id || null,
-          preferred_mood:      profile.preferred_mood || null,
-          companion:           companionData,  // NEW: full companion restore data
-        }
+        isNewUser: true,
+        data: buildProfileResponse(newProfile, null),
       });
     }
 
-    // No profile found — brand new user
-    console.log("[syncProfile] No profile found for:", appleUserId);
-    return res.status(200).json({ data: null });
-
   } catch (err) {
-    console.error("[syncProfile] error:", err);
+    console.error("[syncProfile] error:", err.message);
     return res.status(500).json({ error: err.message });
   }
 }
