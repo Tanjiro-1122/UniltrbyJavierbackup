@@ -322,7 +322,7 @@ export default function Settings() {
       setAdminCode("");
       setCodeError("");
       // Navigate directly to the standalone admin page
-      window.open("https://art-app-8ec2b93b.base44.app/ControlPanel", "_blank");
+      navigate("/AdminDashboard");
     } else {
       setCodeError("Invalid code.");
       setAdminCode("");
@@ -862,7 +862,7 @@ export default function Settings() {
 
         {isAdmin && (
           <Section>
-            <Row icon={<span style={{ fontSize: 14 }}>🛡️</span>} iconBg="#1a0a3d" label="Admin Dashboard" onPress={() => window.open("https://art-app-8ec2b93b.base44.app/ControlPanel", "_blank")} last />
+            <Row icon={<span style={{ fontSize: 14 }}>🛡️</span>} iconBg="#1a0a3d" label="Admin Dashboard" onPress={() => navigate("/AdminDashboard")} last />
           </Section>
         )}
 
@@ -1055,4 +1055,5 @@ export default function Settings() {
     </div>
   );
 }
+
 
