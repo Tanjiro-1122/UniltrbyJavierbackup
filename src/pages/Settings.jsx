@@ -505,9 +505,31 @@ export default function Settings() {
   };
   const handleDeleteAccount = async () => {
     setDeleting(true);
-    const profileId = localStorage.getItem("userProfileId");
-    if (profileId) await base44.entities.UserProfile.update(profileId, { account_delete_requested: true, account_delete_requested_at: new Date().toISOString() });
-    Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+
+      // ✅ Actually delete the record from DB — not just flag it
+      if (profileId) {
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete",
+            profileId,
+            appleUserId,
+          }),
+        });
+      }
+    } catch (err) {
+      console.error("[DeleteAccount] DB delete failed:", err);
+    }
+    // Wipe all local storage regardless
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith("unfiltr_") || k === "userProfileId" || k === "companionId") {
+        localStorage.removeItem(k);
+      }
+    });
     navigate("/age-verification", { replace: true });
   };
 
