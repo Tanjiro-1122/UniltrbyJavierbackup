@@ -115,6 +115,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, data: updated });
     }
 
+    // ── ACTION: delete — permanently remove profile from DB ───────────────────
+    if (action === "delete") {
+      if (!profileId && !appleUserId) return res.status(400).json({ error: "profileId or appleUserId required" });
+      let deleteId = profileId;
+      // If only appleUserId provided, look up the profile first
+      if (!deleteId && appleUserId) {
+        const found = await searchProfiles("apple_user_id", appleUserId);
+        if (found.length > 0) deleteId = found[0].id;
+      }
+      if (deleteId) {
+        const delRes = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/UserProfile/${deleteId}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${serviceToken}`,
+            "X-App-Id": APP_ID,
+          },
+        });
+        console.log(`[syncProfile] Deleted profile ${deleteId}: ${delRes.status}`);
+      }
+      return res.status(200).json({ ok: true, deleted: deleteId || null });
+    }
+
     // ── ACTION: sync — find or create profile for Apple Sign-In ───────────────
     if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
 
