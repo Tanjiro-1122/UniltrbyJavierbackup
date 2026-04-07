@@ -117,20 +117,7 @@ export default function OnboardingName() {
           onFocus={e => e.target.style.borderColor = "rgba(139,92,246,0.6)"}
           onBlur={e => e.target.style.borderColor = "rgba(139,92,246,0.2)"}
         />
-
-        {/* Skip quiz option */}
-        <button
-          onClick={() => navigate("/onboarding/companion")}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "rgba(168,85,247,0.6)", fontSize: 13, marginTop: 14,
-            textDecoration: "underline", padding: 0, alignSelf: "center",
-            display: "block", width: "100%", textAlign: "center",
-          }}>
-          Skip quiz — I'll choose my companion myself
-        </button>
       </div>
     </OnboardingLayout>
   );
 }
-
