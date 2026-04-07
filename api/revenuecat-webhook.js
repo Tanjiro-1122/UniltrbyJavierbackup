@@ -7,7 +7,7 @@
  * RevenueCat sends the Apple User ID as `app_user_id` after Purchases.logIn(appleUserId).
  */
 
-const B44_APP = "69b22f8b58e45d23cafd78d2";
+const B44_APP = "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 
 // Events that grant premium
