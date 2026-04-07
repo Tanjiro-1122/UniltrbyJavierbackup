@@ -36,11 +36,14 @@ export default async function handler(req, res) {
   if (adminToken !== ADMIN_TOKEN) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const [allProfiles, allMessages, allFeedback] = await Promise.all([
+    const [allProfiles, allFeedback] = await Promise.all([
       fetchEntity("UserProfile"),
-      fetchEntity("Message"),
       fetchEntity("Feedback").catch(() => []),
     ]);
+    // Messages are session-based (localStorage), not stored as entities
+    // Use denormalized message_count from UserProfile for aggregate stats
+    const totalMessages = allProfiles.reduce((sum, p) => sum + (p.message_count || p.tokens_used_total || 0), 0);
+    const todayMsgs     = allProfiles.reduce((sum, p) => sum + (p.tokens_used_today || 0), 0);
 
     const now = new Date();
     const todayKey = now.toISOString().slice(0, 10);
@@ -55,10 +58,10 @@ export default async function handler(req, res) {
       trialUsers:          allProfiles.filter(p => p.trial_active).length,
       onlineNow,
       appleUsers,
-      todayMessages:       allMessages.filter(m => (m.created_date || "").startsWith(todayKey)).length,
-      totalMessages:       allMessages.length,
-      totalJournalEntries: allMessages.filter(m => m.mood_mode === "journal").length,
-      crisisFlags:         allMessages.filter(m => m.is_crisis_flagged).length,
+      todayMessages:       todayMsgs,
+      totalMessages:       Math.round(totalMessages),
+      totalJournalEntries: 0, // Journal entries in separate entity if enabled
+      crisisFlags:         0, // Crisis flagging via chat analysis only
       newThisWeek:         allProfiles.filter(p => (p.created_date || "") >= weekAgo).length,
       activeThisWeek:      allProfiles.filter(p => (p.last_seen || p.last_active || "") >= weekAgo).length,
       companions:          0,
@@ -78,7 +81,7 @@ export default async function handler(req, res) {
           is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan),
           trial_active: p.trial_active,
           message_count: p.message_count || 0,
-          apple_user_id: p.apple_user_id ? "✅" : "—",
+          apple_user_id: p.apple_user_id ? p.apple_user_id.slice(0, 16) + "…" : "—",
           online: p.last_seen && p.last_seen >= fiveMinAgo,
         })),
       premiumList: [...allProfiles]
