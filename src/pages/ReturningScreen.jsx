@@ -96,6 +96,17 @@ function signInWithApple(navigate, setLoading) {
   };
 
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
+
+  // Safety timeout — if native never responds in 15s, unblock the user
+  setTimeout(() => {
+    if (!resolved) {
+      console.warn("[ReturningScreen] Sign-in timeout — routing to hub");
+      resolved = true;
+      cleanup();
+      setLoading && setLoading(false);
+      navigate("/hub");
+    }
+  }, 15000);
 }
 
 export default function ReturningScreen() {
