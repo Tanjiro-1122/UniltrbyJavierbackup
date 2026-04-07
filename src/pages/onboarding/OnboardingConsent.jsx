@@ -27,7 +27,7 @@ export default function OnboardingConsent() {
 
   return (
     <OnboardingLayout
-      totalSteps={7}
+      totalSteps={5}
       step={1}
       onBack={() => navigate("/home-screen")}
       onNext={handleNext}
