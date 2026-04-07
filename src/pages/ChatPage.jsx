@@ -105,6 +105,13 @@ export default function ChatPage() {
   const [showMeditationNudge, setShowMeditationNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showModePicker, setShowModePicker] = useState(() => {
+    // Show mode picker on first chat if never set
+    return !localStorage.getItem("unfiltr_relationship_mode");
+  });
+  const [relationshipMode, setRelationshipMode] = useState(
+    () => localStorage.getItem("unfiltr_relationship_mode") || "friend"
+  );
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -1165,8 +1172,62 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* ── Relationship Mode Picker — shows on first chat open ── */}
+      {showModePicker && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: 430,
+            background: "linear-gradient(180deg, #0d0520 0%, #06020f 100%)",
+            borderTop: "1px solid rgba(168,85,247,0.3)",
+            borderRadius: "24px 24px 0 0",
+            padding: "28px 24px 40px",
+          }}>
+            <div style={{ width: 36, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 999, margin: "0 auto 24px" }} />
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6, textAlign: "center" }}>Your dynamic</p>
+            <h2 style={{ color: "white", fontWeight: 900, fontSize: 22, textAlign: "center", marginBottom: 6 }}>How should I be with you?</h2>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 24 }}>You can change this anytime in Settings.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+              {[
+                { id: "friend", emoji: "👋", label: "Friend", desc: "Casual, real talk — like texting someone who gets you.", color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)" },
+                { id: "coach",  emoji: "🎯", label: "Coach",  desc: "Focused, direct, goal-oriented — here to push you forward.", color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.3)" },
+                { id: "companion", emoji: "💜", label: "Companion", desc: "Deep connection, emotional support — always in your corner.", color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.3)" },
+              ].map((m) => (
+                <button key={m.id} onClick={() => setRelationshipMode(m.id)} style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "14px 16px", borderRadius: 16, border: `2px solid ${relationshipMode === m.id ? m.color : "rgba(255,255,255,0.08)"}`,
+                  background: relationshipMode === m.id ? m.bg : "rgba(255,255,255,0.03)",
+                  cursor: "pointer", textAlign: "left", transition: "all 0.2s",
+                  boxShadow: relationshipMode === m.id ? `0 0 20px ${m.bg}` : "none",
+                }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: relationshipMode === m.id ? m.bg : "rgba(255,255,255,0.05)", border: `1px solid ${m.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{m.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: relationshipMode === m.id ? "white" : "rgba(255,255,255,0.7)", fontWeight: 800, fontSize: 15, marginBottom: 2 }}>{m.label}</div>
+                    <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.4 }}>{m.desc}</div>
+                  </div>
+                  {relationshipMode === m.id && <div style={{ width: 20, height: 20, borderRadius: "50%", background: m.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>✓</div>}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => {
+              localStorage.setItem("unfiltr_relationship_mode", relationshipMode);
+              setShowModePicker(false);
+            }} style={{
+              width: "100%", padding: "16px", borderRadius: 16, border: "none",
+              background: "linear-gradient(135deg, #7c3aed, #db2777)",
+              color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
+            }}>
+              Let's go →
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
 
 
