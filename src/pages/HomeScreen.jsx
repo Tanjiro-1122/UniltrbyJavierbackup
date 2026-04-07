@@ -9,16 +9,17 @@ import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 
 // Route ALL profile operations through /api/syncProfile (server-side, authenticated)
-async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC }) {
+async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC, identityToken }) {
   const res = await fetch("/api/syncProfile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "sync",
       appleUserId,
-      email:      email    || "",
-      fullName:   fullName || "",
-      isPremium:  isPremiumFromRC || false,
+      email:         email         || "",
+      fullName:      fullName      || "",
+      isPremium:     isPremiumFromRC || false,
+      identityToken: identityToken || "",
     }),
   });
   if (!res.ok) throw new Error(`syncProfile failed: ${res.status}`);
@@ -309,5 +310,6 @@ export default function HomeScreen() {
     </div>
   );
 }
+
 
 
