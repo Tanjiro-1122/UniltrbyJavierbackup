@@ -305,6 +305,46 @@ async function handleUpdateNotifPrefs(req, res) {
   }
 }
 
+
+async function handleDeleteAccount(req, res) {
+  const { profileId, appleUserId } = req.body;
+  const token = process.env.BASE44_SERVICE_TOKEN;
+
+  try {
+    let id = profileId;
+
+    // If no profileId, look up by appleUserId
+    if (!id && appleUserId) {
+      const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+      const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+      id = profile?.id;
+    }
+
+    if (!id) return res.status(404).json({ error: "Profile not found" });
+
+    // Delete the UserProfile record
+    const delRes = await fetch(`${B44_BASE}/UserProfile/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!delRes.ok) {
+      const err = await delRes.text();
+      console.error("[deleteAccount] Delete failed:", err);
+      return res.status(500).json({ error: "Failed to delete profile" });
+    }
+
+    console.log(`[deleteAccount] ✅ Deleted profile ${id}`);
+    res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error("[deleteAccount] Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -318,9 +358,11 @@ export default async function handler(req, res) {
     if (action === "savePushToken")        return await handleSavePushToken(req, res);
     if (action === "sendDailyNotifs")      return await handleSendDailyNotifs(req, res);
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
+    if (action === "deleteAccount")       return await handleDeleteAccount(req, res);
     return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     console.error("[utils] Error:", err);
     res.status(500).json({ error: err.message });
   }
 }
+
