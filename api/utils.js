@@ -3,7 +3,7 @@
 
 import OpenAI from "openai";
 
-const B44_APP  = "69b332a392004d139d4ba495";
+const B44_APP  = "69b22f8b58e45d23cafd78d2";
 const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
@@ -379,4 +379,3 @@ const { action } = req.body;
     res.status(500).json({ error: err.message });
   }
 }
-
