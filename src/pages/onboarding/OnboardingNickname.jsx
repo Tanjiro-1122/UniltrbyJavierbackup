@@ -39,10 +39,59 @@ export default function OnboardingNickname() {
     return () => clearInterval(t);
   }, [focused]);
 
-  const handleNext = () => {
-    updateOnboardingStore({ companionNickname: nickname.trim() || companion?.name || "" });
-    // FIX: Nickname → Mode → Vibe → Background → Hub
-    navigate("/onboarding/mode");
+  const handleNext = async () => {
+    const trimmed = nickname.trim() || companion?.name || "";
+    updateOnboardingStore({ companionNickname: trimmed });
+    localStorage.setItem("unfiltr_companion_nickname", trimmed);
+
+    // Mark onboarding complete
+    localStorage.setItem("unfiltr_onboarding_complete", "true");
+
+    // Set companion in localStorage
+    const companionId = store.selectedCompanion || localStorage.getItem("unfiltr_selected_companion_id") || localStorage.getItem("unfiltr_quiz_companion_id") || "luna";
+    localStorage.setItem("unfiltr_companion_id", companionId);
+    localStorage.setItem("companionId", companionId);
+
+    try {
+      const { COMPANIONS, BACKGROUNDS } = await import("@/components/companionData");
+      const companionData = COMPANIONS.find(c => c.id === companionId);
+      if (companionData) {
+        localStorage.setItem("unfiltr_companion", JSON.stringify({
+          id: companionData.id,
+          name: companionData.name,
+          displayName: trimmed,
+          systemPrompt: `You are ${trimmed}, a supportive AI companion. ${companionData.tagline || ""}`,
+        }));
+      }
+      // Set default background if not set
+      if (!localStorage.getItem("unfiltr_env")) {
+        const defaultBg = BACKGROUNDS[0];
+        localStorage.setItem("unfiltr_env", JSON.stringify({ id: defaultBg.id, label: defaultBg.label, bg: defaultBg.url }));
+        localStorage.setItem("unfiltr_background", defaultBg.id);
+      }
+    } catch (e) { console.warn("[Nickname] companionData import failed:", e); }
+
+    // Save to DB non-blocking
+    const profileId = store.pendingProfileId || localStorage.getItem("userProfileId");
+    if (profileId) {
+      fetch("/api/syncProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          profileId,
+          updateData: {
+            display_name: store.displayName || localStorage.getItem("unfiltr_display_name") || "",
+            companion_id: companionId,
+            nickname: trimmed,
+            onboarding_complete: true,
+            last_active: new Date().toISOString(),
+          },
+        }),
+      }).catch(e => console.warn("[Nickname] DB save failed:", e));
+    }
+
+    navigate("/hub", { replace: true });
   };
 
   return (
@@ -133,3 +182,4 @@ export default function OnboardingNickname() {
     </OnboardingLayout>
   );
 }
+
