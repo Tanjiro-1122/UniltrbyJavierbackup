@@ -132,22 +132,10 @@ export default function OnboardingVibe() {
           const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
           const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
 
-          // Create a real Companion DB record first
-          let realCompanionId = store.selectedCompanion || companionData?.id || "pending";
-          try {
-            const { base44: b44 } = await import("@/api/base44Client");
-            const newComp = await b44.entities.Companion.create({
-              name:               companionData?.name || "Companion",
-              avatar_id:          companionData?.id   || "luna",
-              avatar_gender:      companionData?.gender || "female",
-              personality_preset: companionData?.tagline || "friendly",
-            });
-            realCompanionId = newComp.id;
-            localStorage.setItem("unfiltr_companion_id", realCompanionId);
-            localStorage.setItem("companionId", realCompanionId);
-          } catch(compErr) {
-            console.warn("[Vibe] Companion create failed:", compErr);
-          }
+          // Use the companion short id directly — Companion entity creation happens server-side
+          const realCompanionId = store.selectedCompanion || companionData?.id || "pending";
+          localStorage.setItem("unfiltr_companion_id", realCompanionId);
+          localStorage.setItem("companionId", realCompanionId);
 
           const res = await fetch("/api/syncProfile", {
             method: "POST",
@@ -384,4 +372,5 @@ export default function OnboardingVibe() {
     </div>
   );
 }
+
 
