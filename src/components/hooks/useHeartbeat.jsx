@@ -4,7 +4,8 @@
 // Add <Heartbeat /> anywhere inside your logged-in layout (e.g. Layout.jsx or App.jsx)
 
 import { useEffect } from "react";
-import { UserProfile } from "@/api/entities";
+import { entities } from "@/api/base44Client";
+const { UserProfile } = entities;
 
 const PING_INTERVAL_MS = 60 * 1000; // 60 seconds
 
