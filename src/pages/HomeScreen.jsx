@@ -109,6 +109,8 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
         debugLog("[WEB] ⚠️ Profile DB sync failed (non-blocking): " + e.message);
       }
 
+      // Wait a tick so AuthContext.checkAuth fires from unfiltr_auth_updated before App.jsx routing guard runs
+      await new Promise(r => setTimeout(r, 80));
       navigate(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
       // Just reset the button — do NOT navigate away, let them try again
