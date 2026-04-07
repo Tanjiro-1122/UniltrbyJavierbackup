@@ -253,15 +253,34 @@ function UsersTab({ stats }) {
       {active.list.length === 0 ? (
         <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", padding: "40px 0" }}>No users in this category.</p>
       ) : active.list.map(u => (
-        <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 8 }}>
-          <div>
-            <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 2px" }}>{u.display_name || "Anonymous"}</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: 0 }}>{u.user_id || u.id?.slice(0,12)}</p>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            {u.is_premium && <span style={{ fontSize: 10, fontWeight: 700, color: "#facc15", background: "rgba(250,204,21,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>PREMIUM</span>}
-            {u.trial_active && <span style={{ fontSize: 10, fontWeight: 700, color: "#60a5fa", background: "rgba(96,165,250,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>TRIAL</span>}
-            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>{u.created_date ? new Date(u.created_date).toLocaleDateString() : ""}</p>
+        <div key={u.id} style={{ padding: "12px 14px", borderRadius: 14, background: u.account_delete_requested ? "rgba(239,68,68,0.07)" : "rgba(255,255,255,0.04)", border: u.account_delete_requested ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(255,255,255,0.06)", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 2px" }}>{u.display_name || "Anonymous"}</p>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "0 0 2px", wordBreak: "break-all" }}>
+                {u.email || "No email on file"}
+              </p>
+              {u.companion_id && (
+                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>
+                  Companion: {u.companion_id} · {u.message_count || 0} msgs
+                </p>
+              )}
+            </div>
+            <div style={{ textAlign: "right", marginLeft: 10, flexShrink: 0 }}>
+              {u.account_delete_requested ? (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#f87171", background: "rgba(239,68,68,0.15)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>DELETE REQ</span>
+              ) : u.subscription_tier === "Free" ? (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>FREE</span>
+              ) : u.subscription_tier === "Annual" ? (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399", background: "rgba(52,211,153,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>ANNUAL</span>
+              ) : u.subscription_tier === "Pro" ? (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>PRO</span>
+              ) : (
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#facc15", background: "rgba(250,204,21,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>MONTHLY</span>
+              )}
+              {u.trial_active && <span style={{ fontSize: 10, fontWeight: 700, color: "#60a5fa", background: "rgba(96,165,250,0.1)", padding: "2px 8px", borderRadius: 999, display: "block", marginBottom: 3 }}>TRIAL</span>}
+              <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>{u.created_date ? new Date(u.created_date).toLocaleDateString() : ""}</p>
+            </div>
           </div>
         </div>
       ))}
