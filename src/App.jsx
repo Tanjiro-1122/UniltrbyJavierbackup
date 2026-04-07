@@ -131,9 +131,15 @@ function useNativeBridge() {
     window.onMessageFromRN = (jsonStr) => {
       try {
         const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        // 1. Route to __nativeBus (HomeScreen, ReturningScreen, etc.)
         if (typeof window.__nativeBus === 'function') {
           window.__nativeBus(msg);
         }
+        // 2. Route to _rnMessageHandlers (useAppleSubscriptions IAP hook)
+        if (window._rnMessageHandlers && window._rnMessageHandlers[msg.type]) {
+          window._rnMessageHandlers[msg.type].forEach(fn => { try { fn(msg); } catch(e) {} });
+        }
+        // 3. Dispatch as window event for any legacy listeners
         window.dispatchEvent(new MessageEvent('message', { data: msg }));
       } catch (e) {
         console.warn('[Bridge] Parse error:', e.message, String(jsonStr).slice(0, 100));
