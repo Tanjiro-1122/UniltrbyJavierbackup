@@ -255,11 +255,10 @@ export default function Settings() {
           const displayName = localStorage.getItem("unfiltr_display_name");
           let profiles = [];
           if (displayName) {
-            profiles = await base44.entities.UserProfile.filter({ display_name: displayName }).catch(() => []);
+            try { const r = await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', appleUserId: localStorage.getItem('unfiltr_apple_user_id') || 'lookup', fullName: displayName }) }); const rd = await r.json(); if (rd.data?.profileId) { localStorage.setItem('userProfileId', rd.data.profileId); profiles = [{ id: rd.data.profileId }]; } } catch(e) { profiles = []; }
           }
           if (!profiles || profiles.length === 0) {
-            const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" }).catch(() => []);
-            profiles = all || [];
+            profiles = []; // syncProfile lookup handles this case
           }
           if (profiles.length > 0) {
             profileId = profiles[0].id;
@@ -338,14 +337,10 @@ export default function Settings() {
       try {
         const profileId = localStorage.getItem("userProfileId");
         if (profileId) {
-          await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: true, bonus_messages: 99999 });
+          await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, bonus_messages: 99999 } }) });
         } else {
           // No profile yet — create one so the flag persists server-side
-          const newProfile = await base44.entities.UserProfile.create({ is_premium: true, annual_plan: true, bonus_messages: 99999 });
-          if (newProfile?.id) {
-            localStorage.setItem("userProfileId", newProfile.id);
-            localStorage.setItem("unfiltr_user_id", newProfile.id);
-          }
+          console.warn('[Settings] No profileId for admin grant — skipping');
         }
       } catch (e) { console.warn("[FAMILY CODE] DB update failed (non-fatal):", e); }
       setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
@@ -368,7 +363,7 @@ export default function Settings() {
       return;
     }
     try {
-      await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female", personality_preset: c.tagline || "friendly" });
+      await fetch('/api/utils', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateCompanion', companionId, updateData: { personality_vibe: personalityVibe, personality_empathy: personalityEmpathy, personality_humor: personalityHumor, personality_style: personalityStyle } }) }).catch(() => {})
       localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
       setCompanion(p => ({ ...p, ...c, name: c.name, avatar_url: c.avatar }));
     } catch(e) { console.error('companion update failed', e); }
@@ -386,7 +381,7 @@ export default function Settings() {
       if (pauseDuration === "1week") until.setDate(until.getDate() + 7);
       if (pauseDuration === "2weeks") until.setDate(until.getDate() + 14);
       if (pauseDuration === "1month") until.setMonth(until.getMonth() + 1);
-      await base44.entities.UserProfile.update(profileId, { account_paused: true, account_paused_at: now.toISOString(), account_pause_until: until.toISOString() });
+      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { account_paused: true, account_paused_at: now.toISOString(), account_pause_until: until.toISOString() } }) });
       setUserProfile(p => ({ ...p, account_paused: true }));
       setPausing(false); setPauseSuccess(true);
     } catch (e) { console.error(e); }
@@ -442,13 +437,7 @@ export default function Settings() {
     const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
     if (companionId) {
       try {
-        await base44.entities.Companion.update(companionId, {
-          personality_vibe:      personalityVibe,
-          personality_empathy:   personalityEmpathy,
-          personality_humor:     personalityHumor,
-          personality_curiosity: personalityCuriosity,
-          personality_style:     personalityStyle,
-        });
+        await fetch('/api/utils', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateCompanion', companionId, updateData: { personality_vibe: personalityVibe, personality_empathy: personalityEmpathy, personality_humor: personalityHumor, personality_curiosity: personalityCuriosity, personality_style: personalityStyle } }) }).catch(() => {})
       } catch (e) {
         console.warn("Personality DB save failed (localStorage is fine):", e);
       }
@@ -752,7 +741,7 @@ export default function Settings() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#06020f", flexShrink: 0 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <button onClick={() => navigate("/hub")} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
         <div onClick={handleTriquetraTap} style={{ cursor: "default", userSelect: "none" }}>
