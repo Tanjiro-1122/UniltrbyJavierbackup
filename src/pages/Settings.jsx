@@ -943,7 +943,7 @@ export default function Settings() {
               </div>
               {/* Badge label */}
               <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>
-                {streakLabel} · {daysSince} days together
+                {streakLabel}{" · "}{daysSince} days together
               </div>
             </div>
           );
@@ -971,7 +971,7 @@ export default function Settings() {
             <span style={{ fontSize: 22 }}>✨</span>
             <div style={{ flex: 1, textAlign: "left" }}>
               <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages · Voice · All companions</p>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages {"·"} Voice {"·"} All companions</p>
             </div>
             <ChevronRight size={16} color="rgba(168,85,247,0.7)" />
           </button>
@@ -1199,3 +1199,4 @@ export default function Settings() {
     </div>
   );
 }
+
