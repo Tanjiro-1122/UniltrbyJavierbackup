@@ -68,12 +68,11 @@ export default function PersonalityQuiz() {
     setScores(newScores);
 
     if (step >= QUESTIONS.length - 1) {
-      // Calculate result
       const winnerId = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0]?.[0];
       const match = COMPANIONS.find(c => c.id === winnerId) || COMPANIONS[0];
-      // Save to onboarding store so OnboardingVibe doesn't redirect back
       updateOnboardingStore({ selectedCompanion: match.id });
       localStorage.setItem("unfiltr_quiz_companion_id", match.id);
+      localStorage.setItem("unfiltr_selected_companion_id", match.id);
       setResult(match);
     } else {
       setStep(step + 1);
@@ -91,8 +90,6 @@ export default function PersonalityQuiz() {
       await navigator.share({ title: "My Unfiltr Match", text });
     } else {
       await navigator.clipboard.writeText(text);
-      // Clipboard copied silently
-      
     }
   };
 
@@ -104,15 +101,13 @@ export default function PersonalityQuiz() {
           <ChevronLeft size={18} color="white" />
         </button>
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 18, margin: 0, flex: 1 }}>Companion Quiz</h1>
-        {/* Skip quiz — only show during questions, not on result screen */}
+        {/* Skip only visible during questions */}
         {!result && (
-          <button
-            onClick={handleSkip}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "rgba(168,85,247,0.7)", fontSize: 13, fontWeight: 600,
-              padding: "4px 8px", textDecoration: "underline",
-            }}>
+          <button onClick={handleSkip} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "rgba(168,85,247,0.7)", fontSize: 13, fontWeight: 600,
+            padding: "4px 8px", textDecoration: "underline",
+          }}>
             Skip
           </button>
         )}
@@ -121,7 +116,6 @@ export default function PersonalityQuiz() {
       <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "16px 20px 40px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         {!result ? (
           <motion.div key={step} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} style={{ width: "100%", maxWidth: 400 }}>
-            {/* Progress */}
             <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
               {QUESTIONS.map((_, i) => (
                 <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= step ? "linear-gradient(90deg, #7c3aed, #db2777)" : "rgba(255,255,255,0.1)" }} />
@@ -168,13 +162,14 @@ export default function PersonalityQuiz() {
               }}>
               <Share2 size={16} /> Share Result
             </button>
-            <button onClick={() => navigate("/onboarding/vibe")}
+            {/* FIX: Go to nickname next, not vibe — nickname comes after companion */}
+            <button onClick={() => navigate("/onboarding/nickname")}
               style={{
                 width: "100%", padding: "14px", borderRadius: 16,
                 background: "rgba(255,255,255,0.08)", border: "none",
                 color: "white", fontWeight: 600, fontSize: 15, cursor: "pointer",
               }}>
-              Chat with {result.name} →
+              Meet {result.name} →
             </button>
           </motion.div>
         )}
