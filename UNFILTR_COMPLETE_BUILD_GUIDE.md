@@ -92,7 +92,7 @@ Unfiltr is three separate layers that work together:
 ### 💚 RevenueCat — app.revenuecat.com
 **Role:** Manages subscriptions and validates purchases
 - Project: `projb39f8e3b`
-- Apple SDK Key: `appl_vXgIJBeihvjZtJEtQfvteUblHtB`
+- Apple SDK Key: `[REVENUECAT_KEY_REDACTED]`
 - Entitlement: `unfiltr by javier Pro` (exact, case-sensitive)
 - Products: `com.huertas.unfiltr.premium.monthly` / `.annual`
 
