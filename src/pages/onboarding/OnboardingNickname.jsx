@@ -95,7 +95,7 @@ export default function OnboardingNickname() {
   };
 
   return (
-    <OnboardingLayout totalSteps={7} step={4} onBack={() => navigate(backDest)} onNext={handleNext} canAdvance={true}>
+    <OnboardingLayout totalSteps={5} step={4} onBack={() => navigate(backDest)} onNext={handleNext} canAdvance={true}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 32px" }}>
 
         {companion && (
