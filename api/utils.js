@@ -349,7 +349,20 @@ async function handleDeleteAccount(req, res) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { action } = req.body;
+  
+async function handleUpdateCompanion(req, res) {
+  const { companionId, updateData } = req.body;
+  if (!companionId || !updateData) return res.status(400).json({ error: "companionId and updateData required" });
+  try {
+    const updated = await b44Update("Companion", companionId, updateData);
+    return res.status(200).json({ ok: true, data: updated });
+  } catch (err) {
+    console.error("[updateCompanion] error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+const { action } = req.body;
 
   try {
     if (action === "generateReferralCode") return await handleGenerateReferralCode(req, res);
@@ -359,7 +372,8 @@ export default async function handler(req, res) {
     if (action === "sendDailyNotifs")      return await handleSendDailyNotifs(req, res);
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
     if (action === "deleteAccount")       return await handleDeleteAccount(req, res);
-    return res.status(400).json({ error: "Unknown action" });
+    if (action === "updateCompanion")     return await handleUpdateCompanion(req, res);
+        return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     console.error("[utils] Error:", err);
     res.status(500).json({ error: err.message });
