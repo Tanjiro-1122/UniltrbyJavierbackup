@@ -66,8 +66,13 @@ export default function OnboardingVibe() {
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
-  if (!store.selectedCompanion) {
-    navigate("/onboarding/nickname", { replace: true });
+  // Restore from localStorage if store was wiped (app restart mid-onboarding)
+  const savedCompanionId = localStorage.getItem("unfiltr_selected_companion_id") ||
+                           localStorage.getItem("unfiltr_quiz_companion_id");
+  if (!store.selectedCompanion && savedCompanionId) {
+    updateOnboardingStore({ selectedCompanion: savedCompanionId });
+  } else if (!store.selectedCompanion && !savedCompanionId) {
+    navigate("/onboarding/companion", { replace: true });
     return null;
   }
 
