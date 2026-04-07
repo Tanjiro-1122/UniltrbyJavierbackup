@@ -44,12 +44,14 @@ export default function OnboardingMode() {
   const handleNext = () => {
     localStorage.setItem("unfiltr_relationship_mode", selected);
     updateOnboardingStore({ relationshipMode: selected });
-    navigate("/onboarding/vibe");
+    // Skip Vibe and Background steps — go straight to Hub
+    localStorage.setItem("unfiltr_onboarding_complete", "true");
+    navigate("/hub", { replace: true });
   };
 
   return (
     <OnboardingLayout
-      totalSteps={7} step={5}
+      totalSteps={5} step={5}
       onBack={() => navigate("/onboarding/nickname")}
       canAdvance={true}
       onNext={handleNext}>
