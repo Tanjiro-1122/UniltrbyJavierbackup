@@ -87,28 +87,12 @@ export default function OnboardingBackground() {
       const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
       const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
 
-      // Create a real Companion DB record so Settings can find/update it later
-      let realCompanionId = store.selectedCompanion; // fallback to short id
-      try {
-        const { base44: b44 } = await import("@/api/base44Client");
-        const newComp = await b44.entities.Companion.create({
-          name:               companionData.name,
-          avatar_id:          companionData.id,
-          avatar_gender:      companionData.gender || "female",
-          personality_preset: companionData.tagline || "friendly",
-          personality_vibe:      localStorage.getItem("unfiltr_personality_vibe")      || "balanced",
-          personality_empathy:   localStorage.getItem("unfiltr_personality_empathy")   || "50",
-          personality_humor:     localStorage.getItem("unfiltr_personality_humor")     || "50",
-          personality_curiosity: localStorage.getItem("unfiltr_personality_curiosity") || "50",
-          personality_style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
-        });
-        realCompanionId = newComp.id;
-        localStorage.setItem("unfiltr_companion_id", realCompanionId);
-        localStorage.setItem("companionId", realCompanionId);
-        console.log("[Onboarding] Companion entity created:", realCompanionId);
-      } catch(compErr) {
-        console.warn("[Onboarding] Companion create failed, using short id:", compErr);
-      }
+      // Use companion short id directly — no SDK call needed
+      // Companion entity creation is handled server-side via syncProfile
+      const realCompanionId = store.selectedCompanion || companionData?.id || "pending";
+      localStorage.setItem("unfiltr_companion_id", realCompanionId);
+      localStorage.setItem("companionId", realCompanionId);
+      console.log("[Onboarding] Using companion id:", realCompanionId);
 
       const res = await fetch("/api/syncProfile", {
         method: "POST",
@@ -299,4 +283,5 @@ export default function OnboardingBackground() {
     </div>
   );
 }
+
 
