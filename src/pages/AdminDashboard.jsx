@@ -63,6 +63,8 @@ export default function AdminDashboard() {
         companions:      data.companions        ?? 0,
         feedbackCount:   data.feedbackCount     ?? 0,
         openFeedback:    data.openFeedback      ?? 0,
+        appleUsers:      data.appleUsers        ?? 0,
+        onlineNow:       data.onlineNow         ?? 0,
         recentUsers:     data.recentUsers       ?? [],
         allFeedback:     data.allFeedback       ?? [],
         premiumList:     data.premiumList       ?? [],
