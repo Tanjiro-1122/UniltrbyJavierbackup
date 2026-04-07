@@ -125,45 +125,45 @@ export default function OnboardingVibe() {
       setLoading(false);
       navigate("/hub");
 
-      // Fire-and-forget DB calls in background
+      // Save to DB via syncProfile (server-side, works for Apple Sign-In users)
       (async () => {
         try {
-          const companion = await base44.entities.Companion.create({
-            name: companionData.name,
-            avatar_id: companionData.id,
-            avatar_gender: companionData.gender || "female",
-            personality_preset: companionData.personality || companionData.tagline || "friendly",
-            mood_mode: "neutral",
-            is_active: true,
-          });
           const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-          const profileData = {
-            display_name: store.displayName || localStorage.getItem("unfiltr_display_name") || "",
-            apple_user_id: appleUserId || null,
-            email: localStorage.getItem("unfiltr_apple_email") || null,
-            is_premium: !!(store.isTesterAccount),
-            trial_active: !!(store.isTesterAccount),
-            trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
-            onboarding_complete: true,
-            session_memory: [],
-            message_count: 0,
-            last_active: new Date().toISOString(),
-          };
-          let userProfile;
-          if (store.pendingProfileId) {
-            userProfile = await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+          const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
+          const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
+
+          const res = await fetch("/api/syncProfile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "update",
+              profileId,
+              updateData: {
+                display_name:        store.displayName || localStorage.getItem("unfiltr_display_name") || "",
+                apple_user_id:       appleUserId || null,
+                email:               localStorage.getItem("unfiltr_apple_email") || null,
+                companion_id:        store.selectedCompanion || companionData?.id || "pending",
+                onboarding_complete: true,
+                preferred_mood:      "journal",
+                last_active:         new Date().toISOString(),
+              },
+            }),
+          });
+
+          if (res.ok) {
+            localStorage.setItem("userProfileId", profileId);
+            console.log("[Vibe] Journal onboarding saved via syncProfile");
           } else {
-            userProfile = await base44.entities.UserProfile.create(profileData);
+            console.error("[Vibe] syncProfile failed:", await res.text());
           }
-          localStorage.setItem("userProfileId", userProfile.id);
-          localStorage.setItem("companionId", companion.id);
           resetOnboardingStore();
         } catch (err) {
           console.error("Journal onboarding DB error (non-blocking):", err);
           resetOnboardingStore();
         }
       })();
-    } catch (err) {
+
+        } catch (err) {
       console.error("Journal onboarding error:", err);
       setLoading(false);
       navigate("/hub");
