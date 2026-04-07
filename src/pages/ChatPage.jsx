@@ -918,16 +918,12 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter */}
-            {!isPremium ? (
+            {/* Msg counter — hidden for all premium tiers */}
+            {!isPremium && !isPro && !isAnnual && (
               <button onClick={() => navigate('/Pricing')}
                 style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
                 {remaining}/{FREE_LIMIT} msgs left today · Go Premium
               </button>
-            ) : (
-              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today
-              </div>
             )}
 
             {/* Streak milestone celebration modal */}
