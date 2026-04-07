@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { getOnboardingStore, updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
-// Fun placeholder prompts that cycle so the input feels alive
 const PLACEHOLDERS = [
   c => `Keep it as ${c}`,
   c => `e.g. "Star"`,
@@ -15,20 +14,25 @@ const PLACEHOLDERS = [
 
 export default function OnboardingNickname() {
   const navigate = useNavigate();
+  const location = useLocation();
   const store = getOnboardingStore();
   const [nickname, setNickname] = useState(store.companionNickname || "");
   const [phIdx, setPhIdx] = useState(0);
   const [focused, setFocused] = useState(false);
 
   if (!store.selectedCompanion) {
-    navigate("/onboarding/companion", { replace: true }); // no companion selected — let them pick
+    navigate("/onboarding/companion", { replace: true });
     return null;
   }
 
   const companion = COMPANIONS.find(c => c.id === store.selectedCompanion);
   const displayName = nickname.trim() || companion?.name || "your companion";
 
-  // Cycle placeholder every 2.5s when not focused
+  // Determine back destination: if came from quiz, back goes to quiz; from manual pick, back to companion
+  const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id") &&
+                   localStorage.getItem("unfiltr_quiz_companion_id") !== "manual";
+  const backDest = fromQuiz ? "/onboarding/quiz" : "/onboarding/companion";
+
   useEffect(() => {
     if (focused) return;
     const t = setInterval(() => setPhIdx(i => (i + 1) % PLACEHOLDERS.length), 2500);
@@ -37,22 +41,20 @@ export default function OnboardingNickname() {
 
   const handleNext = () => {
     updateOnboardingStore({ companionNickname: nickname.trim() || companion?.name || "" });
-    navigate("/onboarding/vibe");
+    // FIX: Nickname → Mode → Vibe → Background → Hub
+    navigate("/onboarding/mode");
   };
 
   return (
-    <OnboardingLayout totalSteps={7} step={4} onBack={() => navigate("/onboarding/quiz")} onNext={handleNext} canAdvance={true}>
+    <OnboardingLayout totalSteps={7} step={4} onBack={() => navigate(backDest)} onNext={handleNext} canAdvance={true}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 20px 32px" }}>
 
-        {/* Companion hero — big and front and center */}
         {companion && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 200, damping: 18 }}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, marginTop: 4 }}>
-
-            {/* Glow + avatar */}
             <div style={{ position: "relative", marginBottom: 14 }}>
               <div style={{
                 position: "absolute", inset: -20,
@@ -72,7 +74,6 @@ export default function OnboardingNickname() {
                   style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
               </motion.div>
             </div>
-
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 20 }}>{companion.emoji}</span>
               <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 600 }}>{companion.tagline}</span>
@@ -80,7 +81,6 @@ export default function OnboardingNickname() {
           </motion.div>
         )}
 
-        {/* Text */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ textAlign: "center", marginBottom: 24 }}>
           <h2 style={{ color: "white", fontWeight: 900, fontSize: 24, margin: "0 0 6px", lineHeight: 1.3 }}>
@@ -92,7 +92,6 @@ export default function OnboardingNickname() {
           </p>
         </motion.div>
 
-        {/* Input */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <div style={{
             position: "relative",
@@ -120,8 +119,6 @@ export default function OnboardingNickname() {
               }}
             />
           </div>
-
-          {/* Live preview */}
           <motion.p
             key={displayName}
             initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
