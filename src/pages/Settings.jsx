@@ -940,7 +940,7 @@ export default function Settings() {
 
         {/* Premium banner (if not premium) */}
         {!isPremium && (
-          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
+          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 12 }}>
             <span style={{ fontSize: 22 }}>✨</span>
             <div style={{ flex: 1, textAlign: "left" }}>
               <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
@@ -949,6 +949,15 @@ export default function Settings() {
             <ChevronRight size={16} color="rgba(168,85,247,0.7)" />
           </button>
         )}
+        {/* Restore Purchases — always visible */}
+        <button onClick={() => navigate('/Pricing?restore=true')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
+          <span style={{ fontSize: 18 }}>🔄</span>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 13, margin: 0 }}>Restore Purchases</p>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: "2px 0 0" }}>Already subscribed? Tap to restore your plan</p>
+          </div>
+          <ChevronRight size={14} color="rgba(255,255,255,0.3)" />
+        </button>
 
         {/* Main menu */}
         <Section>
