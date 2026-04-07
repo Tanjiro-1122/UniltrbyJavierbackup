@@ -6,6 +6,13 @@ import { Lock, ExternalLink, AlertTriangle, Eye } from "lucide-react";
 
 export default function OnboardingConsent() {
   const navigate = useNavigate();
+
+  // If user already accepted consent, skip straight to name
+  React.useEffect(() => {
+    if (localStorage.getItem("unfiltr_consent_accepted") === "true") {
+      navigate("/onboarding/name", { replace: true });
+    }
+  }, []);
   const [aiConsent, setAiConsent] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
 
