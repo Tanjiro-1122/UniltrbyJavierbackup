@@ -193,7 +193,7 @@ function AdminPanel({ onClose, navigate }) {
     } else if (code.trim().toLowerCase() === 'huertasfam') {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
-        base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: true });
+        fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true } }) }).catch(() => {});
       }
       localStorage.setItem('unfiltr_is_premium', 'true');
       localStorage.setItem('unfiltr_is_annual', 'true');
@@ -281,11 +281,7 @@ export default function Pricing() {
       // Save premium to DB — use profileId (record ID) if available, otherwise call API
       if (profileId) {
         try {
-          await base44.entities.UserProfile.update(profileId, {
-            is_premium:  true,
-            annual_plan: selectedPlan.isAnnual,
-            pro_plan:    selectedPlan.isPro,
-          });
+          await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: selectedPlan.isAnnual, pro_plan: selectedPlan.isPro || false } }) });
           console.log('[Pricing] ✅ Premium saved to DB via profileId');
         } catch(e) { console.warn('[Pricing] DB update non-fatal:', e); }
       } else if (userId) {
@@ -303,7 +299,7 @@ export default function Pricing() {
           console.log('[Pricing] ✅ Premium saved to DB via verifyPurchase fallback');
         } catch(e) { console.warn('[Pricing] verifyPurchase fallback non-fatal:', e); }
       }
-      navigate(-1);
+      navigate("/hub");
     }
   };
 
@@ -313,7 +309,7 @@ export default function Pricing() {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
         const profile = await base44.entities.UserProfile.get(profileId);
-        if (profile?.is_premium) navigate(-1);
+        if (profile?.is_premium) navigate("/hub");
       }
     }
   };
@@ -334,7 +330,7 @@ export default function Pricing() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 16px' }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/hub")}
             style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           ><ChevronLeft size={18} color="white" /></button>
 
