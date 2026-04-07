@@ -46,7 +46,16 @@ const VIBES = [
     orb: "rgba(124,58,237,0.5)", glow: "rgba(167,139,250,0.4)",
     bg: "#0d0218", accent: "#c4b5fd", cardBorder: "rgba(167,139,250,0.6)",
   },
-];  // journal removed — journal is selected from HubPage, not onboarding
+  {
+    id: "journal",
+    emoji: `${NOTO}/270f/512.webp`,
+    label: "Journal", sub: "Private",
+    desc: "Write freely.\nSpeak your truth. Save it.",
+    gradient: "linear-gradient(135deg,#059669,#22d3ee)",
+    orb: "rgba(16,185,129,0.5)", glow: "rgba(16,185,129,0.4)",
+    bg: "#011a10", accent: "#34d399", cardBorder: "rgba(52,211,153,0.6)",
+  },
+];
 
 export default function OnboardingVibe() {
   const navigate = useNavigate();
@@ -57,15 +66,9 @@ export default function OnboardingVibe() {
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
-  // Support both normal flow (store.selectedCompanion) and quiz flow (localStorage)
-  const quizCompanionId = localStorage.getItem("unfiltr_quiz_companion_id");
-  if (!store.selectedCompanion && !quizCompanionId) {
-    navigate("/onboarding/quiz", { replace: true });
+  if (!store.selectedCompanion) {
+    navigate("/onboarding/nickname", { replace: true });
     return null;
-  }
-  // If coming from quiz, inject companion into store so finish flow works
-  if (!store.selectedCompanion && quizCompanionId) {
-    updateOnboardingStore({ selectedCompanion: quizCompanionId });
   }
 
   const vibe = VIBES[idx];
@@ -115,7 +118,7 @@ export default function OnboardingVibe() {
 
       // Navigate immediately — don't wait for DB
       setLoading(false);
-      navigate("/mood?dest=journal");
+      navigate("/hub");
 
       // Fire-and-forget DB calls in background
       (async () => {
@@ -128,9 +131,11 @@ export default function OnboardingVibe() {
             mood_mode: "neutral",
             is_active: true,
           });
-          const _appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
+          const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
           const profileData = {
-            display_name: store.displayName || "",
+            display_name: store.displayName || localStorage.getItem("unfiltr_display_name") || "",
+            apple_user_id: appleUserId || null,
+            email: localStorage.getItem("unfiltr_apple_email") || null,
             is_premium: !!(store.isTesterAccount),
             trial_active: !!(store.isTesterAccount),
             trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
@@ -138,7 +143,6 @@ export default function OnboardingVibe() {
             session_memory: [],
             message_count: 0,
             last_active: new Date().toISOString(),
-            ...(_appleId ? { apple_user_id: _appleId } : {}),
           };
           let userProfile;
           if (store.pendingProfileId) {
@@ -157,7 +161,7 @@ export default function OnboardingVibe() {
     } catch (err) {
       console.error("Journal onboarding error:", err);
       setLoading(false);
-      navigate("/mood?dest=journal");
+      navigate("/hub");
     }
   };
 
@@ -218,7 +222,7 @@ export default function OnboardingVibe() {
               What's your vibe?
             </h1>
             <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 500 }}>
-              Step 6 of 7
+              Step 5 of 6
             </span>
           </div>
           <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: 0 }}>

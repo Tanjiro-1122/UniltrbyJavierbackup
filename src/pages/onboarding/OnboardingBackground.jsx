@@ -96,9 +96,11 @@ export default function OnboardingBackground() {
       localStorage.setItem("companionId", companion.id);
       localStorage.setItem("unfiltr_companion_id", companion.id);
 
-      const _appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
       const profileData = {
-        display_name: store.displayName?.trim() || "",
+        display_name: store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
+        apple_user_id: appleUserId || null,
+        email: localStorage.getItem("unfiltr_apple_email") || null,
         companion_id: companion.id,
         is_premium: !!(store.isTesterAccount),
         trial_active: !!(store.isTesterAccount),
@@ -108,7 +110,6 @@ export default function OnboardingBackground() {
         message_count: 0,
         last_active: new Date().toISOString(),
         preferred_mood: store.selectedVibe || "chill",
-        ...((_appleId && !_appleId.startsWith("anonymous")) ? { apple_user_id: _appleId } : {}),
       };
 
       // Create or update UserProfile
@@ -136,7 +137,7 @@ export default function OnboardingBackground() {
 
     // Navigate only AFTER DB is done (or failed)
     setLoading(false);
-    navigate("/mood?dest=chat");
+    navigate("/hub");
   };
   // Companion neutral mood image
   const companionImg = companionData?.moods?.neutral || companionData?.avatar;

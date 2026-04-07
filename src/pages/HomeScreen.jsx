@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, Shield, FileText, HeadphonesIcon, Star } from "lucide-react";
 import { debugLog } from "@/components/DebugPanel";
-import { useStreak } from "@/components/useStreak";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
@@ -19,8 +18,12 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
     return;
   }
 
-  // Ensure the global handler registry exists (set up by appleStoreKitService)
-  window._rnMessageHandlers = window._rnMessageHandlers || {};
+  // Always tear down any previous sign-in listener before starting a new one
+  if (window.__appleSignInCleanup) {
+    debugLog('[WEB] cleaning up previous sign-in listener');
+    window.__appleSignInCleanup();
+    window.__appleSignInCleanup = null;
+  }
 
   let resolved = false;
 
@@ -30,138 +33,122 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
       debugLog('[WEB] 🍎 Waiting for user tap...');
       return;
     }
+
     resolved = true;
     cleanup();
 
     if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      // Send ACK so native wrapper stops retrying
-      try { bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" })); } catch(e) {}
       const payload = msg.data || msg;
       const appleUserId = payload.appleUserId || payload.user;
       const email = payload.email;
       const fullName = payload.fullName;
       debugLog(`[WEB] ✅ Apple ID: ${appleUserId}`);
-      if (!appleUserId) { debugLog('[WEB] ❌ No appleUserId'); setLoadingRef.current(false); return; }
+      if (!appleUserId) {
+        debugLog('[WEB] ❌ No appleUserId in payload');
+        setLoading(false);
+        return;
+      }
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
       localStorage.setItem("unfiltr_user_id", appleUserId);
       localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
-      if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
+      if (email) {
+        localStorage.setItem("unfiltr_apple_email", email);
+        localStorage.setItem("unfiltr_user_email", email);
+      }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-      // If fullName is null (Apple only returns it once), try to restore from DB
-      // This is handled below in the DB sync step
-
-      // Always set premium from RC payload first (fastest signal)
+      // If RevenueCat confirmed premium at sign-in time, set it immediately
       if (payload.isPremium) {
         localStorage.setItem("unfiltr_is_premium", "true");
-        localStorage.setItem("unfiltr_plan", payload.plan || "pro_plan");
-        debugLog("[WEB] 💎 Premium from RC on sign-in");
+        localStorage.setItem("unfiltr_plan", "pro_plan");
+        debugLog("[WEB] 💎 Premium status restored from RevenueCat on sign-in");
       }
-
-      // STEP 1: Push name/email to DB via syncProfile so it persists across reinstalls
-      try {
-        await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            appleUserId,
-            email:    email    || null,
-            fullName: fullName || null,
-            isPremium: payload.isPremium || false,
-            plan: payload.plan || null,
-          }),
-        });
-        debugLog("[WEB] 📝 syncProfile called — name/email written to DB");
-      } catch(syncErr) {
-        debugLog(`[WEB] ⚠️ syncProfile failed (non-fatal): ${syncErr.message}`);
-      }
-
-      // STEP 2: Also sync from DB — restores premium + profile after app reinstall
-      // when localStorage is wiped but DB record still exists
-      try {
-        const API = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
-        const res = await fetch(`${API}?apple_user_id=${encodeURIComponent(appleUserId)}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer 1156284fb9144ad9ab95afc962e848d8" },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const profiles = data.items || data;
-          const profile = Array.isArray(profiles) ? profiles[0] : profiles;
-          if (profile?.id) {
-            localStorage.setItem("userProfileId", profile.id);
-            debugLog(`[WEB] 📋 Profile synced from DB: ${profile.id}`);
-            // Restore premium + plan from DB if not already set by RC
-            if (profile.is_premium) {
-              localStorage.setItem("unfiltr_is_premium", "true");
-              if (profile.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
-              if (profile.pro_plan) localStorage.setItem("unfiltr_is_pro", "true");
-              debugLog("[WEB] 💎 Premium restored from DB after reinstall");
-            }
-            // Restore companion/settings if localStorage was wiped
-            if (!localStorage.getItem("unfiltr_companion") && profile.companion_id) {
-              try {
-                const { COMPANIONS } = await import("@/components/companionData");
-                const comp = COMPANIONS.find(c => c.id === profile.companion_id);
-                if (comp) localStorage.setItem("unfiltr_companion", JSON.stringify(comp));
-              } catch(e) {}
-            }
-            if (!localStorage.getItem("unfiltr_onboarding_complete") && profile.onboarding_complete) {
-              localStorage.setItem("unfiltr_onboarding_complete", "true");
-            }
-            // Restore display name from DB if Apple didn't return it this time
-            if (!fullName && profile.display_name) {
-              localStorage.setItem("unfiltr_display_name", profile.display_name);
-              debugLog(`[WEB] 👤 Name restored from DB: ${profile.display_name}`);
-            }
-            // Restore email from DB if Apple didn't return it this time
-            if (!email && profile.email) {
-              localStorage.setItem("unfiltr_apple_email", profile.email);
-              localStorage.setItem("unfiltr_user_email", profile.email);
-              debugLog(`[WEB] 📧 Email restored from DB: ${profile.email}`);
-            }
-          }
-        }
-      } catch(dbErr) {
-        debugLog(`[WEB] ⚠️ DB sync failed (non-fatal): ${dbErr.message}`);
-      }
-
       window.dispatchEvent(new Event("unfiltr_auth_updated"));
-      const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
-      navigateRef.current(onboardingDone ? "/hub" : "/onboarding/consent");
+
+      // ── Sync Apple ID to database & restore profile ──
+      let onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+      try {
+        const B44 = "https://api.base44.com/api/apps/69b332a392004d139d4ba495/entities/UserProfile";
+        const TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+        const lookupRes = await fetch(`${B44}?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`, {
+          headers: { "Authorization": `Bearer ${TOKEN}` }
+        });
+        const lookupData = await lookupRes.json();
+        const existing = lookupData.records?.[0] || lookupData?.[0];
+        if (existing) {
+          // ✅ Returning user — restore everything from their profile
+          localStorage.setItem("userProfileId", existing.id);
+          if (existing.display_name) localStorage.setItem("unfiltr_display_name", existing.display_name);
+          if (existing.onboarding_complete) {
+            localStorage.setItem("unfiltr_onboarding_complete", "true");
+            onboardingDone = true;
+          }
+          if (existing.is_premium || existing.annual_plan) {
+            localStorage.setItem("unfiltr_is_premium", "true");
+            localStorage.setItem("unfiltr_plan", existing.annual_plan ? "annual_plan" : "pro_plan");
+          }
+          debugLog(`[WEB] ✅ Returning user profile restored: ${existing.display_name}`);
+        } else {
+          // 🆕 New user — create a stub profile so Apple ID is stored from the start
+          const createRes = await fetch(B44, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              apple_user_id: appleUserId,
+              email: email || null,
+              display_name: fullName || null,
+              companion_id: "pending",
+              background_id: "pending",
+              onboarding_complete: false,
+            })
+          });
+          const newProfile = await createRes.json();
+          if (newProfile?.id) localStorage.setItem("userProfileId", newProfile.id);
+          debugLog("[WEB] ✅ New profile stub created with Apple ID");
+        }
+      } catch(e) {
+        debugLog("[WEB] ⚠️ Profile DB sync failed (non-blocking): " + e.message);
+      }
+
+      navigate(onboardingDone ? "/hub" : "/onboarding/consent");
     } else if (msg.type === "APPLE_SIGN_IN_CANCELLED") {
-      debugLog('[WEB] 🚫 Cancelled — resetting button');
+      // Just reset the button — do NOT navigate away, let them try again
+      debugLog('[WEB] 🚫 Apple sign-in cancelled — resetting button');
       setLoading(false);
     } else if (msg.type === "APPLE_SIGN_IN_ERROR") {
-      debugLog(`[WEB] ❌ Error: ${msg.error}`);
+      debugLog(`[WEB] ❌ Apple sign-in error: ${msg.error}`);
       setLoading(false);
     }
   };
 
-  // Register using the shared _rnMessageHandlers pub/sub (does NOT break other listeners)
-  const TYPES = ["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"];
-  TYPES.forEach(t => {
-    window._rnMessageHandlers[t] = window._rnMessageHandlers[t] || [];
-    window._rnMessageHandlers[t].push(handleResult);
-  });
+  const prevHandler = window.onMessageFromRN;
+  window.onMessageFromRN = (jsonStr) => {
+    try {
+      const msg = typeof jsonStr === "string" ? JSON.parse(jsonStr) : jsonStr;
+      debugLog(`[WEB] onMessageFromRN: ${msg.type}`);
+      handleResult(msg);
+    } catch(e) { debugLog(`[WEB] parse error: ${e.message}`); }
+    if (typeof prevHandler === "function") prevHandler(jsonStr);
+  };
 
-  // Also listen on window message event as fallback
   const windowHandler = (e) => {
     try {
       const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-      if (TYPES.includes(msg?.type)) handleResult(msg);
+      if (["APPLE_SIGN_IN_SUCCESS","APPLE_SIGN_IN_CANCELLED","APPLE_SIGN_IN_ERROR","APPLE_SIGN_IN_WAITING"].includes(msg?.type)) {
+        debugLog(`[WEB] window message fallback: ${msg.type}`);
+        handleResult(msg);
+      }
     } catch {}
   };
   window.addEventListener("message", windowHandler);
 
   const cleanup = () => {
-    TYPES.forEach(t => {
-      if (window._rnMessageHandlers[t]) {
-        window._rnMessageHandlers[t] = window._rnMessageHandlers[t].filter(f => f !== handleResult);
-      }
-    });
+    window.__appleSignInCleanup = null;
+    window.onMessageFromRN = prevHandler;
     window.removeEventListener("message", windowHandler);
   };
+
+  // Store cleanup so next tap can tear down this listener first
+  window.__appleSignInCleanup = cleanup;
 
   debugLog('[WEB] posting SIGN_IN_WITH_APPLE to native...');
   bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
@@ -170,8 +157,6 @@ function doAppleSignIn(navigateRef, setLoadingRef) {
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const { streak, syncStreak } = useStreak();
-  useEffect(() => { syncStreak(); }, []);
   const isNative = !!window.ReactNativeWebView;
   const navigateRef = React.useRef(navigate);
   const setLoadingRef = React.useRef(setLoading);
@@ -204,12 +189,6 @@ export default function HomeScreen() {
             style={{ color: "white", fontWeight: 900, fontSize: 32, margin: "0 0 6px", letterSpacing: -0.5 }}>
             Unfiltr by Javier
           </motion.h1>
-          {streak > 0 && (
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(251,146,60,0.15)", border: "1px solid rgba(251,146,60,0.35)", borderRadius: 20, padding: "4px 14px", margin: "8px auto 0", color: "#fb923c", fontWeight: 700, fontSize: 14 }}>
-              🔥 {streak} day{streak !== 1 ? "s" : ""} streak
-            </motion.div>
-          )}
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
             style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, margin: 0 }}>
             Talk, vent, laugh — with a companion that actually gets you.
@@ -232,7 +211,9 @@ export default function HomeScreen() {
               marginBottom: 12,
               opacity: loading ? 0.7 : 1,
             }}>
-             
+            <svg width="22" height="22" viewBox="0 0 814 1000" fill="black" style={{flexShrink: 0, overflow: 'visible'}}>
+              <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-47.4-150.2-110.1C87 453.9 65 270.7 65 218.9c0-36.3.1-86 28.9-134.4 37.4-62.5 94.6-101.2 175.5-101.2 74.3 0 130.7 47.4 173.2 47.4 41.3 0 105.7-50.1 190.9-50.1 30.4 0 109 2.6 165.2 86.1zm-85.5-112.1c19.8-25.4 34-61.6 34-97.8 0-5.1-.4-10.3-1.3-14.8-32.4 1.3-71.3 22.3-94.3 50.8-18.6 22.3-35.4 58.1-35.4 94.9 0 5.8 1 11.5 1.6 13.4 2.3.4 6 .6 9.7.6 29.7 0 67.9-19.5 85.7-47.1z"/>
+            </svg>
             {loading ? "Signing in..." : "Sign in with Apple"}
           </motion.button>
         )}
