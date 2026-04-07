@@ -37,7 +37,7 @@ export default function OnboardingNickname() {
 
   const handleNext = () => {
     updateOnboardingStore({ companionNickname: nickname.trim() || companion?.name || "" });
-    navigate("/onboarding/mode");
+    navigate("/onboarding/vibe");
   };
 
   return (
