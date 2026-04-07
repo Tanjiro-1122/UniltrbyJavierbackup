@@ -147,7 +147,7 @@ export default function PersonalityQuiz() {
               }}>
               <Share2 size={16} /> Share Result
             </button>
-            <button onClick={() => navigate("/chat")}
+            <button onClick={() => navigate("/onboarding/vibe")}
               style={{
                 width: "100%", padding: "14px", borderRadius: 16,
                 background: "rgba(255,255,255,0.08)", border: "none",
