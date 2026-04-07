@@ -262,7 +262,7 @@ function UsersTab({ stats }) {
               </p>
               {u.companion_id && (
                 <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>
-                  Companion: {u.companion_id} · {u.message_count || 0} msgs
+                  {"Companion: "}{u.companion_id}{" · "}{u.message_count || 0}{" msgs"}
                 </p>
               )}
             </div>
