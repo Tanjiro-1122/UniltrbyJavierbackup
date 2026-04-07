@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, TrendingUp, SlidersHorizontal, Lock
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
 } from "lucide-react";
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
@@ -12,7 +12,6 @@ import HowToGuide from "@/components/settings/HowToGuide";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { getMoodWeek } from "@/components/utils/moodTracker";
-import { useMessageLimit } from "@/components/useMessageLimit";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -85,114 +84,6 @@ function NicknameField() {
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
-// ─── Memory Vault Screen ──────────────────────────────────────────────────────
-function MemoryVaultScreen({ userProfile, isPremium, onUpgrade }) {
-  const facts       = userProfile?.user_facts  || {};
-  const summary     = userProfile?.memory_summary || "";
-  const sessionMem  = userProfile?.session_memory || [];
-  const hasMemory   = Object.keys(facts).length > 0 || summary || sessionMem.length > 0;
-
-  const CATEGORIES = [
-    { key: "about",    emoji: "👤", label: "About You",       fields: ["name","age","location","job","pronouns"] },
-    { key: "life",     emoji: "🌱", label: "Your Life",       fields: ["family","relationships","pets","home"] },
-    { key: "goals",    emoji: "🎯", label: "Goals & Dreams",  fields: ["goals","dreams","fears","aspirations"] },
-    { key: "patterns", emoji: "💭", label: "Your Patterns",   fields: ["mood_patterns","triggers","coping","hobbies","interests"] },
-    { key: "bond",     emoji: "💜", label: "Our Bond",        fields: ["first_chat","milestones","inside_jokes","favorite_topics"] },
-  ];
-
-  if (!isPremium) {
-    return (
-      <div style={{ padding: "0 4px" }}>
-        {/* Teaser — blurred cards */}
-        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
-          Your companion has been quietly paying attention. Upgrade to see everything they know about you. 💜
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, filter: "blur(4px)", pointerEvents: "none", userSelect: "none", marginBottom: 24 }}>
-          {CATEGORIES.slice(0,3).map(cat => (
-            <div key={cat.key} style={{ background: "rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 18 }}>{cat.emoji}</span>
-                <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>{cat.label}</span>
-              </div>
-              <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Your name, where you're from, what you do...</div>
-            </div>
-          ))}
-        </div>
-        <button onClick={onUpgrade} style={{
-          width: "100%", padding: "14px", borderRadius: 14, border: "none", cursor: "pointer",
-          background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white",
-          fontSize: 15, fontWeight: 700,
-        }}>
-          🔓 Unlock Memory Vault
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ padding: "0 4px" }}>
-      {!hasMemory ? (
-        <div style={{ textAlign: "center", padding: "40px 20px" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>💜</div>
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, lineHeight: 1.6 }}>
-            Your companion is still learning about you. Keep chatting and they'll start remembering the things that matter.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {summary && (
-            <div style={{ background: "rgba(168,85,247,0.1)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(168,85,247,0.2)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 18 }}>✨</span>
-                <span style={{ color: "#c084fc", fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em" }}>What I Remember</span>
-              </div>
-              <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>{summary}</p>
-            </div>
-          )}
-          {CATEGORIES.map(cat => {
-            const items = cat.fields
-              .filter(f => facts[f])
-              .map(f => ({ label: f.replace(/_/g," "), value: facts[f] }));
-            if (items.length === 0) return null;
-            return (
-              <div key={cat.key} style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <span style={{ fontSize: 18 }}>{cat.emoji}</span>
-                  <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>{cat.label}</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {items.map(item => (
-                    <div key={item.label} style={{ display: "flex", gap: 8 }}>
-                      <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textTransform: "capitalize", minWidth: 90 }}>{item.label}</span>
-                      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 13, flex: 1 }}>{String(item.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {sessionMem.length > 0 && (
-            <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 18 }}>📖</span>
-                <span style={{ color: "white", fontWeight: 700, fontSize: 14 }}>Recent Sessions</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {sessionMem.slice(-5).reverse().map((s, i) => (
-                  <div key={i} style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5, paddingBottom: 8, borderBottom: i < Math.min(sessionMem.length,5)-1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                    {typeof s === "string" ? s : s?.summary || JSON.stringify(s)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 export default function Settings() {
   const navigate = useNavigate();
   const [screen, setScreen] = useState(null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
@@ -342,9 +233,6 @@ export default function Settings() {
   const hasPin = !!localStorage.getItem("unfiltr_pin");
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
-  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
-  const isPro     = localStorage.getItem("unfiltr_is_pro")    === "true";
-  const { remaining, FREE_LIMIT, dailyLimit, isAtLimit } = useMessageLimit(isPremium, isAnnual, isPro);
   const currentBg = (() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } })();
 
   useEffect(() => {
@@ -402,22 +290,7 @@ export default function Settings() {
         }
         const resolvedCompanionId = profile?.companion_id || localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
         if (resolvedCompanionId && resolvedCompanionId !== "pending") {
-          // Check if it's a real UUID (24-char hex) or a legacy name string like "luna"
-          const isRealId = /^[0-9a-f]{24}$/i.test(resolvedCompanionId);
-          let comp = null;
-          if (isRealId) {
-            comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
-          } else {
-            // Legacy: companion_id is a name like "luna" — find by name
-            const matches = await base44.entities.Companion.filter({ name: resolvedCompanionId }).catch(() => []);
-            comp = matches?.[0] || null;
-            // Upgrade UserProfile to use the real entity ID
-            if (comp && profileId) {
-              base44.entities.UserProfile.update(profileId, { companion_id: comp.id }).catch(() => {});
-              localStorage.setItem("unfiltr_companion_id", comp.id);
-              localStorage.setItem("companionId", comp.id);
-            }
-          }
+          const comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
           if (comp) {
             setCompanion(comp);
             if (comp.personality_vibe)      { setPersonalityVibe(comp.personality_vibe);      localStorage.setItem("unfiltr_personality_vibe", comp.personality_vibe); }
@@ -486,63 +359,24 @@ export default function Settings() {
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
     setSavingCompanion(true);
-    try {
-      const profileId = localStorage.getItem("userProfileId");
-
-      // Always create a fresh Companion record for the new selection
-      // (avoids the "luna" string vs real entity ID mismatch)
-      const newComp = await base44.entities.Companion.create({
-        name:               c.name,
-        avatar_id:          c.id,
-        avatar_gender:      c.gender || "female",
-        personality_preset: c.tagline || "friendly",
-        personality_vibe:      localStorage.getItem("unfiltr_personality_vibe")      || "balanced",
-        personality_empathy:   localStorage.getItem("unfiltr_personality_empathy")   || "50",
-        personality_humor:     localStorage.getItem("unfiltr_personality_humor")     || "50",
-        personality_curiosity: localStorage.getItem("unfiltr_personality_curiosity") || "50",
-        personality_style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
-      });
-
-      // Update UserProfile to point to the new real Companion entity ID
-      if (profileId) {
-        await base44.entities.UserProfile.update(profileId, { companion_id: newComp.id });
-        setUserProfile(p => p ? { ...p, companion_id: newComp.id } : p);
-      }
-
-      // Also update via syncProfile to ensure server-side consistency
-      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-      if (appleUserId && profileId) {
-        fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update", profileId, updateData: { companion_id: newComp.id } }),
-        }).catch(() => {});
-      }
-
-      // Update localStorage
-      localStorage.setItem("unfiltr_companion_id", newComp.id);
-      localStorage.setItem("companionId", newComp.id);
-      localStorage.setItem("unfiltr_companion_name", c.name);
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, id: newComp.id }));
-      setCompanion({ ...c, id: newComp.id });
-    } catch(e) {
-      console.error('companion update failed', e);
+    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    if (!companionId) {
+      // Save to localStorage only if no DB record
+      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c }));
+      setCompanion(c);
+      setSavingCompanion(false);
+      return;
     }
+    try {
+      await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female", personality_preset: c.tagline || "friendly" });
+      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
+      setCompanion(p => ({ ...p, ...c, name: c.name, avatar_url: c.avatar }));
+    } catch(e) { console.error('companion update failed', e); }
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
     localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    localStorage.setItem("unfiltr_background_id", bg.id);
-    setUserProfile(p => ({ ...p, background_id: bg.id }));
-    // Persist to DB so it survives reinstalls
-    const profileId = localStorage.getItem("userProfileId");
-    if (profileId) {
-      fetch("/api/syncProfile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update", profileId, updateData: { background_id: bg.id } }),
-      }).catch(() => {});
-    }
+    setUserProfile(p => ({ ...p }));
   };
   const handlePauseAccount = async () => {
     try {
@@ -562,28 +396,26 @@ export default function Settings() {
     try {
       const profileId = localStorage.getItem("userProfileId");
       const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-
-      // ✅ Actually delete the record from DB — not just flag it
-      if (profileId) {
-        await fetch("/api/syncProfile", {
+      if (profileId || appleUserId) {
+        await fetch("/api/utils", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "delete",
+            action: "deleteAccount",
             profileId,
-            appleUserId,
-          }),
+            appleUserId
+          })
         });
       }
-    } catch (err) {
-      console.error("[DeleteAccount] DB delete failed:", err);
+    } catch (e) {
+      console.error("Delete account error:", e);
     }
-    // Wipe all local storage regardless
+    // Clear all local storage regardless
     Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("unfiltr_") || k === "userProfileId" || k === "companionId") {
-        localStorage.removeItem(k);
-      }
+      if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k);
     });
+    setDeleting(false);
+    setShowDeleteConfirm(false);
     navigate("/age-verification", { replace: true });
   };
 
@@ -779,12 +611,6 @@ export default function Settings() {
       </SubScreen>
     ),
 
-
-    memory: (
-      <SubScreen title="My Memory" onBack={() => setScreen(null)}>
-        <MemoryVaultScreen userProfile={userProfile} isPremium={isPremium} onUpgrade={() => setScreen("subscription")} />
-      </SubScreen>
-    ),
 
     personality: (
       <SubScreen title="Personality" onBack={() => setScreen(null)}>
@@ -997,7 +823,7 @@ export default function Settings() {
               </div>
               {/* Badge label */}
               <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>
-                {streakLabel}{" · "}{daysSince} days together
+                {streakLabel} · {daysSince} days together
               </div>
             </div>
           );
@@ -1007,7 +833,6 @@ export default function Settings() {
         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "12px 16px", display: "flex", marginBottom: 16 }}>
           {[
             { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
-            { label: "Today", value: isAtLimit ? "0 left" : `${remaining} left`, sub: isPremium ? "unlimited" : `of ${dailyLimit}/day` },
             { label: "Days Together", value: daysSince, sub: "with companion" },
             { label: "Moods Tracked", value: moodHistory.filter(Boolean).length, sub: "this week" },
           ].map((s, i) => (
@@ -1021,33 +846,21 @@ export default function Settings() {
 
         {/* Premium banner (if not premium) */}
         {!isPremium && (
-          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 12 }}>
+          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
             <span style={{ fontSize: 22 }}>✨</span>
             <div style={{ flex: 1, textAlign: "left" }}>
               <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages {"·"} Voice {"·"} All companions</p>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages · Voice · All companions</p>
             </div>
             <ChevronRight size={16} color="rgba(168,85,247,0.7)" />
           </button>
         )}
-        {/* Restore Purchases — always visible */}
-        <button onClick={() => navigate('/Pricing?restore=true')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
-          <span style={{ fontSize: 18 }}>🔄</span>
-          <div style={{ flex: 1, textAlign: "left" }}>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 13, margin: 0 }}>Restore Purchases</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, margin: "2px 0 0" }}>Already subscribed? Tap to restore your plan</p>
-          </div>
-          <ChevronRight size={14} color="rgba(255,255,255,0.3)" />
-        </button>
 
         {/* Main menu */}
         <Section>
           <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
-          <Row icon={<TrendingUp size={15} color="white" />} iconBg="#0e3d2e" label="Mood Insights" value="Your patterns" onPress={() => navigate("/mood-insights")} />
-          <Row icon={<span style={{fontSize:13}}>🧠</span>} iconBg="#2e1a4d" label="Memory Vault" value={isPremium ? "What I know about you" : "🔒 Premium"} onPress={() => setScreen("memory")} />
-          <Row icon={<span style={{fontSize:13}}>⏳</span>} iconBg="#1a2e4d" label="Time Capsule" value="Write to future you" onPress={() => navigate("/time-capsule")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
@@ -1067,7 +880,7 @@ export default function Settings() {
 
 
         <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.9.0</span>
+          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.2.0</span>
         </div>
       </div>
 
@@ -1253,5 +1066,3 @@ export default function Settings() {
     </div>
   );
 }
-
-
