@@ -80,6 +80,11 @@ export default function PersonalityQuiz() {
     }
   };
 
+  const handleSkip = () => {
+    localStorage.setItem("unfiltr_quiz_companion_id", "manual");
+    navigate("/onboarding/companion");
+  };
+
   const handleShare = async () => {
     const text = `I got ${result.name} ${result.emoji} as my perfect AI companion on Unfiltr! 💜\n\nTake the quiz: unfiltrbyjavier.base44.app`;
     if (navigator.share) {
@@ -98,7 +103,19 @@ export default function PersonalityQuiz() {
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={18} color="white" />
         </button>
-        <h1 style={{ color: "white", fontWeight: 700, fontSize: 18, margin: 0 }}>Companion Quiz</h1>
+        <h1 style={{ color: "white", fontWeight: 700, fontSize: 18, margin: 0, flex: 1 }}>Companion Quiz</h1>
+        {/* Skip quiz — only show during questions, not on result screen */}
+        {!result && (
+          <button
+            onClick={handleSkip}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "rgba(168,85,247,0.7)", fontSize: 13, fontWeight: 600,
+              padding: "4px 8px", textDecoration: "underline",
+            }}>
+            Skip
+          </button>
+        )}
       </div>
 
       <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "16px 20px 40px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
