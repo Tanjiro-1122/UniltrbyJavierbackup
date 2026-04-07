@@ -2,7 +2,7 @@
 // Single source of truth for all UserProfile DB operations
 // Called from HomeScreen (sign-in) and onboarding steps
 
-const B44_APP = "69b332a392004d139d4ba495";
+const B44_APP = "69b22f8b58e45d23cafd78d2";
 const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
 const getKey = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
