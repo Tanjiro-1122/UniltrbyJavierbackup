@@ -7,7 +7,7 @@ import { getOnboardingStore, updateOnboardingStore } from "@/components/onboardi
 export default function OnboardingName() {
   const navigate = useNavigate();
   const store = getOnboardingStore();
-  const [displayName, setDisplayName] = useState(store.displayName);
+  const [displayName, setDisplayName] = useState(store.displayName || localStorage.getItem("unfiltr_display_name") || "");
 
   // Must consent before entering name
   if (!localStorage.getItem("unfiltr_consent_accepted")) {
