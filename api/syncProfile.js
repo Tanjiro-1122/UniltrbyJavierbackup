@@ -6,6 +6,21 @@ const B44_APP = "69b332a392004d139d4ba495";
 const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
 const getKey = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
+// Decode Apple's identityToken JWT to reliably extract email on every login
+function decodeAppleJwt(token) {
+  try {
+    if (!token) return {};
+    const parts = token.split('.');
+    if (parts.length < 2) return {};
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const decoded = Buffer.from(padded, 'base64').toString('utf8');
+    return JSON.parse(decoded);
+  } catch { return {}; }
+}
+
+
+
 const b44Headers = () => ({
   "Content-Type": "application/json",
   "Authorization": `Bearer ${getKey()}`,
@@ -96,14 +111,21 @@ export default async function handler(req, res) {
   const {
     action = "sync",         // "sync" | "update" | "create"
     appleUserId,
-    email,
+    email: clientEmail,
     fullName,
     isPremium,
     plan,
     profileId,               // for direct update by ID
     updateData,              // fields to update (for action="update")
     displayName,             // for onboarding name step
+    identityToken,           // Apple JWT — always contains email, even on repeat logins
   } = req.body || {};
+
+  // Extract email from Apple's identity token JWT — reliable on EVERY login
+  // Apple only sends email in the client payload on first login, but it's
+  // always present in the signed JWT token they issue every time.
+  const jwtPayload = decodeAppleJwt(identityToken);
+  const email = jwtPayload.email || clientEmail || "";
 
   console.log(`[syncProfile] action=${action} appleUserId=${appleUserId?.slice(0,12)} profileId=${profileId}`);
 
