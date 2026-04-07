@@ -57,6 +57,7 @@ export default function OnboardingCompanion() {
   const handleSelect = () => {
     const c = VISIBLE[idx];
     updateOnboardingStore({ selectedCompanion: c.id });
+    localStorage.setItem("unfiltr_selected_companion_id", c.id);  // persist for crash recovery
     // If coming from quiz "choose myself", go to mode selection
     // otherwise normal onboarding path continues to nickname
     const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
