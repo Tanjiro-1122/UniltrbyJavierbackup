@@ -75,14 +75,20 @@ export default async function handler(req, res) {
         .map(p => ({
           id: p.id,
           display_name: p.display_name || "Anonymous",
+          email: p.email || null,
           user_id: p.user_id || p.id?.slice(0, 12),
           created_date: p.created_date,
           last_seen: p.last_seen || null,
           is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan),
-          trial_active: p.trial_active,
+          annual_plan: !!(p.annual_plan),
+          pro_plan: !!(p.pro_plan),
+          trial_active: !!(p.trial_active),
+          subscription_tier: p.annual_plan ? "Annual" : p.pro_plan ? "Pro" : (p.is_premium || p.trial_active) ? "Monthly" : "Free",
           message_count: p.message_count || 0,
-          apple_user_id: p.apple_user_id ? p.apple_user_id.slice(0, 16) + "…" : "—",
+          apple_user_id: p.apple_user_id || null,
+          companion_id: p.companion_id || null,
           online: p.last_seen && p.last_seen >= fiveMinAgo,
+          account_delete_requested: !!(p.account_delete_requested),
         })),
       premiumList: [...allProfiles]
         .filter(p => p.is_premium || p.annual_plan || p.pro_plan)
