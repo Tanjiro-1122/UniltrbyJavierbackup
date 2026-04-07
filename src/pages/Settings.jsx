@@ -402,7 +402,22 @@ export default function Settings() {
         }
         const resolvedCompanionId = profile?.companion_id || localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
         if (resolvedCompanionId && resolvedCompanionId !== "pending") {
-          const comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
+          // Check if it's a real UUID (24-char hex) or a legacy name string like "luna"
+          const isRealId = /^[0-9a-f]{24}$/i.test(resolvedCompanionId);
+          let comp = null;
+          if (isRealId) {
+            comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
+          } else {
+            // Legacy: companion_id is a name like "luna" — find by name
+            const matches = await base44.entities.Companion.filter({ name: resolvedCompanionId }).catch(() => []);
+            comp = matches?.[0] || null;
+            // Upgrade UserProfile to use the real entity ID
+            if (comp && profileId) {
+              base44.entities.UserProfile.update(profileId, { companion_id: comp.id }).catch(() => {});
+              localStorage.setItem("unfiltr_companion_id", comp.id);
+              localStorage.setItem("companionId", comp.id);
+            }
+          }
           if (comp) {
             setCompanion(comp);
             if (comp.personality_vibe)      { setPersonalityVibe(comp.personality_vibe);      localStorage.setItem("unfiltr_personality_vibe", comp.personality_vibe); }
@@ -471,24 +486,63 @@ export default function Settings() {
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
     setSavingCompanion(true);
-    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
-    if (!companionId) {
-      // Save to localStorage only if no DB record
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c }));
-      setCompanion(c);
-      setSavingCompanion(false);
-      return;
-    }
     try {
-      await base44.entities.Companion.update(companionId, { name: c.name, avatar_id: c.id, avatar_gender: c.gender || "female", personality_preset: c.tagline || "friendly" });
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
-      setCompanion(p => ({ ...p, ...c, name: c.name, avatar_url: c.avatar }));
-    } catch(e) { console.error('companion update failed', e); }
+      const profileId = localStorage.getItem("userProfileId");
+
+      // Always create a fresh Companion record for the new selection
+      // (avoids the "luna" string vs real entity ID mismatch)
+      const newComp = await base44.entities.Companion.create({
+        name:               c.name,
+        avatar_id:          c.id,
+        avatar_gender:      c.gender || "female",
+        personality_preset: c.tagline || "friendly",
+        personality_vibe:      localStorage.getItem("unfiltr_personality_vibe")      || "balanced",
+        personality_empathy:   localStorage.getItem("unfiltr_personality_empathy")   || "50",
+        personality_humor:     localStorage.getItem("unfiltr_personality_humor")     || "50",
+        personality_curiosity: localStorage.getItem("unfiltr_personality_curiosity") || "50",
+        personality_style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
+      });
+
+      // Update UserProfile to point to the new real Companion entity ID
+      if (profileId) {
+        await base44.entities.UserProfile.update(profileId, { companion_id: newComp.id });
+        setUserProfile(p => p ? { ...p, companion_id: newComp.id } : p);
+      }
+
+      // Also update via syncProfile to ensure server-side consistency
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+      if (appleUserId && profileId) {
+        fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update", profileId, updateData: { companion_id: newComp.id } }),
+        }).catch(() => {});
+      }
+
+      // Update localStorage
+      localStorage.setItem("unfiltr_companion_id", newComp.id);
+      localStorage.setItem("companionId", newComp.id);
+      localStorage.setItem("unfiltr_companion_name", c.name);
+      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, id: newComp.id }));
+      setCompanion({ ...c, id: newComp.id });
+    } catch(e) {
+      console.error('companion update failed', e);
+    }
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
     localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    setUserProfile(p => ({ ...p }));
+    localStorage.setItem("unfiltr_background_id", bg.id);
+    setUserProfile(p => ({ ...p, background_id: bg.id }));
+    // Persist to DB so it survives reinstalls
+    const profileId = localStorage.getItem("userProfileId");
+    if (profileId) {
+      fetch("/api/syncProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", profileId, updateData: { background_id: bg.id } }),
+      }).catch(() => {});
+    }
   };
   const handlePauseAccount = async () => {
     try {
@@ -1199,4 +1253,5 @@ export default function Settings() {
     </div>
   );
 }
+
 
