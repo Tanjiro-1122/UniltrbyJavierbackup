@@ -342,7 +342,7 @@ export default function Pricing() {
           <span onClick={handleSparkTap} style={{ fontSize: 22, cursor: 'pointer', userSelect: 'none' }}>✨</span>
 
           {/* Hidden admin button — tap to open admin panel */}
-          <button onClick={() => setShowAdmin(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>·</button>
+          <button onClick={() => setShowAdmin(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>{"·"}</button>
         </div>
 
         <div style={{ padding: '0 20px', flex: 1 }}>
@@ -467,3 +467,4 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
