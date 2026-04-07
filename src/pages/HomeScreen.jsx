@@ -8,49 +8,48 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 
-// Inline: find or create user profile in Base44 by Apple User ID
+// Route ALL profile operations through /api/syncProfile (server-side, authenticated)
 async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC }) {
-  const B44_APP = "69b332a392004d139d4ba495";
-  const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-  const apiKey = import.meta.env.VITE_BASE44_API_KEY || "";
-
-  // Try to find existing profile
-  const searchRes = await fetch(
-    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: { "Content-Type": "application/json" } }
-  );
-  const searchData = await searchRes.json();
-  const records = Array.isArray(searchData) ? searchData : (searchData?.records || searchData?.data || []);
-  const existing = records[0];
-
-  if (existing) {
-    // Update last_seen
-    await fetch(`${B44_BASE}/UserProfile/${existing.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ last_seen: new Date().toISOString(), ...(isPremiumFromRC ? { is_premium: true } : {}) }),
-    }).catch(() => {});
-    localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-    return { profile: existing, isNewUser: false };
-  }
-
-  // Create new profile
-  const createRes = await fetch(`${B44_BASE}/UserProfile`, {
+  const res = await fetch("/api/syncProfile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      apple_user_id: appleUserId,
-      email: email || "",
-      full_name: fullName || "",
-      is_premium: isPremiumFromRC || false,
-      onboarding_complete: false,
-      created_at: new Date().toISOString(),
-      last_seen: new Date().toISOString(),
+      action: "sync",
+      appleUserId,
+      email:      email    || "",
+      fullName:   fullName || "",
+      isPremium:  isPremiumFromRC || false,
     }),
   });
-  const newProfile = await createRes.json();
-  localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-  return { profile: newProfile, isNewUser: true };
+  if (!res.ok) throw new Error(`syncProfile failed: ${res.status}`);
+  const result = await res.json();
+  const profile = result.data;
+  const isNewUser = result.isNewUser === true;
+
+  if (profile?.profileId) {
+    localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+    localStorage.setItem("userProfileId", profile.profileId);
+    if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    if (profile.is_premium)   localStorage.setItem("unfiltr_is_premium", "true");
+    if (profile.annual_plan)  localStorage.setItem("unfiltr_is_annual",  "true");
+    if (profile.pro_plan)     localStorage.setItem("unfiltr_is_pro",     "true");
+  }
+
+  // Restore companion if returning user
+  if (!isNewUser && profile?.companion) {
+    const comp = profile.companion;
+    if (comp.avatar_id)           localStorage.setItem("unfiltr_companion_id",          comp.avatar_id);
+    if (comp.name)                localStorage.setItem("unfiltr_companion_name",         comp.name);
+    if (comp.nickname)            localStorage.setItem("unfiltr_companion_nickname",     comp.nickname);
+    if (comp.voice_gender)        localStorage.setItem("unfiltr_voice_gender",           comp.voice_gender);
+    if (comp.voice_personality)   localStorage.setItem("unfiltr_voice_personality",      comp.voice_personality);
+    if (comp.personality_vibe)    localStorage.setItem("unfiltr_personality_vibe",       comp.personality_vibe);
+    if (comp.personality_style)   localStorage.setItem("unfiltr_personality_style",      comp.personality_style);
+    if (comp.personality_humor)   localStorage.setItem("unfiltr_personality_humor",      comp.personality_humor);
+    if (comp.personality_empathy) localStorage.setItem("unfiltr_personality_empathy",    comp.personality_empathy);
+  }
+
+  return { profile, isNewUser };
 }
 import { debugLog } from "@/components/DebugPanel";
 
@@ -308,3 +307,4 @@ export default function HomeScreen() {
     </div>
   );
 }
+
