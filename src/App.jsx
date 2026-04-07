@@ -33,8 +33,6 @@ import OnboardingConsent      from "./pages/onboarding/OnboardingConsent";
 import OnboardingName         from "./pages/onboarding/OnboardingName";
 import OnboardingNickname     from "./pages/onboarding/OnboardingNickname";
 import OnboardingVibe         from "./pages/onboarding/OnboardingVibe";
-import OnboardingQuiz         from "./pages/onboarding/OnboardingQuiz";
-import OnboardingMode         from "./pages/onboarding/OnboardingMode";
 import OnboardingPin          from "./pages/onboarding/OnboardingPin";
 import AgeVerification        from "./pages/AgeVerification";
 import Support                from "./pages/Support";
@@ -42,8 +40,6 @@ import HomeScreen             from "./pages/HomeScreen";
 import ReturningScreen        from "./pages/ReturningScreen";
 import ChatEnter              from "./pages/ChatEnter";
 import MoodPicker             from "./pages/MoodPicker";
-import MoodInsights           from "./pages/MoodInsights";
-import TimeCapsulePage        from "./pages/TimeCapsulePage";
 import JournalEnter           from "./pages/JournalEnter";
 import JournalWorldPicker     from "./pages/JournalWorldPicker";
 import JournalImmersive       from "./pages/JournalImmersive";
@@ -56,7 +52,7 @@ const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
   "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
-  "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate", "/onboarding/quiz", "/onboarding/mode",
+  "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
   "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
@@ -165,8 +161,15 @@ const AuthenticatedApp = ({ splashDone }) => {
       return;
     }
     // new_user but onboarding is done means they just finished — don't redirect back to home-screen
+    // ALSO skip redirect if localStorage already has user_id — means sign-in just completed
+    // but AuthContext hasn't re-run checkAuth yet (race condition after Apple Sign-In)
     if (authError?.type === "new_user" && !onboardingDone) {
-      navigate("/home-screen", { replace: true });
+      const justSignedIn = !!localStorage.getItem("unfiltr_user_id");
+      if (!justSignedIn) {
+        navigate("/home-screen", { replace: true });
+        return;
+      }
+      // They just signed in — let the navigation from HomeScreen.jsx proceed uninterrupted
       return;
     }
 
@@ -209,8 +212,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/name"       element={<OnboardingName />} />
         <Route path="/onboarding/companion"  element={<OnboardingCompanion />} />
         <Route path="/onboarding/nickname"   element={<OnboardingNickname />} />
-        <Route path="/onboarding/quiz"       element={<OnboardingQuiz />} />
-        <Route path="/onboarding/mode"       element={<OnboardingMode />} />
         <Route path="/onboarding/vibe"       element={<OnboardingVibe />} />
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
@@ -222,8 +223,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         {/* Main app */}
         <Route path="/"                      element={<HomePage />} />
         <Route path="/chat"                  element={<ChatPage />} />
-        <Route path="/mood-insights" element={<MoodInsights />} />
-        <Route path="/time-capsule"            element={<TimeCapsulePage />} />
         <Route path="/chat-history"          element={<ChatHistory />} />
         <Route path="/vibe"                  element={<VibePage />} />
         <Route path="/settings"              element={<Settings />} />
