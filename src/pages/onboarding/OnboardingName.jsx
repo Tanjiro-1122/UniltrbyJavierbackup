@@ -88,7 +88,7 @@ export default function OnboardingName() {
 
   return (
     <OnboardingLayout
-      totalSteps={7}
+      totalSteps={5}
       step={2}
       onBack={() => navigate("/onboarding/consent")}
       onNext={handleNext}
