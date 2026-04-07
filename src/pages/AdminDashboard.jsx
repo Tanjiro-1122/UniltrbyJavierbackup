@@ -258,7 +258,11 @@ function UsersTab({ stats }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 2px" }}>{u.display_name || "Anonymous"}</p>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, margin: "0 0 2px", wordBreak: "break-all" }}>
-                {u.email || "No email on file"}
+                {u.email
+                  ? u.email
+                  : u.apple_user_id
+                  ? `Apple ID: ${u.apple_user_id.slice(0, 8)}...`
+                  : "No email on file"}
               </p>
               {u.companion_id && (
                 <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, margin: 0 }}>
@@ -369,4 +373,5 @@ function StatCard({ icon, label, value, sub }) {
     </div>
   );
 }
+
 
