@@ -21,7 +21,7 @@ export default function OnboardingNickname() {
   const [focused, setFocused] = useState(false);
 
   if (!store.selectedCompanion) {
-    navigate("/onboarding/quiz", { replace: true });
+    navigate("/onboarding/companion", { replace: true }); // no companion selected — let them pick
     return null;
   }
 
