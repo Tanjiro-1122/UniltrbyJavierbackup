@@ -12,6 +12,7 @@ import HowToGuide from "@/components/settings/HowToGuide";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { getMoodWeek } from "@/components/utils/moodTracker";
+import { useMessageLimit } from "@/components/useMessageLimit";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -341,6 +342,9 @@ export default function Settings() {
   const hasPin = !!localStorage.getItem("unfiltr_pin");
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
+  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
+  const isPro     = localStorage.getItem("unfiltr_is_pro")    === "true";
+  const { remaining, FREE_LIMIT, dailyLimit, isAtLimit } = useMessageLimit(isPremium, isAnnual, isPro);
   const currentBg = (() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } })();
 
   useEffect(() => {
@@ -927,6 +931,7 @@ export default function Settings() {
         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "12px 16px", display: "flex", marginBottom: 16 }}>
           {[
             { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
+            { label: "Today", value: isAtLimit ? "0 left" : `${remaining} left`, sub: isPremium ? "unlimited" : `of ${dailyLimit}/day` },
             { label: "Days Together", value: daysSince, sub: "with companion" },
             { label: "Moods Tracked", value: moodHistory.filter(Boolean).length, sub: "this week" },
           ].map((s, i) => (
