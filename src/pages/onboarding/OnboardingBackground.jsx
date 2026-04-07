@@ -82,10 +82,33 @@ export default function OnboardingBackground() {
     if (store.selectedVibe) localStorage.setItem("unfiltr_vibe", store.selectedVibe);
     localStorage.setItem("unfiltr_onboarding_complete", "true");
 
-    // Step 2 — Save via /api/syncProfile (server-side, works for Apple Sign-In users)
+    // Step 2 — Create a real Companion entity, then save via /api/syncProfile
     try {
       const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
       const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
+
+      // Create a real Companion DB record so Settings can find/update it later
+      let realCompanionId = store.selectedCompanion; // fallback to short id
+      try {
+        const { base44: b44 } = await import("@/api/base44Client");
+        const newComp = await b44.entities.Companion.create({
+          name:               companionData.name,
+          avatar_id:          companionData.id,
+          avatar_gender:      companionData.gender || "female",
+          personality_preset: companionData.tagline || "friendly",
+          personality_vibe:      localStorage.getItem("unfiltr_personality_vibe")      || "balanced",
+          personality_empathy:   localStorage.getItem("unfiltr_personality_empathy")   || "50",
+          personality_humor:     localStorage.getItem("unfiltr_personality_humor")     || "50",
+          personality_curiosity: localStorage.getItem("unfiltr_personality_curiosity") || "50",
+          personality_style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
+        });
+        realCompanionId = newComp.id;
+        localStorage.setItem("unfiltr_companion_id", realCompanionId);
+        localStorage.setItem("companionId", realCompanionId);
+        console.log("[Onboarding] Companion entity created:", realCompanionId);
+      } catch(compErr) {
+        console.warn("[Onboarding] Companion create failed, using short id:", compErr);
+      }
 
       const res = await fetch("/api/syncProfile", {
         method: "POST",
@@ -97,7 +120,7 @@ export default function OnboardingBackground() {
             display_name:        store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
             apple_user_id:       appleUserId || null,
             email:               localStorage.getItem("unfiltr_apple_email") || null,
-            companion_id:        store.selectedCompanion || companionData.id,
+            companion_id:        realCompanionId,
             onboarding_complete: true,
             preferred_mood:      store.selectedVibe || "chill",
             background_id:       selected,
@@ -276,3 +299,4 @@ export default function OnboardingBackground() {
     </div>
   );
 }
+
