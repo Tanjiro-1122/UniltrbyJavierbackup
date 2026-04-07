@@ -126,6 +126,35 @@ function useProfileRecovery() {
 // ─── Global Native Bridge ────────────────────────────────────────────────────
 // Must be in App.jsx so it's always alive before any page component mounts.
 // HomeScreen/ReturningScreen/IAP components chain onto window.__nativeBus.
+// Smart resume: figures out where the user left off in onboarding
+function OnboardingResume() {
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    const consentDone = localStorage.getItem("unfiltr_consent_accepted") === "true";
+    const nameDone    = !!localStorage.getItem("unfiltr_display_name");
+    const companionId = localStorage.getItem("unfiltr_selected_companion_id") ||
+                        localStorage.getItem("unfiltr_quiz_companion_id");
+    const onboardingDone = localStorage.getItem("unfiltr_onboarding_complete") === "true";
+
+    if (onboardingDone) {
+      navigate("/hub", { replace: true });
+    } else if (!consentDone) {
+      navigate("/onboarding/consent", { replace: true });
+    } else if (!nameDone) {
+      navigate("/onboarding/name", { replace: true });
+    } else if (!companionId) {
+      navigate("/onboarding/companion", { replace: true });
+    } else {
+      // They picked a companion — restore to store then send to nickname/vibe
+      import("@/components/onboarding/useOnboardingStore").then(({ updateOnboardingStore }) => {
+        updateOnboardingStore({ selectedCompanion: companionId });
+      });
+      navigate("/onboarding/nickname", { replace: true });
+    }
+  }, []);
+  return null;
+}
+
 function useNativeBridge() {
   useEffect(() => {
     window.onMessageFromRN = (jsonStr) => {
@@ -236,7 +265,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/support"               element={<Support />} />
 
         {/* Onboarding */}
-        <Route path="/onboarding"            element={<Navigate to="/onboarding/consent" replace />} />
+        <Route path="/onboarding"            element={<OnboardingResume />} />
         <Route path="/onboarding/consent"    element={<OnboardingConsent />} />
         <Route path="/onboarding/pin"       element={<OnboardingPin />} />
         <Route path="/onboarding/name"       element={<OnboardingName />} />
