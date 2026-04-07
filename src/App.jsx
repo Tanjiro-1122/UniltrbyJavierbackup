@@ -79,48 +79,71 @@ function SafeAreaFix() {
   return null;
 }
 
-// One-time recovery: if userProfileId is missing but display_name exists, find profile by name
+// Session recovery: if userProfileId is missing but apple_user_id is in localStorage,
+// look up the profile by apple_user_id and restore the session.
 function useProfileRecovery() {
   useEffect(() => {
-    const profileId = localStorage.getItem("userProfileId");
-    const displayName = localStorage.getItem("unfiltr_display_name");
-    const onboardingDone = localStorage.getItem("unfiltr_onboarding_complete");
-    if (profileId || !onboardingDone) return; // already set or not onboarded yet
+    const profileId   = localStorage.getItem("userProfileId");
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    if (profileId) return; // already restored
+    if (!appleUserId) return; // no apple id — user needs to sign in
 
-    // Try to find profile by display_name
     (async () => {
       try {
-        let profiles = [];
-        if (displayName) {
-          profiles = await base44.entities.UserProfile.filter({ display_name: displayName });
-        }
-        // If no match by name, grab the most recent profile (last resort)
-        if (!profiles || profiles.length === 0) {
-          const all = await base44.entities.UserProfile.list({ limit: 1, sort: "-created_date" });
-          profiles = all || [];
-        }
-        if (profiles.length > 0) {
-          const p = profiles[0];
+        const B44_APP = "69b332a392004d139d4ba495";
+        const TOKEN   = "1156284fb9144ad9ab95afc962e848d8";
+        const res = await fetch(
+          `https://base44.app/api/apps/${B44_APP}/entities/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+          { headers: { "Authorization": `Bearer ${TOKEN}` } }
+        );
+        const data = await res.json();
+        const records = Array.isArray(data) ? data : (data?.records || []);
+        const p = records[0];
+        if (p) {
           localStorage.setItem("userProfileId", p.id);
-          localStorage.setItem("unfiltr_user_id", p.id);
-          localStorage.setItem("unfiltr_auth_token", p.id);
           if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
-          if (p.companion_id) {
+          if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
+          if (p.companion_id && p.companion_id !== "pending") {
             localStorage.setItem("companionId", p.companion_id);
             localStorage.setItem("unfiltr_companion_id", p.companion_id);
           }
+          if (p.is_premium || p.annual_plan) {
+            localStorage.setItem("unfiltr_is_premium", "true");
+            localStorage.setItem("unfiltr_plan", p.annual_plan ? "annual_plan" : "pro_plan");
+          }
           window.dispatchEvent(new Event("unfiltr_auth_updated"));
-          console.log("[Recovery] Profile restored:", p.id, p.display_name);
+          console.log("[Recovery] Profile restored via apple_user_id:", p.id, p.display_name);
         }
       } catch (e) {
-        console.warn("[Recovery] Could not restore profile:", e);
+        console.warn("[Recovery] Could not restore profile:", e.message);
       }
     })();
   }, []);
 }
 
+
+// ─── Global Native Bridge ────────────────────────────────────────────────────
+// Must be in App.jsx so it's always alive before any page component mounts.
+// HomeScreen/ReturningScreen/IAP components chain onto window.__nativeBus.
+function useNativeBridge() {
+  useEffect(() => {
+    window.onMessageFromRN = (jsonStr) => {
+      try {
+        const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+        if (typeof window.__nativeBus === 'function') {
+          window.__nativeBus(msg);
+        }
+        window.dispatchEvent(new MessageEvent('message', { data: msg }));
+      } catch (e) {
+        console.warn('[Bridge] Parse error:', e.message, String(jsonStr).slice(0, 100));
+      }
+    };
+  }, []);
+}
+
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
+  useNativeBridge();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
