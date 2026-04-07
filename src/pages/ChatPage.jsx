@@ -124,7 +124,10 @@ export default function ChatPage() {
           if ((result.isPremium || result.valid) && profileId) {
             const isAnnualPurchase = result.plan === 'annual';
             const isProPurchase    = result.plan === 'pro';
-            await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
+            await fetch("/api/syncProfile", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "update", profileId, updateData: { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase } }),
+            });
             setIsPremium(true);
             if (isAnnualPurchase) setIsAnnual(true);
             if (isProPurchase)   setIsPro(true);
@@ -207,7 +210,12 @@ export default function ChatPage() {
       const pid = localStorage.getItem("userProfileId");
       if (pid) {
         try {
-          const profile = await base44.entities.UserProfile.get(pid);
+          // Fetch profile via server-side proxy (avoids SDK app scope issue)
+          const _profRes = await fetch("/api/b44proxy", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid }),
+          });
+          const profile = _profRes.ok ? await _profRes.json() : null;
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const premium = !!(profile?.is_premium || profile?.premium);
@@ -229,7 +237,11 @@ export default function ChatPage() {
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
-              const dbComp = await base44.entities.Companion.get(profile.companion_id);
+              const _compRes = await fetch("/api/b44proxy", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ entity: "Companion", action: "get", id: profile.companion_id }),
+              });
+              const dbComp = _compRes.ok ? await _compRes.json() : null;
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
       // Cache personality in localStorage for fast access during chat
       if (dbComp?.personality_vibe)      localStorage.setItem("unfiltr_personality_vibe",      dbComp.personality_vibe);
@@ -407,7 +419,7 @@ export default function ChatPage() {
       };
 
       if (pid) {
-        base44.entities.UserProfile.get(pid).then(profile => {
+        fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid }) }).then(r => r.ok ? r.json() : null).then(profile => {
           setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary) }]);
         }).catch(() => {
           setMessages([{ role: "assistant", content: buildMessage(null) }]);
@@ -616,7 +628,8 @@ export default function ChatPage() {
       try {
         const pid2 = localStorage.getItem("userProfileId");
         if (pid2) {
-        const prof = await base44.entities.UserProfile.get(pid2);
+        const _profRes2 = await fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid2 }) });
+        const prof = _profRes2.ok ? await _profRes2.json() : null;
         localMemSummary = prof?.memory_summary || "";
         setMemorySummary(localMemSummary);
         if (prof?.user_facts) setUserFacts(prof.user_facts);
@@ -697,7 +710,10 @@ export default function ChatPage() {
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
+      if (companionDbId && companionDbId !== "pending") {
+        const pid4 = localStorage.getItem("userProfileId");
+        if (pid4) fetch("/api/syncProfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", profileId: pid4, updateData: { preferred_mood: newMood } }) }).catch(() => {});
+      }
 
       incrementCount();
       spawnParticles();
@@ -705,7 +721,7 @@ export default function ChatPage() {
       const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
-      if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
+      if (pid3) fetch("/api/syncProfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", profileId: pid3, updateData: { message_count: localCount, last_active: new Date().toISOString() } }) }).catch(() => {});
 
       // Voice — use cached settings from DB, fall back to localStorage, then defaults
       const vg = companion._voiceGender || localStorage.getItem("unfiltr_voice_gender") || "female";
@@ -714,7 +730,7 @@ export default function ChatPage() {
 
       // Background tasks — all fire-and-forget, no awaits
       if (companionDbId && companionDbId !== "pending") {
-        base44.entities.Companion.get(companionDbId).then(dbComp => {
+        fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "Companion", action: "get", id: companionDbId }) }).then(r => r.ok ? r.json() : null).then(dbComp => {
           if (dbComp) {
             companion._voiceGender = dbComp.voice_gender || "female";
             companion._voicePersonality = dbComp.voice_personality || "cheerful";
@@ -743,7 +759,7 @@ export default function ChatPage() {
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
-            base44.entities.UserProfile.get(profileId2).then(p => {
+            fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: profileId2 }) }).then(r => r.ok ? r.json() : null).then(p => {
               if (p?.session_memory) setSessionMemory(p.session_memory);
               if (p?.user_facts)     setUserFacts(p.user_facts);
               if (p?.memory_summary) setMemorySummary(p.memory_summary);
@@ -1152,4 +1168,5 @@ export default function ChatPage() {
     </>
   );
 }
+
 
