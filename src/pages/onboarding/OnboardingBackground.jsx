@@ -82,55 +82,77 @@ export default function OnboardingBackground() {
     if (store.selectedVibe) localStorage.setItem("unfiltr_vibe", store.selectedVibe);
     localStorage.setItem("unfiltr_onboarding_complete", "true");
 
-    // Step 2 — Create a real Companion entity, then save via /api/syncProfile
+    // Step 2 — Save to DB and WAIT before navigating
     try {
-      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-      const profileId   = store.pendingProfileId || localStorage.getItem("userProfileId");
-
-      // Use companion short id directly — no SDK call needed
-      // Companion entity creation is handled server-side via syncProfile
-      const realCompanionId = store.selectedCompanion || companionData?.id || "pending";
-      localStorage.setItem("unfiltr_companion_id", realCompanionId);
-      localStorage.setItem("companionId", realCompanionId);
-      console.log("[Onboarding] Using companion id:", realCompanionId);
-
-      const res = await fetch("/api/syncProfile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update",
-          profileId,
-          updateData: {
-            display_name:        store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
-            apple_user_id:       appleUserId || null,
-            email:               localStorage.getItem("unfiltr_apple_email") || null,
-            companion_id:        realCompanionId,
-            onboarding_complete: true,
-            preferred_mood:      store.selectedVibe || "chill",
-            background_id:       selected,
-            nickname:            store.companionNickname?.trim() || "",
-            relationship_mode:   store.selectedMode || "",
-            last_active:         new Date().toISOString(),
-          },
-        }),
+      // Create companion record
+      const companion = await base44.entities.Companion.create({
+        name: companionData.name,
+        avatar_id: companionData.id,
+        avatar_gender: companionData.gender || "female",
+        personality_preset: companionData.personality || companionData.tagline || "friendly",
+        mood_mode: "neutral",
+        is_active: true,
       });
+      localStorage.setItem("companionId", companion.id);
+      localStorage.setItem("unfiltr_companion_id", companion.id);
 
-      if (res.ok) {
-        localStorage.setItem("userProfileId", profileId);
-        localStorage.setItem("unfiltr_user_id", profileId);
-        localStorage.setItem("unfiltr_auth_token", profileId);
-        window.dispatchEvent(new Event("unfiltr_auth_updated"));
-        console.log("[Onboarding] Profile saved successfully");
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+      const profileData = {
+        display_name: store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
+        apple_user_id: appleUserId || null,
+        email: localStorage.getItem("unfiltr_apple_email") || null,
+        companion_id: companion.id,
+        is_premium: !!(store.isTesterAccount),
+        trial_active: !!(store.isTesterAccount),
+        trial_start_date: store.isTesterAccount ? new Date().toISOString() : null,
+        onboarding_complete: true,
+        session_memory: [],
+        message_count: 0,
+        last_active: new Date().toISOString(),
+        preferred_mood: store.selectedVibe || "chill",
+      };
+
+      // Create or update UserProfile
+      let profileId;
+      if (store.pendingProfileId) {
+        await base44.entities.UserProfile.update(store.pendingProfileId, profileData);
+        profileId = store.pendingProfileId;
       } else {
-        console.error("[Onboarding] syncProfile failed:", await res.text());
+        const profile = await base44.entities.UserProfile.create(profileData);
+        profileId = profile.id;
       }
+
+      // Persist ALL identity keys
+      localStorage.setItem("userProfileId", profileId);
+      localStorage.setItem("unfiltr_user_id", profileId);
+      localStorage.setItem("unfiltr_auth_token", profileId);
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
+
+      // 💾 Tell native wrapper to persist session in AsyncStorage (survives force-close)
+      try {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: "SAVE_SESSION",
+            data: {
+              appleUserId: appleUserId || null,
+              onboardingComplete: true,
+              displayName: store.displayName?.trim() || localStorage.getItem("unfiltr_display_name") || "",
+              companionId: companion.id,
+              ageVerified: true,
+            }
+          }));
+        }
+      } catch(e) { console.warn("SAVE_SESSION error:", e); }
+
       resetOnboardingStore();
+
     } catch (err) {
-      console.error("[Onboarding] DB error:", err);
+      // DB failed — still allow entry, keys already set from Step 1
+      console.error("Onboarding DB error:", err);
       resetOnboardingStore();
     }
 
-        // Navigate only AFTER DB is done (or failed)
+    // Navigate only AFTER DB is done (or failed)
     setLoading(false);
     navigate("/hub");
   };
@@ -174,7 +196,7 @@ export default function OnboardingBackground() {
           <ChevronLeft size={20} color="white" />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 600 }}>Step 7 of 7</div>
+          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: 600 }}>Step 6 of 6</div>
           <div style={{ height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 99, marginTop: 4, overflow: "hidden" }}>
             <div style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#7c3aed,#db2777)", borderRadius: 99 }} />
           </div>
@@ -283,5 +305,3 @@ export default function OnboardingBackground() {
     </div>
   );
 }
-
-
