@@ -165,29 +165,24 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
         );
       })}
       {loading && showTyping && (
-        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 8 }}>
-          <div style={{
-            padding: "10px 16px", borderRadius: "20px 20px 20px 6px",
-            background: "linear-gradient(135deg, rgba(88,28,135,0.5), rgba(139,92,246,0.2))",
-            border: "1px solid rgba(168,85,247,0.2)",
-            display: "flex", alignItems: "center", gap: 8,
-            boxShadow: "0 2px 12px rgba(168,85,247,0.1)",
-          }}>
-            <style>{`
-              @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.3} 30%{transform:translateY(-6px) scale(1.2);opacity:1} }
-              @keyframes textPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-            `}</style>
-            {companionName && (
-              <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 11, fontWeight: 600, animation: "textPulse 2s ease-in-out infinite" }}>
-                {companionName} is thinking
-              </span>
-            )}
+        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", gap: 10, paddingLeft: 4 }}>
+          <style>{`
+            @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.25} 30%{transform:translateY(-7px) scale(1.3);opacity:1} }
+            @keyframes textFade { 0%,100%{opacity:0.35} 50%{opacity:0.7} }
+          `}</style>
+          {companionName && (
+            <span style={{ color: "rgba(196,180,252,0.5)", fontSize: 11, fontWeight: 500, animation: "textFade 2.2s ease-in-out infinite", letterSpacing: "0.2px" }}>
+              {companionName} is thinking
+            </span>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             {[0, 1, 2].map(d => (
               <div key={d} style={{
-                width: 5, height: 5, borderRadius: "50%",
+                width: 6, height: 6, borderRadius: "50%",
                 background: "linear-gradient(135deg, #a855f7, #db2777)",
                 animation: `typingWave 1.4s ease-in-out infinite`,
-                animationDelay: `${d * 0.18}s`,
+                animationDelay: `${d * 0.2}s`,
+                boxShadow: "0 0 6px rgba(168,85,247,0.5)",
               }} />
             ))}
           </div>
