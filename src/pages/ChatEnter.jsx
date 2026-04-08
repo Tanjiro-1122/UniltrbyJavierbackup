@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const LOGO = "https://media.base44.com/images/public/69b332a392004d139d4ba495/d653bb16a_generated_image.png";
+const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
 export default function ChatEnter() {
   const navigate = useNavigate();
