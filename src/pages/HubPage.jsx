@@ -6,10 +6,10 @@ import { COMPANIONS } from "../components/companionData";
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 5)  return { text: "Still up?",      emoji: "🌙" };
-  if (h < 12) return { text: "Good morning",   emoji: "☀️" };
-  if (h < 17) return { text: "Good afternoon", emoji: "🌤️" };
-  if (h < 21) return { text: "Good evening",   emoji: "🌆" };
-  return       { text: "Night owl mode",        emoji: "🦉" };
+  if (h < 12) return { text: "Good morning",   emoji: "✨" };
+  if (h < 17) return { text: "Good afternoon", emoji: "💫" };
+  if (h < 21) return { text: "Good evening",   emoji: "🌙" };
+  return       { text: "Night owl mode",        emoji: "⭐" };
 }
 
 export default function HubPage() {
@@ -110,37 +110,18 @@ export default function HubPage() {
           display: "flex", alignItems: "center", gap: 16,
         }}
       >
-        {/* Companion mini avatar */}
-        {companionImg ? (
-          <div style={{
-            width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
-            background: "rgba(139,92,246,0.2)",
-            border: "2px solid rgba(167,139,250,0.45)",
-            overflow: "hidden",
-            boxShadow: "0 0 20px rgba(139,92,246,0.4)",
-            display: "flex", alignItems: "flex-end", justifyContent: "center",
-          }}>
-            <img
-              src={companionImg}
-              onLoad={() => setAvatarLoaded(true)}
-              alt={companionDisplayName}
-              style={{
-                width: "120%", height: "120%", objectFit: "cover",
-                objectPosition: "top center",
-                opacity: avatarLoaded ? 1 : 0,
-                transition: "opacity 0.3s",
-              }}
-            />
-          </div>
-        ) : (
-          <div style={{
-            width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
-            background: "rgba(139,92,246,0.2)",
-            border: "2px solid rgba(167,139,250,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 24,
-          }}>✨</div>
-        )}
+        {/* Companion initial circle — clean, no crammed full-body image */}
+        <div style={{
+          width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
+          background: "linear-gradient(135deg, rgba(139,92,246,0.5), rgba(109,40,217,0.35))",
+          border: "2px solid rgba(167,139,250,0.55)",
+          boxShadow: "0 0 22px rgba(139,92,246,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22, fontWeight: 800, color: "#c4b5fd",
+          letterSpacing: "-1px",
+        }}>
+          {companionDisplayName ? companionDisplayName.charAt(0).toUpperCase() : "✨"}
+        </div>
 
         <div style={{ flex: 1 }}>
           <div style={{
@@ -315,3 +296,4 @@ export default function HubPage() {
     </div>
   );
 }
+
