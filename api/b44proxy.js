@@ -3,7 +3,7 @@
 //   1. Query style: GET /api/b44proxy?path=/UserProfile/123
 //   2. Body style:  POST /api/b44proxy { entity, action, id, data }
 
-const APP_ID = "69b22f8b58e45d23cafd78d2";
+const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = `https://app.base44.com/api/apps/${APP_ID}/entities`;
 const getToken = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
