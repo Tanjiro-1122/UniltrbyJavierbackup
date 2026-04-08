@@ -91,6 +91,7 @@ export default async function handler(req, res) {
       systemPrompt,
       memorySummary,
       sessionMemory,
+      profileId,
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
@@ -114,6 +115,24 @@ export default async function handler(req, res) {
       sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
     }
 
+    // ── Vector memory retrieval (premium+ only) ─────────────────────────
+    let vectorCtx = "";
+    if (profileId && (isPremium || isPro || isAnnual) && messages?.length) {
+      try {
+        const { retrieveRelevantMemories } = await import("./memoryEmbed.js");
+        const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "";
+        if (lastUserMsg) {
+          const mems = await retrieveRelevantMemories(profileId, lastUserMsg, isPremium, isPro, isAnnual);
+          if (mems?.length) {
+            vectorCtx = "\n\nRelevant memories:\n" + mems.map(m => `- ${m.text}`).join("\n");
+            console.log("[chat] injected", mems.length, "vector memories");
+          }
+        }
+      } catch(e) {
+        console.warn("[chat] vector retrieval failed (non-fatal):", e.message);
+      }
+    }
+
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
@@ -122,7 +141,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx +
+          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
@@ -186,4 +205,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
 
