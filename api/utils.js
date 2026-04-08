@@ -373,9 +373,79 @@ const { action } = req.body;
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
     if (action === "deleteAccount")       return await handleDeleteAccount(req, res);
     if (action === "updateCompanion")     return await handleUpdateCompanion(req, res);
+    if (action === "saveJournalEntry")    return await handleSaveJournalEntry(req, res);
+    if (action === "saveChatHistory")     return await handleSaveChatHistory(req, res);
         return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     console.error("[utils] Error:", err);
     res.status(500).json({ error: err.message });
   }
+}
+
+// ── Save Journal Entry ────────────────────────────────────────────────────────
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 30, annual: 999999 };
+
+async function handleSaveJournalEntry(req, res) {
+  const { appleUserId, entry, tier = "free" } = req.body || {};
+  if (!appleUserId || !entry?.content) return res.status(400).json({ error: "appleUserId and entry.content required" });
+
+  const limit = JOURNAL_LIMITS[tier] ?? JOURNAL_LIMITS.free;
+
+  // Count existing entries for this user
+  const existing = await b44Filter("JournalEntry", { apple_user_id: appleUserId });
+  if (existing.length >= limit) {
+    // Sliding window — delete oldest to make room
+    const sorted = existing.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    const token = process.env.BASE44_SERVICE_TOKEN;
+    await fetch(`${B44_BASE}/JournalEntry/${sorted[0].id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    });
+  }
+
+  const token = process.env.BASE44_SERVICE_TOKEN;
+  const saveRes = await fetch(`${B44_BASE}/JournalEntry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      apple_user_id: appleUserId,
+      title:        entry.title || entry.content.slice(0, 50),
+      content:      entry.content,
+      mood:         entry.mood || "neutral",
+      created_date: entry.created_date || new Date().toISOString(),
+      tier,
+    }),
+  });
+
+  if (!saveRes.ok) return res.status(500).json({ error: "Save failed" });
+  return res.status(200).json({ ok: true });
+}
+
+// ── Save Chat History ─────────────────────────────────────────────────────────
+async function handleSaveChatHistory(req, res) {
+  const { appleUserId, messages, tier = "free" } = req.body || {};
+  if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
+  if (tier === "free") return res.status(403).json({ error: "Requires subscription" });
+  if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
+
+  const limit = tier === "annual" ? 999999 : 50;
+  const toSave = messages.slice(-limit);
+  const token  = process.env.BASE44_SERVICE_TOKEN;
+
+  const existing = await b44Filter("ChatHistory", { apple_user_id: appleUserId });
+  if (existing.length > 0) {
+    await fetch(`${B44_BASE}/ChatHistory/${existing[0].id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ messages: JSON.stringify(toSave), saved_at: new Date().toISOString(), tier, message_count: toSave.length }),
+    });
+  } else {
+    await fetch(`${B44_BASE}/ChatHistory`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ apple_user_id: appleUserId, messages: JSON.stringify(toSave), saved_at: new Date().toISOString(), tier, message_count: toSave.length }),
+    });
+  }
+
+  return res.status(200).json({ ok: true, saved: toSave.length });
 }
