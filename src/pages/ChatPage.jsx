@@ -31,6 +31,20 @@ import MoodInsights from "@/components/chat/MoodInsights";
 import DailyAffirmation from "@/components/chat/DailyAffirmation";
 import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
+
+async function saveChatToDB(messages, tier) {
+  try {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    if (!appleUserId) return false;
+    const limit = tier === "annual" ? 999999 : 50;
+    const toSave = messages.slice(1).slice(-limit).map(m => ({ role: m.role, content: m.content }));
+    const res = await fetch("/api/utils", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "saveChatHistory", appleUserId, messages: toSave, tier }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
 import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion/companionPersonalities";
 import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
@@ -116,6 +130,7 @@ export default function ChatPage() {
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
   const [isPro,    setIsPro]    = useState(false);
+  const [saveChatStatus, setSaveChatStatus] = useState(null);
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
@@ -845,7 +860,16 @@ export default function ChatPage() {
   const handleRestore = () => restorePurchases();
 
   /* ─── LOADING STATE ─── */
-  if (!companion || !environment) return (
+  if (!companion || !environment) const handleSaveChat = async () => {
+    const tier = isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
+    if (tier === "free") { setSaveChatStatus("locked"); setTimeout(() => setSaveChatStatus(null), 3000); return; }
+    setSaveChatStatus("saving");
+    const ok = await saveChatToDB(messages, tier);
+    setSaveChatStatus(ok ? "saved" : "error");
+    setTimeout(() => setSaveChatStatus(null), 3000);
+  };
+
+  return (
     <div style={{ position: "fixed", inset: 0, background: "#06020f", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -1070,6 +1094,40 @@ export default function ChatPage() {
               <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
             </div>
           )}
+
+          {/* ── Save Chat button ─────────────────────────────────────────── */}
+          <div className="flex justify-center pb-1">
+            <button
+              onClick={handleSaveChat}
+              disabled={saveChatStatus === "saving" || messages.length <= 1}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", borderRadius: 20,
+                background: saveChatStatus === "locked"
+                  ? "rgba(239,68,68,0.15)"
+                  : saveChatStatus === "saved"
+                  ? "rgba(16,185,129,0.2)"
+                  : "rgba(168,85,247,0.12)",
+                border: saveChatStatus === "locked"
+                  ? "1px solid rgba(239,68,68,0.3)"
+                  : saveChatStatus === "saved"
+                  ? "1px solid rgba(16,185,129,0.3)"
+                  : "1px solid rgba(168,85,247,0.2)",
+                color: saveChatStatus === "locked" ? "#f87171"
+                  : saveChatStatus === "saved" ? "#34d399"
+                  : "rgba(200,170,255,0.7)",
+                fontSize: 11, fontWeight: 600,
+                opacity: messages.length <= 1 ? 0.3 : 1,
+                transition: "all 0.2s",
+              }}
+            >
+              {saveChatStatus === "saving" ? "⏳ Saving…"
+                : saveChatStatus === "saved" ? "✅ Chat saved"
+                : saveChatStatus === "locked" ? "🔒 Upgrade to save chats"
+                : saveChatStatus === "error" ? "⚠️ Save failed"
+                : "💾 Save chat"}
+            </button>
+          </div>
 
           {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
           <ChatInputBar
