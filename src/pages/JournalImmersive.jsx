@@ -1,8 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Save, CheckCircle, Smile, Image } from "lucide-react";
+import { ChevronLeft, Save, CheckCircle, Smile, Image, Settings } from "lucide-react";
 import { COMPANIONS } from "../components/companionData";
+
+function getTier() {
+  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
+  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
+  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
+  return "free";
+}
+async function saveJournalEntryToDB(entry) {
+  try {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    if (!appleUserId) return;
+    await fetch("/api/utils", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "saveJournalEntry", appleUserId, entry, tier: getTier() }),
+    });
+  } catch {}
+}
 
 const WORLDS = [
   {
@@ -205,6 +223,7 @@ export default function JournalImmersive() {
     };
     const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify([fullEntry, ...existing]));
+    saveJournalEntryToDB(fullEntry);
     setEntry("");
     setSaving(false);
     setSaved(true);
@@ -284,6 +303,13 @@ export default function JournalImmersive() {
           backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
         }}>
           <ChevronLeft size={18} color="white" />
+        </button>
+        <button onClick={() => navigate("/settings")} style={{
+          width: 38, height: 38, borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+        }}>
+          <Settings size={16} color="rgba(255,255,255,0.6)" />
         </button>
         <div style={{
           display: "flex", alignItems: "center", gap: 6,
