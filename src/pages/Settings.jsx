@@ -14,8 +14,9 @@ function CompanionNicknameField({ companion, userProfile }) {
   );
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!nickname.trim()) return;
+    // Save to localStorage
     localStorage.setItem("unfiltr_companion_nickname", nickname.trim());
     const stored = localStorage.getItem("unfiltr_companion");
     if (stored) {
@@ -23,6 +24,13 @@ function CompanionNicknameField({ companion, userProfile }) {
       parsed.displayName = nickname.trim();
       localStorage.setItem("unfiltr_companion", JSON.stringify(parsed));
     }
+    // Save to DB
+    try {
+      const companionId = userProfile?.companion_id;
+      if (companionId) {
+        await base44.entities.Companion.update(companionId, { nickname: nickname.trim() });
+      }
+    } catch(e) { console.error("nickname DB save failed:", e); }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -69,6 +77,11 @@ export default function Settings() {
   const [showPaywall, setShowPaywall]     = useState(false);
   const [savingCompanion, setSavingCompanion]   = useState(false);
   const [savingBackground, setSavingBackground] = useState(false);
+  const [personality, setPersonality] = useState({
+    vibe: 5, empathy: 5, humor: 5, curiosity: 5, style: 5
+  });
+  const [savingPersonality, setSavingPersonality] = useState(false);
+  const [personalitySaved, setPersonalitySaved] = useState(false);
   const [streak, setStreak]               = useState(0);
   const [daysSince, setDaysSince]         = useState(0);
   const [moodHistory, setMoodHistory]     = useState([]);
@@ -83,6 +96,14 @@ export default function Settings() {
         if (profile?.companion_id) {
           const comp = await base44.entities.Companion.get(profile.companion_id);
           setCompanion(comp);
+          // Load saved personality sliders
+          setPersonality({
+            vibe:      comp?.personality_vibe      ?? 5,
+            empathy:   comp?.personality_empathy   ?? 5,
+            humor:     comp?.personality_humor     ?? 5,
+            curiosity: comp?.personality_curiosity ?? 5,
+            style:     comp?.personality_style     ?? 5,
+          });
         } else {
           // Fallback: build companion object from localStorage
           const stored = localStorage.getItem("unfiltr_companion");
@@ -171,6 +192,36 @@ export default function Settings() {
       setUserProfile((prev) => ({ ...prev, background_id: bgId }));
     }
     setSavingBackground(false);
+  };
+
+  const handleSavePersonality = async () => {
+    setSavingPersonality(true);
+    try {
+      const companionId = userProfile?.companion_id;
+      if (companionId) {
+        await base44.entities.Companion.update(companionId, {
+          personality_vibe:      personality.vibe,
+          personality_empathy:   personality.empathy,
+          personality_humor:     personality.humor,
+          personality_curiosity: personality.curiosity,
+          personality_style:     personality.style,
+        });
+      }
+      // Also cache in localStorage so ChatPage can read it
+      const stored = localStorage.getItem("unfiltr_companion");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.personality_vibe      = personality.vibe;
+        parsed.personality_empathy   = personality.empathy;
+        parsed.personality_humor     = personality.humor;
+        parsed.personality_curiosity = personality.curiosity;
+        parsed.personality_style     = personality.style;
+        localStorage.setItem("unfiltr_companion", JSON.stringify(parsed));
+      }
+      setPersonalitySaved(true);
+      setTimeout(() => setPersonalitySaved(false), 2500);
+    } catch(e) { console.error("personality save error:", e); }
+    setSavingPersonality(false);
   };
 
   const handlePauseAccount = async () => {
@@ -346,6 +397,53 @@ export default function Settings() {
             })}
           </div>
           {savingBackground && <p className="text-white/30 text-xs mt-2 text-center">Saving...</p>}
+        </motion.div>
+
+        {/* ── PERSONALITY SLIDERS ── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Personality</p>
+          <p className="text-white/30 text-xs mb-4">Tune how your companion talks to you.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {[
+              { key: "vibe",      label: "Energy",    lo: "Calm 😌",    hi: "Hype 🔥" },
+              { key: "empathy",   label: "Empathy",   lo: "Direct 🎯",  hi: "Nurturing 🤗" },
+              { key: "humor",     label: "Humor",     lo: "Serious 🧐", hi: "Funny 😂" },
+              { key: "curiosity", label: "Curiosity", lo: "Chill 😎",   hi: "Curious 🔍" },
+              { key: "style",     label: "Style",     lo: "Casual 👋",  hi: "Deep 🌊" },
+            ].map(({ key, label, lo, hi }) => (
+              <div key={key}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                  <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>{label}</span>
+                  <span style={{ color: "rgba(168,85,247,0.8)", fontSize: 12 }}>{personality[key]}/10</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, width: 60, textAlign: "right", flexShrink: 0 }}>{lo}</span>
+                  <input
+                    type="range" min={1} max={10} step={1}
+                    value={personality[key]}
+                    onChange={(e) => setPersonality(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                    style={{ flex: 1, accentColor: "#a855f7", cursor: "pointer", height: 4 }}
+                  />
+                  <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, width: 60, flexShrink: 0 }}>{hi}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={handleSavePersonality}
+            disabled={savingPersonality}
+            style={{
+              marginTop: 20, width: "100%", padding: "13px 0", borderRadius: 14, border: "none",
+              color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer",
+              background: personalitySaved
+                ? "rgba(34,197,94,0.3)"
+                : "linear-gradient(135deg, #7c3aed, #a855f7)",
+              opacity: savingPersonality ? 0.6 : 1,
+              transition: "background 0.3s",
+            }}
+          >
+            {personalitySaved ? "✓ Saved!" : savingPersonality ? "Saving..." : "Save Personality"}
+          </button>
         </motion.div>
 
         {/* Referral */}
