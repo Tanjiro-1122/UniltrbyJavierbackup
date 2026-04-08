@@ -379,7 +379,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
             key="backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 90, backdropFilter: "blur(4px)" }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 110, backdropFilter: "blur(4px)" }}
           />
         )}
       </AnimatePresence>
@@ -393,7 +393,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
             style={{
               position: "fixed", left: 0, right: 0, bottom: 0,
-              zIndex: 91, borderRadius: "24px 24px 0 0",
+              zIndex: 111, borderRadius: "24px 24px 0 0",
               background: "linear-gradient(180deg,#0e0720 0%,#06020f 100%)",
               border: "1px solid rgba(168,85,247,0.18)",
               borderBottom: "none",
@@ -439,6 +439,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     </>
   );
 }
+
 
 
 
