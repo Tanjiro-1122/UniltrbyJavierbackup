@@ -793,6 +793,7 @@ export default function ChatPage() {
       const res = await base44.functions.invoke("chat", {
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium, isPro, isAnnual,
+        profileId:     localStorage.getItem("userProfileId") || null,
         sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
         memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
         userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
