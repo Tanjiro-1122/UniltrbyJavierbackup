@@ -46,6 +46,22 @@ async function findByEmail(email) {
   return Array.isArray(data) && data.length > 0 ? data[0] : null;
 }
 
+async function findByDisplayName(name) {
+  if (!name || name.trim().length < 2) return null;
+  try {
+    const res = await fetch(
+      `${B44_BASE}/UserProfile?display_name=${encodeURIComponent(name.trim())}&limit=5`,
+      { headers: b44Headers() }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    // Prefer profiles with no apple_user_id (migrating old users)
+    const noApple = data.find(p => !p.apple_user_id);
+    return noApple || null;
+  } catch { return null; }
+}
+
 async function updateProfile(id, data) {
   const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
     method: "PUT",
@@ -171,6 +187,12 @@ export default async function handler(req, res) {
       console.log(`[syncProfile] Found by email: ${profile?.id}`);
     }
 
+    // 3. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
+    if (!profile && fullName && fullName.trim().length > 1) {
+      profile = await findByDisplayName(fullName);
+      if (profile) console.log(`[syncProfile] Found by display_name: ${profile?.id}`);
+    }
+
     const now = new Date().toISOString();
 
     if (profile) {
@@ -216,7 +238,7 @@ export default async function handler(req, res) {
       const newProfile = await createProfile({
         apple_user_id: appleUserId,
         email:              email    || "",
-        display_name:       fullName || "",
+        display_name:       fullName && fullName.trim() ? fullName.trim() : "",
         is_premium:         isPremium || false,
         onboarding_complete: false,
         companion_id:       "pending",
@@ -239,3 +261,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
