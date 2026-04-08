@@ -262,7 +262,7 @@ export default function AdminDashboard() {
               {(stats.recentUsers||[]).slice(0,8).map((u,i) => (
                 <div key={u.id||i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", borderBottom: i < 7 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{u.display_name||"—"}</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{u.display_name || "New User"}</div>
                     <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>{fmtDate(u.created_date)} · {u.message_count||0} msgs</div>
                   </div>
                   <div style={{ display:"flex", gap:6, alignItems:"center" }}>
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
                 <div key={u.id||i} style={{ padding:"12px 14px", borderBottom: i < filteredUsers.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
                     <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name||"—"}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name || "New User"}</div>
                       <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>
                         {u.email||"no email"} · {u.apple_user_id ? "🍎 Apple" : "no apple"} · {u.message_count||0} msgs
                       </div>
@@ -359,7 +359,7 @@ export default function AdminDashboard() {
                 .sort((a,b) => (b.message_count||0) - (a.message_count||0))
                 .map((u,i,arr) => (
                   <div key={u.id||i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"11px 14px", borderBottom: i < arr.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
-                    <span style={{ fontSize:13, color:"#fff" }}>{u.display_name||"—"}</span>
+                    <span style={{ fontSize:13, color:"#fff" }}>{u.display_name || "New User"}</span>
                     <span style={{ fontSize:13, fontWeight:700, color:"#8b5cf6" }}>{u.message_count} msgs</span>
                   </div>
               ))}
@@ -378,7 +378,7 @@ export default function AdminDashboard() {
               {[...allFeedback].sort((a,b) => new Date(b.created_date)-new Date(a.created_date)).map((f,i,arr) => (
                 <div key={f.id||i} style={{ padding:"12px 14px", borderBottom: i < arr.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{f.display_name||"—"}</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{f.display_name || "New User"}</span>
                     <div style={{ display:"flex", gap:6 }}>
                       {f.rating && <Badge text={"⭐".repeat(f.rating)} color="#f59e0b"/>}
                       <Badge text={f.status||"open"} color={f.status==="resolved"?"#10b981":"#f59e0b"}/>
@@ -397,4 +397,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
 
