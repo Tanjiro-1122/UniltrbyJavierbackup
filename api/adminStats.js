@@ -1,5 +1,5 @@
 const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
-const APP_ID = "69b332a392004d139d4ba495";
+const APP_ID = "69b22f8b58e45d23cafd78d2";
 const BASE44_API = "https://app.base44.com/api";
 
 async function fetchEntity(entity, params = {}) {
