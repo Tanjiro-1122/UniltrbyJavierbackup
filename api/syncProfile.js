@@ -197,6 +197,23 @@ export default async function handler(req, res) {
     const now = new Date().toISOString();
 
     if (profile) {
+      // ── If account was requested for deletion, wipe it and treat as new user ──
+      if (profile.account_delete_requested) {
+        console.log(`[syncProfile] Profile ${profile.id} was marked for deletion — wiping and treating as new`);
+        try {
+          const res = await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
+            method: "DELETE",
+            headers: b44Headers(),
+          });
+          console.log(`[syncProfile] Deleted stale profile: ${res.status}`);
+        } catch (e) {
+          console.warn(`[syncProfile] Could not delete stale profile: ${e.message}`);
+        }
+        profile = null; // fall through to new user creation below
+      }
+    }
+
+    if (profile) {
       // ── RETURNING USER: update apple_user_id + last_seen ──────────────────
       const patch = {
         apple_user_id: appleUserId,
