@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, X } from "lucide-react";
 
-const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b332a392004d139d4ba495/d653bb16a_generated_image.png';
+const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
 
 // Tutorial slides — show what each onboarding step looks like
 const TUTORIAL_SLIDES = [
