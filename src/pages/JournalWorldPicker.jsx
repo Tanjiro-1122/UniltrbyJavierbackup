@@ -10,7 +10,7 @@ const WORLDS = [
     desc: "Warm lamp, rain on the window, city glow",
     accentColor: "#ffb347",
     glow: "rgba(255,140,40,0.55)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/133f41f0f_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/133f41f0f_generated_image.png",
     bgFallback: "linear-gradient(160deg,#3d1f0a,#1a0a02)",
   },
   {
@@ -20,7 +20,7 @@ const WORLDS = [
     desc: "Fireplace, pine trees, snow outside",
     accentColor: "#4ade80",
     glow: "rgba(74,222,128,0.5)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d7bb6e1b5_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/d7bb6e1b5_generated_image.png",
     bgFallback: "linear-gradient(160deg,#0f3018,#061408)",
   },
   {
@@ -30,7 +30,7 @@ const WORLDS = [
     desc: "Neon signs, empty café, rain outside",
     accentColor: "#c462ff",
     glow: "rgba(196,98,255,0.5)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/e0ccd0753_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/e0ccd0753_generated_image.png",
     bgFallback: "linear-gradient(160deg,#2a0d42,#0d0518)",
   },
   {
@@ -40,7 +40,7 @@ const WORLDS = [
     desc: "Stars, floating in zero gravity",
     accentColor: "#63b3ff",
     glow: "rgba(99,179,255,0.45)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/2da8b6d3e_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/2da8b6d3e_generated_image.png",
     bgFallback: "linear-gradient(160deg,#0a1535,#020510)",
   },
   {
@@ -50,7 +50,7 @@ const WORLDS = [
     desc: "Sunset, waves, golden hour glow",
     accentColor: "#fbbf24",
     glow: "rgba(251,191,36,0.45)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/19c79bde2_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/19c79bde2_generated_image.png",
     bgFallback: "linear-gradient(160deg,#3d2a06,#1a1202)",
   },
   {
@@ -60,7 +60,7 @@ const WORLDS = [
     desc: "City skyline, night breeze, string lights",
     accentColor: "#f472b6",
     glow: "rgba(244,114,182,0.5)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/6e20d0458_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/6e20d0458_generated_image.png",
     bgFallback: "linear-gradient(160deg,#2a103a,#0d0518)",
   },
 ];
