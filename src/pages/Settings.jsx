@@ -244,16 +244,32 @@ export default function Settings() {
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
-    const profileId = localStorage.getItem("userProfileId");
-    if (profileId) {
-      await base44.entities.UserProfile.update(profileId, {
-        account_delete_requested: true,
-        account_delete_requested_at: new Date().toISOString(),
-      });
-    }
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        // Hard delete the profile from DB immediately
+        try {
+          await base44.entities.UserProfile.delete(profileId);
+        } catch (e) {
+          // If delete fails, mark for deletion as fallback
+          await base44.entities.UserProfile.update(profileId, {
+            account_delete_requested: true,
+            account_delete_requested_at: new Date().toISOString(),
+          });
+        }
+        // Also try to delete companion
+        try {
+          const companionId = localStorage.getItem("companionId");
+          if (companionId) await base44.entities.Companion.delete(companionId);
+        } catch {}
+      }
+    } catch (e) { console.error("delete error:", e); }
+    // Clear all local state
     localStorage.clear();
-    base44.auth.logout();
-    alert("Your account will be deleted within 24 hours.");
+    sessionStorage.clear();
+    // Navigate to sign-in screen immediately
+    navigate("/home-screen", { replace: true });
+    window.location.reload();
   };
 
   if (!userProfile || !companion) return (
