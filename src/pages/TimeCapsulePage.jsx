@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
+
+const B44_APP  = "69b332a392004d139d4ba495";
+const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
 
 const DURATIONS = [
   { label: "1 month",  days: 30  },
@@ -9,30 +13,60 @@ const DURATIONS = [
   { label: "1 year",   days: 365 },
 ];
 
-export default function TimeCapsulePage() {
-  const navigate   = useNavigate();
-  const [profile, setProfile]   = useState(null);
-  const [message,  setMessage]  = useState("");
-  const [duration, setDuration] = useState(90);
-  const [saving,   setSaving]   = useState(false);
-  const [saved,    setSaved]    = useState(false);
-  const [capsules, setCapsules] = useState([]);
+// TimeCapsule is stored as an array inside UserProfile.time_capsules
+// We find the UserProfile by apple_user_id
 
-  useEffect(() => {
-    const pid = localStorage.getItem("userProfileId");
-    if (!pid) return;
-    base44.entities.UserProfile.get(pid).then(p => {
-      setProfile(p);
-      setCapsules(p?.time_capsules || []);
-    }).catch(() => {});
-  }, []);
+export default function TimeCapsulePage() {
+  const navigate = useNavigate();
+  const [profileId, setProfileId] = useState(null);
+  const [capsules,  setCapsules]  = useState([]);
+  const [message,   setMessage]   = useState("");
+  const [duration,  setDuration]  = useState(90);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+
+  useEffect(() => { loadProfile(); }, []);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    setError(null);
+    const appleId = localStorage.getItem("unfiltr_apple_user_id");
+    const pid     = localStorage.getItem("userProfileId");
+
+    let profile = null;
+
+    // Try by profileId first, fall back to apple_user_id lookup
+    if (pid) {
+      try {
+        const r = await fetch(`${B44_BASE}/UserProfile/${pid}`, { headers: { "Authorization": `Bearer ${DB_TOKEN}` } });
+        if (r.ok) profile = await r.json();
+      } catch {}
+    }
+    if (!profile && appleId) {
+      try {
+        const r = await fetch(`${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleId)}&limit=1`, { headers: { "Authorization": `Bearer ${DB_TOKEN}` } });
+        const data = await r.json();
+        const records = Array.isArray(data) ? data : (data?.records || []);
+        if (records[0]) { profile = records[0]; localStorage.setItem("userProfileId", profile.id); }
+      } catch {}
+    }
+
+    if (profile) {
+      setProfileId(profile.id);
+      setCapsules(profile.time_capsules || []);
+    } else {
+      setError("Could not load your profile. Make sure you're signed in.");
+    }
+    setLoading(false);
+  };
 
   const handleSave = async () => {
-    if (!message.trim() || !profile) return;
+    if (!message.trim() || !profileId) return;
     setSaving(true);
     try {
-      const deliverAt = new Date(Date.now() + duration * 86400000).toISOString();
-      const existing  = profile.time_capsules || [];
+      const deliverAt  = new Date(Date.now() + duration * 86400000).toISOString();
       const newCapsule = {
         id:         Date.now().toString(),
         message:    message.trim(),
@@ -40,14 +74,19 @@ export default function TimeCapsulePage() {
         deliver_at: deliverAt,
         delivered:  false,
       };
-      const updated = [...existing, newCapsule];
-      await base44.entities.UserProfile.update(profile.id, { time_capsules: updated });
+      const updated = [...capsules, newCapsule];
+      const r = await fetch(`${B44_BASE}/UserProfile/${profileId}`, {
+        method: "PUT",
+        headers: DB_HDR,
+        body: JSON.stringify({ time_capsules: updated }),
+      });
+      if (!r.ok) throw new Error("Save failed");
       setCapsules(updated);
       setMessage("");
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch(e) {
-      console.error(e);
+      alert("Couldn't seal your capsule. Please try again.");
     }
     setSaving(false);
   };
@@ -81,75 +120,91 @@ export default function TimeCapsulePage() {
         Write a message to your future self. Your companion will deliver it when the time comes.
       </p>
 
-      {/* Write capsule */}
-      <div style={styles.card}>
-        <p style={styles.label}>Your message</p>
-        <textarea
-          style={styles.textarea}
-          rows={5}
-          placeholder="Hey future me... right now I'm feeling, hoping for, working on..."
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-          maxLength={1000}
-        />
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
-          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{message.length}/1000</span>
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>⏳</div>
+          <div>Loading your capsules...</div>
         </div>
-        <p style={{ ...styles.label, marginTop: 14 }}>Deliver in</p>
-        <div style={styles.chips}>
-          {DURATIONS.map(d => (
-            <button key={d.days} style={styles.chip(duration === d.days)} onClick={() => setDuration(d.days)}>
-              {d.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <button
-        style={{ ...styles.saveBtn, opacity: (!message.trim() || saving) ? 0.5 : 1 }}
-        onClick={handleSave}
-        disabled={!message.trim() || saving}
-      >
-        {saving ? "Sealing..." : saved ? "✅ Sealed!" : "🔒 Seal & Send to Future Me"}
-      </button>
-
-      {/* Delivered capsules */}
-      {deliveredCapsules.length > 0 && (
-        <>
-          <p style={styles.section}>📬 Delivered</p>
-          {deliveredCapsules.map(c => (
-            <div key={c.id} style={styles.capsule(true)}>
-              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 8 }}>
-                Written {new Date(c.created_at).toLocaleDateString()} · Delivered {new Date(c.deliver_at).toLocaleDateString()}
-              </p>
-              <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{c.message}</p>
-            </div>
-          ))}
-        </>
       )}
 
-      {/* Pending capsules */}
-      {pendingCapsules.length > 0 && (
-        <>
-          <p style={styles.section}>🔒 Sealed ({pendingCapsules.length})</p>
-          {pendingCapsules.map(c => (
-            <div key={c.id} style={styles.capsule(false)}>
-              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 6 }}>
-                Sealed {new Date(c.created_at).toLocaleDateString()} · Opens {new Date(c.deliver_at).toLocaleDateString()}
-              </p>
-              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, fontStyle: "italic", margin: 0 }}>This message is sealed until its delivery date 🔒</p>
-            </div>
-          ))}
-        </>
+      {error && !loading && (
+        <div style={{ margin: "0 16px 16px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 16px", color: "rgba(239,68,68,0.8)", fontSize: 13 }}>
+          {error}
+        </div>
       )}
 
-      {capsules.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 20px" }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 14 }}>No capsules yet. Write your first message to the future.</p>
-        </div>
+      {!loading && !error && (
+        <>
+          {/* Write capsule */}
+          <div style={styles.card}>
+            <p style={styles.label}>Your message</p>
+            <textarea
+              style={styles.textarea}
+              rows={5}
+              placeholder="Hey future me... right now I'm feeling, hoping for, working on..."
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              maxLength={1000}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{message.length}/1000</span>
+            </div>
+            <p style={{ ...styles.label, marginTop: 14 }}>Deliver in</p>
+            <div style={styles.chips}>
+              {DURATIONS.map(d => (
+                <button key={d.days} style={styles.chip(duration === d.days)} onClick={() => setDuration(d.days)}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            style={{ ...styles.saveBtn, opacity: (!message.trim() || saving) ? 0.5 : 1 }}
+            onClick={handleSave}
+            disabled={!message.trim() || saving}
+          >
+            {saving ? "Sealing..." : saved ? "✅ Sealed!" : "🔒 Seal & Send to Future Me"}
+          </button>
+
+          {/* Delivered */}
+          {deliveredCapsules.length > 0 && (
+            <>
+              <p style={styles.section}>📬 Delivered</p>
+              {deliveredCapsules.map(c => (
+                <div key={c.id} style={styles.capsule(true)}>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 8 }}>
+                    Written {new Date(c.created_at).toLocaleDateString()} · Delivered {new Date(c.deliver_at).toLocaleDateString()}
+                  </p>
+                  <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{c.message}</p>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Pending */}
+          {pendingCapsules.length > 0 && (
+            <>
+              <p style={styles.section}>🔒 Sealed ({pendingCapsules.length})</p>
+              {pendingCapsules.map(c => (
+                <div key={c.id} style={styles.capsule(false)}>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 6 }}>
+                    Sealed {new Date(c.created_at).toLocaleDateString()} · Opens {new Date(c.deliver_at).toLocaleDateString()}
+                  </p>
+                  <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, fontStyle: "italic", margin: 0 }}>This message is sealed until its delivery date 🔒</p>
+                </div>
+              ))}
+            </>
+          )}
+
+          {capsules.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 14 }}>No capsules yet. Write your first message to the future.</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
-
