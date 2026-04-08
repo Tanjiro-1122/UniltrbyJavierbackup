@@ -43,7 +43,8 @@ export default function HubPage() {
       id: "chat",
       label: "Chat",
       sublabel: "Talk with " + (companionDisplayName || "your companion"),
-      icon: "💬",
+      icon: null,
+      notoEmoji: "1f4ac",  // speech bubble
       accent: "#a78bfa",
       accentDark: "rgba(109,40,217,0.85)",
       glow: "rgba(139,92,246,0.55)",
@@ -56,7 +57,8 @@ export default function HubPage() {
       id: "journal",
       label: "Journal",
       sublabel: "Your private space",
-      icon: "📓",
+      icon: null,
+      notoEmoji: "1f4d4",  // notebook
       accent: "#34d399",
       accentDark: "rgba(5,120,80,0.85)",
       glow: "rgba(52,211,153,0.5)",
@@ -69,7 +71,8 @@ export default function HubPage() {
       id: "meditate",
       label: "Meditate",
       sublabel: "Breathe & reset",
-      icon: "🧘‍♀️",
+      icon: null,
+      notoEmoji: "1faa7",  // lotus (candle)
       accent: "#7dd3fc",
       accentDark: "rgba(3,105,161,0.85)",
       glow: "rgba(56,189,248,0.45)",
@@ -110,17 +113,38 @@ export default function HubPage() {
           display: "flex", alignItems: "center", gap: 16,
         }}
       >
-        {/* Companion initial circle — clean, no crammed full-body image */}
+        {/* Companion circle — show avatar image cropped to face area */}
         <div style={{
           width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
           background: "linear-gradient(135deg, rgba(139,92,246,0.5), rgba(109,40,217,0.35))",
           border: "2px solid rgba(167,139,250,0.55)",
           boxShadow: "0 0 22px rgba(139,92,246,0.45)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22, fontWeight: 800, color: "#c4b5fd",
-          letterSpacing: "-1px",
+          overflow: "hidden",
+          position: "relative",
         }}>
-          {companionDisplayName ? companionDisplayName.charAt(0).toUpperCase() : "✨"}
+          {companionImg ? (
+            <img src={companionImg} alt={companionDisplayName}
+              onLoad={() => setAvatarLoaded(true)}
+              style={{
+                position: "absolute",
+                bottom: "-10%", left: "50%",
+                transform: "translateX(-50%)",
+                width: "160%", height: "160%",
+                objectFit: "cover",
+                objectPosition: "top center",
+                opacity: avatarLoaded ? 1 : 0,
+                transition: "opacity 0.3s",
+              }}
+            />
+          ) : (
+            <div style={{
+              width: "100%", height: "100%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22, fontWeight: 800, color: "#c4b5fd",
+            }}>
+              {companionDisplayName ? companionDisplayName.charAt(0).toUpperCase() : "✨"}
+            </div>
+          )}
         </div>
 
         <div style={{ flex: 1 }}>
@@ -243,7 +267,11 @@ export default function HubPage() {
           )}
 
           <div style={{ position: "relative", zIndex: 2 }}>
-            <div style={{ fontSize: 36, marginBottom: 6, lineHeight: 1 }}>💬</div>
+            <div style={{ marginBottom: 6, lineHeight: 1 }}>
+            <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4ac/512.webp"
+              alt="" style={{ width: 40, height: 40, objectFit: "contain",
+                filter: "drop-shadow(0 0 14px rgba(167,139,250,0.8))" }} />
+          </div>
             <div style={{
               color: tiles[0].accent, fontWeight: 900, fontSize: 26,
               letterSpacing: "-0.5px", lineHeight: 1,
@@ -294,7 +322,11 @@ export default function HubPage() {
               }} />
 
               <div style={{ fontSize: 40, marginBottom: 8, lineHeight: 1, position: "relative", zIndex: 2 }}>
-                {tile.icon}
+                {tile.notoEmoji ? (
+                  <img src={`https://fonts.gstatic.com/s/e/notoemoji/latest/${tile.notoEmoji}/512.webp`}
+                    alt="" style={{ width: 44, height: 44, objectFit: "contain",
+                      filter: `drop-shadow(0 0 10px ${tile.glow})` }} />
+                ) : tile.icon}
               </div>
               <div style={{
                 color: tile.accent, fontWeight: 900, fontSize: 20,
@@ -320,5 +352,6 @@ export default function HubPage() {
     </div>
   );
 }
+
 
 
