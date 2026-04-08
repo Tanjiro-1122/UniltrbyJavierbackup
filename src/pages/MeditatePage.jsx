@@ -6,11 +6,11 @@ import { ChevronLeft, Play, StopCircle } from "lucide-react";
 // Real recorded ambient audio — hosted on Base44 CDN
 const AUDIO_URLS = {
   // 🌧️ Rain: Mixkit storm page ID 2404 — 1:39 stereo rain+thunder loop, 249kbps
-  rain:  "https://media.base44.com/files/public/69b332a392004d139d4ba495/334bf1ba7_rain_v2.mp3",
+  rain:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
   // 🔥 Fire: Mixkit fire page ID 1330 — "Campfire crackles", 24s stereo 307kbps loop
-  fire:  "https://media.base44.com/files/public/69b332a392004d139d4ba495/9b687983d_fire_v2.mp3",
+  fire:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
   // 🌊 Ocean: Mixkit beach page ID 1208 — 1:17 stereo beach waves loop, 246kbps
-  ocean: "https://media.base44.com/files/public/69b332a392004d139d4ba495/07f3c59f3_ocean_v2.mp3",
+  ocean: "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
 };
 
 const SOUNDS = [
