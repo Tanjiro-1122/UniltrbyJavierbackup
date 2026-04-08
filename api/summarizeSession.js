@@ -190,6 +190,16 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       updated_date:    new Date().toISOString(),
     });
 
+    // ── Wire in vector memory store (premium+ only, fire-and-forget) ─────
+    try {
+      const { storeMemoryVectors } = await import("./memoryEmbed.js");
+      storeMemoryVectors(profileId, updatedFacts, sessionNote, isPremium, isPro, isAnnual)
+        .then(r  => console.log("[summarize] vectors stored:", r))
+        .catch(e => console.warn("[summarize] vector store failed (non-fatal):", e.message));
+    } catch(e) {
+      console.warn("[summarize] memoryEmbed import failed (non-fatal):", e.message);
+    }
+
     res.status(200).json({
       ok:      true,
       summary: sessionNote,
