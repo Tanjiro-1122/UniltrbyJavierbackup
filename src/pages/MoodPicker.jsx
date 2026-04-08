@@ -154,6 +154,28 @@ export default function MoodPicker() {
     const history = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
     history[todayKey] = mood.id;
     localStorage.setItem("unfiltr_mood_history", JSON.stringify(history));
+
+    // 💾 Save mood to DB (fire-and-forget — never blocks navigation)
+    const appleId = localStorage.getItem("unfiltr_apple_user_id");
+    if (appleId) {
+      try {
+        const B44_APP = "69b332a392004d139d4ba495";
+        const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+        const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+        fetch(`${B44_BASE}/MoodEntry`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apple_user_id: appleId,
+            mood: mood.id,
+            mood_label: mood.label || mood.id,
+            date: todayKey,
+            created_date: new Date().toISOString(),
+          }),
+        }).catch(() => {});
+      } catch(e) {}
+    }
+
     if (dest === "journal") {
       navigate("/journal-enter");
     } else {
