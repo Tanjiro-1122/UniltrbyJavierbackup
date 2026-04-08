@@ -218,6 +218,30 @@ export default function HubPage() {
             filter: "blur(20px)", pointerEvents: "none",
           }} />
 
+          {/* Companion avatar inside chat tile */}
+          {companionImg && (
+            <div style={{
+              position: "absolute",
+              right: 0, bottom: 0,
+              height: "100%", width: 140,
+              display: "flex", alignItems: "flex-end", justifyContent: "flex-end",
+              overflow: "hidden",
+            }}>
+              <img src={companionImg} alt="" style={{
+                height: "130%", width: "auto",
+                objectFit: "contain", objectPosition: "bottom right",
+                opacity: avatarLoaded ? 0.9 : 0,
+                filter: "drop-shadow(0 0 20px rgba(139,92,246,0.6))",
+                transition: "opacity 0.4s",
+              }} />
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(to right, rgba(50,10,100,0.75) 0%, transparent 55%)",
+                pointerEvents: "none",
+              }} />
+            </div>
+          )}
+
           <div style={{ position: "relative", zIndex: 2 }}>
             <div style={{ fontSize: 36, marginBottom: 6, lineHeight: 1 }}>💬</div>
             <div style={{
@@ -296,4 +320,5 @@ export default function HubPage() {
     </div>
   );
 }
+
 
