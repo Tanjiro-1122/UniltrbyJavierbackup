@@ -289,7 +289,7 @@ export default function ChatPage() {
   }, []);
 
   /* ─── GREETING + HISTORY ─── */
-  useEffect(() => {
+  useEffect(() => { (async () => {
     if (!companion) return;
 
     // ── Restore active chat if coming back from Settings ─────────────────
@@ -514,7 +514,7 @@ export default function ChatPage() {
       content: `${greetingText}${lateNightSuffix}`,
     };
     setMessages([greeting]);
-  }, [companion]);
+  })(); }, [companion]);
 
   /* ─── AUTO-SCROLL ─── */
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -1320,3 +1320,4 @@ export default function ChatPage() {
     </>
   );
 }
+
