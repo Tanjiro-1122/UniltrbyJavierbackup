@@ -117,7 +117,6 @@ export default function JournalWorldPicker() {
     const clamped = Math.max(0, Math.min(WORLDS.length - 1, newIdx));
     if (clamped === idx) return;
     setTransitioning(true);
-    setAvatarLoaded(false);
     setTimeout(() => {
       setIdx(clamped);
       setTransitioning(false);
@@ -245,7 +244,7 @@ export default function JournalWorldPicker() {
           width: 220,
           height: 280,
           display: "flex", alignItems: "flex-end", justifyContent: "center",
-          opacity: transitioning ? 0 : (avatarLoaded ? 1 : 0),
+          opacity: avatarLoaded ? 1 : 0,
           transition: "opacity 0.45s ease",
           filter: `drop-shadow(0 8px 32px ${world.glow})`,
         }}>
@@ -305,7 +304,7 @@ export default function JournalWorldPicker() {
         padding: "0 24px",
         paddingBottom: "max(32px, calc(env(safe-area-inset-bottom, 0px) + 24px))",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
-        opacity: transitioning ? 0 : 1,
+        opacity: 1,
         transition: "opacity 0.35s ease",
       }}>
         {/* World name & desc */}
@@ -358,3 +357,4 @@ export default function JournalWorldPicker() {
     </div>
   );
 }
+
