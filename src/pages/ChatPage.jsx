@@ -1,4 +1,3 @@
-// Build: force-redeploy-2026-04-08
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -32,20 +31,6 @@ import MoodInsights from "@/components/chat/MoodInsights";
 import DailyAffirmation from "@/components/chat/DailyAffirmation";
 import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
-
-async function saveChatToDB(messages, tier) {
-  try {
-    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-    if (!appleUserId) return false;
-    const limit = tier === "annual" ? 999999 : 50;
-    const toSave = messages.slice(1).slice(-limit).map(m => ({ role: m.role, content: m.content }));
-    const res = await fetch("/api/utils", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "saveChatHistory", appleUserId, messages: toSave, tier }),
-    });
-    return res.ok;
-  } catch { return false; }
-}
 import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion/companionPersonalities";
 import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
@@ -120,18 +105,10 @@ export default function ChatPage() {
   const [showMeditationNudge, setShowMeditationNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
-  const [showModePicker, setShowModePicker] = useState(() => {
-    // Show mode picker on first chat if never set
-    return !localStorage.getItem("unfiltr_relationship_mode");
-  });
-  const [relationshipMode, setRelationshipMode] = useState(
-    () => localStorage.getItem("unfiltr_relationship_mode") || "friend"
-  );
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
   const [isPro,    setIsPro]    = useState(false);
-  const [saveChatStatus, setSaveChatStatus] = useState(null);
   const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
@@ -144,13 +121,13 @@ export default function ChatPage() {
           const { platform, receiptData, productId, purchaseToken } = data;
           const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
           const result = res.data;
-          if ((result.isPremium || result.valid) && profileId) {
+          if (result.isPremium || result.valid) {
             const isAnnualPurchase = result.plan === 'annual';
             const isProPurchase    = result.plan === 'pro';
-            await fetch("/api/syncProfile", {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "update", profileId, updateData: { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase } }),
-            });
+            // Use profileId (DB record ID) if available, else fallback to apple_user_id lookup happens server-side
+            if (profileId) {
+              await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
+            }
             setIsPremium(true);
             if (isAnnualPurchase) setIsAnnual(true);
             if (isProPurchase)   setIsPro(true);
@@ -163,30 +140,7 @@ export default function ChatPage() {
       } catch (e) { console.error('Native message error:', e); }
     };
     window.addEventListener('message', handleNativeMessage);
-
-    // ── Customize panel live updates ────────────────────────────────────────
-    // Background changed from customize panel
-    const handleEnvChange = (e) => {
-      if (e.detail) setEnvironment(e.detail);
-    };
-    window.addEventListener("unfiltr_env_change", handleEnvChange);
-
-    // Also listen for plain background ID changes (legacy)
-    const handleBgChange = (e) => {
-      const bgId = e.detail;
-      if (!bgId) return;
-      import("@/components/companionData").then(({ BACKGROUNDS }) => {
-        const bg = BACKGROUNDS.find(b => b.id === bgId);
-        if (bg) setEnvironment({ id: bg.id, label: bg.label, bg: bg.url });
-      });
-    };
-    window.addEventListener("unfiltr_background_change", handleBgChange);
-
-    return () => {
-      window.removeEventListener('message', handleNativeMessage);
-      window.removeEventListener("unfiltr_env_change", handleEnvChange);
-      window.removeEventListener("unfiltr_background_change", handleBgChange);
-    };
+    return () => window.removeEventListener('message', handleNativeMessage);
   }, [profileId]);
 
   const particleId     = useRef(0);
@@ -256,12 +210,7 @@ export default function ChatPage() {
       const pid = localStorage.getItem("userProfileId");
       if (pid) {
         try {
-          // Fetch profile via server-side proxy (avoids SDK app scope issue)
-          const _profRes = await fetch("/api/b44proxy", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid }),
-          });
-          const profile = _profRes.ok ? await _profRes.json() : null;
+          const profile = await base44.entities.UserProfile.get(pid);
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const premium = !!(profile?.is_premium || profile?.premium);
@@ -283,11 +232,7 @@ export default function ChatPage() {
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
-              const _compRes = await fetch("/api/b44proxy", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ entity: "Companion", action: "get", id: profile.companion_id }),
-              });
-              const dbComp = _compRes.ok ? await _compRes.json() : null;
+              const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
       // Cache personality in localStorage for fast access during chat
       if (dbComp?.personality_vibe)      localStorage.setItem("unfiltr_personality_vibe",      dbComp.personality_vibe);
@@ -465,7 +410,7 @@ export default function ChatPage() {
       };
 
       if (pid) {
-        fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid }) }).then(r => r.ok ? r.json() : null).then(profile => {
+        base44.entities.UserProfile.get(pid).then(profile => {
           setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary) }]);
         }).catch(() => {
           setMessages([{ role: "assistant", content: buildMessage(null) }]);
@@ -474,6 +419,33 @@ export default function ChatPage() {
         setMessages([{ role: "assistant", content: buildMessage(null) }]);
       }
       return;
+    }
+
+    // 📥 Load recent messages from DB to restore conversation continuity
+    {
+      const appleId = localStorage.getItem("unfiltr_apple_user_id");
+      const compId  = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
+      if (appleId && compId && compId !== "pending") {
+        try {
+          const B44_APP = "69b332a392004d139d4ba495";
+          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+          const res = await fetch(
+            `${B44_BASE}/Message?apple_user_id=${encodeURIComponent(appleId)}&companion_id=${encodeURIComponent(compId)}&limit=20&sort=-created_date`,
+            { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
+          );
+          const data = await res.json();
+          const records = (Array.isArray(data) ? data : (data?.records || [])).reverse();
+          if (records.length >= 2) {
+            // Restore last messages — skip greeting, go straight to history
+            setMessages(records.map(m => ({ role: m.role, content: m.content })));
+            debugLog(\`[ChatPage] ✅ Restored \${records.length} messages from DB\`);
+            return;
+          }
+        } catch(e) {
+          debugLog(\`[ChatPage] ⚠️ Could not load message history: \${e.message}\`);
+        }
+      }
     }
 
     // Brand new conversation — use personality-specific greetings
@@ -532,6 +504,30 @@ export default function ChatPage() {
           if (!tooRecent) {
             const updated = [snapshot, ...sessions].slice(0, 50); // max 50 sessions
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
+
+            // 💾 Also save to DB ChatHistory entity for cross-device sync
+            const appleId = localStorage.getItem("unfiltr_apple_user_id");
+            const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
+                       : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
+                       : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+            if (appleId && msgs.length >= 2) {
+              try {
+                const B44_APP = "69b332a392004d139d4ba495";
+                const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+                const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+                fetch(`${B44_BASE}/ChatHistory`, {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    apple_user_id: appleId,
+                    messages: JSON.stringify(msgs.slice(-40)),
+                    saved_at: new Date().toISOString(),
+                    tier,
+                    message_count: msgs.length,
+                  }),
+                }).catch(() => {});
+              } catch(e) {}
+            }
           }
         }
       } catch (e) {}
@@ -581,7 +577,7 @@ export default function ChatPage() {
     try {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const cleanText = text.replace(/[\*\_\~\#\>]/g, "").slice(0, 400);
+      const cleanText = text.replace(/[\*\_\~\#\>\`]/g, "").slice(0, 400);
       if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
       
       // Always try to resume AudioContext before TTS — critical on iOS
@@ -674,8 +670,7 @@ export default function ChatPage() {
       try {
         const pid2 = localStorage.getItem("userProfileId");
         if (pid2) {
-        const _profRes2 = await fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: pid2 }) });
-        const prof = _profRes2.ok ? await _profRes2.json() : null;
+        const prof = await base44.entities.UserProfile.get(pid2);
         localMemSummary = prof?.memory_summary || "";
         setMemorySummary(localMemSummary);
         if (prof?.user_facts) setUserFacts(prof.user_facts);
@@ -738,6 +733,28 @@ export default function ChatPage() {
       }
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
+      // 💾 Save messages to DB (fire-and-forget — never blocks chat)
+      {
+        const appleId = localStorage.getItem("unfiltr_apple_user_id");
+        const compId  = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId") || "unknown";
+        if (appleId) {
+          const B44_APP = "69b332a392004d139d4ba495";
+          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+          const dbHeaders = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
+          // Save user message
+          fetch(`${B44_BASE}/Message`, {
+            method: "POST", headers: dbHeaders,
+            body: JSON.stringify({ apple_user_id: appleId, companion_id: compId, role: "user", content: userContent, created_date: new Date().toISOString() }),
+          }).catch(() => {});
+          // Save assistant reply
+          fetch(`${B44_BASE}/Message`, {
+            method: "POST", headers: dbHeaders,
+            body: JSON.stringify({ apple_user_id: appleId, companion_id: compId, role: "assistant", content: replyText, created_date: new Date().toISOString() }),
+          }).catch(() => {});
+        }
+      }
+
       // Crisis detection — check both client-side and server-side
       const lowerText = text.toLowerCase();
       const isCrisis = CRISIS_KEYWORDS.some(kw => lowerText.includes(kw)) || res.data?.crisis;
@@ -756,10 +773,7 @@ export default function ChatPage() {
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId && companionDbId !== "pending") {
-        const pid4 = localStorage.getItem("userProfileId");
-        if (pid4) fetch("/api/syncProfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", profileId: pid4, updateData: { preferred_mood: newMood } }) }).catch(() => {});
-      }
+      if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
 
       incrementCount();
       spawnParticles();
@@ -767,7 +781,7 @@ export default function ChatPage() {
       const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
-      if (pid3) fetch("/api/syncProfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", profileId: pid3, updateData: { message_count: localCount, last_active: new Date().toISOString() } }) }).catch(() => {});
+      if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
 
       // Voice — use cached settings from DB, fall back to localStorage, then defaults
       const vg = companion._voiceGender || localStorage.getItem("unfiltr_voice_gender") || "female";
@@ -776,7 +790,7 @@ export default function ChatPage() {
 
       // Background tasks — all fire-and-forget, no awaits
       if (companionDbId && companionDbId !== "pending") {
-        fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "Companion", action: "get", id: companionDbId }) }).then(r => r.ok ? r.json() : null).then(dbComp => {
+        base44.entities.Companion.get(companionDbId).then(dbComp => {
           if (dbComp) {
             companion._voiceGender = dbComp.voice_gender || "female";
             companion._voicePersonality = dbComp.voice_personality || "cheerful";
@@ -805,7 +819,7 @@ export default function ChatPage() {
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
         }).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
-            fetch("/api/b44proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity: "UserProfile", action: "get", id: profileId2 }) }).then(r => r.ok ? r.json() : null).then(p => {
+            base44.entities.UserProfile.get(profileId2).then(p => {
               if (p?.session_memory) setSessionMemory(p.session_memory);
               if (p?.user_facts)     setUserFacts(p.user_facts);
               if (p?.memory_summary) setMemorySummary(p.memory_summary);
@@ -859,15 +873,6 @@ export default function ChatPage() {
 
   const handleSubscribe = () => subscribeToPlan("monthly");
   const handleRestore = () => restorePurchases();
-
-  const handleSaveChat = async () => {
-    const tier = isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
-    if (tier === "free") { setSaveChatStatus("locked"); setTimeout(() => setSaveChatStatus(null), 3000); return; }
-    setSaveChatStatus("saving");
-    const ok = await saveChatToDB(messages, tier);
-    setSaveChatStatus(ok ? "saved" : "error");
-    setTimeout(() => setSaveChatStatus(null), 3000);
-  };
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (
@@ -931,7 +936,6 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
-            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
@@ -990,12 +994,16 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter — hidden for all premium tiers */}
-            {!isPremium && !isPro && !isAnnual && (
+            {/* Msg counter */}
+            {!isPremium ? (
               <button onClick={() => navigate('/Pricing')}
                 style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today {" · "} Go Premium
+                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
               </button>
+            ) : (
+              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
+                {remaining}/{FREE_LIMIT} msgs left today
+              </div>
             )}
 
             {/* Streak milestone celebration modal */}
@@ -1095,40 +1103,6 @@ export default function ChatPage() {
               <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
             </div>
           )}
-
-          {/* ── Save Chat button ─────────────────────────────────────────── */}
-          <div className="flex justify-center pb-1">
-            <button
-              onClick={handleSaveChat}
-              disabled={saveChatStatus === "saving" || messages.length <= 1}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 14px", borderRadius: 20,
-                background: saveChatStatus === "locked"
-                  ? "rgba(239,68,68,0.15)"
-                  : saveChatStatus === "saved"
-                  ? "rgba(16,185,129,0.2)"
-                  : "rgba(168,85,247,0.12)",
-                border: saveChatStatus === "locked"
-                  ? "1px solid rgba(239,68,68,0.3)"
-                  : saveChatStatus === "saved"
-                  ? "1px solid rgba(16,185,129,0.3)"
-                  : "1px solid rgba(168,85,247,0.2)",
-                color: saveChatStatus === "locked" ? "#f87171"
-                  : saveChatStatus === "saved" ? "#34d399"
-                  : "rgba(200,170,255,0.7)",
-                fontSize: 11, fontWeight: 600,
-                opacity: messages.length <= 1 ? 0.3 : 1,
-                transition: "all 0.2s",
-              }}
-            >
-              {saveChatStatus === "saving" ? "⏳ Saving…"
-                : saveChatStatus === "saved" ? "✅ Chat saved"
-                : saveChatStatus === "locked" ? "🔒 Upgrade to save chats"
-                : saveChatStatus === "error" ? "⚠️ Save failed"
-                : "💾 Save chat"}
-            </button>
-          </div>
 
           {/* ▓▓ 4. TEXT INPUT — fixed at very bottom above safe area ▓▓ */}
           <ChatInputBar
@@ -1255,63 +1229,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ── Relationship Mode Picker — shows on first chat open ── */}
-      {showModePicker && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 9999,
-          background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
-          display: "flex", alignItems: "flex-end", justifyContent: "center",
-        }}>
-          <div style={{
-            width: "100%", maxWidth: 430,
-            background: "linear-gradient(180deg, #0d0520 0%, #06020f 100%)",
-            borderTop: "1px solid rgba(168,85,247,0.3)",
-            borderRadius: "24px 24px 0 0",
-            padding: "28px 24px 40px",
-          }}>
-            <div style={{ width: 36, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 999, margin: "0 auto 24px" }} />
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 6, textAlign: "center" }}>Your dynamic</p>
-            <h2 style={{ color: "white", fontWeight: 900, fontSize: 22, textAlign: "center", marginBottom: 6 }}>How should I be with you?</h2>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", marginBottom: 24 }}>You can change this anytime in Settings.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-              {[
-                { id: "friend", emoji: "👋", label: "Friend", desc: "Casual, real talk — like texting someone who gets you.", color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.3)" },
-                { id: "coach",  emoji: "🎯", label: "Coach",  desc: "Focused, direct, goal-oriented — here to push you forward.", color: "#34d399", bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.3)" },
-                { id: "companion", emoji: "💜", label: "Companion", desc: "Deep connection, emotional support — always in your corner.", color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.3)" },
-              ].map((m) => (
-                <button key={m.id} onClick={() => setRelationshipMode(m.id)} style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  padding: "14px 16px", borderRadius: 16, border: `2px solid ${relationshipMode === m.id ? m.color : "rgba(255,255,255,0.08)"}`,
-                  background: relationshipMode === m.id ? m.bg : "rgba(255,255,255,0.03)",
-                  cursor: "pointer", textAlign: "left", transition: "all 0.2s",
-                  boxShadow: relationshipMode === m.id ? `0 0 20px ${m.bg}` : "none",
-                }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: relationshipMode === m.id ? m.bg : "rgba(255,255,255,0.05)", border: `1px solid ${m.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{m.emoji}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: relationshipMode === m.id ? "white" : "rgba(255,255,255,0.7)", fontWeight: 800, fontSize: 15, marginBottom: 2 }}>{m.label}</div>
-                    <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.4 }}>{m.desc}</div>
-                  </div>
-                  {relationshipMode === m.id && <div style={{ width: 20, height: 20, borderRadius: "50%", background: m.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>✓</div>}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => {
-              localStorage.setItem("unfiltr_relationship_mode", relationshipMode);
-              setShowModePicker(false);
-            }} style={{
-              width: "100%", padding: "16px", borderRadius: 16, border: "none",
-              background: "linear-gradient(135deg, #7c3aed, #db2777)",
-              color: "white", fontWeight: 800, fontSize: 16, cursor: "pointer",
-            }}>
-              Let's go →
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
-
-
-
-
