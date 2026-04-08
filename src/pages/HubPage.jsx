@@ -58,7 +58,7 @@ export default function HubPage() {
       label: "Journal",
       sublabel: "Your private space",
       icon: null,
-      notoEmoji: "1f4d4",  // notebook
+      notoEmoji: "270f",   // pencil
       accent: "#34d399",
       accentDark: "rgba(5,120,80,0.85)",
       glow: "rgba(52,211,153,0.5)",
@@ -72,7 +72,7 @@ export default function HubPage() {
       label: "Meditate",
       sublabel: "Breathe & reset",
       icon: null,
-      notoEmoji: "1faa7",  // lotus (candle)
+      notoEmoji: "2728",   // sparkles
       accent: "#7dd3fc",
       accentDark: "rgba(3,105,161,0.85)",
       glow: "rgba(56,189,248,0.45)",
