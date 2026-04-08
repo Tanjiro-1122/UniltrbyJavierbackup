@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
+const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b332a392004d139d4ba495/d653bb16a_generated_image.png';
 
 export default function SplashScreen({ onComplete }) {
   const [visible, setVisible] = useState(true);
