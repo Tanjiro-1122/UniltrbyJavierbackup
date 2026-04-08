@@ -134,8 +134,26 @@ export default async function handler(req, res) {
     const raw = response.choices[0]?.message?.content || "Hey, I am here for you 💜";
 
     // Extract mood tag from end of response
-    const moodMatch = raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment,fatigue)/i);
-    const mood  = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
+    // Try bracket format [MOOD:x] first, then bare MOOD:x
+    const moodMatch = raw.match(/\[MOOD:\s*(\w+)\s*\]/i)
+                   || raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue)/i);
+    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+    let detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
+    
+    // Fallback: infer mood from reply text if tag missing or invalid
+    if (!validMoods.includes(detectedMood)) {
+      const r = raw.toLowerCase();
+      if (/happy|excited|amazing|awesome|love that|thrilled|yay|wooo/i.test(r))         detectedMood = "happy";
+      else if (/calm|peaceful|cozy|relax|serene|warm|gentle|at ease/i.test(r))          detectedMood = "contentment";
+      else if (/sorry|tough|hard time|difficult|loss|grief|that sucks/i.test(r))         detectedMood = "sad";
+      else if (/anxious|worried|nervous|scared|stress|overwhelm|panic/i.test(r))         detectedMood = "fear";
+      else if (/frustrat|angry|mad|furious|rage|infuriat|pissed/i.test(r))              detectedMood = "anger";
+      else if (/wow|whoa|no way|shocked|surprised|unbelievable|can't believe/i.test(r)) detectedMood = "surprise";
+      else if (/disgust|gross|nasty|vile|repuls|eww|yuck/i.test(r))                     detectedMood = "disgust";
+      else if (/tired|exhausted|sleepy|drained|burnt out|long day/i.test(r))             detectedMood = "fatigue";
+      else detectedMood = "contentment";
+    }
+    const mood = validMoods.includes(detectedMood) ? detectedMood : "contentment";
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
     // Crisis detection
@@ -168,3 +186,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
