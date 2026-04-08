@@ -32,6 +32,10 @@ function signInWithApple(navigate, setLoading) {
       localStorage.setItem("unfiltr_auth_token", appleUserId);
       if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
       if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
+      // Save push token from native bridge
+      if (payload.pushToken) {
+        localStorage.setItem("unfiltr_push_token", payload.pushToken);
+      }
       if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
       if (payload.isPremium) {
         localStorage.setItem("unfiltr_is_premium", "true");
@@ -43,7 +47,7 @@ function signInWithApple(navigate, setLoading) {
         const syncRes = await fetch("/api/syncProfile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appleUserId, email: email || null, fullName: fullName || null, isPremium: payload.isPremium || false, plan: payload.plan || null }),
+          body: JSON.stringify({ appleUserId, email: email || null, fullName: fullName || null, isPremium: payload.isPremium || false, plan: payload.plan || null, pushToken: payload.pushToken || localStorage.getItem("unfiltr_push_token") || null }),
         });
         if (syncRes.ok) {
           const syncData = await syncRes.json();
@@ -274,3 +278,4 @@ export default function ReturningScreen() {
     </div>
   );
 }
+
