@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, MessageCircle, Calendar, Search, X, Trash2, Lock, RefreshCw } from "lucide-react";
+import { ChevronLeft, Search, X, Trash2, Lock, MessageCircle } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 
 const B44_APP  = "69b332a392004d139d4ba495";
@@ -9,309 +9,329 @@ const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
 const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
 
-const HISTORY_LIMITS = {
-  free: 10, plus: 50, pro: 100, annual: 9999,
-};
+const HISTORY_LIMITS = { free: 10, plus: 50, pro: 100, annual: 9999 };
 
 function getTier() {
-  if (localStorage.getItem("unfiltr_family_unlock") === "true" ||
-      localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_annual")  === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_pro")     === "true") return "pro";
+  if (localStorage.getItem("unfiltr_family_unlock") === "true" || localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
+  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
+  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
   if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
   return "free";
 }
-const TIER_LABELS = { free:"Free", plus:"Plus", pro:"Pro", annual:"Annual" };
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatTime(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+}
 
 export default function ChatHistory() {
   const navigate = useNavigate();
-  const [sessions,    setSessions]    = useState([]);
-  const [search,      setSearch]      = useState("");
-  const [expandedId,  setExpandedId]  = useState(null);
-  const [loading,     setLoading]     = useState(true);
-  const [dataSource,  setDataSource]  = useState("local"); // "db" | "local" | "merged"
-  const [deleting,    setDeleting]    = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(null);
 
-  const tier      = getTier();
-  const tierLabel = TIER_LABELS[tier];
-  const limit     = HISTORY_LIMITS[tier];
-  const isFree    = tier === "free";
+  const tier = getTier();
+  const limit = HISTORY_LIMITS[tier];
+  const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+  const nickName = localStorage.getItem("unfiltr_companion_nickname") || "your companion";
 
-  useEffect(() => { loadSessions(); }, []);
+  useEffect(() => {
+    if (!appleUserId) { setLoading(false); return; }
+    fetch(`${B44_BASE}/ChatHistory/query`, {
+      method: "POST", headers: DB_HDR,
+      body: JSON.stringify({ filters: [{ field: "apple_user_id", operator: "eq", value: appleUserId }], sort: [{ field: "saved_at", direction: "desc" }], limit: limit }),
+    })
+      .then(r => r.json())
+      .then(d => { setSessions(Array.isArray(d) ? d : (d.items || [])); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [appleUserId, limit]);
 
-  const loadSessions = async () => {
-    setLoading(true);
-    const appleId = localStorage.getItem("unfiltr_apple_user_id");
-    let dbSessions = [];
-    let localSessions = [];
-
-    // ── Pull from DB ────────────────────────────────────────────────────
-    if (appleId) {
-      try {
-        const res = await fetch(
-          `${B44_BASE}/ChatHistory?apple_user_id=${encodeURIComponent(appleId)}&limit=200&sort=-saved_at`,
-          { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
-        );
-        const data = await res.json();
-        const records = Array.isArray(data) ? data : (data?.records || []);
-        dbSessions = records.map(r => ({
-          id:             r.id,          // DB record ID — used for deletion
-          _dbId:          r.id,
-          date:           r.saved_at || r.created_date,
-          companion_name: r.companion_name || null,
-          message_count:  r.message_count || 0,
-          messages:       (() => { try { return JSON.parse(r.messages || "[]"); } catch { return []; } })(),
-          _source:        "db",
-        }));
-      } catch(e) {}
-    }
-
-    // ── Pull from localStorage ──────────────────────────────────────────
+  const filtered = sessions.filter(s => {
+    if (!search) return true;
     try {
-      localSessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]").map(s => ({
-        ...s, _source: "local",
-      }));
+      const msgs = JSON.parse(s.messages || "[]");
+      return msgs.some(m => m.content?.toLowerCase().includes(search.toLowerCase()));
+    } catch { return false; }
+  });
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    setDeleting(id);
+    try {
+      await fetch(`${B44_BASE}/ChatHistory/${id}`, { method: "DELETE", headers: DB_HDR });
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (expandedId === id) setExpandedId(null);
     } catch {}
-
-    // ── Merge: DB wins for same date window, deduplicate by proximity ──
-    let merged = [...dbSessions];
-    localSessions.forEach(ls => {
-      const lsTime = new Date(ls.date).getTime();
-      const tooClose = dbSessions.some(ds => Math.abs(new Date(ds.date).getTime() - lsTime) < 5 * 60 * 1000);
-      if (!tooClose) merged.push(ls);
-    });
-
-    // Sort newest first, enforce tier limit
-    merged.sort((a, b) => new Date(b.date) - new Date(a.date));
-    merged = merged.slice(0, limit === 9999 ? 9999 : limit);
-
-    const src = dbSessions.length > 0 && localSessions.length > 0 ? "merged"
-              : dbSessions.length > 0 ? "db" : "local";
-    setDataSource(src);
-    setSessions(merged);
-    setLoading(false);
-  };
-
-  const handleDelete = async (session) => {
-    setDeleting(session.id);
-    // Delete from DB if it came from DB
-    if (session._dbId) {
-      try {
-        await fetch(`${B44_BASE}/ChatHistory/${session._dbId}`, {
-          method: "DELETE", headers: { "Authorization": `Bearer ${DB_TOKEN}` },
-        });
-      } catch(e) {}
-    }
-    // Always remove from localStorage too
-    const local = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
-    const updated = local.filter(s => s.id !== session.id);
-    localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
-
-    setSessions(prev => prev.filter(s => s.id !== session.id));
-    if (expandedId === session.id) setExpandedId(null);
     setDeleting(null);
   };
 
-  const handleClearAll = async () => {
-    if (!confirm("Delete all chat history? This can't be undone.")) return;
-    const appleId = localStorage.getItem("unfiltr_apple_user_id");
-    // Delete all DB records for this user (batch — fire-and-forget)
-    if (appleId) {
-      sessions.filter(s => s._dbId).forEach(s => {
-        fetch(`${B44_BASE}/ChatHistory/${s._dbId}`, {
-          method: "DELETE", headers: { "Authorization": `Bearer ${DB_TOKEN}` },
-        }).catch(() => {});
-      });
-    }
-    localStorage.removeItem("unfiltr_chat_sessions");
-    setSessions([]);
-    setExpandedId(null);
+  const getMsgPreview = (session) => {
+    try {
+      const msgs = JSON.parse(session.messages || "[]");
+      const last = [...msgs].reverse().find(m => m.role === "assistant");
+      return last?.content?.slice(0, 90) || "No messages";
+    } catch { return ""; }
   };
 
-  const filtered = sessions.filter(s => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    const preview = s.messages?.find(m => m.role === "user")?.content || s.messages?.[0]?.content || "";
-    return (
-      preview.toLowerCase().includes(q) ||
-      (s.companion_name || "").toLowerCase().includes(q) ||
-      (s.date || "").toLowerCase().includes(q)
-    );
-  });
-
-  const sourceLabel = dataSource === "db" ? "✦ Synced across devices"
-                    : dataSource === "merged" ? "✦ Device + cloud merged"
-                    : "Device only";
+  const getMsgCount = (session) => {
+    try { return JSON.parse(session.messages || "[]").length; } catch { return 0; }
+  };
 
   return (
-    <AppShell bg="#0d0118" tabs={false} style={{ background: "#0d0118" }}>
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-        style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <button onClick={() => navigate("/chat")}
-          style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
-          <ChevronLeft size={20} color="white" />
-        </button>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0 }}>Chat History</h1>
-          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, margin: 0 }}>
-            {loading ? "Loading..." : `${sessions.length} session${sessions.length !== 1 ? "s" : ""} · ${tierLabel} · ${sourceLabel}`}
-          </p>
-        </div>
-        <button onClick={loadSessions} title="Refresh"
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
-          <RefreshCw size={15} color="rgba(255,255,255,0.4)" />
-        </button>
-        {sessions.length > 0 && (
-          <button onClick={handleClearAll}
-            style={{ background: "rgba(239,68,68,0.12)", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", color: "rgba(239,68,68,0.7)", fontSize: 11, fontWeight: 600, WebkitTapHighlightColor: "transparent" }}>
-            Clear All
-          </button>
-        )}
-      </motion.div>
+    <AppShell>
+      <div style={{
+        position: "fixed", inset: 0, overflow: "hidden",
+        fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif",
+        background: "radial-gradient(ellipse at 50% 0%, rgba(88,28,220,0.4) 0%, #0a0118 35%, #04010d 100%)",
+        display: "flex", flexDirection: "column",
+      }}>
+        {/* Nebula glow */}
+        <div style={{
+          position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)",
+          width: 440, height: 320, borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(109,40,217,0.35) 0%, transparent 68%)",
+          filter: "blur(50px)", pointerEvents: "none", zIndex: 0,
+        }} />
 
-      {/* Upgrade nudge */}
-      {isFree && !loading && (
-        <motion.div initial={{ opacity: 0, scaleY: 0.95 }} animate={{ opacity: 1, scaleY: 1 }}
-          style={{ margin: "12px 16px 0", background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.08))", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
-          onClick={() => navigate("/Pricing")}>
-          <Lock size={16} color="rgba(196,181,253,0.7)" />
-          <p style={{ color: "rgba(196,181,253,0.8)", fontSize: 12, margin: 0, flex: 1 }}>
-            Free plan saves last 10 sessions. <span style={{ color: "#c4b5fd", fontWeight: 700 }}>Upgrade for full history →</span>
-          </p>
-        </motion.div>
-      )}
-
-      {/* Search */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-        style={{ padding: "12px 16px 0", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "10px 14px" }}>
-          <Search size={16} color="rgba(255,255,255,0.35)" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search conversations..."
-            style={{ flex: 1, background: "none", border: "none", outline: "none", color: "white", fontSize: 14 }} />
-          {search && (
-            <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-              <X size={16} color="rgba(255,255,255,0.4)" />
+        {/* ── HEADER ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            flexShrink: 0, position: "relative", zIndex: 10,
+            paddingTop: "max(54px, env(safe-area-inset-top, 54px))",
+            padding: "max(54px, env(safe-area-inset-top, 54px)) 20px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+            <button onClick={() => navigate("/hub")} style={{
+              width: 40, height: 40, borderRadius: "50%", border: "none", flexShrink: 0,
+              background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", WebkitTapHighlightColor: "transparent",
+            }}>
+              <ChevronLeft size={20} color="white" />
             </button>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ color: "white", fontWeight: 900, fontSize: 22, margin: 0, letterSpacing: "-0.4px" }}>
+                💬 Chat History
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "2px 0 0" }}>
+                {sessions.length > 0 ? `${sessions.length} saved session${sessions.length !== 1 ? "s" : ""} with ${nickName}` : `Conversations with ${nickName}`}
+              </p>
+            </div>
+            {tier === "free" && (
+              <div style={{
+                padding: "5px 11px", borderRadius: 99, flexShrink: 0,
+                background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                <Lock size={11} color="#fbbf24" />
+                <span style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>Free: {limit}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Search bar */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: "rgba(255,255,255,0.07)", borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.1)",
+            padding: "10px 14px",
+          }}>
+            <Search size={15} color="rgba(255,255,255,0.35)" style={{ flexShrink: 0 }} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search conversations..."
+              style={{
+                flex: 1, background: "none", border: "none", outline: "none",
+                color: "white", fontSize: 14, fontFamily: "inherit",
+              }}
+            />
+            {search && (
+              <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+                <X size={15} color="rgba(255,255,255,0.4)" />
+              </button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── SESSION LIST ── */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 120px", position: "relative", zIndex: 5 }}>
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{
+                  height: 90, borderRadius: 20,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  animation: "pulse 1.5s ease-in-out infinite",
+                }} />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ textAlign: "center", marginTop: 60, padding: "0 32px" }}
+            >
+              <div style={{ fontSize: 56, marginBottom: 16 }}>💬</div>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 17, fontWeight: 700, margin: "0 0 8px" }}>
+                {search ? "No matches found" : "No saved sessions yet"}
+              </p>
+              <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+                {search ? "Try a different search term" : `Your conversations with ${nickName} will appear here after you save them.`}
+              </p>
+            </motion.div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {filtered.map((session, i) => {
+                const isExpanded = expandedId === session.id;
+                const preview = getMsgPreview(session);
+                const count = getMsgCount(session);
+                let msgs = [];
+                try { msgs = JSON.parse(session.messages || "[]"); } catch {}
+
+                return (
+                  <motion.div
+                    key={session.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    style={{
+                      borderRadius: 20,
+                      border: isExpanded ? "1.5px solid rgba(167,139,250,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                      background: isExpanded
+                        ? "linear-gradient(145deg, rgba(109,40,217,0.2), rgba(76,29,149,0.12))"
+                        : "rgba(255,255,255,0.04)",
+                      backdropFilter: "blur(16px)",
+                      overflow: "hidden",
+                      boxShadow: isExpanded ? "0 0 30px rgba(139,92,246,0.2)" : "none",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    {/* Session header row */}
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : session.id)}
+                      style={{
+                        width: "100%", padding: "16px 18px",
+                        background: "none", border: "none", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 14, textAlign: "left",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      {/* Icon */}
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+                        background: isExpanded ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.06)",
+                        border: `1px solid ${isExpanded ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.1)"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <MessageCircle size={20} color={isExpanded ? "#a78bfa" : "rgba(255,255,255,0.4)"} />
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ color: isExpanded ? "#c4b5fd" : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 14 }}>
+                            {formatDate(session.saved_at)}
+                          </span>
+                          <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 12 }}>
+                            {formatTime(session.saved_at)}
+                          </span>
+                          <span style={{
+                            padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 700,
+                            background: "rgba(139,92,246,0.15)", color: "#a78bfa",
+                            border: "1px solid rgba(139,92,246,0.25)",
+                          }}>
+                            {count} msgs
+                          </span>
+                        </div>
+                        <p style={{
+                          color: "rgba(255,255,255,0.35)", fontSize: 12, margin: 0,
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          lineHeight: 1.4,
+                        }}>
+                          {preview}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={(e) => handleDelete(session.id, e)}
+                        disabled={deleting === session.id}
+                        style={{
+                          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                          background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          cursor: "pointer", WebkitTapHighlightColor: "transparent",
+                          opacity: deleting === session.id ? 0.5 : 1,
+                        }}
+                      >
+                        {deleting === session.id
+                          ? <div style={{ width: 12, height: 12, border: "2px solid #ef4444", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                          : <Trash2 size={14} color="#ef4444" />
+                        }
+                      </button>
+                    </button>
+
+                    {/* Expanded messages */}
+                    <AnimatePresence>
+                      {isExpanded && msgs.length > 0 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          style={{ overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                        >
+                          <div style={{ padding: "12px 18px 16px", display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
+                            {msgs.slice(0, 20).map((m, j) => (
+                              <div key={j} style={{
+                                display: "flex",
+                                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+                              }}>
+                                <div style={{
+                                  maxWidth: "82%", padding: "9px 14px", borderRadius: 16,
+                                  background: m.role === "user"
+                                    ? "linear-gradient(135deg, rgba(109,40,217,0.7), rgba(139,92,246,0.5))"
+                                    : "rgba(255,255,255,0.07)",
+                                  border: m.role === "user" ? "none" : "1px solid rgba(255,255,255,0.08)",
+                                  color: "rgba(255,255,255,0.85)", fontSize: 13, lineHeight: 1.45,
+                                  borderBottomRightRadius: m.role === "user" ? 4 : 16,
+                                  borderBottomLeftRadius: m.role === "assistant" ? 4 : 16,
+                                }}>
+                                  {m.content}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
           )}
         </div>
-      </motion.div>
 
-      <div className="scroll-area" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 10 }}>
-
-        {/* Loading state */}
-        {loading && (
-          <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.3)" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>💬</div>
-            <div>Loading your conversations...</div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && sessions.length === 0 && !search && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            style={{ textAlign: "center", padding: "70px 24px" }}>
-            <div style={{ fontSize: 52, marginBottom: 16 }}>💬</div>
-            <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, fontWeight: 600, margin: "0 0 8px" }}>No conversations yet</p>
-            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 13, marginBottom: 24 }}>Start chatting and your sessions will appear here</p>
-            <motion.button whileTap={{ scale: 0.96 }} onClick={() => navigate("/vibe")}
-              style={{ background: "linear-gradient(135deg,#7c3aed,#a855f7)", border: "none", borderRadius: 16, padding: "14px 28px", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-              Start a Chat ✨
-            </motion.button>
-          </motion.div>
-        )}
-
-        {/* No search results */}
-        {!loading && sessions.length > 0 && filtered.length === 0 && search && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            style={{ textAlign: "center", padding: "50px 20px" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14 }}>
-              No conversations matching <strong style={{ color: "white" }}>"{search}"</strong>
-            </p>
-            <button onClick={() => setSearch("")}
-              style={{ marginTop: 12, background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "6px 16px", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
-              Clear search
-            </button>
-          </motion.div>
-        )}
-
-        {/* Session list */}
-        <AnimatePresence>
-          {!loading && filtered.map((s, index) => {
-            const dateObj  = new Date(s.date);
-            const dateStr  = isNaN(dateObj) ? s.date : dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-            const timeStr  = isNaN(dateObj) ? "" : dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-            const msgCount = s.messages?.length || s.message_count || 0;
-            const preview  = s.messages?.find(m => m.role === "user")?.content || s.messages?.[0]?.content || "";
-            const isExpanded = expandedId === s.id;
-            const isCloud    = s._source === "db";
-
-            return (
-              <motion.div key={s.id}
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
-                transition={{ delay: index * 0.03, duration: 0.3 }}
-                style={{ borderRadius: 16, background: "rgba(255,255,255,0.04)", border: `1px solid ${isCloud ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.08)"}`, overflow: "hidden" }}>
-
-                <button onClick={() => setExpandedId(isExpanded ? null : s.id)}
-                  style={{ width: "100%", textAlign: "left", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Calendar size={13} color="rgba(168,85,247,0.6)" />
-                      <span style={{ color: "white", fontWeight: 600, fontSize: 14 }}>{dateStr}</span>
-                      {isCloud && <span style={{ fontSize: 9, color: "rgba(168,85,247,0.6)", background: "rgba(168,85,247,0.1)", borderRadius: 6, padding: "1px 5px" }}>cloud</span>}
-                    </div>
-                    <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>{timeStr}</span>
-                  </div>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, lineHeight: 1.5, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {preview || "Conversation with " + (s.companion_name || "companion")}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-                    <span style={{ color: "rgba(168,85,247,0.5)", fontSize: 10 }}>
-                      {msgCount} messages{s.companion_name ? ` · ${s.companion_name}` : ""}
-                    </span>
-                    <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>{isExpanded ? "▲ collapse" : "▼ expand"}</span>
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} style={{ overflow: "hidden" }}>
-                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 16px" }}>
-                        <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                          {s.messages?.length > 0 ? s.messages.map((m, i) => (
-                            <div key={i} style={{
-                              padding: "8px 12px", borderRadius: 12, fontSize: 12, lineHeight: 1.5,
-                              background: m.role === "user" ? "rgba(168,85,247,0.12)" : "rgba(255,255,255,0.05)",
-                              color: m.role === "user" ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.6)",
-                              alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%",
-                            }}>
-                              {m.content}
-                            </div>
-                          )) : (
-                            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, textAlign: "center", padding: "12px 0" }}>
-                              Message content not stored for this session
-                            </div>
-                          )}
-                        </div>
-                        <button onClick={() => handleDelete(s)} disabled={deleting === s.id}
-                          style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "6px 14px", cursor: "pointer", color: "rgba(239,68,68,0.7)", fontSize: 11, fontWeight: 600, WebkitTapHighlightColor: "transparent", opacity: deleting === s.id ? 0.5 : 1 }}>
-                          <Trash2 size={12} />
-                          {deleting === s.id ? "Deleting..." : "Delete this session"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+        <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}} @keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </AppShell>
   );
