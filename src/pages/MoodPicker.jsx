@@ -179,7 +179,7 @@ export default function MoodPicker() {
     if (dest === "journal") {
       navigate("/journal-enter");
     } else {
-      navigate("/chat-enter");
+      navigate("/BackgroundSelect");
     }
   };
 
@@ -366,4 +366,5 @@ export default function MoodPicker() {
     </div>
   );
 }
+
 
