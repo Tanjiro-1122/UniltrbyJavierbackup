@@ -34,11 +34,26 @@ function getAccent(id) {
 }
 
 // Use only the "real" (photorealistic/painterly) versions — they look better full-screen
-const WORLDS = BACKGROUNDS.filter(b => b.id.endsWith("-real") || [
-  "underwater","blossom","skyislands"
-].includes(b.id)).length > 0
-  ? BACKGROUNDS.filter(b => b.id.endsWith("-real") || ["underwater","blossom","skyislands"].includes(b.id))
-  : BACKGROUNDS;
+// Use all backgrounds — filter out duplicates by preferring "-real" versions
+const WORLDS = (() => {
+  const seen = new Set();
+  const result = [];
+  // First pass: add all "-real" versions
+  for (const b of BACKGROUNDS) {
+    if (b.id.endsWith("-real")) {
+      const base = b.id.replace("-real","");
+      seen.add(base);
+      result.push(b);
+    }
+  }
+  // Second pass: add non-real ones that don't have a real counterpart
+  for (const b of BACKGROUNDS) {
+    if (!b.id.endsWith("-real") && !seen.has(b.id)) {
+      result.push(b);
+    }
+  }
+  return result;
+})();
 
 export default function BackgroundSelect() {
   const navigate = useNavigate();
@@ -289,3 +304,4 @@ export default function BackgroundSelect() {
     </div>
   );
 }
+
