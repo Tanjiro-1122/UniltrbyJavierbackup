@@ -503,6 +503,19 @@ export default function Settings() {
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Display Name</p>
           <DisplayNameEditor userProfile={userProfile} onSave={n => setUserProfile(p => ({ ...p, display_name: n }))} />
         </div>
+        {/* Apple ID Email */}
+        {(() => {
+          const em = userProfile?.email || localStorage.getItem("unfiltr_apple_email") || localStorage.getItem("unfiltr_user_email") || null;
+          if (!em) return null;
+          return (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Apple ID Email</p>
+              <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>{em}</p>
+              </div>
+            </div>
+          );
+        })()}
         <div style={{ marginBottom: 20 }}>
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Companion Nickname</p>
           <NicknameField />
@@ -1055,5 +1068,6 @@ export default function Settings() {
     </div>
   );
 }
+
 
 
