@@ -527,6 +527,47 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  /* ─── AUTO-SAVE to DB every 5 messages (crash-safe) ─── */
+  useEffect(() => {
+    const userMsgs = messages.filter(m => m.role === "user");
+    // Only save every 5 user messages — avoids hammering DB on every keystroke
+    if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
+      const appleId = localStorage.getItem("unfiltr_apple_user_id");
+      if (!appleId) return;
+      const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
+      if (msgs.length < 2) return;
+      const companionRaw = localStorage.getItem("unfiltr_companion");
+      const companionName = companionRaw ? (JSON.parse(companionRaw)?.displayName || JSON.parse(companionRaw)?.name) : "Companion";
+      const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
+                 : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
+                 : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+      const B44_APP  = "69b332a392004d139d4ba495";
+      const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+      const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+
+      // Check if we already have a DB record for this session (stored in ref)
+      const existingId = window.__currentChatDbId;
+      if (existingId) {
+        // Update existing record
+        fetch(`${B44_BASE}/ChatHistory/${existingId}`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
+        }).catch(() => {});
+      } else {
+        // Create new record and remember its ID
+        fetch(`${B44_BASE}/ChatHistory`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ apple_user_id: appleId, companion_name: companionName, messages: JSON.stringify(msgs), saved_at: new Date().toISOString(), tier, message_count: msgs.length }),
+        })
+          .then(r => r.json())
+          .then(data => { if (data?.id) window.__currentChatDbId = data.id; })
+          .catch(() => {});
+      }
+    }
+  }, [messages]);
+
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
   useEffect(() => {
     return () => {
