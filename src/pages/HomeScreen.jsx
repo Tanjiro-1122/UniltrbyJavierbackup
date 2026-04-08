@@ -127,6 +127,7 @@ export default function HomeScreen() {
             email: payload.email || localStorage.getItem("unfiltr_email") || "",
             fullName: payload.fullName || storedName,
             isPremiumFromRC: payload.isPremium,
+            identityToken: payload.identityToken || "",
           });
 
           // Send ACK back to native so it stops retrying
