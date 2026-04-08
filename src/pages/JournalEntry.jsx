@@ -1,8 +1,28 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff } from "lucide-react";
+import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
+
+// ── Tier helpers ─────────────────────────────────────────────────────────────
+function getTier() {
+  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
+  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
+  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
+  return "free";
+}
+async function saveJournalEntryToDB(entry) {
+  try {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    if (!appleUserId) return;
+    const tier = getTier();
+    await fetch("/api/utils", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "saveJournalEntry", appleUserId, entry, tier }),
+    });
+  } catch {}
+}
 
 // Journal entry limits per tier
 const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
@@ -226,6 +246,27 @@ export default function JournalEntry() {
     const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify([newEntry, ...existing]));
     incrementJournalUsage();
+    // ── Auto-save to DB (tiered) ──────────────────────────────────────────────
+    saveJournalEntryToDB(newEntry);
+    // ── Auto-save vibe + relationship mode for paid users ─────────────────────
+    const tier = getTier();
+    if (tier !== "free") {
+      try {
+        const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+        if (appleUserId) {
+          fetch("/api/syncProfile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "update",
+              appleUserId,
+              vibe: localStorage.getItem("unfiltr_vibe") || "",
+              relationship_mode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => { setSaved(false); navigate("/journal/list"); }, 1500);
@@ -260,6 +301,11 @@ export default function JournalEntry() {
         <button onClick={() => navigate("/journal/home")}
           className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-white" />
+        </button>
+        <div className="flex-1" />
+        <button onClick={() => navigate("/settings")}
+          className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+          <Settings className="w-4 h-4 text-white/60" />
         </button>
         <p className="text-white/50 text-sm font-medium tracking-wide">New Entry</p>
         <button onClick={handleSave} disabled={!entry.trim() || saving}
