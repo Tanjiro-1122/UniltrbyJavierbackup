@@ -81,7 +81,7 @@ export default function VibePage() {
     navigate("/mood?dest=chat");
   };
 
-  const btnLabel = "Pick your world →";
+  const btnLabel = "Pick your mood →";
 
   return (
     <div
@@ -253,4 +253,5 @@ export default function VibePage() {
     </div>
   );
 }
+
 
