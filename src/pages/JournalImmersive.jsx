@@ -26,7 +26,7 @@ const WORLDS = [
   {
     id: "cozy_apartment",
     label: "Cozy Apartment", emoji: "🏠",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/133f41f0f_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/133f41f0f_generated_image.png",
     accentColor: "#ffb347",
     accentGlow: "rgba(255,140,40,0.5)",
     overlayStart: "rgba(0,0,0,0.45)",
@@ -35,7 +35,7 @@ const WORLDS = [
   {
     id: "forest_cabin",
     label: "Forest Cabin", emoji: "🌲",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/d7bb6e1b5_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d7bb6e1b5_generated_image.png",
     accentColor: "#4ade80",
     accentGlow: "rgba(74,222,128,0.45)",
     overlayStart: "rgba(0,0,0,0.4)",
@@ -44,7 +44,7 @@ const WORLDS = [
   {
     id: "late_night_cafe",
     label: "Late Night Café", emoji: "☕",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/e0ccd0753_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/e0ccd0753_generated_image.png",
     accentColor: "#c462ff",
     accentGlow: "rgba(196,98,255,0.5)",
     overlayStart: "rgba(0,0,0,0.45)",
@@ -53,7 +53,7 @@ const WORLDS = [
   {
     id: "space_station",
     label: "Space Station", emoji: "🌌",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/2da8b6d3e_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/2da8b6d3e_generated_image.png",
     accentColor: "#63b3ff",
     accentGlow: "rgba(99,179,255,0.45)",
     overlayStart: "rgba(0,0,0,0.35)",
@@ -62,7 +62,7 @@ const WORLDS = [
   {
     id: "beach_house",
     label: "Beach House", emoji: "🏖️",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/19c79bde2_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/19c79bde2_generated_image.png",
     accentColor: "#fbbf24",
     accentGlow: "rgba(251,191,36,0.45)",
     overlayStart: "rgba(0,0,0,0.35)",
@@ -71,7 +71,7 @@ const WORLDS = [
   {
     id: "rooftop",
     label: "Rooftop", emoji: "🌆",
-    bgImage: "https://media.base44.com/images/public/69b332a392004d139d4ba495/6e20d0458_generated_image.png",
+    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/6e20d0458_generated_image.png",
     accentColor: "#f472b6",
     accentGlow: "rgba(244,114,182,0.5)",
     overlayStart: "rgba(0,0,0,0.45)",
