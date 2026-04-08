@@ -327,7 +327,21 @@ export default function ChatPage() {
           memorySummary = prof?.memory_summary || "";
         }
       } catch { /* ignore */ }
-      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
+      // Build personality instructions from sliders
+      const pVibe      = companion?.personality_vibe      ?? 5;
+      const pEmpathy   = companion?.personality_empathy   ?? 5;
+      const pHumor     = companion?.personality_humor     ?? 5;
+      const pCuriosity = companion?.personality_curiosity ?? 5;
+      const pStyle     = companion?.personality_style     ?? 5;
+      const personalityBlock = `
+=== PERSONALITY SETTINGS ===
+Energy level (1=calm, 10=hyped): ${pVibe}/10
+Empathy level (1=direct, 10=nurturing): ${pEmpathy}/10
+Humor level (1=serious, 10=very funny): ${pHumor}/10
+Curiosity level (1=chill, 10=very curious): ${pCuriosity}/10
+Style depth (1=casual, 10=deep/philosophical): ${pStyle}/10
+Adjust your tone, warmth, jokes, and depth to match these settings exactly.`;
+      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\n${personalityBlock}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
       const userContent  = pendingImage ? (text || "What do you think of this?") : text;
       const history      = [...messages, { role: "user", content: userContent }].slice(-10);
 
