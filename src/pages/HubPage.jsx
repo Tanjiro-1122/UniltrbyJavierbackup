@@ -105,7 +105,7 @@ export default function HubPage() {
           display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 5,
         }}
       >
-        <button onClick={() => {}} style={{
+        <button onClick={() => navigate('/')} style={{
           width: 38, height: 38, borderRadius: "50%", border: "none",
           background: "rgba(255,255,255,0.07)", backdropFilter: "blur(10px)",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -170,3 +170,4 @@ export default function HubPage() {
     </div>
   );
 }
+
