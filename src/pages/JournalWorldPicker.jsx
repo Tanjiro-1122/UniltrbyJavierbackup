@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { COMPANIONS } from "../components/companionData";
 
 const WORLDS = [
   {
@@ -69,12 +70,16 @@ export default function JournalWorldPicker() {
   const navigate = useNavigate();
   const [idx, setIdx] = useState(0);
   const [loaded, setLoaded] = useState({});
+  const [companion, setCompanion] = useState(null);
   const [companionName, setCompanionName] = useState("your companion");
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
 
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
+  // Preload all world backgrounds
   useEffect(() => {
     WORLDS.forEach(w => {
       const img = new window.Image();
@@ -83,13 +88,23 @@ export default function JournalWorldPicker() {
     });
   }, []);
 
+  // Load companion data
   useEffect(() => {
     try {
       const saved = localStorage.getItem("unfiltr_companion");
       if (saved) {
-        const p = JSON.parse(saved);
-        setCompanionName(p.displayName || p.name || "your companion");
+        const parsed = JSON.parse(saved);
+        const found = COMPANIONS.find(c => c.id === parsed.id || c.name === parsed.name);
+        if (found) {
+          setCompanion(found);
+          setCompanionName(parsed.companionNickname || found.displayName || found.name || "your companion");
+        } else if (COMPANIONS.length > 0) {
+          setCompanion(COMPANIONS[0]);
+        }
+      } else if (COMPANIONS.length > 0) {
+        setCompanion(COMPANIONS[0]);
       }
+
       const savedWorld = localStorage.getItem("unfiltr_journal_world");
       if (savedWorld) {
         const i = WORLDS.findIndex(w => w.id === savedWorld);
@@ -100,8 +115,14 @@ export default function JournalWorldPicker() {
 
   const goTo = useCallback((newIdx) => {
     const clamped = Math.max(0, Math.min(WORLDS.length - 1, newIdx));
-    setIdx(clamped);
-  }, []);
+    if (clamped === idx) return;
+    setTransitioning(true);
+    setAvatarLoaded(false);
+    setTimeout(() => {
+      setIdx(clamped);
+      setTransitioning(false);
+    }, 180);
+  }, [idx]);
 
   const handleEnter = () => {
     localStorage.setItem("unfiltr_journal_world", WORLDS[idx].id);
@@ -130,13 +151,14 @@ export default function JournalWorldPicker() {
   };
 
   const world = WORLDS[idx];
+  const companionImg = companion?.poses?.neutral || companion?.poses?.happy || companion?.avatar || "";
 
   return (
     <div
       style={{
-        position: "fixed", inset: 0, display: "flex", flexDirection: "column",
-        fontFamily: "system-ui,-apple-system,sans-serif", overflow: "hidden",
-        background: "#06020f",
+        position: "fixed", inset: 0,
+        fontFamily: "system-ui,-apple-system,sans-serif",
+        overflow: "hidden",
       }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -147,185 +169,186 @@ export default function JournalWorldPicker() {
         {WORLDS.map(w => <img key={w.id} src={w.bgImage} alt="" />)}
       </div>
 
-      {/* Background layers */}
+      {/* Full-screen world backgrounds — all stacked, fade between */}
       {WORLDS.map((w, i) => (
         <div key={w.id} style={{
           position: "absolute", inset: 0, zIndex: 0,
           background: w.bgFallback,
           backgroundImage: loaded[w.id] ? `url(${w.bgImage})` : undefined,
           backgroundSize: "cover", backgroundPosition: "center",
-          opacity: i === idx ? 1 : 0,
-          transition: "opacity 0.45s ease",
+          opacity: i === idx ? (transitioning ? 0 : 1) : 0,
+          transition: "opacity 0.5s ease",
           pointerEvents: "none",
         }} />
       ))}
 
-      {/* Dark overlay */}
+      {/* Gradient overlay — heavier at top and bottom */}
       <div style={{
         position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: "linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,rgba(0,0,0,0.15) 35%,rgba(0,0,0,0.65) 70%,rgba(0,0,0,0.95) 100%)",
+        background: `linear-gradient(
+          to bottom,
+          rgba(0,0,0,0.72) 0%,
+          rgba(0,0,0,0.1) 28%,
+          rgba(0,0,0,0.05) 45%,
+          rgba(0,0,0,0.35) 65%,
+          rgba(0,0,0,0.88) 100%
+        )`,
       }} />
 
-      {/* Header */}
+      {/* Accent glow from world color — bottom */}
       <div style={{
-        flexShrink: 0, position: "relative", zIndex: 20,
-        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
-        padding: "max(1.5rem, env(safe-area-inset-top, 1.5rem)) 20px 10px",
+        position: "absolute", bottom: 0, left: "10%", right: "10%", height: "40%",
+        zIndex: 1, pointerEvents: "none",
+        background: `radial-gradient(ellipse at 50% 100%, ${world.glow} 0%, transparent 70%)`,
+        opacity: transitioning ? 0 : 1,
+        transition: "opacity 0.5s ease, background 0.5s ease",
+      }} />
+
+      {/* ── HEADER ── */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0,
+        zIndex: 20,
+        paddingTop: "max(52px, env(safe-area-inset-top, 52px))",
+        padding: "max(52px, env(safe-area-inset-top, 52px)) 20px 0",
         display: "flex", alignItems: "center", gap: 12,
       }}>
         <button
           onClick={() => navigate("/journal/home")}
           style={{
             width: 40, height: 40, borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.25)", background: "rgba(0,0,0,0.5)",
+            border: "1px solid rgba(255,255,255,0.25)", background: "rgba(0,0,0,0.45)",
             backdropFilter: "blur(12px)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", flexShrink: 0,
+            cursor: "pointer", flexShrink: 0, WebkitTapHighlightColor: "transparent",
           }}
         >
           <ChevronLeft size={20} color="white" />
         </button>
         <div>
-          <h1 style={{ color: "white", fontWeight: 900, fontSize: 20, margin: 0, textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>
+          <h1 style={{ color: "white", fontWeight: 900, fontSize: 20, margin: 0, textShadow: "0 2px 16px rgba(0,0,0,0.9)" }}>
             📓 Choose Your World
           </h1>
-          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: "2px 0 0" }}>
+          <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: "2px 0 0" }}>
             {companionName} will meet you there ✨
           </p>
         </div>
       </div>
 
-      {/* Cards */}
-      <div style={{
-        flex: 1, position: "relative", display: "flex", alignItems: "center",
-        justifyContent: "center", overflow: "hidden", zIndex: 10,
-      }}>
-        {WORLDS.map((w, i) => {
-          const diff = i - idx;
-          if (Math.abs(diff) > 1) return null;
-          const isActive = diff === 0;
-
-          return (
-            <div
-              key={w.id}
-              onClick={() => !isActive && goTo(i)}
-              style={{
-                position: "absolute",
-                width: 218, height: 296, borderRadius: 24, overflow: "hidden",
-                border: `2.5px solid ${isActive ? w.accentColor : "rgba(255,255,255,0.12)"}`,
-                boxShadow: isActive
-                  ? `0 0 0 1px ${w.accentColor}33, 0 0 40px ${w.glow}, 0 20px 60px rgba(0,0,0,0.7)`
-                  : "0 8px 32px rgba(0,0,0,0.4)",
-                transform: `translateX(${diff * 236}px) scale(${isActive ? 1 : 0.78})`,
-                opacity: isActive ? 1 : 0.5,
-                zIndex: isActive ? 10 : 5,
-                cursor: isActive ? "default" : "pointer",
-                background: w.bgFallback,
-                transition: "transform 0.32s cubic-bezier(.4,0,.2,1), opacity 0.32s ease, border-color 0.25s, box-shadow 0.25s",
-                WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              <div style={{
-                position: "absolute", inset: 0,
-                backgroundImage: loaded[w.id] ? `url(${w.bgImage})` : "none",
-                backgroundSize: "cover", backgroundPosition: "center",
-              }} />
-              <div style={{
-                position: "absolute", inset: 0,
-                background: isActive
-                  ? "linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.5) 55%,rgba(0,0,0,0.92) 100%)"
-                  : "linear-gradient(to bottom,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.78) 55%,rgba(0,0,0,0.97) 100%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0,
-                padding: "12px 16px 18px", textAlign: "center", pointerEvents: "none",
-              }}>
-                <div style={{ fontSize: 28, marginBottom: 4 }}>{w.emoji}</div>
-                <p style={{ color: isActive ? w.accentColor : "rgba(255,255,255,0.7)", fontWeight: 800, fontSize: 15, margin: "0 0 3px" }}>
-                  {w.label}
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-                  {w.desc}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-
-        <button
-          onClick={(e) => { e.stopPropagation(); goTo(idx - 1); }}
-          disabled={idx === 0}
-          style={{
-            position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
-            width: 44, height: 44, borderRadius: "50%",
-            background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.2)",
-            backdropFilter: "blur(10px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 30, opacity: idx === 0 ? 0.25 : 1,
-            cursor: idx === 0 ? "default" : "pointer",
-            transition: "opacity 0.2s",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <ChevronLeft size={20} color="white" />
-        </button>
-
-        <button
-          onClick={(e) => { e.stopPropagation(); goTo(idx + 1); }}
-          disabled={idx === WORLDS.length - 1}
-          style={{
-            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-            width: 44, height: 44, borderRadius: "50%",
-            background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.2)",
-            backdropFilter: "blur(10px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 30, opacity: idx === WORLDS.length - 1 ? 0.25 : 1,
-            cursor: idx === WORLDS.length - 1 ? "default" : "pointer",
-            transition: "opacity 0.2s",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          <ChevronRight size={20} color="white" />
-        </button>
-      </div>
-
-      {/* Dots */}
-      <div style={{
-        flexShrink: 0, display: "flex", justifyContent: "center", gap: 6,
-        padding: "6px 0", zIndex: 20, position: "relative",
-      }}>
-        {WORLDS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
+      {/* ── COMPANION AVATAR — center stage ── */}
+      {companionImg ? (
+        <div style={{
+          position: "absolute",
+          bottom: "28%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          width: 220,
+          height: 280,
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          opacity: transitioning ? 0 : (avatarLoaded ? 1 : 0),
+          transition: "opacity 0.45s ease",
+          filter: `drop-shadow(0 8px 32px ${world.glow})`,
+        }}>
+          <img
+            src={companionImg}
+            alt={companionName}
+            onLoad={() => setAvatarLoaded(true)}
             style={{
-              width: i === idx ? 22 : 6, height: 6, borderRadius: 99, border: "none",
-              background: i === idx ? world.accentColor : "rgba(255,255,255,0.22)",
-              cursor: "pointer", padding: 0,
-              transition: "all 0.3s",
-              boxShadow: i === idx ? `0 0 10px ${world.glow}` : "none",
-              WebkitTapHighlightColor: "transparent",
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "bottom center",
             }}
           />
-        ))}
-      </div>
+        </div>
+      ) : null}
 
-      {/* Enter Button */}
+      {/* ── LEFT / RIGHT nav arrows ── */}
+      <button
+        onClick={(e) => { e.stopPropagation(); goTo(idx - 1); }}
+        disabled={idx === 0}
+        style={{
+          position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+          width: 44, height: 44, borderRadius: "50%",
+          background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.18)",
+          backdropFilter: "blur(10px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 20, opacity: idx === 0 ? 0.2 : 1,
+          cursor: idx === 0 ? "default" : "pointer",
+          transition: "opacity 0.2s", WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <ChevronLeft size={20} color="white" />
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); goTo(idx + 1); }}
+        disabled={idx === WORLDS.length - 1}
+        style={{
+          position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+          width: 44, height: 44, borderRadius: "50%",
+          background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.18)",
+          backdropFilter: "blur(10px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 20, opacity: idx === WORLDS.length - 1 ? 0.2 : 1,
+          cursor: idx === WORLDS.length - 1 ? "default" : "pointer",
+          transition: "opacity 0.2s", WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <ChevronRight size={20} color="white" />
+      </button>
+
+      {/* ── WORLD INFO + DOTS + ENTER — bottom ── */}
       <div style={{
-        flexShrink: 0, padding: "10px 24px",
-        paddingBottom: "max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px))",
-        position: "relative", zIndex: 20,
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        zIndex: 20,
+        padding: "0 24px",
+        paddingBottom: "max(32px, calc(env(safe-area-inset-bottom, 0px) + 24px))",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+        opacity: transitioning ? 0 : 1,
+        transition: "opacity 0.35s ease",
       }}>
+        {/* World name & desc */}
+        <div style={{ textAlign: "center" }}>
+          <p style={{
+            color: world.accentColor, fontWeight: 900, fontSize: 24, margin: "0 0 4px",
+            textShadow: `0 0 20px ${world.glow}, 0 2px 8px rgba(0,0,0,0.8)`,
+          }}>
+            {world.emoji} {world.label}
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 13, margin: 0 }}>
+            {world.desc}
+          </p>
+        </div>
+
+        {/* Dot indicators */}
+        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+          {WORLDS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              style={{
+                width: i === idx ? 24 : 7, height: 7, borderRadius: 99, border: "none", padding: 0,
+                background: i === idx ? world.accentColor : "rgba(255,255,255,0.2)",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                boxShadow: i === idx ? `0 0 12px ${world.glow}` : "none",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Enter button */}
         <button
           onClick={handleEnter}
           style={{
             width: "100%", padding: "16px 0", borderRadius: 18, border: "none",
-            background: `linear-gradient(135deg, ${world.accentColor}dd, ${world.accentColor}88)`,
-            boxShadow: `0 0 28px ${world.glow}, 0 8px 24px rgba(0,0,0,0.45)`,
+            background: `linear-gradient(135deg, ${world.accentColor}ee, ${world.accentColor}77)`,
+            boxShadow: `0 0 32px ${world.glow}, 0 8px 28px rgba(0,0,0,0.55)`,
             color: "white", fontWeight: 900, fontSize: 17, cursor: "pointer",
+            textShadow: "0 1px 6px rgba(0,0,0,0.6)",
             transition: "background 0.4s, box-shadow 0.4s",
-            textShadow: "0 1px 4px rgba(0,0,0,0.5)",
             WebkitTapHighlightColor: "transparent",
           }}
         >
