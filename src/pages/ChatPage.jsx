@@ -485,11 +485,11 @@ export default function ChatPage() {
           if (records.length >= 2) {
             // Restore last messages — skip greeting, go straight to history
             setMessages(records.map(m => ({ role: m.role, content: m.content })));
-            debugLog(\`[ChatPage] ✅ Restored \${records.length} messages from DB\`);
+            debugLog(`[ChatPage] ✅ Restored ${records.length} messages from DB`);
             return;
           }
         } catch(e) {
-          debugLog(\`[ChatPage] ⚠️ Could not load message history: \${e.message}\`);
+          debugLog(`[ChatPage] ⚠️ Could not load message history: ${e.message}`);
         }
       }
     }
@@ -664,7 +664,7 @@ export default function ChatPage() {
     try {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const cleanText = text.replace(/[\*\_\~\#\>\`]/g, "").slice(0, 400);
+      const cleanText = text.replace(/[\*\_\~\#\>`]/g, "").slice(0, 400);
       if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
       
       // Always try to resume AudioContext before TTS — critical on iOS
@@ -1320,4 +1320,5 @@ export default function ChatPage() {
     </>
   );
 }
+
 
