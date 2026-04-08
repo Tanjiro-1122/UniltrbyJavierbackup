@@ -135,6 +135,7 @@ export default async function handler(req, res) {
     updateData,              // fields to update (for action="update")
     displayName,             // for onboarding name step
     identityToken,           // Apple JWT — always contains email, even on repeat logins
+    pushToken,               // Expo push token from native bridge
   } = req.body || {};
 
   // Extract email from Apple's identity token JWT — reliable on EVERY login
@@ -208,6 +209,10 @@ export default async function handler(req, res) {
         if (plan === "pro")    patch.pro_plan    = true;
       }
       if (email && !profile.email)        patch.email        = email;
+      if (pushToken && pushToken.startsWith("ExponentPushToken")) {
+        patch.push_token   = pushToken;
+        patch.push_enabled = true;
+      }
       if (fullName && !profile.display_name) patch.display_name = fullName;
 
       await updateProfile(profile.id, patch);
@@ -238,6 +243,8 @@ export default async function handler(req, res) {
       const newProfile = await createProfile({
         apple_user_id: appleUserId,
         email:              email    || "",
+      push_token:         (pushToken && pushToken.startsWith("ExponentPushToken")) ? pushToken : null,
+      push_enabled:       !!(pushToken && pushToken.startsWith("ExponentPushToken")),
         display_name:       fullName && fullName.trim() ? fullName.trim() : "",
         is_premium:         isPremium || false,
         onboarding_complete: false,
@@ -261,4 +268,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
