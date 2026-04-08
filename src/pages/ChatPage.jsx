@@ -147,7 +147,30 @@ export default function ChatPage() {
       } catch (e) { console.error('Native message error:', e); }
     };
     window.addEventListener('message', handleNativeMessage);
-    return () => window.removeEventListener('message', handleNativeMessage);
+
+    // ── Customize panel live updates ────────────────────────────────────────
+    // Background changed from customize panel
+    const handleEnvChange = (e) => {
+      if (e.detail) setEnvironment(e.detail);
+    };
+    window.addEventListener("unfiltr_env_change", handleEnvChange);
+
+    // Also listen for plain background ID changes (legacy)
+    const handleBgChange = (e) => {
+      const bgId = e.detail;
+      if (!bgId) return;
+      import("@/components/companionData").then(({ BACKGROUNDS }) => {
+        const bg = BACKGROUNDS.find(b => b.id === bgId);
+        if (bg) setEnvironment({ id: bg.id, label: bg.label, bg: bg.url });
+      });
+    };
+    window.addEventListener("unfiltr_background_change", handleBgChange);
+
+    return () => {
+      window.removeEventListener('message', handleNativeMessage);
+      window.removeEventListener("unfiltr_env_change", handleEnvChange);
+      window.removeEventListener("unfiltr_background_change", handleBgChange);
+    };
   }, [profileId]);
 
   const particleId     = useRef(0);
