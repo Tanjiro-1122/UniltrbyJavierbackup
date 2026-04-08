@@ -3,7 +3,7 @@ import OpenAI from "openai";
 const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // ✅ Hardcoded prod app ID — VITE_ vars unavailable in serverless
 const B44_APP     = "69b332a392004d139d4ba495";
-const B44_BASE    = `https://app.base44.com/api/apps/${B44_APP}/entities`;
+const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
 async function b44Get(entity, id) {
@@ -200,3 +200,4 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
     res.status(500).json({ error: err.message });
   }
 }
+
