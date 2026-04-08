@@ -142,7 +142,9 @@ export default function HomeScreen() {
           const dbOnboarded = profile?.onboarding_complete === true;
           const localOnboarded = !!localStorage.getItem("unfiltr_onboarding_complete");
           const hasCompanion = profile?.companion_id && profile.companion_id !== "pending";
-          const onboardingDone = !isNewUser && (dbOnboarded || localOnboarded || hasCompanion);
+          // If account was pending deletion (syncProfile may have wiped it), treat as new
+          const pendingDeletion = result?.isNewUser === true; // syncProfile wiped them
+          const onboardingDone = !isNewUser && !pendingDeletion && (dbOnboarded || localOnboarded || hasCompanion);
           debugLog(`[HomeScreen] Routing → ${onboardingDone ? "hub" : "onboarding"} | isNewUser=${isNewUser} dbOnboarded=${dbOnboarded} localOnboarded=${localOnboarded} hasCompanion=${hasCompanion}`);
           navigate(onboardingDone ? "/hub" : "/onboarding/consent", { replace: true });
         } catch (e) {
@@ -311,6 +313,7 @@ export default function HomeScreen() {
     </div>
   );
 }
+
 
 
 
