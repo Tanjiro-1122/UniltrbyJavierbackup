@@ -352,30 +352,75 @@ export default function ChatPage() {
       // Returning user — personalized welcome back using mood history
       const hi = userName ? `${timeGreeting}, ${userName}` : `${timeGreeting}`;
 
-      // ── Read mood history from localStorage (same key MoodInsights uses) ──
-      const moodHistory = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
-      const today = new Date();
+      // ── Read mood history: DB first, fall back to localStorage ──
+      const negativeMoods = ["sad","anxious","frustrated","anger","fear","disgust","fatigue"];
+      const positiveMoods = ["happy","loved","motivated","calm","contentment","surprise"];
 
-      // Get moods from the last 7 days (excluding today)
-      const recentMoods = [];
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
-        if (moodHistory[key]) recentMoods.push(moodHistory[key]);
+      let recentMoods = [];
+      const appleIdMood = localStorage.getItem("unfiltr_apple_user_id");
+
+      // Try DB first for real cross-device mood history
+      if (appleIdMood) {
+        try {
+          const B44_APP = "69b332a392004d139d4ba495";
+          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+          const moodRes = await fetch(
+            `${B44_BASE}/MoodEntry?apple_user_id=${encodeURIComponent(appleIdMood)}&limit=14&sort=-created_date`,
+            { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
+          );
+          const moodData = await moodRes.json();
+          const moodRecords = Array.isArray(moodData) ? moodData : (moodData?.records || []);
+          // Only use last 7 days
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 7);
+          recentMoods = moodRecords
+            .filter(r => r.date && new Date(r.date) >= cutoff)
+            .map(r => r.mood)
+            .filter(Boolean);
+        } catch(e) {}
       }
 
-      // Determine the emotional pattern of the past week
-      const negativeMoods = ["sad", "anxious", "frustrated"];
-      const positiveMoods = ["happy", "loved", "motivated", "calm"];
+      // Fall back to localStorage if DB came up empty
+      if (recentMoods.length === 0) {
+        const moodHistory = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
+        const today = new Date();
+        for (let i = 1; i <= 7; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          const key = d.toISOString().slice(0, 10);
+          if (moodHistory[key]) recentMoods.push(moodHistory[key]);
+        }
+      }
+
       const negCount = recentMoods.filter(m => negativeMoods.includes(m)).length;
       const posCount = recentMoods.filter(m => positiveMoods.includes(m)).length;
+      const totalCount = recentMoods.length;
 
-      // Build a mood-aware follow-up line
+      // Detect streaks — same mood 3+ days in a row
+      const streak3 = totalCount >= 3 && recentMoods.slice(0, 3).every(m => negativeMoods.includes(m));
+      const happyStreak = totalCount >= 3 && recentMoods.slice(0, 3).every(m => positiveMoods.includes(m));
+
       let moodFollowUp = null;
-      if (recentMoods.length >= 2) {
-        if (negCount >= 2 && negCount > posCount) {
-          // Rough stretch — be gentle and check in
+      if (totalCount >= 2) {
+        if (streak3) {
+          // 3+ rough days in a row — really check in
+          const deepRough = [
+            "Hey... it's been a rough few days hasn't it. I'm really glad you're here. How are you doing right now?",
+            "I noticed things have been heavy for a while. No rush — just wanted you to know I'm here for all of it.",
+            "You've been carrying a lot lately. Want to talk about it, or just hang for a bit?",
+          ];
+          moodFollowUp = deepRough[Math.floor(Math.random() * deepRough.length)];
+        } else if (happyStreak) {
+          // 3+ good days — celebrate it
+          const deepGood = [
+            "Okay you've literally been glowing all week 🌟 what's going on?? I want to know everything",
+            "Something good is clearly happening for you — you've had such a good week. Keep going 💜",
+            "Three days of good energy in a row — that's not a coincidence. What's been different?",
+          ];
+          moodFollowUp = deepGood[Math.floor(Math.random() * deepGood.length)];
+        } else if (negCount >= 2 && negCount > posCount) {
+          // More bad than good — gentle check-in
           const roughPhrases = [
             "Last week looked a little rough — how are you holding up today?",
             "Feels like things have been heavy lately. Is today treating you any better?",
@@ -383,18 +428,19 @@ export default function ChatPage() {
           ];
           moodFollowUp = roughPhrases[Math.floor(Math.random() * roughPhrases.length)];
         } else if (posCount >= 2 && posCount > negCount) {
-          // Good stretch — keep the energy
+          // More good than bad — keep the energy
           const goodPhrases = [
             "You've been in a good place lately — love to see it 🌟 What's keeping that energy going?",
             "Last week had some real bright spots. What's been good?",
             "The vibe has been positive lately. How's today feeling?",
           ];
           moodFollowUp = goodPhrases[Math.floor(Math.random() * goodPhrases.length)];
-        } else if (recentMoods.length >= 3) {
-          // Mixed — acknowledge the ups and downs
+        } else if (totalCount >= 3) {
+          // Up and down — acknowledge the rollercoaster
           const mixedPhrases = [
             "Feels like it's been an up-and-down kind of week. How are you right now?",
-            "Week had its moments — good and tough. How are you doing today?",
+            "Week had its moments — good and tough. Where are you landing today?",
+            "You've had a bit of everything this week. How are you actually feeling?",
           ];
           moodFollowUp = mixedPhrases[Math.floor(Math.random() * mixedPhrases.length)];
         }
