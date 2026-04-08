@@ -133,6 +133,30 @@ export default function ChatPage() {
             try {
               const dbComp = await base44.entities.Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
+              // Merge personality fields from DB into companion state + localStorage
+              // This ensures sliders saved on another device/session are respected
+              const personalityFields = {
+                personality_vibe:      typeof dbComp?.personality_vibe      === "number" ? dbComp.personality_vibe      : undefined,
+                personality_empathy:   typeof dbComp?.personality_empathy   === "number" ? dbComp.personality_empathy   : undefined,
+                personality_humor:     typeof dbComp?.personality_humor     === "number" ? dbComp.personality_humor     : undefined,
+                personality_curiosity: typeof dbComp?.personality_curiosity === "number" ? dbComp.personality_curiosity : undefined,
+                personality_style:     typeof dbComp?.personality_style     === "number" ? dbComp.personality_style     : undefined,
+                nickname:              dbComp?.nickname || undefined,
+              };
+              // Only merge fields that are actually set in DB
+              const defined = Object.fromEntries(Object.entries(personalityFields).filter(([,v]) => v !== undefined));
+              if (Object.keys(defined).length > 0) {
+                setCompanion(prev => ({ ...prev, ...defined }));
+                // Also sync to localStorage so next reload has fresh data
+                try {
+                  const stored = localStorage.getItem("unfiltr_companion");
+                  if (stored) {
+                    const parsed = JSON.parse(stored);
+                    localStorage.setItem("unfiltr_companion", JSON.stringify({ ...parsed, ...defined }));
+                  }
+                  if (defined.nickname) localStorage.setItem("unfiltr_companion_nickname", defined.nickname);
+                } catch { /* ignore */ }
+              }
             } catch { /* use default */ }
           }
           // Show tutorial for new users
@@ -327,21 +351,15 @@ export default function ChatPage() {
           memorySummary = prof?.memory_summary || "";
         }
       } catch { /* ignore */ }
-      // Build personality instructions from sliders
-      const pVibe      = companion?.personality_vibe      ?? 5;
-      const pEmpathy   = companion?.personality_empathy   ?? 5;
-      const pHumor     = companion?.personality_humor     ?? 5;
-      const pCuriosity = companion?.personality_curiosity ?? 5;
-      const pStyle     = companion?.personality_style     ?? 5;
-      const personalityBlock = `
-=== PERSONALITY SETTINGS ===
-Energy level (1=calm, 10=hyped): ${pVibe}/10
-Empathy level (1=direct, 10=nurturing): ${pEmpathy}/10
-Humor level (1=serious, 10=very funny): ${pHumor}/10
-Curiosity level (1=chill, 10=very curious): ${pCuriosity}/10
-Style depth (1=casual, 10=deep/philosophical): ${pStyle}/10
-Adjust your tone, warmth, jokes, and depth to match these settings exactly.`;
-      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\n${personalityBlock}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
+      // Build personality instructions from sliders — only inject if user has actually set them (not string enums from old schema)
+      const pVibe      = typeof companion?.personality_vibe      === "number" ? companion.personality_vibe      : null;
+      const pEmpathy   = typeof companion?.personality_empathy   === "number" ? companion.personality_empathy   : null;
+      const pHumor     = typeof companion?.personality_humor     === "number" ? companion.personality_humor     : null;
+      const pCuriosity = typeof companion?.personality_curiosity === "number" ? companion.personality_curiosity : null;
+      const pStyle     = typeof companion?.personality_style     === "number" ? companion.personality_style     : null;
+      const hasPersonality = [pVibe, pEmpathy, pHumor, pCuriosity, pStyle].some(v => v !== null);
+      const personalityBlock = hasPersonality ? `\n=== PERSONALITY SETTINGS ===\nEnergy (1=calm→10=hyped): ${pVibe ?? 5}/10 | Empathy (1=direct→10=nurturing): ${pEmpathy ?? 5}/10 | Humor (1=serious→10=funny): ${pHumor ?? 5}/10 | Curiosity (1=chill→10=curious): ${pCuriosity ?? 5}/10 | Style (1=casual→10=deep): ${pStyle ?? 5}/10\nAdjust your tone to match these settings.` : "";
+      const systemPrompt = `${companion.systemPrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}${personalityBlock}\nKeep responses concise — 1–3 sentences max.${memorySummary ? `\n\nWhat you remember about this user from past conversations:\n${memorySummary}` : ""}`;
       const userContent  = pendingImage ? (text || "What do you think of this?") : text;
       const history      = [...messages, { role: "user", content: userContent }].slice(-10);
 
