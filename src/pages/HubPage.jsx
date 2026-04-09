@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "../components/companionData";
+import MemorySnapshotCard from "../components/chat/MemorySnapshotCard";
+import MoodTrendGraph from "../components/chat/MoodTrendGraph";
+
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -20,6 +23,14 @@ export default function HubPage() {
 
   const name = localStorage.getItem("unfiltr_display_name") || null;
   const nickName = localStorage.getItem("unfiltr_companion_nickname") || null;
+  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true" || localStorage.getItem("unfiltr_pro") === "true" || localStorage.getItem("unfiltr_annual") === "true";
+  const [userFacts, setUserFacts] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { return {}; }
+  });
+  const [emotionalTimeline, setEmotionalTimeline] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("unfiltr_emotional_timeline") || "[]"); } catch { return []; }
+  });
+  const sessionCount = parseInt(localStorage.getItem("unfiltr_session_count") || "0", 10);
   const greeting = getGreeting();
 
   useEffect(() => {
@@ -342,6 +353,22 @@ export default function HubPage() {
             </motion.button>
           ))}
         </div>
+      </div>
+
+      {/* ── Memory + Mood section ── */}
+      <div style={{ padding: "0 16px 4px" }}>
+        <MemorySnapshotCard
+          userFacts={userFacts}
+          companionName={companionDisplayName}
+          isPremium={isPremium}
+          sessionCount={sessionCount}
+          onViewAll={() => {}}
+        />
+        <MoodTrendGraph
+          emotionalTimeline={emotionalTimeline}
+          isPremium={isPremium}
+          onUpgrade={() => {}}
+        />
       </div>
 
       {/* ── Bottom safe area ── */}
