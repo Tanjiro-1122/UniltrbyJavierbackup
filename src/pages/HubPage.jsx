@@ -268,9 +268,7 @@ export default function HubPage() {
 
           <div style={{ position: "relative", zIndex: 2 }}>
             <div style={{ marginBottom: 6, lineHeight: 1 }}>
-            <span style={{ fontSize: 36, filter: "drop-shadow(0 0 12px rgba(139,92,246,0.8))" }}>💬</span><!--
-              alt="" style={{ width: 40, height: 40, objectFit: "contain",
-                filter: "drop-shadow(0 0 14px rgba(167,139,250,0.8))" }} />
+            <span style={{ fontSize: 36, filter: "drop-shadow(0 0 12px rgba(139,92,246,0.8))" }}>💬</span>
           </div>
             <div style={{
               color: tiles[0].accent, fontWeight: 900, fontSize: 26,
