@@ -49,6 +49,7 @@ import HubPage               from "./pages/HubPage";
 import { DebugPanel } from '@/components/DebugPanel';
 import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
+import PinGate               from "./pages/PinGate";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -281,6 +282,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/onboarding/background" element={<OnboardingBackground />} />
 
         {/* PIN gate + splash transitions */}
+        <Route path="/pin-gate"              element={<PinGate />} />
         <Route path="/chat-enter"            element={<ChatEnter />} />
         <Route path="/mood"                  element={<MoodPicker />} />
         <Route path="/journal-enter"         element={<JournalEnter />} />
