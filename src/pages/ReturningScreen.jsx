@@ -1,81 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
-
-function signInWithApple(navigate, setLoading) {
-  const bridge = window.ReactNativeWebView;
-  if (!bridge) { navigate("/hub"); return; }
-  window._rnMessageHandlers = window._rnMessageHandlers || {};
-  let resolved = false;
-  const handleResult = async (msg) => {
-    if (resolved) return;
-    if (msg.type === "APPLE_SIGN_IN_WAITING") return;
-    resolved = true; cleanup();
-    if (msg.type === "APPLE_SIGN_IN_SUCCESS") {
-      try { bridge.postMessage(JSON.stringify({ type: "__ACK_CONFIRMED" })); } catch(e) {}
-      const payload = msg.data || msg;
-      const appleUserId = payload.appleUserId || payload.user;
-      const email = payload.email; const fullName = payload.fullName;
-      if (!appleUserId) { setLoading && setLoading(false); return; }
-      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-      localStorage.setItem("unfiltr_user_id", appleUserId);
-      localStorage.setItem("unfiltr_auth_token", appleUserId);
-      if (!localStorage.getItem("userProfileId")) localStorage.setItem("userProfileId", appleUserId);
-      if (email) { localStorage.setItem("unfiltr_apple_email", email); localStorage.setItem("unfiltr_user_email", email); }
-      if (payload.pushToken) localStorage.setItem("unfiltr_push_token", payload.pushToken);
-      if (fullName) localStorage.setItem("unfiltr_display_name", fullName);
-      if (payload.isPremium) { localStorage.setItem("unfiltr_is_premium", "true"); localStorage.setItem("unfiltr_plan", payload.plan || "pro_plan"); }
-      try {
-        const syncRes = await fetch("/api/syncProfile", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ appleUserId, email: email || null, fullName: fullName || null, isPremium: payload.isPremium || false, plan: payload.plan || null, pushToken: payload.pushToken || localStorage.getItem("unfiltr_push_token") || null }) });
-        if (syncRes.ok) {
-          const syncData = await syncRes.json(); const prof = syncData?.data;
-          if (prof?.profileId) {
-            localStorage.setItem("userProfileId", prof.profileId);
-            if (prof.is_premium || prof.annual_plan || prof.pro_plan) {
-              localStorage.setItem("unfiltr_is_premium", "true");
-              if (prof.annual_plan) localStorage.setItem("unfiltr_is_annual", "true");
-              if (prof.pro_plan) localStorage.setItem("unfiltr_is_pro", "true");
-            }
-            if (prof.display_name) localStorage.setItem("unfiltr_display_name", prof.display_name);
-            localStorage.setItem("unfiltr_onboarding_complete", "true");
-            if (prof.companion && prof.companion.avatar_id) {
-              const c = prof.companion;
-              try {
-                const match = COMPANIONS.find(comp => comp.id === c.avatar_id);
-                if (match) {
-                  const nickname = c.nickname || c.name || match.name;
-                  localStorage.setItem("unfiltr_companion", JSON.stringify({ id: match.id, name: match.name, displayName: nickname, systemPrompt: "You are " + nickname + ", a supportive AI companion. " + match.tagline, tagline: match.tagline, avatar: match.avatar }));
-                  localStorage.setItem("unfiltr_companion_nickname", nickname);
-                  if (c.voice_gender) localStorage.setItem("unfiltr_voice_gender", c.voice_gender);
-                  if (c.voice_personality) localStorage.setItem("unfiltr_voice_personality", c.voice_personality);
-                  if (c.personality_vibe) localStorage.setItem("unfiltr_personality_vibe", c.personality_vibe);
-                  if (c.personality_style) localStorage.setItem("unfiltr_personality_style", c.personality_style);
-                  if (c.personality_humor) localStorage.setItem("unfiltr_personality_humor", c.personality_humor);
-                  if (c.personality_empathy) localStorage.setItem("unfiltr_personality_empathy", c.personality_empathy);
-                }
-              } catch(compErr) {}
-            }
-          }
-        }
-      } catch(e) {}
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
-      navigate("/hub");
-    } else if (msg.type === "APPLE_SIGN_IN_CANCELLED" || msg.type === "APPLE_SIGN_IN_ERROR") {
-      setLoading(false); navigate("/hub");
-    }
-  };
-  const cleanup = () => { delete window._rnMessageHandlers["APPLE_SIGN_IN_SUCCESS"]; delete window._rnMessageHandlers["APPLE_SIGN_IN_CANCELLED"]; delete window._rnMessageHandlers["APPLE_SIGN_IN_ERROR"]; delete window._rnMessageHandlers["APPLE_SIGN_IN_WAITING"]; };
-  window._rnMessageHandlers["APPLE_SIGN_IN_SUCCESS"] = handleResult;
-  window._rnMessageHandlers["APPLE_SIGN_IN_CANCELLED"] = handleResult;
-  window._rnMessageHandlers["APPLE_SIGN_IN_ERROR"] = handleResult;
-  window._rnMessageHandlers["APPLE_SIGN_IN_WAITING"] = handleResult;
-  bridge.postMessage(JSON.stringify({ type: "SIGN_IN_WITH_APPLE" }));
-  setTimeout(() => { if (!resolved) { resolved = true; cleanup(); setLoading && setLoading(false); navigate("/hub"); } }, 15000);
-}
 
 // Floating star particle
 function Star({ style }) {
@@ -94,7 +22,6 @@ const STARS = Array.from({ length: 28 }, (_, i) => ({
 
 export default function ReturningScreen() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [companion, setCompanion] = useState(null);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
 

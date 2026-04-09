@@ -29,7 +29,7 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
 
   if (profile?.profileId) {
     localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-    if (email) localStorage.setItem("unfiltr_email", email);
+    if (email) localStorage.setItem("unfiltr_apple_email", email);
     localStorage.setItem("userProfileId", profile.profileId);
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
     if (profile.is_premium)   localStorage.setItem("unfiltr_is_premium", "true");
@@ -124,7 +124,7 @@ export default function HomeScreen() {
           const storedName = localStorage.getItem("unfiltr_display_name") || "";
           const { profile, isNewUser } = await handleAppleSignIn({
             appleUserId,
-            email: payload.email || localStorage.getItem("unfiltr_email") || "",
+            email: payload.email || localStorage.getItem("unfiltr_apple_email") || "",
             fullName: payload.fullName || storedName,
             isPremiumFromRC: payload.isPremium,
             identityToken: payload.identityToken || "",
