@@ -111,7 +111,7 @@ export default function ChatMessages({
       flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden",
       WebkitOverflowScrolling: "touch", overscrollBehavior: "contain",
       scrollbarWidth: "none", msOverflowStyle: "none",
-      padding: "8px 16px 100px",
+      padding: "8px 16px 14px",
       display: "flex", flexDirection: "column",
       gap: 12,
     }}>

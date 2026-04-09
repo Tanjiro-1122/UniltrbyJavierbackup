@@ -1384,13 +1384,12 @@ export default function ChatPage() {
 
           {/* meditation nudge moved to fixed overlay below */}
 
-          {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill remaining space ▓▓ */}
+          {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
           <div style={{
             flex: 1, minHeight: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
             overflow: "hidden",
             background: "transparent",
-            position: "relative",
           }}>
             <ChatMessages
               messages={messages}
