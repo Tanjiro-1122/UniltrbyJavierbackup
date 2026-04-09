@@ -157,7 +157,7 @@ export default async function handler(req, res) {
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
-      personality,,
+      personality,
       userFacts,
       sessionMemoryFull,} = req.body;
 
