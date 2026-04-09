@@ -51,7 +51,7 @@ export default function HubPage() {
       glow: "rgba(139,92,246,0.55)",
       border: "rgba(167,139,250,0.4)",
       bg: "linear-gradient(145deg, rgba(109,40,217,0.55) 0%, rgba(76,29,149,0.4) 60%, rgba(20,5,50,0.5) 100%)",
-      route: "/vibe",
+      route: "/mood?dest=chat",
       badge: null,
     },
     {
@@ -185,7 +185,7 @@ export default function HubPage() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 280, damping: 26 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => navigate("/vibe")}
+          onClick={() => navigate("/mood?dest=chat")}
           style={{
             width: "100%",
             height: 160,
