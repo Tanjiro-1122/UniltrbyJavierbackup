@@ -1083,51 +1083,74 @@ export default function ChatPage() {
             streak={streak}
           />
 
-          {/* ▓▓ 2. COMIC PANEL — avatar left, bubble right, no overlap ▓▓ */}
+          {/* ▓▓ 2. FULL-SCREEN AVATAR + FLOATING BUBBLES ▓▓ */}
+          {/* The avatar fills the entire vertical space between header and input bar */}
+          {/* Speech bubbles float as absolute overlays — no scrolling chat history */}
           <div style={{
-            flexShrink: 0,
+            flex: 1,
             position: "relative",
             width: "100%",
-            height: "clamp(300px, 52dvh, 440px)",
+            minHeight: 0,
             overflow: "hidden",
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "flex-end",
           }}>
             <style>{`
-              @keyframes comicPop {
-                0%   { transform: scale(0.8) translateY(8px); opacity: 0; }
-                65%  { transform: scale(1.03) translateY(-2px); opacity: 1; }
-                100% { transform: scale(1) translateY(0); opacity: 1; }
+              @keyframes bubblePop {
+                0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+                65%  { transform: scale(1.04) translateY(-3px); opacity: 1; }
+                100% { transform: scale(1)    translateY(0px);  opacity: 1; }
               }
-              @keyframes speakGlow { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.75;transform:scale(1.05)} }
-              @keyframes moodFlash { 0%{filter:brightness(1.4)} 100%{filter:brightness(1)} }
+              @keyframes bubbleFadeOut {
+                0%   { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.88) translateY(-6px); }
+              }
+              @keyframes dotBounce {
+                0%,60%,100% { transform: translateY(0px);  opacity: 0.45; }
+                30%          { transform: translateY(-9px); opacity: 1;    }
+              }
+              @keyframes userBubblePop {
+                0%   { transform: scale(0.75) translateX(12px); opacity: 0; }
+                70%  { transform: scale(1.03) translateX(-2px); opacity: 1; }
+                100% { transform: scale(1)    translateX(0px);  opacity: 1; }
+              }
+              @keyframes avatarFloat {
+                0%,100% { transform: translateY(0px); }
+                50%     { transform: translateY(-5px); }
+              }
+              @keyframes speakGlow {
+                0%,100% { opacity: 0.35; transform: scale(1);    }
+                50%     { opacity: 0.7;  transform: scale(1.07); }
+              }
+              @keyframes thinkSpin {
+                0%   { transform: rotate(0deg) scale(1);    }
+                50%  { transform: rotate(180deg) scale(1.1); }
+                100% { transform: rotate(360deg) scale(1);  }
+              }
             `}</style>
 
-            {/* ── LEFT: Avatar column — 44% wide, full height, avatar stands from bottom ── */}
+            {/* ── AVATAR — fills entire area, stands from bottom center ── */}
             <div style={{
-              position: "relative",
-              width: "44%",
-              height: "100%",
-              flexShrink: 0,
+              position: "absolute",
+              inset: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "flex-end",
               overflow: "hidden",
             }}>
-              {/* Speaking aura behind avatar */}
+              {/* Speaking aura */}
               {isSpeaking && (
                 <div style={{
                   position: "absolute",
-                  bottom: "5%",
+                  bottom: "8%",
                   left: "50%",
                   transform: "translateX(-50%)",
-                  width: "clamp(120px,28vw,180px)",
-                  height: "clamp(120px,28vw,180px)",
+                  width: "55vw",
+                  height: "55vw",
+                  maxWidth: 280,
+                  maxHeight: 280,
                   borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(168,85,247,0.45) 0%, transparent 70%)",
-                  animation: "speakGlow 1.2s ease-in-out infinite",
+                  background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                  animation: "speakGlow 1.3s ease-in-out infinite",
                   pointerEvents: "none",
                   zIndex: 1,
                 }} />
@@ -1136,284 +1159,222 @@ export default function ChatPage() {
               {/* Particles */}
               {particles.map(p => (
                 <div key={p.id} className="particle"
-                  style={{ position: "absolute", bottom: "40%", left: "50%", transform: "translate(-50%,0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 5, pointerEvents: "none" }}>
+                  style={{ position: "absolute", bottom: "35%", left: "50%", transform: "translate(-50%,0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 14, zIndex: 5, pointerEvents: "none" }}>
                   {p.emoji}
                 </div>
               ))}
 
-              {/* Avatar — mood-aware crop: close for subtle emotions, full-body for expressive ones */}
+              {/* Avatar image — full height, mood-aware scale */}
               {(() => {
-                // Each mood defines how much of her body to show and how to position her
-                // scale: how zoomed-in (1 = full body, 1.35 = close half-body)
-                // yOffset: push image up so face stays visible (negative = slide up)
                 const MOOD_FRAME = {
-                  happy:       { scale: 1.05, yOffset: "0%"   },  // full body — arms relaxed, upright
-                  neutral:     { scale: 1.05, yOffset: "0%"   },  // full body — standard stand
-                  surprise:    { scale: 1.0,  yOffset: "0%"   },  // full body — arms out wide, need the width
-                  anger:       { scale: 1.1,  yOffset: "-5%"  },  // slight close — crossed arms + face sell it
-                  sad:         { scale: 1.35, yOffset: "-12%" },  // close-up — head down, face is everything
-                  fear:        { scale: 1.25, yOffset: "-8%"  },  // close — upper body tension reads better big
-                  disgust:     { scale: 1.2,  yOffset: "-6%"  },  // slightly closer — facial expression is key
-                  contentment: { scale: 1.15, yOffset: "-4%"  },  // gentle close — soft smile needs to be seen
-                  fatigue:     { scale: 1.3,  yOffset: "-10%" },  // close — drooping expression + head tilt
+                  happy:       { scale: 1.0,  yOffset: "0%"   },
+                  neutral:     { scale: 1.0,  yOffset: "0%"   },
+                  surprise:    { scale: 0.96, yOffset: "0%"   },
+                  anger:       { scale: 1.05, yOffset: "-3%"  },
+                  sad:         { scale: 1.2,  yOffset: "-10%" },
+                  fear:        { scale: 1.15, yOffset: "-6%"  },
+                  disgust:     { scale: 1.1,  yOffset: "-4%"  },
+                  contentment: { scale: 1.05, yOffset: "-2%"  },
+                  fatigue:     { scale: 1.18, yOffset: "-8%"  },
                 };
                 const frame = MOOD_FRAME[companionMood] || MOOD_FRAME.neutral;
                 return (
                   <div style={{
                     position: "relative",
-                    zIndex: 3,
-                    width: "100%",
+                    zIndex: 2,
                     display: "flex",
-                    justifyContent: "center",
                     alignItems: "flex-end",
-                    overflow: "hidden",
-                    height: "clamp(280px, 50dvh, 420px)",
-                    transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "100%",
+                    transform: `scale(${frame.scale}) translateY(${frame.yOffset})`,
+                    transformOrigin: "bottom center",
+                    transition: "transform 0.6s cubic-bezier(0.4,0,0.2,1)",
                   }}>
-                    <div style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: "50%",
-                      transform: `translateX(-50%) scale(${frame.scale}) translateY(${frame.yOffset})`,
-                      transformOrigin: "bottom center",
-                      display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "center",
-                      transition: "transform 0.55s cubic-bezier(0.4,0,0.2,1)",
-                    }}>
-                      <LiveAvatar
-                        companionId={companion.id}
-                        mood={companionMood}
-                        isSpeaking={isSpeaking}
-                        onClick={spawnParticles}
-                      />
-                    </div>
+                    <LiveAvatar
+                      companionId={companion.id}
+                      mood={companionMood}
+                      isSpeaking={isSpeaking}
+                      onClick={spawnParticles}
+                      fullScreen={true}
+                    />
                   </div>
                 );
               })()}
 
-              {/* Name tag */}
+              {/* Name tag at bottom */}
               <button onClick={() => setShowCompanionCard(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 6px", zIndex: 4, marginTop: -2 }}>
-                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 600, textShadow: "0 1px 6px rgba(0,0,0,0.8)" }}>
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 10px", zIndex: 6, marginBottom: 2 }}>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600, textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}>
                   {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
                 </span>
               </button>
             </div>
 
-            {/* ── RIGHT: Speech bubble column — 56% wide, vertically centered at mouth level ── */}
+            {/* ── COMPANION SPEECH BUBBLE — top area, floats above avatar ── */}
             <div style={{
-              flex: 1,
-              height: "100%",
+              position: "absolute",
+              top: 12,
+              left: 12,
+              right: 12,
+              zIndex: 10,
               display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
+              flexDirection: "row",
               alignItems: "flex-start",
-              paddingRight: 12,
-              paddingLeft: 4,
-              paddingBottom: 24,
+              pointerEvents: "none",
             }}>
               {(() => {
                 const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
 
                 if (loading) {
-                  /* Typing indicator bubble */
                   return (
                     <div style={{
-                      background: "linear-gradient(145deg, rgba(65,20,115,0.94), rgba(45,8,88,0.97))",
-                      backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                      border: "2px solid rgba(196,180,252,0.28)",
-                      borderRadius: "20px 20px 20px 4px",
-                      padding: "14px 18px",
+                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      border: "2px solid rgba(196,180,252,0.3)",
+                      borderRadius: "22px 22px 22px 6px",
+                      padding: "16px 20px",
+                      maxWidth: "78%",
                       position: "relative",
-                      boxShadow: "0 8px 32px rgba(88,28,135,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
-                      display: "flex", alignItems: "center", gap: 8,
+                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), inset 0 1px 0 rgba(255,255,255,0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}>
-                      {/* Tail left */}
-                      <svg width="20" height="24" viewBox="0 0 20 24" fill="none"
-                        style={{ position: "absolute", left: -16, bottom: 12, zIndex: 1 }}>
-                        <path d="M20 1 Q1 11 20 23 Z" fill="rgba(45,8,88,0.97)" />
-                        <path d="M20 1 Q1 11 20 23" stroke="rgba(196,180,252,0.28)" strokeWidth="1.5" fill="none" />
+                      {/* Tail pointing down-left toward avatar */}
+                      <svg width="18" height="20" viewBox="0 0 18 20" fill="none"
+                        style={{ position: "absolute", left: 18, bottom: -16, zIndex: 1 }}>
+                        <path d="M2 0 Q16 10 2 20 Z" fill="rgba(35,5,75,0.98)" />
+                        <path d="M2 0 Q16 10 2 20" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
-                      <style>{`
-                        @keyframes dotBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-7px);opacity:1} }
-                      `}</style>
+                      {/* Pixar-style thinking dots */}
                       {[0,1,2].map(d => (
                         <div key={d} style={{
-                          width: 9, height: 9, borderRadius: "50%",
-                          background: d===0?"#a78bfa":d===1?"#c084fc":"#e879f9",
-                          boxShadow: "0 0 8px rgba(168,85,247,0.8)",
-                          animation: "dotBounce 1.3s ease-in-out infinite",
-                          animationDelay: `${d*0.18}s`,
-                        }}/>
+                          width: 11,
+                          height: 11,
+                          borderRadius: "50%",
+                          background: d===0 ? "#a78bfa" : d===1 ? "#c084fc" : "#e879f9",
+                          boxShadow: `0 0 10px ${d===0?"rgba(167,139,250,0.9)":d===1?"rgba(192,132,252,0.9)":"rgba(232,121,249,0.9)"}`,
+                          animation: "dotBounce 1.4s ease-in-out infinite",
+                          animationDelay: `${d * 0.2}s`,
+                        }} />
                       ))}
-                      <span style={{ color: "rgba(216,180,254,0.6)", fontSize: 11, fontWeight: 500, marginLeft: 2 }}>
-                        {companionDisplayName} is typing…
-                      </span>
                     </div>
                   );
                 }
 
                 if (!lastComp) return (
-                  <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, paddingLeft: 8 }}>
-                    Say something to {companionDisplayName}… ✨
+                  <div style={{
+                    background: "linear-gradient(145deg, rgba(55,15,105,0.88), rgba(35,5,75,0.92))",
+                    backdropFilter: "blur(20px)",
+                    border: "2px solid rgba(196,180,252,0.2)",
+                    borderRadius: "22px 22px 22px 6px",
+                    padding: "14px 18px",
+                    maxWidth: "78%",
+                  }}>
+                    <span style={{ color: "rgba(216,180,254,0.5)", fontSize: 14 }}>Say something to {companionDisplayName}… ✨</span>
                   </div>
                 );
 
                 return (
                   <div
-                    key={lastComp.content.slice(0, 30)}
-                    style={{ animation: "comicPop 0.36s cubic-bezier(0.34,1.56,0.64,1) both", width: "100%" }}
+                    key={lastComp.content.slice(0,40)}
+                    style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", maxWidth: "78%", position: "relative" }}
                   >
                     <div style={{
-                      background: "linear-gradient(145deg, rgba(65,20,115,0.94), rgba(45,8,88,0.97))",
-                      backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-                      border: "2px solid rgba(196,180,252,0.28)",
-                      borderRadius: "20px 20px 20px 4px",
-                      padding: "13px 16px",
+                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      border: "2px solid rgba(196,180,252,0.3)",
+                      borderRadius: "22px 22px 22px 6px",
+                      padding: "14px 18px",
+                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
                       position: "relative",
-                      boxShadow: "0 8px 32px rgba(88,28,135,0.6), 0 2px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)",
                     }}>
-                      {/* Tail pointing left toward her mouth */}
-                      <svg width="20" height="24" viewBox="0 0 20 24" fill="none"
-                        style={{ position: "absolute", left: -16, bottom: 14, zIndex: 1, filter: "drop-shadow(-1px 2px 3px rgba(0,0,0,0.4))" }}>
-                        <path d="M20 1 Q1 11 20 23 Z" fill="rgba(45,8,88,0.97)" />
-                        <path d="M20 1 Q1 11 20 23" stroke="rgba(196,180,252,0.28)" strokeWidth="1.5" fill="none" />
+                      {/* Tail pointing down toward avatar */}
+                      <svg width="18" height="20" viewBox="0 0 18 20" fill="none"
+                        style={{ position: "absolute", left: 22, bottom: -16, zIndex: 1 }}>
+                        <path d="M2 0 Q16 10 2 20 Z" fill="rgba(35,5,75,0.98)" />
+                        <path d="M2 0 Q16 10 2 20" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
-
-                      {/* Mood emoji pill */}
-                      {companionMood && companionMood !== "neutral" && (
-                        <div style={{
-                          position: "absolute", top: -10, right: 10,
-                          background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
-                          borderRadius: 999, padding: "2px 8px",
-                          fontSize: 12, border: "1px solid rgba(255,255,255,0.1)",
-                        }}>
-                          {companionMood === "happy" ? "😊" : companionMood === "sad" ? "🥺" : companionMood === "surprise" ? "😮" : companionMood === "anger" ? "😤" : companionMood === "fear" ? "😨" : companionMood === "contentment" ? "😌" : companionMood === "fatigue" ? "😴" : companionMood === "disgust" ? "😒" : "💭"}
-                        </div>
-                      )}
-
                       <p style={{
-                        margin: 0, color: "white",
-                        fontSize: 13, lineHeight: 1.58,
-                        fontWeight: 400, letterSpacing: "0.01em",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 7,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
+                        color: "rgba(240,230,255,0.95)",
+                        fontSize: 15,
+                        lineHeight: 1.55,
+                        margin: 0,
+                        fontWeight: 500,
+                        letterSpacing: "0.01em",
                       }}>
                         {lastComp.content}
                       </p>
+                      {/* Mood emoji pill */}
+                      {companionMood && companionMood !== "neutral" && (
+                        <div style={{
+                          position: "absolute",
+                          top: -10,
+                          right: -8,
+                          background: "rgba(88,28,135,0.9)",
+                          borderRadius: 999,
+                          padding: "2px 7px",
+                          fontSize: 13,
+                          border: "1.5px solid rgba(196,180,252,0.25)",
+                        }}>
+                          {companionMood==="happy"?"😄":companionMood==="sad"?"😢":companionMood==="surprise"?"😮":companionMood==="anger"?"😤":companionMood==="fear"?"😰":companionMood==="disgust"?"😒":companionMood==="contentment"?"😌":companionMood==="fatigue"?"😴":""}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })()}
             </div>
 
-            {/* Msg limit warning */}
-            {!isPremium && remaining <= 10 && (
-              <button onClick={() => navigate('/Pricing')}
-                style={{
-                  position: "absolute", bottom: 2, right: 8,
-                  fontSize: 10, color: "#fbbf24",
-                  background: "rgba(251,191,36,0.15)",
-                  border: "1px solid rgba(251,191,36,0.4)",
-                  padding: "3px 12px", borderRadius: 999, cursor: "pointer", zIndex: 10,
-                }}>
-                ⚠️ {remaining} msgs left today
-              </button>
-            )}
+            {/* ── USER BUBBLE — bottom-right, floats above avatar ── */}
+            {(() => {
+              const lastUser = [...messages].reverse().find(m => m.role === "user");
+              if (!lastUser || loading) return null;
+              return (
+                <div
+                  key={lastUser.content.slice(0,40)}
+                  style={{
+                    position: "absolute",
+                    bottom: 28,
+                    right: 14,
+                    zIndex: 10,
+                    maxWidth: "60%",
+                    animation: "userBubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1) both",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div style={{
+                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
+                    borderRadius: "18px 18px 4px 18px",
+                    padding: "12px 16px",
+                    boxShadow: "0 6px 24px rgba(124,58,237,0.55), 0 2px 8px rgba(0,0,0,0.4)",
+                  }}>
+                    <p style={{
+                      color: "white",
+                      fontSize: 15,
+                      lineHeight: 1.45,
+                      margin: 0,
+                      fontWeight: 500,
+                    }}>
+                      {lastUser.content}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
-            {/* Streak milestone modal */}
-            <StreakMilestoneModal
-              milestone={streakMilestone}
-              streak={streak}
-              longestStreak={longestStreak}
-              onDismiss={clearStreakMilestone}
-            />
-
-            {showAnniversary && anniversary && (
-              <div style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
-                backdropFilter: "blur(12px)", borderRadius: 14,
-                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
-                textAlign: "center",
-              }}>
-                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
-              </div>
-            )}
-
-            {/* MemoryCard */}
-            {messages.filter(m => m.role === "user").length === 0 && (
-              <div style={{ position: "absolute", bottom: 0, left: 8, right: 8, zIndex: 5, pointerEvents: "auto" }}>
-                <MemoryCard
-                  memorySummary={memorySummary}
-                  userFacts={userFacts}
-                  sessionMemory={sessionMemory}
-                  companionName={companionDisplayName || "your companion"}
-                  isPremium={isPremium}
-                  onUpgrade={() => navigate('/Pricing')}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Daily affirmation — rendered as fixed overlay, no impact on flex layout */}
-
-          {/* Memory banner — only show old banner if MemoryCard isn't handling it */}
-          {showMemoryBanner && !isPremium && false && (
-            <div onClick={() => navigate('/Pricing')}
-              style={{
-                flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, padding: "4px 16px",
-                background: "rgba(139,92,246,0.08)",
-                borderBottom: "1px solid rgba(139,92,246,0.12)",
-                cursor: "pointer", opacity: 0.85,
-              }}>
-              <span style={{ fontSize: 11 }}>🔒</span>
-              <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
+            {/* ── Conversation starters (first message only) ── */}
+            <div style={{ position: "absolute", bottom: 32, left: 0, right: 0, zIndex: 9 }}>
+              <ConversationStarters
+                visible={messages.filter(m => m.role === "user").length === 0}
+                onSelect={(text) => handleSend(text)}
+                isReturning={!!localStorage.getItem("unfiltr_chat_history")}
+              />
             </div>
-          )}
-
-          {/* MissYouBanner — rendered as fixed overlay below */}
-
-          {/* MemoryCard — rendered as absolute overlay inside avatar zone (see below) */}
-
-          {/* Daily check-in removed from layout — mood handled inline in chat */}
-
-          {/* CrisisBanner — rendered as fixed overlay below */}
-
-          {/* meditation nudge moved to fixed overlay below */}
-
-          {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
-          <div style={{
-            flex: 1, minHeight: 0, zIndex: 10,
-            display: "flex", flexDirection: "column",
-            overflow: "hidden",
-            background: "transparent",
-          }}>
-            <ChatMessages
-              messages={messages}
-              loading={loading}
-              companionMood={companionMood}
-              setShareCard={setShareCard}
-              messagesEndRef={messagesEndRef}
-              onSwipeReply={(text) => setQuoteReply(text)}
-              onRetry={handleRetry}
-              companionName={companionDisplayName}
-              onBookmark={(content) => { addBookmark(content, companionDisplayName); }}
-            />
           </div>
-
-          {/* ▓▓ 3.5. CONVERSATION STARTERS ▓▓ */}
-          <ConversationStarters
-            visible={messages.filter(m => m.role === "user").length === 0}
-            onSelect={(text) => handleSend(text)}
-            isReturning={!!localStorage.getItem("unfiltr_chat_history")}
-          />
 
           {/* Quote reply bar */}
           {quoteReply && (

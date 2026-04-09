@@ -25,7 +25,7 @@ const MOOD_ANIM_NAME = {
   fatigue:     "avatarDroop     5s ease-in-out infinite",
 };
 
-export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick }) {
+export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick, fullScreen = false }) {
   const companionData = COMPANIONS.find(c => c.id === companionId);
   const poseUrl = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
 
@@ -66,7 +66,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
   const baseStyle = {
     WebkitTouchCallout: "none",
     pointerEvents: "none",
-    height: "clamp(340px, 62dvh, 520px)",
+    height: fullScreen ? "clamp(420px, 80dvh, 680px)" : "clamp(340px, 62dvh, 520px)",
     width: "auto",
     maxWidth: "100%",
     objectFit: "contain",
