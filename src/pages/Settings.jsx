@@ -586,15 +586,7 @@ export default function Settings() {
     ),
 
     background: (
-      <SubScreen title="Memory" onBack={() => setScreen(null)}>
-        <MemoryEditor
-          isPremium={isPremium}
-          profileId={localStorage.getItem("userProfileId")}
-          onUpgrade={() => { setScreen(null); }}
-        />
-      </SubScreen>
-
-            <SubScreen title="Background" onBack={() => setScreen(null)}>
+      <SubScreen title="Background" onBack={() => setScreen(null)}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
           {BACKGROUNDS.map(bg => {
             const sel = currentBg?.id === bg.id;
@@ -608,6 +600,16 @@ export default function Settings() {
             );
           })}
         </div>
+      </SubScreen>
+    ),
+
+    memory: (
+      <SubScreen title="Memory" onBack={() => setScreen(null)}>
+        <MemoryEditor
+          isPremium={isPremium}
+          profileId={localStorage.getItem("userProfileId")}
+          onUpgrade={() => { setScreen(null); }}
+        />
       </SubScreen>
     ),
 
