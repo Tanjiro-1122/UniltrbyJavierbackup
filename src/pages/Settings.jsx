@@ -233,7 +233,7 @@ export default function Settings() {
   const hasPin = !!localStorage.getItem("unfiltr_pin");
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
-  const currentBg = (() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } })();
+  const [currentBg, setCurrentBg] = useState(() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } });
 
   useEffect(() => {
     const todayStr = new Date().toDateString();
@@ -363,15 +363,19 @@ export default function Settings() {
       return;
     }
     try {
-      await fetch('/api/utils', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateCompanion', companionId, updateData: { personality_vibe: personalityVibe, personality_empathy: personalityEmpathy, personality_humor: personalityHumor, personality_style: personalityStyle } }) }).catch(() => {})
-      localStorage.setItem("unfiltr_companion", JSON.stringify({ ...c, systemPrompt: companion?.systemPrompt }));
-      setCompanion(p => ({ ...p, ...c, name: c.name, avatar_url: c.avatar }));
+      // Update DB record with new companion id and name
+      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId: localStorage.getItem('userProfileId'), updateData: { companion_name: c.name, companion_avatar: c.avatar } }) }).catch(() => {});
+      const newCompanion = { ...c, systemPrompt: companion?.systemPrompt };
+      localStorage.setItem("unfiltr_companion", JSON.stringify(newCompanion));
+      localStorage.setItem("unfiltr_companion_id", c.id || c.name);
+      setCompanion(newCompanion);
     } catch(e) { console.error('companion update failed', e); }
     setSavingCompanion(false);
   };
   const handleChangeBackground = (bg) => {
-    localStorage.setItem("unfiltr_env", JSON.stringify({ id: bg.id, label: bg.label, bg: bg.url }));
-    setUserProfile(p => ({ ...p }));
+    const env = { id: bg.id, label: bg.label, bg: bg.url };
+    localStorage.setItem("unfiltr_env", JSON.stringify(env));
+    setCurrentBg(env);
   };
   const handlePauseAccount = async () => {
     try {
