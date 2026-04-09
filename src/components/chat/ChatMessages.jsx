@@ -73,7 +73,7 @@ export default function ChatMessages({
 }) {
   const [reactions, setReactions] = useState({});
   const [pickerIdx, setPickerIdx] = useState(null);
-  const [showTyping, setShowTyping] = useState(false);
+  // Typing indicator is shown in the avatar bubble panel above, not here
   const [sparkleIdx, setSparkleIdx] = useState(null);
   const prevLengthRef = useRef(messages.length);
 
@@ -89,14 +89,7 @@ export default function ChatMessages({
     prevLengthRef.current = messages.length;
   }, [messages.length]);
 
-  useEffect(() => {
-    if (loading) {
-      const t = setTimeout(() => setShowTyping(true), 400);
-      return () => clearTimeout(t);
-    } else {
-      setShowTyping(false);
-    }
-  }, [loading]);
+  // Typing state managed in ChatPage avatar panel
 
   const handleLongPress = (idx) => {
     hapticLight();
@@ -388,48 +381,7 @@ export default function ChatMessages({
         });
       })()} {/* end messages IIFE */}
 
-      {/* ── Typing indicator — Pixar magic dots ── */}
-      {loading && showTyping && (
-        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-end", gap: 8, paddingLeft: 20 }}>
-          <div style={{
-            position: "relative",
-            background: "linear-gradient(145deg, rgba(88,28,135,0.82), rgba(76,29,149,0.88))",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            border: "1.5px solid rgba(196,180,252,0.22)",
-            borderRadius: "22px 22px 22px 5px",
-            padding: "11px 16px",
-            display: "flex", alignItems: "center", gap: 7,
-            boxShadow: "0 6px 28px rgba(109,40,217,0.5), 0 2px 8px rgba(0,0,0,0.4)",
-          }}>
-            <BubbleTailLeft />
-            {[0, 1, 2].map(d => (
-              <div key={d} style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: d === 0
-                  ? "linear-gradient(135deg, #a78bfa, #8b5cf6)"
-                  : d === 1
-                  ? "linear-gradient(135deg, #c084fc, #a855f7)"
-                  : "linear-gradient(135deg, #e879f9, #db2777)",
-                boxShadow: `0 0 8px ${d === 2 ? "rgba(219,39,119,0.7)" : "rgba(168,85,247,0.7)"}`,
-                animation: "typingBounce 1.4s ease-in-out infinite",
-                animationDelay: `${d * 0.18}s`,
-              }} />
-            ))}
-            {companionName && (
-              <span style={{
-                color: "rgba(216,180,254,0.6)",
-                fontSize: 11.5, fontWeight: 500,
-                letterSpacing: "0.15px",
-                marginLeft: 2,
-                animation: "nameFade 2s ease-in-out infinite",
-              }}>
-                {companionName} is typing…
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Typing indicator shown in avatar panel above */}
 
       <div ref={messagesEndRef} />
     </div>
