@@ -177,10 +177,11 @@ export default function MoodPicker() {
   const handleContinue = () => {
     localStorage.setItem("unfiltr_mood", mood.id);
     sessionStorage.setItem("unfiltr_mood_session", new Date().toDateString());
+    const hasPin = !!localStorage.getItem("unfiltr_pin");
     if (dest === "journal") {
-      navigate("/journal-enter");
+      navigate(hasPin ? "/pin-gate?dest=journal" : "/journal-enter");
     } else {
-      navigate("/pin-gate?dest=chat");
+      navigate(hasPin ? "/pin-gate?dest=chat" : "/chat-enter");
     }
   };
 
