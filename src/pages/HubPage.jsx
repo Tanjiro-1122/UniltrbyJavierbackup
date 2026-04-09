@@ -128,9 +128,9 @@ export default function HubPage() {
               onLoad={() => setAvatarLoaded(true)}
               style={{
                 position: "absolute",
-                bottom: "-10%", left: "50%",
+                top: "-15%", left: "50%",
                 transform: "translateX(-50%)",
-                width: "160%", height: "160%",
+                width: "180%", height: "180%",
                 objectFit: "cover",
                 objectPosition: "top center",
                 opacity: avatarLoaded ? 1 : 0,
