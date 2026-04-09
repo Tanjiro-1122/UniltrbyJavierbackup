@@ -1072,59 +1072,130 @@ export default function ChatPage() {
             streak={streak}
           />
 
-          {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
+          {/* ▓▓ 2. AVATAR — shifted left, comic panel style ▓▓ */}
           <div style={{
             flexShrink: 0,
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center",
             position: "relative",
             width: "100%",
-            padding: "0 16px 48px",
-            boxSizing: "border-box",
+            height: "clamp(260px, 46dvh, 420px)",
+            overflow: "visible",
           }}>
-            {/* Speaking glow */}
+            {/* Speaking glow behind avatar */}
             {isSpeaking && (
               <div style={{
-                position: "absolute", top: "50%", left: "50%",
+                position: "absolute",
+                left: "22%", top: "50%",
                 transform: "translate(-50%, -50%)",
-                width: "clamp(180px, 40dvh, 300px)", height: "clamp(180px, 40dvh, 300px)",
+                width: "clamp(160px, 36dvh, 280px)", height: "clamp(160px, 36dvh, 280px)",
                 borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+                background: "radial-gradient(circle, rgba(168,85,247,0.38) 0%, transparent 70%)",
                 animation: "speakPulse 1.2s ease-in-out infinite",
                 pointerEvents: "none",
+                zIndex: 1,
               }} />
             )}
+
             {/* Particles */}
             {particles.map(p => (
               <div key={p.id} className="particle"
-                style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
+                style={{ position: "absolute", top: "30%", left: "28%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 5, pointerEvents: "none" }}>
                 {p.emoji}
               </div>
             ))}
-            <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-            {/* Tap companion name to share */}
-            <button onClick={() => setShowCompanionCard(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
-                {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
-              </span>
-            </button>
 
-            {/* Msg warning — only shown when ≤10 msgs remaining */}
+            {/* Avatar — anchored bottom-left area */}
+            <div style={{
+              position: "absolute",
+              bottom: 0, left: "2%",
+              zIndex: 3,
+              display: "flex", flexDirection: "column", alignItems: "center",
+            }}>
+              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
+              {/* Name tag under avatar */}
+              <button onClick={() => setShowCompanionCard(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: -6 }}>
+                <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 600, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+                  {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
+                </span>
+              </button>
+            </div>
+
+            {/* ── COMIC SPEECH BUBBLE from companion mouth ── */}
+            {(() => {
+              const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
+              if (!lastComp) return null;
+              return (
+                <div style={{
+                  position: "absolute",
+                  top: "6%",
+                  left: "38%",
+                  right: "4%",
+                  zIndex: 10,
+                  animation: "comicBubblePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both",
+                }}>
+                  <style>{`
+                    @keyframes comicBubblePop {
+                      0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+                      70%  { transform: scale(1.04) translateY(-2px); opacity: 1; }
+                      100% { transform: scale(1) translateY(0); opacity: 1; }
+                    }
+                    @keyframes speakPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+                  `}</style>
+                  {/* Bubble body */}
+                  <div style={{
+                    background: "linear-gradient(145deg, rgba(68,20,120,0.92) 0%, rgba(55,15,100,0.96) 100%)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    border: "2px solid rgba(196,180,252,0.28)",
+                    borderRadius: "20px 20px 20px 6px",
+                    padding: "11px 14px",
+                    boxShadow: "0 8px 36px rgba(88,28,135,0.65), 0 2px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
+                    position: "relative",
+                  }}>
+                    {/* Tail pointing bottom-left toward mouth */}
+                    <svg width="22" height="26" viewBox="0 0 22 26" fill="none"
+                      style={{ position: "absolute", left: -18, bottom: 12, zIndex: 1, filter: "drop-shadow(-2px 2px 4px rgba(0,0,0,0.3))" }}>
+                      <path d="M22 1 Q1 12 22 25 Z" fill="rgba(55,15,100,0.96)" />
+                      <path d="M22 1 Q1 12 22 25" stroke="rgba(196,180,252,0.28)" strokeWidth="1.5" fill="none" />
+                    </svg>
+                    <p style={{
+                      margin: 0, color: "white",
+                      fontSize: 13.5, lineHeight: 1.55,
+                      fontWeight: 450, letterSpacing: "0.01em",
+                      maxHeight: "8em", overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: "vertical",
+                    }}>
+                      {lastComp.content}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Msg warning */}
             {!isPremium && remaining <= 10 && (
               <button onClick={() => navigate('/Pricing')}
-                style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                style={{
+                  position: "absolute", bottom: 4, right: 8,
+                  fontSize: 10, color: "#fbbf24",
+                  background: "rgba(251,191,36,0.15)",
+                  border: "1px solid rgba(251,191,36,0.4)",
+                  padding: "3px 12px", borderRadius: 999, cursor: "pointer", zIndex: 10,
+                }}>
                 ⚠️ {remaining} msgs left today
               </button>
             )}
 
-            {/* Streak milestone celebration modal */}
+            {/* Streak milestone */}
             <StreakMilestoneModal
               milestone={streakMilestone}
               streak={streak}
               longestStreak={longestStreak}
               onDismiss={clearStreakMilestone}
             />
+
             {showAnniversary && anniversary && (
               <div style={{
                 position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
@@ -1138,11 +1209,10 @@ export default function ChatPage() {
                 <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
               </div>
             )}
-            {/* MemoryCard — floating at bottom of avatar zone, no layout impact */}
+
+            {/* MemoryCard */}
             {messages.filter(m => m.role === "user").length === 0 && (
-              <div style={{
-                position: "absolute", bottom: 0, left: 8, right: 8, zIndex: 5, pointerEvents: "auto"
-              }}>
+              <div style={{ position: "absolute", bottom: 0, left: 8, right: 8, zIndex: 5, pointerEvents: "auto" }}>
                 <MemoryCard
                   memorySummary={memorySummary}
                   userFacts={userFacts}
