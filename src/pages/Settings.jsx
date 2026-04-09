@@ -223,6 +223,8 @@ export default function Settings() {
   const [personalityStyle, setPersonalityStyle]         = useState("casual");
   const [savingPersonality, setSavingPersonality]       = useState(false);
   const [personalitySaved, setPersonalitySaved]         = useState(false);
+  const [relationshipMode, setRelationshipMode]         = useState(localStorage.getItem("unfiltr_relationship_mode") || "friend");
+  const [modeSaved, setModeSaved]                       = useState(false);
 
   // PIN state
   const [pinScreen, setPinScreen]     = useState(null); // null | "set" | "change" | "disable"
@@ -452,6 +454,24 @@ export default function Settings() {
     setSavingPersonality(false);
     setPersonalitySaved(true);
     setTimeout(() => { setPersonalitySaved(false); navigate("/chat"); }, 1200);
+  };
+
+  // ── Save relationship mode ─────────────────────────────────────────────────
+  const handleSaveRelationshipMode = async (mode) => {
+    setRelationshipMode(mode);
+    localStorage.setItem("unfiltr_relationship_mode", mode);
+    setModeSaved(true);
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        fetch('/api/syncProfile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update', profileId, updateData: { relationship_mode: mode } }),
+        }).catch(() => {});
+      }
+    } catch (e) { console.warn("Relationship mode DB sync failed (localStorage is fine):", e); }
+    setTimeout(() => setModeSaved(false), 2000);
   };
 
   // ── PIN helpers ───────────────────────────────────────────────────────────
@@ -727,6 +747,69 @@ export default function Settings() {
         </button>
       </SubScreen>
     ),
+
+    mode: (
+      <SubScreen title="Relationship Mode" onBack={() => setScreen(null)}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
+          This shapes how your companion talks to you. Changes take effect next chat.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[
+            { id: "friend",    emoji: "👋", label: "Friend",    desc: "Casual, real talk — like texting someone who actually gets you.", color: "#818cf8", bg: "rgba(129,140,248,0.1)", border: "rgba(129,140,248,0.25)" },
+            { id: "coach",     emoji: "🎯", label: "Coach",     desc: "Focused, direct, goal-oriented — here to push you forward.",      color: "#34d399", bg: "rgba(52,211,153,0.1)",  border: "rgba(52,211,153,0.25)"  },
+            { id: "companion", emoji: "💜", label: "Companion", desc: "Deep connection, emotional support — always in your corner.",     color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.25)" },
+          ].map((m) => {
+            const sel = relationshipMode === m.id;
+            return (
+              <motion.button
+                key={m.id}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleSaveRelationshipMode(m.id)}
+                style={{
+                  width: "100%", padding: "18px 20px", borderRadius: 18,
+                  background: sel ? m.bg : "rgba(255,255,255,0.04)",
+                  border: `2px solid ${sel ? m.color : "rgba(255,255,255,0.08)"}`,
+                  cursor: "pointer", textAlign: "left", transition: "all 0.2s",
+                  display: "flex", alignItems: "center", gap: 16,
+                  boxShadow: sel ? `0 0 24px ${m.bg}` : "none",
+                }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                  background: sel ? m.bg : "rgba(255,255,255,0.06)",
+                  border: `1.5px solid ${sel ? m.border : "rgba(255,255,255,0.08)"}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 22, transition: "all 0.2s",
+                }}>
+                  {m.emoji}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: sel ? "white" : "rgba(255,255,255,0.75)", fontWeight: 800, fontSize: 16, marginBottom: 3, transition: "color 0.2s" }}>
+                    {m.label}
+                  </div>
+                  <div style={{ color: sel ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.3)", fontSize: 13, lineHeight: 1.4, transition: "color 0.2s" }}>
+                    {m.desc}
+                  </div>
+                </div>
+                {sel && (
+                  <motion.div
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, background: m.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                    ✓
+                  </motion.div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+        {modeSaved && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{ color: "rgba(34,197,94,0.8)", fontSize: 13, textAlign: "center", marginTop: 16, fontWeight: 600 }}>
+            ✓ Saved — takes effect next chat
+          </motion.p>
+        )}
+      </SubScreen>
+    ),
+
     pin: (
       <SubScreen title="App Lock / PIN" onBack={() => setScreen(null)}>
         <div>
@@ -882,6 +965,7 @@ export default function Settings() {
           <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
+          <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
           <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
         </Section>

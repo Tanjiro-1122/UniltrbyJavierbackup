@@ -1,16 +1,18 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
 export default function ChatEnter() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const t = setTimeout(() => navigate("/chat", { replace: true }), 2400);
+    const dest = new URLSearchParams(location.search).get("dest") || "chat";
+    const t = setTimeout(() => navigate(`/${dest}`, { replace: true }), 2400);
     return () => clearTimeout(t);
-  }, []);
+  }, [navigate, location.search]);
 
   return (
     <motion.div
