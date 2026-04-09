@@ -1258,7 +1258,7 @@ export default function ChatPage() {
         </div>
       )}
       <RatingPromptModal visible={showRatingPrompt} onClose={() => setShowRatingPrompt(false)} />
-      <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} mood={shareCard?.mood || "neutral"} />
+      <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} companionAvatar={companion?.avatar || companion?.poses?.neutral || companion?.poses?.happy || null} mood={shareCard?.mood || "neutral"} />
 
       {/* Mood Check-In */}
       <MoodCheckIn
