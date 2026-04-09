@@ -1065,16 +1065,179 @@ export default function ChatPage() {
             streak={streak}
           />
 
-          {/* ▓▓ 2. AVATAR — large, prominent, with background visible behind ▓▓ */}
+          {/* ▓▓ 2. AVATAR + SPEECH BUBBLE — horizontal layout ▓▓ */}
           <div style={{
-            flexShrink: 0,
-            display: "flex", flexDirection: "column", alignItems: "center",
+            flex: 1,
+            display: "flex", flexDirection: "row", alignItems: "center",
             justifyContent: "center",
             position: "relative",
             width: "100%",
-            padding: "0 16px 48px",
+            padding: "0 16px",
             boxSizing: "border-box",
+            gap: 0,
           }}>
+            {/* Speech bubble on the LEFT */}
+            <div style={{
+              flex: "0 1 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              minWidth: 0,
+              maxWidth: "50%",
+            }}>
+              {/* Only show bubble when there's a message and user isn't typing */}
+              {messages.filter(m => m.role === "assistant").length > 0 && input.length === 0 && (
+                <div style={{
+                  position: "relative",
+                  maxWidth: "100%",
+                  marginRight: 8,
+                  animation: "bubbleFadeIn 0.3s ease-out forwards",
+                }}>
+                  <style>{`
+                    @keyframes bubbleFadeIn { from { opacity: 0; transform: translateY(8px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                    @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.4} 30%{transform:translateY(-5px) scale(1.15);opacity:1} }
+                  `}</style>
+                  {loading ? (
+                    /* Typing indicator */
+                    <div style={{
+                      padding: "14px 18px",
+                      borderRadius: "20px 20px 20px 6px",
+                      background: "linear-gradient(135deg, rgba(88,28,135,0.9), rgba(139,92,246,0.7))",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(168,85,247,0.4)",
+                      boxShadow: "0 4px 24px rgba(88,28,135,0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                    }}>
+                      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: 600 }}>
+                        {companionDisplayName} is typing
+                      </span>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[0, 1, 2].map(d => (
+                          <div key={d} style={{
+                            width: 6, height: 6, borderRadius: "50%",
+                            background: "linear-gradient(135deg, #a855f7, #db2777)",
+                            animation: `typingWave 1.4s ease-in-out infinite`,
+                            animationDelay: `${d * 0.18}s`,
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Latest message bubble */
+                    <div style={{
+                      padding: "16px 20px",
+                      borderRadius: "20px 20px 20px 6px",
+                      background: "linear-gradient(135deg, rgba(88,28,135,0.9), rgba(139,92,246,0.7))",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(168,85,247,0.4)",
+                      boxShadow: "0 4px 24px rgba(88,28,135,0.5)",
+                      color: "white",
+                      fontSize: 16,
+                      lineHeight: 1.5,
+                      fontWeight: 500,
+                      maxWidth: "100%",
+                    }}>
+                      {messages.filter(m => m.role === "assistant").slice(-1)[0]?.content}
+                    </div>
+                  )}
+                  {/* Speech bubble tail pointing to avatar */}
+                  <div style={{
+                    position: "absolute",
+                    bottom: 16,
+                    right: -12,
+                    width: 0,
+                    height: 0,
+                    borderLeft: "14px solid rgba(88,28,135,0.9)",
+                    borderTop: "10px solid transparent",
+                    borderBottom: "10px solid transparent",
+                    filter: "drop-shadow(2px 0 4px rgba(88,28,135,0.3))",
+                  }} />
+                </div>
+              )}
+            </div>
+
+            {/* Avatar section on the RIGHT */}
+            <div style={{
+              flex: "0 0 auto",
+              display: "flex", flexDirection: "column", alignItems: "center",
+              position: "relative",
+            }}>
+              {/* Speaking glow */}
+              {isSpeaking && (
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "clamp(160px, 32dvh, 260px)", height: "clamp(160px, 32dvh, 260px)",
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+                  animation: "speakPulse 1.2s ease-in-out infinite",
+                  pointerEvents: "none",
+                }} />
+              )}
+              {/* Particles */}
+              {particles.map(p => (
+                <div key={p.id} className="particle"
+                  style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
+                  {p.emoji}
+                </div>
+              ))}
+              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
+              {/* Tap companion name to share */}
+              <button onClick={() => setShowCompanionCard(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
+                  {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
+                </span>
+              </button>
+
+              {/* Msg counter — only shown for free users */}
+              {!isPremium && (
+                <button onClick={() => navigate('/Pricing')}
+                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                  {remaining}/{FREE_LIMIT} msgs left today · Go Premium
+                </button>
+              )}
+            </div>
+
+            {/* Streak milestone celebration modal */}
+            <StreakMilestoneModal
+              milestone={streakMilestone}
+              streak={streak}
+              longestStreak={longestStreak}
+              onDismiss={clearStreakMilestone}
+            />
+            {showAnniversary && anniversary && (
+              <div style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
+                backdropFilter: "blur(12px)", borderRadius: 14,
+                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
+                animation: "bannerSlide 0.4s ease-out forwards",
+                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
+                textAlign: "center",
+              }}>
+                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
+              </div>
+            )}
+          </div>
+
+          {/* MemoryCard — floating overlay when no user messages yet */}
+          {messages.filter(m => m.role === "user").length === 0 && !loading && (
+            <div style={{
+              position: "absolute", bottom: 180, left: 16, right: 16, zIndex: 5, pointerEvents: "auto"
+            }}>
+              <MemoryCard
+                memorySummary={memorySummary}
+                userFacts={userFacts}
+                sessionMemory={sessionMemory}
+                companionName={companionDisplayName || "your companion"}
+                isPremium={isPremium}
+                onUpgrade={() => navigate('/Pricing')}
+              />
+            </div>
+          )}
             {/* Speaking glow */}
             {isSpeaking && (
               <div style={{
