@@ -44,7 +44,7 @@ export default function HubPage() {
       label: "Chat",
       sublabel: "Talk with " + (companionDisplayName || "your companion"),
       icon: null,
-      notoEmoji: "1f4ac",  // speech bubble
+      notoEmoji: "1f4ac", emojiChar: "💬",  // speech bubble
       accent: "#a78bfa",
       accentDark: "rgba(109,40,217,0.85)",
       glow: "rgba(139,92,246,0.55)",
@@ -58,7 +58,7 @@ export default function HubPage() {
       label: "Journal",
       sublabel: "Your private space",
       icon: null,
-      notoEmoji: "270f",   // pencil
+      notoEmoji: "270f", emojiChar: "✏️",   // pencil
       accent: "#34d399",
       accentDark: "rgba(5,120,80,0.85)",
       glow: "rgba(52,211,153,0.5)",
@@ -72,7 +72,7 @@ export default function HubPage() {
       label: "Meditate",
       sublabel: "Breathe & reset",
       icon: null,
-      notoEmoji: "2728",   // sparkles
+      notoEmoji: "2728", emojiChar: "✨",   // sparkles
       accent: "#7dd3fc",
       accentDark: "rgba(3,105,161,0.85)",
       glow: "rgba(56,189,248,0.45)",
@@ -268,7 +268,7 @@ export default function HubPage() {
 
           <div style={{ position: "relative", zIndex: 2 }}>
             <div style={{ marginBottom: 6, lineHeight: 1 }}>
-            <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4ac/512.webp"
+            <span style={{ fontSize: 36, filter: "drop-shadow(0 0 12px rgba(139,92,246,0.8))" }}>💬</span><!--
               alt="" style={{ width: 40, height: 40, objectFit: "contain",
                 filter: "drop-shadow(0 0 14px rgba(167,139,250,0.8))" }} />
           </div>
@@ -323,9 +323,7 @@ export default function HubPage() {
 
               <div style={{ fontSize: 40, marginBottom: 8, lineHeight: 1, position: "relative", zIndex: 2 }}>
                 {tile.notoEmoji ? (
-                  <img src={`https://fonts.gstatic.com/s/e/notoemoji/latest/${tile.notoEmoji}/512.webp`}
-                    alt="" style={{ width: 44, height: 44, objectFit: "contain",
-                      filter: `drop-shadow(0 0 10px ${tile.glow})` }} />
+                  <span style={{ fontSize: 40, lineHeight: 1, filter: `drop-shadow(0 0 10px ${tile.glow || "rgba(255,255,255,0.5)"})` }}>{tile.emojiChar || "✨"}</span>
                 ) : tile.icon}
               </div>
               <div style={{
