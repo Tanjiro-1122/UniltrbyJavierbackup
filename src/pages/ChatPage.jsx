@@ -67,6 +67,32 @@ export default function ChatPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
 
+  // Listen for companion changes from the customize panel
+  useEffect(() => {
+    const onCompanionChange = () => {
+      const updated = localStorage.getItem("unfiltr_companion");
+      if (updated) {
+        try { setCompanion(JSON.parse(updated)); } catch {}
+      }
+    };
+    window.addEventListener("unfiltr_companion_changed", onCompanionChange);
+    return () => window.removeEventListener("unfiltr_companion_changed", onCompanionChange);
+  }, []);
+
+
+  // Listen for background changes from the customize panel
+  useEffect(() => {
+    const onBgChange = (e) => {
+      const envObj = e.detail;
+      if (envObj) {
+        setEnvironment(envObj);
+        localStorage.setItem('unfiltr_env', JSON.stringify(envObj));
+      }
+    };
+    window.addEventListener('unfiltr_env_change', onBgChange);
+    return () => window.removeEventListener('unfiltr_env_change', onBgChange);
+  }, []);
+
   // Persist messages so returning from Settings doesn't lose chat
   React.useEffect(() => {
     if (messages.length > 0) {
@@ -290,8 +316,11 @@ export default function ChatPage() {
   }, []);
 
   /* ─── GREETING + HISTORY ─── */
+  const greetingFiredRef = React.useRef(false);
   useEffect(() => { (async () => {
     if (!companion) return;
+    if (greetingFiredRef.current) return; // guard: only run once even if companion obj ref changes
+    greetingFiredRef.current = true;
 
     // ── Restore active chat if coming back from Settings ─────────────────
     // When user navigates Chat → Settings → Back, ChatPage remounts.
@@ -468,50 +497,30 @@ export default function ChatPage() {
       return;
     }
 
-    // 📥 Load recent messages from DB (ChatHistory) to restore conversation continuity
+    // 📥 Load recent messages from DB to restore conversation continuity
     {
       const appleId = localStorage.getItem("unfiltr_apple_user_id");
-      if (appleId) {
+      const compId  = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
+      if (appleId && compId && compId !== "pending") {
         try {
           const B44_APP = "69b332a392004d139d4ba495";
           const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
           const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-          // Get the most recent ChatHistory record for this user
           const res = await fetch(
-            `${B44_BASE}/ChatHistory?apple_user_id=${encodeURIComponent(appleId)}&limit=1&sort=-saved_at`,
+            `${B44_BASE}/Message?apple_user_id=${encodeURIComponent(appleId)}&companion_id=${encodeURIComponent(compId)}&limit=20&sort=-created_date`,
             { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
           );
           const data = await res.json();
-          const records = Array.isArray(data) ? data : (data?.records || []);
-          if (records.length > 0) {
-            const lastSession = records[0];
-            let msgs = [];
-            try { msgs = JSON.parse(lastSession.messages || "[]"); } catch {}
-            if (msgs.length >= 2) {
-              // Only restore if saved within last 24 hours (keep it fresh)
-              const savedAt = new Date(lastSession.saved_at || lastSession.created_date);
-              const hoursAgo = (Date.now() - savedAt.getTime()) / 3600000;
-              if (hoursAgo <= 24) {
-                setMessages(msgs.slice(-20)); // restore last 20 messages
-                debugLog(`[ChatPage] ✅ Restored ${msgs.length} messages from ChatHistory DB`);
-                return;
-              }
-            }
+          const records = (Array.isArray(data) ? data : (data?.records || [])).reverse();
+          if (records.length >= 2) {
+            // Restore last messages — skip greeting, go straight to history
+            setMessages(records.map(m => ({ role: m.role, content: m.content })));
+            debugLog(`[ChatPage] ✅ Restored ${records.length} messages from DB`);
+            return;
           }
         } catch(e) {
           debugLog(`[ChatPage] ⚠️ Could not load message history: ${e.message}`);
         }
-      }
-      // Also try localStorage fallback
-      const savedLocal = sessionStorage.getItem("unfiltr_chat_messages");
-      if (savedLocal) {
-        try {
-          const parsed = JSON.parse(savedLocal);
-          if (parsed?.length >= 2) {
-            setMessages(parsed);
-            return;
-          }
-        } catch {}
       }
     }
 
@@ -552,7 +561,7 @@ export default function ChatPage() {
   useEffect(() => {
     const userMsgs = messages.filter(m => m.role === "user");
     // Only save every 5 user messages — avoids hammering DB on every keystroke
-    if (userMsgs.length > 0 && userMsgs.length % 2 === 0) {  // save every 2 user msgs
+    if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
       const appleId = localStorage.getItem("unfiltr_apple_user_id");
       if (!appleId) return;
       const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
@@ -691,7 +700,7 @@ export default function ChatPage() {
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
       
-      const res = await base44.functions.invoke("tts", { text: cleanText, companionId, voiceGender, voicePersonality });
+      const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: cleanText, companionId, voiceGender, voicePersonality }) }).then(r => r.json()).then(d => ({ data: d }));
       
       const base64 = res.data?.audio;
       if (!base64) { 
@@ -811,18 +820,26 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
-      const res = await base44.functions.invoke("chat", {
-        messages: history.map(m => ({ role: m.role, content: m.content })),
-        systemPrompt, isPremium, isPro, isAnnual,
-        profileId:     localStorage.getItem("userProfileId") || null,
-        sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
-        memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
-        userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
-        imageBase64: imgBase64,
-        personality: personalityPayload,
+      const chatRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt, isPremium, isPro, isAnnual,
+          profileId:        localStorage.getItem("userProfileId") || null,
+          sessionMemory:    (isPremium || isPro || isAnnual) ? sessionMemory : [],
+          memorySummary:    (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
+          userFacts:        (isPremium || isPro || isAnnual) ? userFacts : {},
+          imageBase64:      imgBase64,
+          personality:      personalityPayload,
+          relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
+        }),
       });
+      if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
+      const chatData = await chatRes.json();
+      const res = { data: chatData };
 
-      const replyText = res.data?.reply || "...";
+      const replyText = chatData?.reply || "...";
 
       // ── Fire-and-forget token tracking ───────────────────────────────────
       if (res.data?._usage) {
@@ -923,10 +940,10 @@ export default function ChatPage() {
       const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
       if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
-        base44.functions.invoke("summarizeSession", {
+        fetch("/api/summarizeSession", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
-        }).then(r => {
+        }) }).then(r => r.json()).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
             base44.entities.UserProfile.get(profileId2).then(p => {
               if (p?.session_memory) setSessionMemory(p.session_memory);
@@ -1045,6 +1062,7 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
+            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
@@ -1065,305 +1083,304 @@ export default function ChatPage() {
             streak={streak}
           />
 
-          {/* ▓▓ 2. AVATAR + SPEECH BUBBLE — horizontal layout ▓▓ */}
+          {/* ▓▓ 2. FULL-SCREEN AVATAR + FLOATING BUBBLES ▓▓ */}
+          {/* The avatar fills the entire vertical space between header and input bar */}
+          {/* Speech bubbles float as absolute overlays — no scrolling chat history */}
           <div style={{
             flex: 1,
-            display: "flex", flexDirection: "row", alignItems: "center",
-            justifyContent: "center",
             position: "relative",
             width: "100%",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            gap: 0,
+            minHeight: 0,
+            overflow: "hidden",
           }}>
-            {/* Speech bubble on the LEFT */}
+            <style>{`
+              @keyframes bubblePop {
+                0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+                65%  { transform: scale(1.04) translateY(-3px); opacity: 1; }
+                100% { transform: scale(1)    translateY(0px);  opacity: 1; }
+              }
+              @keyframes bubbleFadeOut {
+                0%   { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.88) translateY(-6px); }
+              }
+              @keyframes dotBounce {
+                0%,60%,100% { transform: translateY(0px);  opacity: 0.45; }
+                30%          { transform: translateY(-9px); opacity: 1;    }
+              }
+              @keyframes userBubblePop {
+                0%   { transform: scale(0.75) translateX(12px); opacity: 0; }
+                70%  { transform: scale(1.03) translateX(-2px); opacity: 1; }
+                100% { transform: scale(1)    translateX(0px);  opacity: 1; }
+              }
+              @keyframes userBubbleFade {
+                0%   { opacity: 1; transform: scale(1) translateX(0); }
+                100% { opacity: 0; transform: scale(0.9) translateX(8px); }
+              }
+              @keyframes avatarFloat {
+                0%,100% { transform: translateY(0px); }
+                50%     { transform: translateY(-5px); }
+              }
+              @keyframes speakGlow {
+                0%,100% { opacity: 0.35; transform: scale(1);    }
+                50%     { opacity: 0.7;  transform: scale(1.07); }
+              }
+              @keyframes thinkSpin {
+                0%   { transform: rotate(0deg) scale(1);    }
+                50%  { transform: rotate(180deg) scale(1.1); }
+                100% { transform: rotate(360deg) scale(1);  }
+              }
+            `}</style>
+
+            {/* ── AVATAR — pinned to RIGHT half, stands from bottom ── */}
             <div style={{
-              flex: "0 1 auto",
+              position: "absolute",
+              top: 0, bottom: 0,
+              right: 0,
+              width: "58%",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "flex-end",
-              minWidth: 0,
-              maxWidth: "50%",
+              overflow: "hidden",
             }}>
-              {/* Only show bubble when there's a message and user isn't typing */}
-              {messages.filter(m => m.role === "assistant").length > 0 && input.length === 0 && (
-                <div style={{
-                  position: "relative",
-                  maxWidth: "100%",
-                  marginRight: 8,
-                  animation: "bubbleFadeIn 0.3s ease-out forwards",
-                }}>
-                  <style>{`
-                    @keyframes bubbleFadeIn { from { opacity: 0; transform: translateY(8px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-                    @keyframes typingWave { 0%,60%,100%{transform:translateY(0) scale(1);opacity:0.4} 30%{transform:translateY(-5px) scale(1.15);opacity:1} }
-                  `}</style>
-                  {loading ? (
-                    /* Typing indicator */
-                    <div style={{
-                      padding: "14px 18px",
-                      borderRadius: "20px 20px 20px 6px",
-                      background: "linear-gradient(135deg, rgba(88,28,135,0.9), rgba(139,92,246,0.7))",
-                      backdropFilter: "blur(12px)",
-                      border: "1px solid rgba(168,85,247,0.4)",
-                      boxShadow: "0 4px 24px rgba(88,28,135,0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                    }}>
-                      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: 600 }}>
-                        {companionDisplayName} is typing
-                      </span>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        {[0, 1, 2].map(d => (
-                          <div key={d} style={{
-                            width: 6, height: 6, borderRadius: "50%",
-                            background: "linear-gradient(135deg, #a855f7, #db2777)",
-                            animation: `typingWave 1.4s ease-in-out infinite`,
-                            animationDelay: `${d * 0.18}s`,
-                          }} />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Latest message bubble */
-                    <div style={{
-                      padding: "16px 20px",
-                      borderRadius: "20px 20px 20px 6px",
-                      background: "linear-gradient(135deg, rgba(88,28,135,0.9), rgba(139,92,246,0.7))",
-                      backdropFilter: "blur(12px)",
-                      border: "1px solid rgba(168,85,247,0.4)",
-                      boxShadow: "0 4px 24px rgba(88,28,135,0.5)",
-                      color: "white",
-                      fontSize: 16,
-                      lineHeight: 1.5,
-                      fontWeight: 500,
-                      maxWidth: "100%",
-                    }}>
-                      {messages.filter(m => m.role === "assistant").slice(-1)[0]?.content}
-                    </div>
-                  )}
-                  {/* Speech bubble tail pointing to avatar */}
-                  <div style={{
-                    position: "absolute",
-                    bottom: 16,
-                    right: -12,
-                    width: 0,
-                    height: 0,
-                    borderLeft: "14px solid rgba(88,28,135,0.9)",
-                    borderTop: "10px solid transparent",
-                    borderBottom: "10px solid transparent",
-                    filter: "drop-shadow(2px 0 4px rgba(88,28,135,0.3))",
-                  }} />
-                </div>
-              )}
-            </div>
-
-            {/* Avatar section on the RIGHT */}
-            <div style={{
-              flex: "0 0 auto",
-              display: "flex", flexDirection: "column", alignItems: "center",
-              position: "relative",
-            }}>
-              {/* Speaking glow */}
+              {/* Speaking aura */}
               {isSpeaking && (
                 <div style={{
-                  position: "absolute", top: "50%", left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: "clamp(160px, 32dvh, 260px)", height: "clamp(160px, 32dvh, 260px)",
+                  position: "absolute",
+                  bottom: "8%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "55vw",
+                  height: "55vw",
+                  maxWidth: 280,
+                  maxHeight: 280,
                   borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
-                  animation: "speakPulse 1.2s ease-in-out infinite",
+                  background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                  animation: "speakGlow 1.3s ease-in-out infinite",
                   pointerEvents: "none",
+                  zIndex: 1,
                 }} />
               )}
+
               {/* Particles */}
               {particles.map(p => (
                 <div key={p.id} className="particle"
-                  style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
+                  style={{ position: "absolute", bottom: "35%", left: "50%", transform: "translate(-50%,0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 14, zIndex: 5, pointerEvents: "none" }}>
                   {p.emoji}
                 </div>
               ))}
-              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-              {/* Tap companion name to share */}
+
+              {/* Avatar image — full height, mood-aware scale */}
+              {(() => {
+                const MOOD_FRAME = {
+                  happy:       { scale: 1.0,  yOffset: "0%"   },
+                  neutral:     { scale: 1.0,  yOffset: "0%"   },
+                  surprise:    { scale: 0.96, yOffset: "0%"   },
+                  anger:       { scale: 1.05, yOffset: "-3%"  },
+                  sad:         { scale: 1.2,  yOffset: "-10%" },
+                  fear:        { scale: 1.15, yOffset: "-6%"  },
+                  disgust:     { scale: 1.1,  yOffset: "-4%"  },
+                  contentment: { scale: 1.05, yOffset: "-2%"  },
+                  fatigue:     { scale: 1.18, yOffset: "-8%"  },
+                };
+                const frame = MOOD_FRAME[companionMood] || MOOD_FRAME.neutral;
+                return (
+                  <div style={{
+                    position: "relative",
+                    zIndex: 2,
+                    display: "flex",
+                    alignItems: "flex-end",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "100%",
+                    transform: `scale(${frame.scale}) translateY(${frame.yOffset})`,
+                    transformOrigin: "bottom center",
+                    transition: "transform 0.6s cubic-bezier(0.4,0,0.2,1)",
+                  }}>
+                    <LiveAvatar
+                      companionId={companion.id}
+                      mood={companionMood}
+                      isSpeaking={isSpeaking}
+                      onClick={spawnParticles}
+                      fullScreen={true}
+                    />
+                  </div>
+                );
+              })()}
+
+              {/* Name tag at bottom */}
               <button onClick={() => setShowCompanionCard(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 10px", zIndex: 6, marginBottom: 2 }}>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600, textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}>
                   {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
                 </span>
               </button>
-
-              {/* Msg counter — only shown for free users */}
-              {!isPremium && (
-                <button onClick={() => navigate('/Pricing')}
-                  style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                  {remaining}/{FREE_LIMIT} msgs left today · Go Premium
-                </button>
-              )}
             </div>
 
-            {/* Streak milestone celebration modal */}
-            <StreakMilestoneModal
-              milestone={streakMilestone}
-              streak={streak}
-              longestStreak={longestStreak}
-              onDismiss={clearStreakMilestone}
-            />
-            {showAnniversary && anniversary && (
-              <div style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
-                backdropFilter: "blur(12px)", borderRadius: 14,
-                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
-                textAlign: "center",
-              }}>
-                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
-              </div>
-            )}
-          </div>
-
-          {/* MemoryCard — floating overlay when no user messages yet */}
-          {messages.filter(m => m.role === "user").length === 0 && !loading && (
+            {/* ── COMPANION SPEECH BUBBLE — LEFT side, anchored bottom, grows UP ── */}
             <div style={{
-              position: "absolute", bottom: 180, left: 16, right: 16, zIndex: 5, pointerEvents: "auto"
+              position: "absolute",
+              top: "6%",
+              bottom: "46%",
+              left: 14,
+              right: "44%",
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+              alignItems: "flex-start",
+              pointerEvents: "none",
             }}>
-              <MemoryCard
-                memorySummary={memorySummary}
-                userFacts={userFacts}
-                sessionMemory={sessionMemory}
-                companionName={companionDisplayName || "your companion"}
-                isPremium={isPremium}
-                onUpgrade={() => navigate('/Pricing')}
-              />
+              {(() => {
+                const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
+
+                if (loading) {
+                  return (
+                    <div style={{
+                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      border: "2px solid rgba(196,180,252,0.3)",
+                      borderRadius: "22px 22px 22px 6px",
+                      padding: "16px 20px",
+                      width: "100%",
+                      position: "relative",
+                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), inset 0 1px 0 rgba(255,255,255,0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}>
+                      {/* Tail pointing down-left toward avatar */}
+                      <svg width="18" height="20" viewBox="0 0 18 20" fill="none"
+                        style={{ position: "absolute", left: 18, bottom: -16, zIndex: 1 }}>
+                        <path d="M2 0 Q16 10 2 20 Z" fill="rgba(35,5,75,0.98)" />
+                        <path d="M2 0 Q16 10 2 20" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
+                      </svg>
+                      {/* Pixar-style thinking dots */}
+                      {[0,1,2].map(d => (
+                        <div key={d} style={{
+                          width: 11,
+                          height: 11,
+                          borderRadius: "50%",
+                          background: d===0 ? "#a78bfa" : d===1 ? "#c084fc" : "#e879f9",
+                          boxShadow: `0 0 10px ${d===0?"rgba(167,139,250,0.9)":d===1?"rgba(192,132,252,0.9)":"rgba(232,121,249,0.9)"}`,
+                          animation: "dotBounce 1.4s ease-in-out infinite",
+                          animationDelay: `${d * 0.2}s`,
+                        }} />
+                      ))}
+                    </div>
+                  );
+                }
+
+                if (!lastComp) return (
+                  <div style={{
+                    background: "linear-gradient(145deg, rgba(55,15,105,0.88), rgba(35,5,75,0.92))",
+                    backdropFilter: "blur(20px)",
+                    border: "2px solid rgba(196,180,252,0.2)",
+                    borderRadius: "22px 22px 22px 6px",
+                    padding: "14px 18px",
+                    width: "100%",
+                  }}>
+                    <span style={{ color: "rgba(216,180,254,0.5)", fontSize: 14 }}>Say something to {companionDisplayName}… ✨</span>
+                  </div>
+                );
+
+                return (
+                  <div
+                    key={lastComp.content.slice(0,40)}
+                    style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", width: "100%", position: "relative" }}
+                  >
+                    <div style={{
+                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
+                      backdropFilter: "blur(24px)",
+                      WebkitBackdropFilter: "blur(24px)",
+                      border: "2px solid rgba(196,180,252,0.3)",
+                      borderRadius: "22px 22px 22px 6px",
+                      padding: "14px 18px",
+                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
+                      position: "relative",
+                    }}>
+                      {/* Tail pointing DOWN toward avatar standing below */}
+                      <svg width="20" height="22" viewBox="0 0 20 22" fill="none"
+                        style={{ position: "absolute", left: 24, bottom: -18, zIndex: 1 }}>
+                        <path d="M2 0 L18 0 Q2 11 10 22 Z" fill="rgba(35,5,75,0.98)" />
+                        <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
+                      </svg>
+                      <p style={{
+                        color: "rgba(240,230,255,0.95)",
+                        fontSize: 15,
+                        lineHeight: 1.55,
+                        margin: 0,
+                        fontWeight: 500,
+                        letterSpacing: "0.01em",
+                      }}>
+                        {lastComp.content}
+                      </p>
+                      {/* Mood emoji pill */}
+                      {companionMood && companionMood !== "neutral" && (
+                        <div style={{
+                          position: "absolute",
+                          top: -10,
+                          right: -8,
+                          background: "rgba(88,28,135,0.9)",
+                          borderRadius: 999,
+                          padding: "2px 7px",
+                          fontSize: 13,
+                          border: "1.5px solid rgba(196,180,252,0.25)",
+                        }}>
+                          {companionMood==="happy"?"😄":companionMood==="sad"?"😢":companionMood==="surprise"?"😮":companionMood==="anger"?"😤":companionMood==="fear"?"😰":companionMood==="disgust"?"😒":companionMood==="contentment"?"😌":companionMood==="fatigue"?"😴":""}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-          )}
-            {/* Speaking glow */}
-            {isSpeaking && (
-              <div style={{
-                position: "absolute", top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: "clamp(180px, 40dvh, 300px)", height: "clamp(180px, 40dvh, 300px)",
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
-                animation: "speakPulse 1.2s ease-in-out infinite",
-                pointerEvents: "none",
-              }} />
-            )}
-            {/* Particles */}
-            {particles.map(p => (
-              <div key={p.id} className="particle"
-                style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 3, pointerEvents: "none" }}>
-                {p.emoji}
-              </div>
-            ))}
-            <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-            {/* Tap companion name to share */}
-            <button onClick={() => setShowCompanionCard(true)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: 2 }}>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600 }}>
-                {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
-              </span>
-            </button>
 
-            {/* Msg counter — only shown for free users */}
-            {!isPremium && (
-              <button onClick={() => navigate('/Pricing')}
-                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
-              </button>
-            )}
+            {/* ── USER BUBBLE — bottom-right, shows ONLY while waiting for reply (loading) ── */}
+            {/* This creates the flow: user sends → their bubble appears → dots → companion reply replaces everything */}
+            {(() => {
+              const lastUser = [...messages].reverse().find(m => m.role === "user");
+              // Show user bubble while loading (waiting for AI)
+              // After reply arrives it fades out naturally via animation
+              if (!lastUser) return null;
+              return (
+                <div
+                  key={lastUser.content.slice(0,40) + loading}
+                  style={{
+                    position: "absolute",
+                    bottom: 28,
+                    right: 14,
+                    zIndex: 10,
+                    maxWidth: "52%",
+                    animation: loading
+                      ? "userBubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1) both"
+                      : "userBubbleFade 0.5s ease forwards",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div style={{
+                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
+                    borderRadius: "18px 18px 4px 18px",
+                    padding: "12px 16px",
+                    boxShadow: "0 6px 24px rgba(124,58,237,0.55), 0 2px 8px rgba(0,0,0,0.4)",
+                  }}>
+                    <p style={{
+                      color: "white",
+                      fontSize: 15,
+                      lineHeight: 1.45,
+                      margin: 0,
+                      fontWeight: 500,
+                    }}>
+                      {lastUser.content}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
-            {/* Streak milestone celebration modal */}
-            <StreakMilestoneModal
-              milestone={streakMilestone}
-              streak={streak}
-              longestStreak={longestStreak}
-              onDismiss={clearStreakMilestone}
-            />
-            {showAnniversary && anniversary && (
-              <div style={{
-                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, rgba(124,58,237,0.95), rgba(219,39,119,0.95))",
-                backdropFilter: "blur(12px)", borderRadius: 14,
-                padding: "5px 12px", zIndex: 20, whiteSpace: "nowrap",
-                animation: "bannerSlide 0.4s ease-out forwards",
-                boxShadow: "0 4px 24px rgba(168,85,247,0.5)",
-                textAlign: "center",
-              }}>
-                <span style={{ color: "white", fontWeight: 800, fontSize: 11 }}>🎉 {anniversary} Days Together! ✨</span>
-              </div>
-            )}
-            {/* MemoryCard — floating at bottom of avatar zone, no layout impact */}
-            {messages.filter(m => m.role === "user").length === 0 && (
-              <div style={{
-                position: "absolute", bottom: 0, left: 8, right: 8, zIndex: 5, pointerEvents: "auto"
-              }}>
-                <MemoryCard
-                  memorySummary={memorySummary}
-                  userFacts={userFacts}
-                  sessionMemory={sessionMemory}
-                  companionName={companionDisplayName || "your companion"}
-                  isPremium={isPremium}
-                  onUpgrade={() => navigate('/Pricing')}
-                />
-              </div>
-            )}
+            {/* ConversationStarters removed for clean look */}
           </div>
-
-          {/* Daily affirmation — rendered as fixed overlay, no impact on flex layout */}
-
-          {/* Memory banner — only show old banner if MemoryCard isn't handling it */}
-          {showMemoryBanner && !isPremium && false && (
-            <div onClick={() => navigate('/Pricing')}
-              style={{
-                flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, padding: "4px 16px",
-                background: "rgba(139,92,246,0.08)",
-                borderBottom: "1px solid rgba(139,92,246,0.12)",
-                cursor: "pointer", opacity: 0.85,
-              }}>
-              <span style={{ fontSize: 11 }}>🔒</span>
-              <span style={{ color: "rgba(196,180,252,0.7)", fontSize: 10, fontWeight: 500 }}>Unlock Memory — tap to learn more</span>
-            </div>
-          )}
-
-          {/* MissYouBanner — rendered as fixed overlay below */}
-
-          {/* MemoryCard — rendered as absolute overlay inside avatar zone (see below) */}
-
-          {/* Daily check-in removed from layout — mood handled inline in chat */}
-
-          {/* CrisisBanner — rendered as fixed overlay below */}
-
-          {/* meditation nudge moved to fixed overlay below */}
-
-          {/* ▓▓ 3. CHAT MESSAGES — flex-grows to fill space between avatar and input ▓▓ */}
-          <div style={{
-            flex: 1, minHeight: 0, zIndex: 10,
-            display: "flex", flexDirection: "column",
-            overflow: "hidden",
-            background: "transparent",
-          }}>
-            <ChatMessages
-              messages={messages}
-              loading={loading}
-              companionMood={companionMood}
-              setShareCard={setShareCard}
-              messagesEndRef={messagesEndRef}
-              onSwipeReply={(text) => setQuoteReply(text)}
-              onRetry={handleRetry}
-              companionName={companionDisplayName}
-              onBookmark={(content) => { addBookmark(content, companionDisplayName); }}
-            />
-          </div>
-
-          {/* ▓▓ 3.5. CONVERSATION STARTERS ▓▓ */}
-          <ConversationStarters
-            visible={messages.filter(m => m.role === "user").length === 0}
-            onSelect={(text) => handleSend(text)}
-            isReturning={!!localStorage.getItem("unfiltr_chat_history")}
-          />
 
           {/* Quote reply bar */}
           {quoteReply && (
@@ -1414,7 +1431,7 @@ export default function ChatPage() {
         </div>
       )}
       <RatingPromptModal visible={showRatingPrompt} onClose={() => setShowRatingPrompt(false)} />
-      <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} mood={shareCard?.mood || "neutral"} />
+      <ShareCardModal visible={!!shareCard} onClose={() => setShareCard(null)} message={shareCard?.message || ""} companionName={companionDisplayName} companionAvatar={companion?.avatar || companion?.poses?.neutral || companion?.poses?.happy || null} mood={shareCard?.mood || "neutral"} />
 
       {/* Mood Check-In */}
       <MoodCheckIn
@@ -1500,6 +1517,5 @@ export default function ChatPage() {
     </>
   );
 }
-
 
 
