@@ -82,6 +82,40 @@ function buildPersonalityParagraph(p = {}) {
   return lines.length ? "\n\nPersonality traits:\n" + lines.join(" ") : "";
 }
 
+
+// ── #3: MEMORY CONFIRMATION LOOP ─────────────────────────────────────────────
+// Occasionally prompt the AI to gently verify a stored fact.
+// Runs roughly every 7 sessions — keeps memories accurate without feeling robotic.
+// Only surfaces for premium+ users who have actual stored facts.
+function buildMemoryConfirmationNudge(facts = {}, sessions = [], isPremium) {
+  if (!isPremium) return "";
+  if (!sessions || sessions.length < 3) return "";
+
+  // Only trigger every ~7 sessions (using session count as proxy)
+  if (sessions.length % 7 !== 0) return "";
+
+  // Pick a fact to verify — prefer emotional/situational ones over identity
+  const candidates = [];
+  if (facts.recurring_struggles?.length) {
+    candidates.push(`they've been struggling with "${facts.recurring_struggles[0]}"`);
+  }
+  if (facts.goals?.length) {
+    candidates.push(`their goal is "${facts.goals[0]}"`);
+  }
+  if (facts.important_people?.length) {
+    const p = facts.important_people[0];
+    candidates.push(`${p.name} is their ${p.role}`);
+  }
+  if (facts.occupation) {
+    candidates.push(`they work as ${facts.occupation}`);
+  }
+
+  if (!candidates.length) return "";
+
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  return `\n\nMemory check-in (do this naturally if the moment is right — don't force it): You remember that ${pick}. If the conversation flows there organically, gently check if that's still the case. Example: "Last time you mentioned X — how's that going?" Only do this ONCE and only if it fits naturally.`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -115,6 +149,13 @@ export default async function handler(req, res) {
       sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
     }
 
+    // ── #3: Memory confirmation nudge ───────────────────────────────────
+    const memoryConfirmCtx = buildMemoryConfirmationNudge(
+      req.body.userFacts || {},
+      req.body.sessionMemory || [],
+      isPremium || isPro || isAnnual
+    );
+
     // ── Vector memory retrieval (premium+ only) ─────────────────────────
     let vectorCtx = "";
     if (profileId && (isPremium || isPro || isAnnual) && messages?.length) {
@@ -141,7 +182,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx +
+          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
