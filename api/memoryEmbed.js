@@ -1,6 +1,6 @@
 // api/memoryEmbed.js
 // Vector memory system using OpenAI text-embedding-3-small
-// Stores key memories as embeddings, retrieves only relevant ones at chat time
+// v2: adds memory decay + freshness weighting
 //
 // TIER LIMITS:
 // Free:   no vector memory (basic facts only)
@@ -54,7 +54,29 @@ async function embed(text) {
   return res.data[0].embedding;
 }
 
-// ── Named export: called from summarizeSession after saving facts ─────────────
+// ── #2: MEMORY DECAY + FRESHNESS WEIGHTING ───────────────────────────────────
+// Older memories get a lower relevance score multiplier.
+// Half-life: 30 days — a memory 30 days old is worth 50% of a fresh one.
+// This prevents stale facts from dominating over recent ones.
+// "Identity" type memories (name, age, job) decay very slowly — these rarely change.
+// "Session" and "struggle" memories decay faster — emotional states are temporary.
+function freshnessMultiplier(dateStr, type = "session") {
+  if (!dateStr) return 0.5;
+  const ageDays = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
+
+  // Identity facts (name, job, location) — half-life 180 days (very stable)
+  if (type === "identity") {
+    return Math.pow(0.5, ageDays / 180);
+  }
+  // Values and goals — half-life 60 days
+  if (type === "values" || type === "goal") {
+    return Math.pow(0.5, ageDays / 60);
+  }
+  // Struggles and sessions — half-life 21 days (emotions change)
+  return Math.pow(0.5, ageDays / 21);
+}
+
+// ── Store memory vectors ──────────────────────────────────────────────────────
 export async function storeMemoryVectors(profileId, facts, sessionNote, isPremium, isPro, isAnnual) {
   if (!isPremium && !isPro && !isAnnual) return { ok: true, skipped: "free_tier" };
 
@@ -86,7 +108,12 @@ export async function storeMemoryVectors(profileId, facts, sessionNote, isPremiu
   if (!chunks.length) return { ok: true, skipped: "nothing_to_store" };
 
   const vectors = await Promise.all(
-    chunks.map(async (c) => ({ text: c.text, type: c.type, date, vector: await embed(c.text) }))
+    chunks.map(async (c) => ({
+      text: c.text,
+      type: c.type,
+      date,
+      vector: await embed(c.text),
+    }))
   );
 
   const profile = await b44Get("UserProfile", profileId);
@@ -97,7 +124,7 @@ export async function storeMemoryVectors(profileId, facts, sessionNote, isPremiu
   return { ok: true, stored: vectors.length };
 }
 
-// ── Named export: called from chat.js to fetch relevant memories ──────────────
+// ── Retrieve relevant memories with freshness weighting ──────────────────────
 export async function retrieveRelevantMemories(profileId, query, isPremium, isPro, isAnnual) {
   if (!isPremium && !isPro && !isAnnual) return [];
 
@@ -111,12 +138,18 @@ export async function retrieveRelevantMemories(profileId, query, isPremium, isPr
 
   return vectors
     .filter(v => v.vector?.length)
-    .map(v => ({ text: v.text, type: v.type, date: v.date, score: cosineSimilarity(queryVec, v.vector) }))
+    .map(v => {
+      const semantic = cosineSimilarity(queryVec, v.vector);
+      // #2: multiply semantic score by freshness — stale memories rank lower
+      const freshness = freshnessMultiplier(v.date, v.type);
+      const score = semantic * freshness;
+      return { text: v.text, type: v.type, date: v.date, score };
+    })
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 }
 
-// ── HTTP handler (for direct API calls if needed) ─────────────────────────────
+// ── HTTP handler ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
