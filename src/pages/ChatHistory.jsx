@@ -45,7 +45,7 @@ export default function ChatHistory() {
 
   const tier = getTier();
   const limit = HISTORY_LIMITS[tier];
-  const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+  const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
   const nickName = localStorage.getItem("unfiltr_companion_nickname") || "your companion";
 
   useEffect(() => {

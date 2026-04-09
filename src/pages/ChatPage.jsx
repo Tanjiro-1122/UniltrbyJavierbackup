@@ -562,8 +562,16 @@ export default function ChatPage() {
     const userMsgs = messages.filter(m => m.role === "user");
     // Only save every 5 user messages — avoids hammering DB on every keystroke
     if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
-      const appleId = localStorage.getItem("unfiltr_apple_user_id");
-      if (!appleId) return;
+      // Use apple_user_id OR fall back to a device ID so sessions always save
+      let appleId = localStorage.getItem("unfiltr_apple_user_id");
+      if (!appleId) {
+        let deviceId = localStorage.getItem("unfiltr_device_id");
+        if (!deviceId) {
+          deviceId = "device_" + Math.random().toString(36).slice(2) + Date.now();
+          localStorage.setItem("unfiltr_device_id", deviceId);
+        }
+        appleId = deviceId;
+      }
       const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
       if (msgs.length < 2) return;
       const companionRaw = localStorage.getItem("unfiltr_companion");
@@ -623,7 +631,12 @@ export default function ChatPage() {
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
 
             // 💾 Also save to DB ChatHistory entity for cross-device sync
-            const appleId = localStorage.getItem("unfiltr_apple_user_id");
+            let appleId = localStorage.getItem("unfiltr_apple_user_id");
+            if (!appleId) {
+              let deviceId = localStorage.getItem("unfiltr_device_id");
+              if (!deviceId) { deviceId = "device_" + Math.random().toString(36).slice(2) + Date.now(); localStorage.setItem("unfiltr_device_id", deviceId); }
+              appleId = deviceId;
+            }
             const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
                        : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
                        : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
