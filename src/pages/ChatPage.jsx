@@ -826,12 +826,13 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
           systemPrompt, isPremium, isPro, isAnnual,
-          profileId:     localStorage.getItem("userProfileId") || null,
-          sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
-          memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
-          userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
-          imageBase64: imgBase64,
-          personality: personalityPayload,
+          profileId:        localStorage.getItem("userProfileId") || null,
+          sessionMemory:    (isPremium || isPro || isAnnual) ? sessionMemory : [],
+          memorySummary:    (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
+          userFacts:        (isPremium || isPro || isAnnual) ? userFacts : {},
+          imageBase64:      imgBase64,
+          personality:      personalityPayload,
+          relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);

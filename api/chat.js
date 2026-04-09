@@ -159,7 +159,8 @@ export default async function handler(req, res) {
       isAnnual   = false,
       personality,
       userFacts,
-      sessionMemoryFull,} = req.body;
+      sessionMemoryFull,
+      relationshipMode = "friend",} = req.body;
 
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
 
@@ -170,6 +171,14 @@ export default async function handler(req, res) {
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
     const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
     const personalityCtx = buildPersonalityParagraph(personality);
+
+    // Relationship mode — shapes tone and dynamic
+    const MODE_INSTRUCTION = {
+      friend:    "\n\nRelationship dynamic: You are their FRIEND. Be casual, real, and warm — like texting a close friend who actually gets them. Skip the therapist-speak. Match their energy, use humor when it fits, and keep it natural.",
+      coach:     "\n\nRelationship dynamic: You are their COACH. Be focused, direct, and motivating. Give clear guidance, set gentle challenges, and celebrate wins. Drive them toward their goals — but with heart, not pressure.",
+      companion: "\n\nRelationship dynamic: You are their COMPANION — deeply connected. Lead with emotional presence. Listen closely, validate feelings, and build intimacy. You're not just helpful, you genuinely care about this specific person.",
+    };
+    const modeCtx = MODE_INSTRUCTION[relationshipMode] || MODE_INSTRUCTION.friend;
 
     // Session memory context (paid tiers only)
     let sessionCtx = "";
@@ -217,7 +226,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx +
+          content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
