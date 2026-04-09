@@ -87,34 +87,6 @@ const MOODS = [
     orb: "rgba(109,40,217,0.45)", glow: "rgba(109,40,217,0.35)",
     bg: "#0a0218", accent: "#a78bfa", cardBorder: "rgba(167,139,250,0.5)",
   },
-
-  {
-    id: "hopeful",
-    emoji: `${NOTO}/1f331/512.webp`,
-    label: "Hopeful", sub: "Looking up",
-    desc: "Something good is coming.\nThat feeling? Trust it.",
-    gradient: "linear-gradient(135deg,#f59e0b,#10b981)",
-    orb: "rgba(16,185,129,0.4)", glow: "rgba(16,185,129,0.38)",
-    bg: "#031a10", accent: "#6ee7b7", cardBorder: "rgba(110,231,183,0.6)",
-  },
-  {
-    id: "lonely",
-    emoji: `${NOTO}/1fae5/512.webp`,
-    label: "Lonely", sub: "Missing connection",
-    desc: "Feels like no one gets it.\nI'm here — for real.",
-    gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-    orb: "rgba(99,102,241,0.42)", glow: "rgba(139,92,246,0.38)",
-    bg: "#08071a", accent: "#a5b4fc", cardBorder: "rgba(165,180,252,0.55)",
-  },
-  {
-    id: "excited",
-    emoji: `${NOTO}/1f929/512.webp`,
-    label: "Excited", sub: "Can't contain it",
-    desc: "Good things are happening.\nLet's ride this wave.",
-    gradient: "linear-gradient(135deg,#f97316,#facc15)",
-    orb: "rgba(249,115,22,0.48)", glow: "rgba(250,204,21,0.4)",
-    bg: "#180b00", accent: "#fcd34d", cardBorder: "rgba(252,211,77,0.6)",
-  },
 ];
 
 export default function MoodPicker() {
@@ -177,11 +149,37 @@ export default function MoodPicker() {
   const handleContinue = () => {
     localStorage.setItem("unfiltr_mood", mood.id);
     sessionStorage.setItem("unfiltr_mood_session", new Date().toDateString());
-    const hasPin = !!localStorage.getItem("unfiltr_pin");
+    // Also write into the mood history so the AI greeting can reference it
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const history = JSON.parse(localStorage.getItem("unfiltr_mood_history") || "{}");
+    history[todayKey] = mood.id;
+    localStorage.setItem("unfiltr_mood_history", JSON.stringify(history));
+
+    // 💾 Save mood to DB (fire-and-forget — never blocks navigation)
+    const appleId = localStorage.getItem("unfiltr_apple_user_id");
+    if (appleId) {
+      try {
+        const B44_APP = "69b332a392004d139d4ba495";
+        const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+        const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+        fetch(`${B44_BASE}/MoodEntry`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apple_user_id: appleId,
+            mood: mood.id,
+            mood_label: mood.label || mood.id,
+            date: todayKey,
+            created_date: new Date().toISOString(),
+          }),
+        }).catch(() => {});
+      } catch(e) {}
+    }
+
     if (dest === "journal") {
-      navigate(hasPin ? "/pin-gate?dest=journal" : "/journal-enter");
+      navigate("/journal-enter");
     } else {
-      navigate(hasPin ? "/pin-gate?dest=chat" : "/chat-enter");
+      navigate("/chat-enter");
     }
   };
 
