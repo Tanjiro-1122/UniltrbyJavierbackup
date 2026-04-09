@@ -697,7 +697,7 @@ export default function ChatPage() {
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
       
-      const res = await base44.functions.invoke("tts", { text: cleanText, companionId, voiceGender, voicePersonality });
+      const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: cleanText, companionId, voiceGender, voicePersonality }) }).then(r => r.json()).then(d => ({ data: d }));
       
       const base64 = res.data?.audio;
       if (!base64) { 
@@ -817,7 +817,7 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
-      const res = await base44.functions.invoke("chat", {
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         messages: history.map(m => ({ role: m.role, content: m.content })),
         systemPrompt, isPremium, isPro, isAnnual,
         profileId:     localStorage.getItem("userProfileId") || null,
@@ -826,7 +826,7 @@ export default function ChatPage() {
         userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
         imageBase64: imgBase64,
         personality: personalityPayload,
-      });
+      })}).then(r => r.json()).then(d => ({ data: d }));
 
       const replyText = res.data?.reply || "...";
 
@@ -929,10 +929,10 @@ export default function ChatPage() {
       const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
       if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
-        base44.functions.invoke("summarizeSession", {
+        fetch("/api/summarizeSession", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
           messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
           profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
-        }).then(r => {
+        }) }).then(r => r.json()).then(r => {
           if (r.data?.ok && !r.data?.skipped) {
             base44.entities.UserProfile.get(profileId2).then(p => {
               if (p?.session_memory) setSessionMemory(p.session_memory);
