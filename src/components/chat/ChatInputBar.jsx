@@ -8,66 +8,95 @@ export default function ChatInputBar({
   pendingImage, setPendingImage, companionDisplayName,
   handleSend, startListening, stopListening, handlePhotoClick,
 }) {
+  const canSend = input.trim().length > 0 || !!pendingImage;
+
   return (
     <div style={{
       flexShrink: 0,
       width: "100%",
       boxSizing: "border-box",
       background: "transparent",
-      paddingTop: 8,
-      paddingLeft: 12,
-      paddingRight: 12,
-      paddingBottom: 8,
+      padding: "8px 12px",
+      paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
     }}>
-      {/* Pending image preview */}
+      {/* ── Pending image preview ── */}
       {pendingImage && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
           <div style={{ position: "relative" }}>
-            <img src={pendingImage.preview} alt="pending" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(168,85,247,0.5)" }} />
+            <img src={pendingImage.preview} alt="pending" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", border: "2px solid rgba(168,85,247,0.5)" }} />
             <button onClick={() => setPendingImage(null)}
-              style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              style={{ position: "absolute", top: -5, right: -5, width: 17, height: 17, borderRadius: "50%", background: "#ef4444", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <X size={9} color="white" />
             </button>
           </div>
-          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}>Photo attached</span>
+          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Photo attached</span>
         </div>
       )}
+
+      {/* ── Input row ── */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 6,
-        background: "rgba(255,255,255,0.07)",
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.1)",
+        display: "flex", alignItems: "center", gap: 8,
+        background: "rgba(255,255,255,0.08)",
+        backdropFilter: "blur(24px)",
+        border: "1.5px solid rgba(255,255,255,0.13)",
         borderRadius: 999,
-        padding: "6px 10px",
+        padding: "5px 5px 5px 10px",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
       }}>
-        <button onClick={() => isListening ? stopListening() : startListening()}
-          style={{ width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: isListening ? "#ef4444" : "rgba(255,255,255,0.1)" }}
-          className={isListening ? "listen-pulse" : ""}>
-          {isListening ? <MicOff size={15} color="white" /> : <Mic size={15} color="rgba(255,255,255,0.65)" />}
-        </button>
+
+        {/* Photo button */}
         <button onClick={handlePhotoClick}
-          style={{ width: 30, height: 30, borderRadius: "50%", border: "none", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "rgba(255,255,255,0.08)" }}>
-          <Camera size={14} color={isPremium ? "rgba(168,85,247,0.9)" : "rgba(255,255,255,0.3)"} />
+          style={{
+            width: 32, height: 32, borderRadius: "50%", border: "none", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            background: isPremium ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.06)",
+          }}>
+          <Camera size={15} color={isPremium ? "rgba(168,85,247,1)" : "rgba(255,255,255,0.28)"} />
         </button>
+
+        {/* Text input */}
         <input type="text" value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend(); }}
           placeholder={isListening ? "Listening…" : `Talk to ${companionDisplayName}…`}
           autoComplete="off"
-          autoCorrect="on"
-          enterKeyHint="send"
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "white", fontSize: 16, minWidth: 0, caretColor: "#a855f7", WebkitAppearance: "none" }}
+          style={{
+            flex: 1, minWidth: 0, background: "none", border: "none", outline: "none",
+            color: "white", fontSize: 14, lineHeight: 1.4,
+            caretColor: "#a855f7",
+          }}
         />
-        <button onClick={() => { if (loading || (!input.trim() && !pendingImage)) return; hapticMedium(); soundSend(); handleSend(); }} disabled={loading || (!input.trim() && !pendingImage)}
+
+        {/* Mic button */}
+        <button
+          onClick={() => isListening ? stopListening() : startListening()}
+          className={isListening ? "listen-pulse" : ""}
           style={{
             width: 34, height: 34, borderRadius: "50%", border: "none", flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: loading || (!input.trim() && !pendingImage) ? "default" : "pointer",
-            opacity: loading || (!input.trim() && !pendingImage) ? 0.4 : 1,
-            background: "linear-gradient(135deg, #7c3aed, #db2777)",
-            transition: "opacity 0.15s",
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+            background: isListening ? "#ef4444" : "rgba(255,255,255,0.09)",
+            transition: "background 0.2s",
           }}>
-          <Send size={14} color="white" />
+          {isListening
+            ? <MicOff size={15} color="white" />
+            : <Mic size={16} color="rgba(255,255,255,0.7)" />}
+        </button>
+
+        {/* Send button — glows when ready */}
+        <button
+          onClick={() => { soundSend(); hapticMedium(); handleSend(); }}
+          disabled={!canSend || loading}
+          style={{
+            width: 38, height: 38, borderRadius: "50%", border: "none", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center", cursor: canSend ? "pointer" : "default",
+            background: canSend
+              ? "linear-gradient(135deg, #7c3aed, #db2777)"
+              : "rgba(255,255,255,0.06)",
+            boxShadow: canSend ? "0 0 18px rgba(168,85,247,0.55)" : "none",
+            transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+            transform: canSend ? "scale(1)" : "scale(0.92)",
+          }}>
+          <Send size={15} color={canSend ? "white" : "rgba(255,255,255,0.2)"} />
         </button>
       </div>
     </div>
