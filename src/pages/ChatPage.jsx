@@ -79,6 +79,20 @@ export default function ChatPage() {
     return () => window.removeEventListener("unfiltr_companion_changed", onCompanionChange);
   }, []);
 
+
+  // Listen for background changes from the customize panel
+  useEffect(() => {
+    const onBgChange = (e) => {
+      const envObj = e.detail;
+      if (envObj) {
+        setEnvironment(envObj);
+        localStorage.setItem('unfiltr_env', JSON.stringify(envObj));
+      }
+    };
+    window.addEventListener('unfiltr_env_change', onBgChange);
+    return () => window.removeEventListener('unfiltr_env_change', onBgChange);
+  }, []);
+
   // Persist messages so returning from Settings doesn't lose chat
   React.useEffect(() => {
     if (messages.length > 0) {
