@@ -1137,35 +1137,56 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {/* Avatar — full body, stands from bottom, head+torso fill the panel */}
-              {/* Clip wrapper: avatar img is ~54dvh tall, panel is 42dvh — we show top 78% (head+torso) */}
-              <div style={{
-                position: "relative",
-                zIndex: 3,
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-end",
-                overflow: "hidden",
-                height: "clamp(220px, 40dvh, 340px)",
-              }}>
-                <div style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  display: "flex",
-                  alignItems: "flex-end",
-                  justifyContent: "center",
-                }}>
-                  <LiveAvatar
-                    companionId={companion.id}
-                    mood={companionMood}
-                    isSpeaking={isSpeaking}
-                    onClick={spawnParticles}
-                  />
-                </div>
-              </div>
+              {/* Avatar — mood-aware crop: close for subtle emotions, full-body for expressive ones */}
+              {(() => {
+                // Each mood defines how much of her body to show and how to position her
+                // scale: how zoomed-in (1 = full body, 1.35 = close half-body)
+                // yOffset: push image up so face stays visible (negative = slide up)
+                const MOOD_FRAME = {
+                  happy:       { scale: 1.05, yOffset: "0%"   },  // full body — arms relaxed, upright
+                  neutral:     { scale: 1.05, yOffset: "0%"   },  // full body — standard stand
+                  surprise:    { scale: 1.0,  yOffset: "0%"   },  // full body — arms out wide, need the width
+                  anger:       { scale: 1.1,  yOffset: "-5%"  },  // slight close — crossed arms + face sell it
+                  sad:         { scale: 1.35, yOffset: "-12%" },  // close-up — head down, face is everything
+                  fear:        { scale: 1.25, yOffset: "-8%"  },  // close — upper body tension reads better big
+                  disgust:     { scale: 1.2,  yOffset: "-6%"  },  // slightly closer — facial expression is key
+                  contentment: { scale: 1.15, yOffset: "-4%"  },  // gentle close — soft smile needs to be seen
+                  fatigue:     { scale: 1.3,  yOffset: "-10%" },  // close — drooping expression + head tilt
+                };
+                const frame = MOOD_FRAME[companionMood] || MOOD_FRAME.neutral;
+                return (
+                  <div style={{
+                    position: "relative",
+                    zIndex: 3,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "flex-end",
+                    overflow: "hidden",
+                    height: "clamp(220px, 40dvh, 340px)",
+                    transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)",
+                  }}>
+                    <div style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: "50%",
+                      transform: `translateX(-50%) scale(${frame.scale}) translateY(${frame.yOffset})`,
+                      transformOrigin: "bottom center",
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "center",
+                      transition: "transform 0.55s cubic-bezier(0.4,0,0.2,1)",
+                    }}>
+                      <LiveAvatar
+                        companionId={companion.id}
+                        mood={companionMood}
+                        isSpeaking={isSpeaking}
+                        onClick={spawnParticles}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Name tag */}
               <button onClick={() => setShowCompanionCard(true)}

@@ -66,7 +66,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
   const baseStyle = {
     WebkitTouchCallout: "none",
     pointerEvents: "none",
-    height: "clamp(312px, 54dvh, 468px)",
+    height: "clamp(280px, 52dvh, 440px)",
     width: "auto",
     maxWidth: "100%",
     objectFit: "contain",
