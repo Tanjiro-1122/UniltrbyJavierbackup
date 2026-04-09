@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock
-} from "lucide-react";
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain
+} from "lucide-react"
+
 import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import HowToGuide from "@/components/settings/HowToGuide";
 import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
+import MemoryEditor from "@/components/chat/MemoryEditor";
 import { getMoodWeek } from "@/components/utils/moodTracker";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
@@ -584,7 +586,15 @@ export default function Settings() {
     ),
 
     background: (
-      <SubScreen title="Background" onBack={() => setScreen(null)}>
+      <SubScreen title="Memory" onBack={() => setScreen(null)}>
+        <MemoryEditor
+          isPremium={isPremium}
+          profileId={localStorage.getItem("userProfileId")}
+          onUpgrade={() => { setScreen(null); }}
+        />
+      </SubScreen>
+
+            <SubScreen title="Background" onBack={() => setScreen(null)}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
           {BACKGROUNDS.map(bg => {
             const sel = currentBg?.id === bg.id;
@@ -867,6 +877,7 @@ export default function Settings() {
           <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
           <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
           <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
+          <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
           <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
           <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
           <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
