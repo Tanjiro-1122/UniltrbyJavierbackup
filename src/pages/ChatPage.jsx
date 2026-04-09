@@ -316,8 +316,11 @@ export default function ChatPage() {
   }, []);
 
   /* ─── GREETING + HISTORY ─── */
+  const greetingFiredRef = React.useRef(false);
   useEffect(() => { (async () => {
     if (!companion) return;
+    if (greetingFiredRef.current) return; // guard: only run once even if companion obj ref changes
+    greetingFiredRef.current = true;
 
     // ── Restore active chat if coming back from Settings ─────────────────
     // When user navigates Chat → Settings → Back, ChatPage remounts.
@@ -1084,7 +1087,7 @@ export default function ChatPage() {
             flexShrink: 0,
             position: "relative",
             width: "100%",
-            height: "clamp(250px, 44dvh, 370px)",
+            height: "clamp(300px, 52dvh, 440px)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "row",
@@ -1163,7 +1166,7 @@ export default function ChatPage() {
                     justifyContent: "center",
                     alignItems: "flex-end",
                     overflow: "hidden",
-                    height: "clamp(220px, 40dvh, 340px)",
+                    height: "clamp(280px, 50dvh, 420px)",
                     transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)",
                   }}>
                     <div style={{
