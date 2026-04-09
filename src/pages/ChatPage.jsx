@@ -1084,7 +1084,7 @@ export default function ChatPage() {
             flexShrink: 0,
             position: "relative",
             width: "100%",
-            height: "clamp(240px, 42dvh, 360px)",
+            height: "clamp(250px, 44dvh, 370px)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "row",
@@ -1137,14 +1137,34 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {/* Avatar — full body, bottom-aligned, overflows up */}
-              <div style={{ position: "relative", zIndex: 3, width: "100%", display: "flex", justifyContent: "center" }}>
-                <LiveAvatar
-                  companionId={companion.id}
-                  mood={companionMood}
-                  isSpeaking={isSpeaking}
-                  onClick={spawnParticles}
-                />
+              {/* Avatar — full body, stands from bottom, head+torso fill the panel */}
+              {/* Clip wrapper: avatar img is ~54dvh tall, panel is 42dvh — we show top 78% (head+torso) */}
+              <div style={{
+                position: "relative",
+                zIndex: 3,
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-end",
+                overflow: "hidden",
+                height: "clamp(220px, 40dvh, 340px)",
+              }}>
+                <div style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
+                }}>
+                  <LiveAvatar
+                    companionId={companion.id}
+                    mood={companionMood}
+                    isSpeaking={isSpeaking}
+                    onClick={spawnParticles}
+                  />
+                </div>
               </div>
 
               {/* Name tag */}
