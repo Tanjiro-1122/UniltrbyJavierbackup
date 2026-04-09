@@ -67,6 +67,18 @@ export default function ChatPage() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
 
+  // Listen for companion changes from the customize panel
+  useEffect(() => {
+    const onCompanionChange = () => {
+      const updated = localStorage.getItem("unfiltr_companion");
+      if (updated) {
+        try { setCompanion(JSON.parse(updated)); } catch {}
+      }
+    };
+    window.addEventListener("unfiltr_companion_changed", onCompanionChange);
+    return () => window.removeEventListener("unfiltr_companion_changed", onCompanionChange);
+  }, []);
+
   // Persist messages so returning from Settings doesn't lose chat
   React.useEffect(() => {
     if (messages.length > 0) {
@@ -1025,6 +1037,7 @@ export default function ChatPage() {
             isPremium={isPremium}
             messages={messages}
             companion={companion}
+            setCompanion={setCompanion}
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
@@ -1083,16 +1096,12 @@ export default function ChatPage() {
               </span>
             </button>
 
-            {/* Msg counter */}
-            {!isPremium ? (
+            {/* Msg warning — only shown when ≤10 msgs remaining */}
+            {!isPremium && remaining <= 10 && (
               <button onClick={() => navigate('/Pricing')}
-                style={{ fontSize: 10, color: "rgba(196,180,252,0.9)", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.35)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today · Go Premium
+                style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", padding: "3px 12px", borderRadius: 999, cursor: "pointer", marginTop: 4 }}>
+                ⚠️ {remaining} msgs left today
               </button>
-            ) : (
-              <div style={{ fontSize: 10, color: "rgba(196,180,252,0.5)", marginTop: 4 }}>
-                {remaining}/{FREE_LIMIT} msgs left today
-              </div>
             )}
 
             {/* Streak milestone celebration modal */}
