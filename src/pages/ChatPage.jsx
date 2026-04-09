@@ -1218,7 +1218,7 @@ export default function ChatPage() {
             {/* ── COMPANION SPEECH BUBBLE — floats at mid-screen, above her head ── */}
             <div style={{
               position: "absolute",
-              top: "8%",
+              top: "17%",
               left: 14,
               right: 14,
               zIndex: 10,
@@ -1375,14 +1375,7 @@ export default function ChatPage() {
               );
             })()}
 
-            {/* ── Conversation starters (first message only) ── */}
-            <div style={{ position: "absolute", bottom: 32, left: 0, right: 0, zIndex: 9 }}>
-              <ConversationStarters
-                visible={messages.filter(m => m.role === "user").length === 0}
-                onSelect={(text) => handleSend(text)}
-                isReturning={!!localStorage.getItem("unfiltr_chat_history")}
-              />
-            </div>
+            {/* ConversationStarters removed for clean look */}
           </div>
 
           {/* Quote reply bar */}
