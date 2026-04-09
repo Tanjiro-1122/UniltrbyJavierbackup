@@ -164,16 +164,18 @@ export default function ChatMessages({
           style={{ position: "fixed", inset: 0, zIndex: 48 }} />
       )}
 
-      {messages.map((msg, i) => {
-        // Companion messages are shown in the avatar speech bubble above.
-        // Only show them in the scroll area if they are ERROR messages or
-        // if there are multiple companion messages (history mode).
-        // Rule: skip non-error assistant messages EXCEPT when it's not the latest one
-        // (so history still shows), and skip the very last assistant message always.
-        const isLatestAssistant = msg.role === "assistant"
-          && msg.content !== "__ERROR__"
-          && i === messages.map((m,idx) => m.role === "assistant" ? idx : -1).filter(x => x >= 0).pop();
-        if (isLatestAssistant) return null;
+      {(() => {
+        // Find the index of the LAST assistant message (shown in bubble above, not here)
+        let lastAssistantIdx = -1;
+        for (let j = messages.length - 1; j >= 0; j--) {
+          if (messages[j].role === "assistant" && messages[j].content !== "__ERROR__") {
+            lastAssistantIdx = j;
+            break;
+          }
+        }
+        return messages.map((msg, i) => {
+        // Skip the latest companion message — it's shown in the speech bubble above
+        if (i === lastAssistantIdx) return null;
 
         /* ── Error state ── */
         if (msg.content === "__ERROR__" && msg.role === "assistant") {
@@ -383,7 +385,8 @@ export default function ChatMessages({
             </div>
           </SwipeableMessage>
         );
-      })}
+        });
+      })()} {/* end messages IIFE */}
 
       {/* ── Typing indicator — Pixar magic dots ── */}
       {loading && showTyping && (

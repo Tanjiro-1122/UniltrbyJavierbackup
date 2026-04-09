@@ -817,18 +817,25 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
-      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-        messages: history.map(m => ({ role: m.role, content: m.content })),
-        systemPrompt, isPremium, isPro, isAnnual,
-        profileId:     localStorage.getItem("userProfileId") || null,
-        sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
-        memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
-        userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
-        imageBase64: imgBase64,
-        personality: personalityPayload,
-      })}).then(r => r.json()).then(d => ({ data: d }));
+      const chatRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt, isPremium, isPro, isAnnual,
+          profileId:     localStorage.getItem("userProfileId") || null,
+          sessionMemory: (isPremium || isPro || isAnnual) ? sessionMemory : [],
+          memorySummary: (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
+          userFacts:     (isPremium || isPro || isAnnual) ? userFacts : {},
+          imageBase64: imgBase64,
+          personality: personalityPayload,
+        }),
+      });
+      if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
+      const chatData = await chatRes.json();
+      const res = { data: chatData };
 
-      const replyText = res.data?.reply || "...";
+      const replyText = chatData?.reply || "...";
 
       // ── Fire-and-forget token tracking ───────────────────────────────────
       if (res.data?._usage) {
@@ -1072,21 +1079,30 @@ export default function ChatPage() {
             streak={streak}
           />
 
-          {/* ▓▓ 2. AVATAR — shifted left, comic panel style ▓▓ */}
+          {/* ▓▓ 2. AVATAR — comic panel: avatar left, bubble right beside her ▓▓ */}
           <div style={{
             flexShrink: 0,
             position: "relative",
             width: "100%",
-            height: "clamp(260px, 46dvh, 420px)",
+            height: "clamp(220px, 38dvh, 340px)",
             overflow: "visible",
           }}>
-            {/* Speaking glow behind avatar */}
+            <style>{`
+              @keyframes comicBubblePop {
+                0%   { transform: scale(0.78) translateY(6px); opacity: 0; }
+                65%  { transform: scale(1.04) translateY(-2px); opacity: 1; }
+                100% { transform: scale(1) translateY(0); opacity: 1; }
+              }
+              @keyframes speakPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+            `}</style>
+
+            {/* Speaking glow */}
             {isSpeaking && (
               <div style={{
                 position: "absolute",
-                left: "22%", top: "50%",
+                left: "18%", top: "55%",
                 transform: "translate(-50%, -50%)",
-                width: "clamp(160px, 36dvh, 280px)", height: "clamp(160px, 36dvh, 280px)",
+                width: 200, height: 200,
                 borderRadius: "50%",
                 background: "radial-gradient(circle, rgba(168,85,247,0.38) 0%, transparent 70%)",
                 animation: "speakPulse 1.2s ease-in-out infinite",
@@ -1098,74 +1114,70 @@ export default function ChatPage() {
             {/* Particles */}
             {particles.map(p => (
               <div key={p.id} className="particle"
-                style={{ position: "absolute", top: "30%", left: "28%", transform: "translate(-50%, 0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 5, pointerEvents: "none" }}>
+                style={{ position: "absolute", top: "30%", left: "20%", transform: "translate(-50%,0)", "--tx": `${p.x}px`, "--ty": `${p.y}px`, fontSize: 12, zIndex: 5, pointerEvents: "none" }}>
                 {p.emoji}
               </div>
             ))}
 
-            {/* Avatar — anchored bottom-left area */}
+            {/* ── Avatar pinned bottom-left, smaller so face shows clearly ── */}
             <div style={{
               position: "absolute",
-              bottom: 0, left: "2%",
+              bottom: 0, left: "-2%",
               zIndex: 3,
               display: "flex", flexDirection: "column", alignItems: "center",
             }}>
-              <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
-              {/* Name tag under avatar */}
+              {/* Constrain avatar image height so we only see waist-up + face */}
+              <div style={{ height: "clamp(200px, 36dvh, 310px)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
+                <LiveAvatar companionId={companion.id} mood={companionMood} isSpeaking={isSpeaking} onClick={spawnParticles} />
+              </div>
               <button onClick={() => setShowCompanionCard(true)}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: -6 }}>
-                <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 600, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 8px", marginTop: -4 }}>
+                <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: 600, textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
                   {companionDisplayName} {COMPANIONS.find(c => c.id === companion.id)?.emoji || ""}
                 </span>
               </button>
             </div>
 
-            {/* ── COMIC SPEECH BUBBLE from companion mouth ── */}
+            {/* ── Comic speech bubble — floats beside/above her head ── */}
             {(() => {
               const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
               if (!lastComp) return null;
               return (
-                <div style={{
-                  position: "absolute",
-                  top: "6%",
-                  left: "38%",
-                  right: "4%",
-                  zIndex: 10,
-                  animation: "comicBubblePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both",
-                }}>
-                  <style>{`
-                    @keyframes comicBubblePop {
-                      0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
-                      70%  { transform: scale(1.04) translateY(-2px); opacity: 1; }
-                      100% { transform: scale(1) translateY(0); opacity: 1; }
-                    }
-                    @keyframes speakPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
-                  `}</style>
+                <div
+                  key={lastComp.content.slice(0, 20)}
+                  style={{
+                    position: "absolute",
+                    top: "4%",
+                    left: "36%",
+                    right: "3%",
+                    zIndex: 10,
+                    animation: "comicBubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both",
+                  }}>
                   {/* Bubble body */}
                   <div style={{
-                    background: "linear-gradient(145deg, rgba(68,20,120,0.92) 0%, rgba(55,15,100,0.96) 100%)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    border: "2px solid rgba(196,180,252,0.28)",
-                    borderRadius: "20px 20px 20px 6px",
-                    padding: "11px 14px",
-                    boxShadow: "0 8px 36px rgba(88,28,135,0.65), 0 2px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
+                    background: "linear-gradient(145deg, rgba(72,22,128,0.93), rgba(50,10,95,0.97))",
+                    backdropFilter: "blur(22px)",
+                    WebkitBackdropFilter: "blur(22px)",
+                    border: "2px solid rgba(196,180,252,0.3)",
+                    borderRadius: "18px 18px 18px 5px",
+                    padding: "12px 15px",
+                    boxShadow: "0 8px 40px rgba(88,28,135,0.7), 0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.13)",
                     position: "relative",
                   }}>
-                    {/* Tail pointing bottom-left toward mouth */}
-                    <svg width="22" height="26" viewBox="0 0 22 26" fill="none"
-                      style={{ position: "absolute", left: -18, bottom: 12, zIndex: 1, filter: "drop-shadow(-2px 2px 4px rgba(0,0,0,0.3))" }}>
-                      <path d="M22 1 Q1 12 22 25 Z" fill="rgba(55,15,100,0.96)" />
-                      <path d="M22 1 Q1 12 22 25" stroke="rgba(196,180,252,0.28)" strokeWidth="1.5" fill="none" />
+                    {/* Tail: curves down-left toward her mouth */}
+                    <svg width="24" height="28" viewBox="0 0 24 28" fill="none"
+                      style={{ position: "absolute", left: -20, bottom: 14, zIndex: 1, filter: "drop-shadow(-2px 2px 5px rgba(0,0,0,0.35))" }}>
+                      <path d="M24 1 Q1 13 24 27 Z" fill="rgba(50,10,95,0.97)" />
+                      <path d="M24 1 Q1 13 24 27" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                     </svg>
                     <p style={{
                       margin: 0, color: "white",
-                      fontSize: 13.5, lineHeight: 1.55,
-                      fontWeight: 450, letterSpacing: "0.01em",
-                      maxHeight: "8em", overflow: "hidden",
+                      fontSize: 13.5, lineHeight: 1.58,
+                      fontWeight: 400, letterSpacing: "0.01em",
                       display: "-webkit-box",
-                      WebkitLineClamp: 5,
+                      WebkitLineClamp: 6,
                       WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
                     }}>
                       {lastComp.content}
                     </p>
