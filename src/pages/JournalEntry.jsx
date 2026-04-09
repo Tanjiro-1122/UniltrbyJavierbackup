@@ -248,6 +248,26 @@ export default function JournalEntry() {
     incrementJournalUsage();
     // ── Auto-save to DB (tiered) ──────────────────────────────────────────────
     saveJournalEntryToDB(newEntry);
+
+    // ── Journal → Memory bridge (premium+, fire-and-forget) ──────────────────
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
+      const isPro = localStorage.getItem("unfiltr_pro") === "true";
+      const isAnnual = localStorage.getItem("unfiltr_annual") === "true";
+      if (profileId && (isPremium || isPro || isAnnual) && entry.trim().split(/\s+/).length >= 20) {
+        fetch("/api/journalMemoryBridge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profileId,
+            journalContent: entry.trim(),
+            journalTitle: title?.trim() || "",
+            isPremium, isPro, isAnnual,
+          }),
+        }).catch(() => {}); // fire-and-forget — never blocks the user
+      }
+    } catch(e) { /* non-fatal */ }
     // ── Auto-save vibe + relationship mode for paid users ─────────────────────
     const tier = getTier();
     if (tier !== "free") {
