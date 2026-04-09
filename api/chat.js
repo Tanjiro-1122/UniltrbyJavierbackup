@@ -116,6 +116,34 @@ function buildMemoryConfirmationNudge(facts = {}, sessions = [], isPremium) {
   return `\n\nMemory check-in (do this naturally if the moment is right — don't force it): You remember that ${pick}. If the conversation flows there organically, gently check if that's still the case. Example: "Last time you mentioned X — how's that going?" Only do this ONCE and only if it fits naturally.`;
 }
 
+
+// ── #6: PROACTIVE MEMORY SURFACING ───────────────────────────────────────────
+// Gives the AI permission to volunteer a memory when the moment fits.
+// Only fires every ~5 messages (using message count as throttle) and 
+// only when the user has meaningful history. This prevents it from 
+// feeling robotic — the AI decides whether the moment is right.
+function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount = 0) {
+  // Only surface proactively every 5+ messages, and only if 3+ sessions
+  if (!sessions || sessions.length < 3) return "";
+  if (messageCount % 5 !== 0) return "";
+
+  const cues = [];
+  if (facts.recurring_struggles?.length) {
+    cues.push(`"${facts.recurring_struggles[0]}" (something they've struggled with)`);
+  }
+  if (facts.goals?.length) {
+    cues.push(`"${facts.goals[0]}" (a goal they mentioned)`);
+  }
+  if (sessions[0]?.summary) {
+    cues.push(`the last conversation: "${sessions[0].summary.slice(0, 80)}…"`);
+  }
+
+  if (!cues.length) return "";
+
+  const pick = cues[Math.floor(Math.random() * cues.length)];
+  return `\n\nProactive memory (optional — only use if it flows naturally into the conversation, not forced): You remember ${pick}. If the current message connects to this in any way, you may bring it up warmly — like a friend who remembered. Example: "Oh speaking of that — last time you mentioned X, how's that been going?" Only do this ONCE per response, and only if it genuinely fits.`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -129,8 +157,9 @@ export default async function handler(req, res) {
       isPremium  = false,
       isPro      = false,
       isAnnual   = false,
-      personality,
-    } = req.body;
+      personality,,
+      userFacts,
+      sessionMemoryFull,} = req.body;
 
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
 
@@ -151,11 +180,17 @@ export default async function handler(req, res) {
 
     // ── #3: Memory confirmation nudge ───────────────────────────────────
     const memoryConfirmCtx = buildMemoryConfirmationNudge(
-      req.body.userFacts || {},
-      req.body.sessionMemory || [],
+      userFacts || req.body.userFacts || {},
+      sessionMemoryFull || req.body.sessionMemory || [],
       isPremium || isPro || isAnnual
     );
 
+    // ── #6: Proactive memory surfacing ──────────────────────────────────
+    const proactiveCtx = buildProactiveMemoryInstruction(
+      userFacts || {},
+      sessionMemoryFull || [],
+      messages?.length || 0
+    );
     // ── Vector memory retrieval (premium+ only) ─────────────────────────
     let vectorCtx = "";
     if (profileId && (isPremium || isPro || isAnnual) && messages?.length) {
@@ -182,7 +217,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx +
+          content: system + memCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,
