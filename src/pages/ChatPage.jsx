@@ -1112,6 +1112,10 @@ export default function ChatPage() {
                 70%  { transform: scale(1.03) translateX(-2px); opacity: 1; }
                 100% { transform: scale(1)    translateX(0px);  opacity: 1; }
               }
+              @keyframes userBubbleFade {
+                0%   { opacity: 1; transform: scale(1) translateX(0); }
+                100% { opacity: 0; transform: scale(0.9) translateX(8px); }
+              }
               @keyframes avatarFloat {
                 0%,100% { transform: translateY(0px); }
                 50%     { transform: translateY(-5px); }
@@ -1333,19 +1337,21 @@ export default function ChatPage() {
             {/* This creates the flow: user sends → their bubble appears → dots → companion reply replaces everything */}
             {(() => {
               const lastUser = [...messages].reverse().find(m => m.role === "user");
-              // Show user bubble ONLY while loading (waiting for AI) — hides once companion replies
+              // Show user bubble while loading (waiting for AI)
+              // After reply arrives it fades out naturally via animation
               if (!lastUser) return null;
-              if (!loading) return null;
               return (
                 <div
-                  key={lastUser.content.slice(0,40)}
+                  key={lastUser.content.slice(0,40) + loading}
                   style={{
                     position: "absolute",
                     bottom: 28,
                     right: 14,
                     zIndex: 10,
                     maxWidth: "60%",
-                    animation: "userBubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1) both",
+                    animation: loading
+                      ? "userBubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1) both"
+                      : "userBubbleFade 0.5s ease forwards",
                     pointerEvents: "none",
                   }}
                 >
