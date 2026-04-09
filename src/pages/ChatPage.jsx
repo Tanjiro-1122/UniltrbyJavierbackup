@@ -1131,10 +1131,12 @@ export default function ChatPage() {
               }
             `}</style>
 
-            {/* ── AVATAR — fills entire area, stands from bottom center ── */}
+            {/* ── AVATAR — pinned to RIGHT half, stands from bottom ── */}
             <div style={{
               position: "absolute",
-              inset: 0,
+              top: 0, bottom: 0,
+              right: 0,
+              width: "58%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -1215,15 +1217,17 @@ export default function ChatPage() {
               </button>
             </div>
 
-            {/* ── COMPANION SPEECH BUBBLE — floats above her head in the sky ── */}
+            {/* ── COMPANION SPEECH BUBBLE — LEFT side, anchored bottom, grows UP ── */}
             <div style={{
               position: "absolute",
-              top: "8%",
+              top: "6%",
+              bottom: "46%",
               left: 14,
-              right: "26%",
+              right: "44%",
               zIndex: 10,
               display: "flex",
-              flexDirection: "row",
+              flexDirection: "column",
+              justifyContent: "flex-end",
               alignItems: "flex-start",
               pointerEvents: "none",
             }}>
@@ -1238,10 +1242,8 @@ export default function ChatPage() {
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
                       borderRadius: "22px 22px 22px 6px",
-                      maxHeight: "18dvh",
-                      overflow: "hidden",
                       padding: "16px 20px",
-                      maxWidth: "78%",
+                      width: "100%",
                       position: "relative",
                       boxShadow: "0 10px 40px rgba(88,28,135,0.65), inset 0 1px 0 rgba(255,255,255,0.12)",
                       display: "flex",
@@ -1277,7 +1279,7 @@ export default function ChatPage() {
                     border: "2px solid rgba(196,180,252,0.2)",
                     borderRadius: "22px 22px 22px 6px",
                     padding: "14px 18px",
-                    maxWidth: "78%",
+                    width: "100%",
                   }}>
                     <span style={{ color: "rgba(216,180,254,0.5)", fontSize: 14 }}>Say something to {companionDisplayName}… ✨</span>
                   </div>
@@ -1286,7 +1288,7 @@ export default function ChatPage() {
                 return (
                   <div
                     key={lastComp.content.slice(0,40)}
-                    style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", maxWidth: "78%", position: "relative" }}
+                    style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", width: "100%", position: "relative" }}
                   >
                     <div style={{
                       background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
@@ -1294,8 +1296,6 @@ export default function ChatPage() {
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
                       borderRadius: "22px 22px 22px 6px",
-                      maxHeight: "18dvh",
-                      overflow: "hidden",
                       padding: "14px 18px",
                       boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
                       position: "relative",
@@ -1352,7 +1352,7 @@ export default function ChatPage() {
                     bottom: 28,
                     right: 14,
                     zIndex: 10,
-                    maxWidth: "60%",
+                    maxWidth: "52%",
                     animation: loading
                       ? "userBubblePop 0.32s cubic-bezier(0.34,1.56,0.64,1) both"
                       : "userBubbleFade 0.5s ease forwards",
