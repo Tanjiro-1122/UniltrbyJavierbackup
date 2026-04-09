@@ -90,6 +90,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
       localStorage.setItem("unfiltr_companion_id", c.id);
       localStorage.setItem("companionId", c.id);
       setCompanion(updated);
+      window.dispatchEvent(new Event("unfiltr_companion_changed"));
 
       // Persist to DB via syncProfile (server-side — avoids SDK scope issue)
       const profileId = localStorage.getItem("userProfileId");
