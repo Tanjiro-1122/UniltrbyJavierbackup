@@ -1215,12 +1215,12 @@ export default function ChatPage() {
               </button>
             </div>
 
-            {/* ── COMPANION SPEECH BUBBLE — floats at mid-screen, above her head ── */}
+            {/* ── COMPANION SPEECH BUBBLE — floats above her head in the sky ── */}
             <div style={{
               position: "absolute",
-              top: "17%",
+              top: "8%",
               left: 14,
-              right: 14,
+              right: "26%",
               zIndex: 10,
               display: "flex",
               flexDirection: "row",
@@ -1238,6 +1238,8 @@ export default function ChatPage() {
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
                       borderRadius: "22px 22px 22px 6px",
+                      maxHeight: "18dvh",
+                      overflow: "hidden",
                       padding: "16px 20px",
                       maxWidth: "78%",
                       position: "relative",
@@ -1292,6 +1294,8 @@ export default function ChatPage() {
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
                       borderRadius: "22px 22px 22px 6px",
+                      maxHeight: "18dvh",
+                      overflow: "hidden",
                       padding: "14px 18px",
                       boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
                       position: "relative",
