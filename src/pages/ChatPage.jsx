@@ -1211,12 +1211,12 @@ export default function ChatPage() {
               </button>
             </div>
 
-            {/* ── COMPANION SPEECH BUBBLE — top area, floats above avatar ── */}
+            {/* ── COMPANION SPEECH BUBBLE — floats at mid-screen, above her head ── */}
             <div style={{
               position: "absolute",
-              top: 12,
-              left: 12,
-              right: 12,
+              top: "8%",
+              left: 14,
+              right: 14,
               zIndex: 10,
               display: "flex",
               flexDirection: "row",
@@ -1292,11 +1292,11 @@ export default function ChatPage() {
                       boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
                       position: "relative",
                     }}>
-                      {/* Tail pointing down toward avatar */}
-                      <svg width="18" height="20" viewBox="0 0 18 20" fill="none"
-                        style={{ position: "absolute", left: 22, bottom: -16, zIndex: 1 }}>
-                        <path d="M2 0 Q16 10 2 20 Z" fill="rgba(35,5,75,0.98)" />
-                        <path d="M2 0 Q16 10 2 20" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
+                      {/* Tail pointing DOWN toward avatar standing below */}
+                      <svg width="20" height="22" viewBox="0 0 20 22" fill="none"
+                        style={{ position: "absolute", left: 24, bottom: -18, zIndex: 1 }}>
+                        <path d="M2 0 L18 0 Q2 11 10 22 Z" fill="rgba(35,5,75,0.98)" />
+                        <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
                       <p style={{
                         color: "rgba(240,230,255,0.95)",
@@ -1329,10 +1329,13 @@ export default function ChatPage() {
               })()}
             </div>
 
-            {/* ── USER BUBBLE — bottom-right, floats above avatar ── */}
+            {/* ── USER BUBBLE — bottom-right, shows ONLY while waiting for reply (loading) ── */}
+            {/* This creates the flow: user sends → their bubble appears → dots → companion reply replaces everything */}
             {(() => {
               const lastUser = [...messages].reverse().find(m => m.role === "user");
-              if (!lastUser || loading) return null;
+              // Show user bubble ONLY while loading (waiting for AI) — hides once companion replies
+              if (!lastUser) return null;
+              if (!loading) return null;
               return (
                 <div
                   key={lastUser.content.slice(0,40)}
