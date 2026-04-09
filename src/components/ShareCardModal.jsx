@@ -2,7 +2,22 @@ import React, { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Share2 } from "lucide-react";
 
-export default function ShareCardModal({ visible, onClose, message, companionName, mood }) {
+// Unfiltr logo — purple heart circle (inline SVG so it always works, no external deps)
+function UnfiltrLogo({ size = 28 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "rgba(168,85,247,0.25)",
+      border: "1.5px solid rgba(168,85,247,0.5)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0,
+    }}>
+      <span style={{ fontSize: size * 0.55 }}>💜</span>
+    </div>
+  );
+}
+
+export default function ShareCardModal({ visible, onClose, message, companionName, companionAvatar, mood }) {
   const cardRef = useRef(null);
 
   const moodGradients = {
@@ -15,21 +30,30 @@ export default function ShareCardModal({ visible, onClose, message, companionNam
     fear:        "linear-gradient(135deg, #1a0a2e, #4c1d95)",
     disgust:     "linear-gradient(135deg, #14532d, #365314)",
     fatigue:     "linear-gradient(135deg, #1e1b4b, #374151)",
+    anxious:     "linear-gradient(135deg, #1e1b4b, #6d28d9)",
+    excited:     "linear-gradient(135deg, #dc2626, #f97316)",
+    hopeful:     "linear-gradient(135deg, #065f46, #7c3aed)",
   };
 
   const gradient = moodGradients[mood] || moodGradients.neutral;
 
   const handleShare = async () => {
-    const text = `"${message}"\n\n— ${companionName} on Unfiltr\n\nYour private AI companion 💜\nunfiltrbyjavier2.vercel.app`;
-    if (navigator.share) {
-      await navigator.share({ title: "Unfiltr", text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard!");
+    const text = `"${message}"\n\n— ${companionName || "Your companion"} on Unfiltr\n\nYour private AI companion 💜\nget it at: unfiltrbyjavier2.vercel.app`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${companionName || "Unfiltr"} says...`, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert("Copied to clipboard!");
+      }
+    } catch(e) {
+      // User cancelled share — that's fine
     }
   };
 
   if (!visible) return null;
+
+  const displayName = companionName || "Your companion";
 
   return (
     <AnimatePresence>
@@ -67,32 +91,55 @@ export default function ShareCardModal({ visible, onClose, message, companionNam
               ref={cardRef}
               style={{
                 background: gradient,
-                borderRadius: 24, padding: "32px 28px",
+                borderRadius: 24, padding: "28px 24px 20px",
                 marginBottom: 16, position: "relative", overflow: "hidden",
               }}
             >
-              {/* Decorative orb */}
+              {/* Decorative orbs */}
               <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
               <div style={{ position: "absolute", bottom: -20, left: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(0,0,0,0.15)", pointerEvents: "none" }} />
 
-              {/* Companion name */}
-              <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 600, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                {companionName} says
-              </p>
+              {/* Companion identity row — avatar + name at TOP */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, position: "relative", zIndex: 1 }}>
+                {companionAvatar ? (
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, overflow: "hidden",
+                    border: "2px solid rgba(255,255,255,0.25)",
+                    background: "rgba(0,0,0,0.2)", flexShrink: 0,
+                  }}>
+                    <img src={companionAvatar} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "bottom" }} />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, overflow: "hidden",
+                    border: "2px solid rgba(255,255,255,0.25)",
+                    background: "rgba(255,255,255,0.15)",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: 20 }}>✨</span>
+                  </div>
+                )}
+                <div>
+                  <p style={{ color: "white", fontWeight: 800, fontSize: 15, margin: 0 }}>{displayName}</p>
+                  <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, margin: 0 }}>your AI companion</p>
+                </div>
+              </div>
 
               {/* Quote */}
-              <p style={{ color: "white", fontSize: 18, fontWeight: 700, lineHeight: 1.55, margin: "0 0 24px", position: "relative", zIndex: 1 }}>
+              <p style={{ color: "white", fontSize: 17, fontWeight: 600, lineHeight: 1.6, margin: "0 0 20px", position: "relative", zIndex: 1 }}>
                 "{message}"
               </p>
 
-              {/* Branding */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 14 }}>💜</span>
-                </div>
+              {/* Unfiltr branding at bottom */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 14,
+                position: "relative", zIndex: 1,
+              }}>
+                <UnfiltrLogo size={26} />
                 <div>
-                  <p style={{ color: "white", fontWeight: 700, fontSize: 13, margin: 0 }}>Unfiltr</p>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, margin: 0 }}>Your private AI companion</p>
+                  <p style={{ color: "white", fontWeight: 700, fontSize: 12, margin: 0 }}>Unfiltr by Javier</p>
+                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, margin: 0 }}>Your private AI companion</p>
                 </div>
               </div>
             </div>
