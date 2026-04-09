@@ -70,15 +70,18 @@ export default function JournalWorldPicker() {
   const [idx, setIdx] = useState(0);
   const [loaded, setLoaded] = useState({});
   const [companionName, setCompanionName] = useState("your companion");
+  const [companionAvatar, setCompanionAvatar] = useState(null);
 
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
+  // Preload all world backgrounds
   useEffect(() => {
     WORLDS.forEach(w => {
       const img = new window.Image();
-      img.onload = () => setLoaded(prev => ({ ...prev, [w.id]: true }));
+      img.onload  = () => setLoaded(prev => ({ ...prev, [w.id]: true }));
+      img.onerror = () => setLoaded(prev => ({ ...prev, [w.id]: false }));
       img.src = w.bgImage;
     });
   }, []);
@@ -89,6 +92,7 @@ export default function JournalWorldPicker() {
       if (saved) {
         const p = JSON.parse(saved);
         setCompanionName(p.displayName || p.name || "your companion");
+        setCompanionAvatar(p.avatar || null);
       }
       const savedWorld = localStorage.getItem("unfiltr_journal_world");
       if (savedWorld) {
@@ -99,8 +103,7 @@ export default function JournalWorldPicker() {
   }, []);
 
   const goTo = useCallback((newIdx) => {
-    const clamped = Math.max(0, Math.min(WORLDS.length - 1, newIdx));
-    setIdx(clamped);
+    setIdx(Math.max(0, Math.min(WORLDS.length - 1, newIdx)));
   }, []);
 
   const handleEnter = () => {
@@ -113,14 +116,12 @@ export default function JournalWorldPicker() {
     touchStartY.current = e.touches[0].clientY;
     isSwiping.current = false;
   };
-
   const handleTouchMove = (e) => {
     if (touchStartX.current === null) return;
     const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
     const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
     if (dx > 10 && dx > dy) isSwiping.current = true;
   };
-
   const handleTouchEnd = (e) => {
     if (touchStartX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
@@ -142,34 +143,62 @@ export default function JournalWorldPicker() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Preload hidden imgs */}
+      {/* Hidden preload triggers */}
       <div style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0, overflow: "hidden" }}>
         {WORLDS.map(w => <img key={w.id} src={w.bgImage} alt="" />)}
       </div>
 
-      {/* Background layers */}
+      {/* Full-screen background layers — fallback always visible, image fades in on top */}
       {WORLDS.map((w, i) => (
         <div key={w.id} style={{
           position: "absolute", inset: 0, zIndex: 0,
-          background: w.bgFallback,
-          backgroundImage: loaded[w.id] ? `url(${w.bgImage})` : undefined,
-          backgroundSize: "cover", backgroundPosition: "center",
           opacity: i === idx ? 1 : 0,
           transition: "opacity 0.45s ease",
           pointerEvents: "none",
-        }} />
+        }}>
+          {/* Gradient fallback always present */}
+          <div style={{ position: "absolute", inset: 0, background: w.bgFallback }} />
+          {/* Image layer fades in when loaded */}
+          <div style={{
+            position: "absolute", inset: 0,
+            backgroundImage: loaded[w.id] ? `url(${w.bgImage})` : "none",
+            backgroundSize: "cover", backgroundPosition: "center",
+            transition: "opacity 0.4s ease",
+            opacity: loaded[w.id] ? 1 : 0,
+          }} />
+        </div>
       ))}
 
-      {/* Dark overlay */}
+      {/* Dark gradient overlay */}
       <div style={{
         position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: "linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,rgba(0,0,0,0.15) 35%,rgba(0,0,0,0.65) 70%,rgba(0,0,0,0.95) 100%)",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.55) 68%, rgba(0,0,0,0.95) 100%)",
       }} />
+
+      {/* Companion avatar — centered in background, behind cards */}
+      {companionAvatar && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 2,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+          paddingBottom: "18%",
+        }}>
+          <img
+            src={companionAvatar}
+            alt={companionName}
+            style={{
+              height: "52%", width: "auto",
+              objectFit: "contain",
+              filter: "drop-shadow(0 12px 36px rgba(0,0,0,0.65))",
+              opacity: 0.9,
+            }}
+          />
+        </div>
+      )}
 
       {/* Header */}
       <div style={{
         flexShrink: 0, position: "relative", zIndex: 20,
-        paddingTop: "max(1.5rem, env(safe-area-inset-top, 1.5rem))",
         padding: "max(1.5rem, env(safe-area-inset-top, 1.5rem)) 20px 10px",
         display: "flex", alignItems: "center", gap: 12,
       }}>
@@ -187,15 +216,15 @@ export default function JournalWorldPicker() {
         </button>
         <div>
           <h1 style={{ color: "white", fontWeight: 900, fontSize: 20, margin: 0, textShadow: "0 2px 12px rgba(0,0,0,0.8)" }}>
-            📓 Choose Your World
+            🎨 Pick Your Space
           </h1>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: "2px 0 0" }}>
-            {companionName} will meet you there ✨
+            {companionName} will hang out here with you ✨
           </p>
         </div>
       </div>
 
-      {/* Cards */}
+      {/* World cards carousel */}
       <div style={{
         flex: 1, position: "relative", display: "flex", alignItems: "center",
         justifyContent: "center", overflow: "hidden", zIndex: 10,
@@ -225,18 +254,21 @@ export default function JournalWorldPicker() {
                 WebkitTapHighlightColor: "transparent",
               }}
             >
+              {/* Card bg image */}
               <div style={{
                 position: "absolute", inset: 0,
                 backgroundImage: loaded[w.id] ? `url(${w.bgImage})` : "none",
                 backgroundSize: "cover", backgroundPosition: "center",
               }} />
+              {/* Card overlay */}
               <div style={{
                 position: "absolute", inset: 0,
                 background: isActive
-                  ? "linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.5) 55%,rgba(0,0,0,0.92) 100%)"
-                  : "linear-gradient(to bottom,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.78) 55%,rgba(0,0,0,0.97) 100%)",
+                  ? "linear-gradient(to bottom, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.48) 55%, rgba(0,0,0,0.92) 100%)"
+                  : "linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.78) 55%, rgba(0,0,0,0.97) 100%)",
                 pointerEvents: "none",
               }} />
+              {/* Card label */}
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0,
                 padding: "12px 16px 18px", textAlign: "center", pointerEvents: "none",
@@ -253,6 +285,7 @@ export default function JournalWorldPicker() {
           );
         })}
 
+        {/* Prev button */}
         <button
           onClick={(e) => { e.stopPropagation(); goTo(idx - 1); }}
           disabled={idx === 0}
@@ -264,13 +297,13 @@ export default function JournalWorldPicker() {
             display: "flex", alignItems: "center", justifyContent: "center",
             zIndex: 30, opacity: idx === 0 ? 0.25 : 1,
             cursor: idx === 0 ? "default" : "pointer",
-            transition: "opacity 0.2s",
-            WebkitTapHighlightColor: "transparent",
+            transition: "opacity 0.2s", WebkitTapHighlightColor: "transparent",
           }}
         >
           <ChevronLeft size={20} color="white" />
         </button>
 
+        {/* Next button */}
         <button
           onClick={(e) => { e.stopPropagation(); goTo(idx + 1); }}
           disabled={idx === WORLDS.length - 1}
@@ -282,8 +315,7 @@ export default function JournalWorldPicker() {
             display: "flex", alignItems: "center", justifyContent: "center",
             zIndex: 30, opacity: idx === WORLDS.length - 1 ? 0.25 : 1,
             cursor: idx === WORLDS.length - 1 ? "default" : "pointer",
-            transition: "opacity 0.2s",
-            WebkitTapHighlightColor: "transparent",
+            transition: "opacity 0.2s", WebkitTapHighlightColor: "transparent",
           }}
         >
           <ChevronRight size={20} color="white" />
@@ -311,7 +343,7 @@ export default function JournalWorldPicker() {
         ))}
       </div>
 
-      {/* Enter Button */}
+      {/* Enter button */}
       <div style={{
         flexShrink: 0, padding: "10px 24px",
         paddingBottom: "max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px))",
@@ -335,4 +367,3 @@ export default function JournalWorldPicker() {
     </div>
   );
 }
-
