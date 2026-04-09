@@ -153,9 +153,10 @@ export default function ChatMessages({ messages, loading, companionMood, setShar
                   <Share2 size={10} color="rgba(255,255,255,0.3)" />
                 </button>
                 {onBookmark && (
-                  <button onClick={() => { onBookmark(msg.content); toast.success("Moment saved 📌"); }}
-                    style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <Bookmark size={10} color="rgba(255,255,255,0.3)" />
+                  <button onClick={() => { onBookmark(msg.content); toast.success("Saved to bookmarks 📌"); }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    title="Save this moment">
+                    <Bookmark size={10} color="rgba(168,85,247,0.7)" />
                   </button>
                 )}
               </div>
