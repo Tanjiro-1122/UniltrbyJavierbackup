@@ -4,13 +4,15 @@ import { base44 } from "@/api/base44Client";
 import StickerPicker from "./StickerPicker";
 
 const MOODS = [
-  { id: "happy", emoji: "😊", label: "Happy" },
-  { id: "grateful", emoji: "🙏", label: "Grateful" },
-  { id: "reflective", emoji: "🪞", label: "Reflective" },
-  { id: "excited", emoji: "🎉", label: "Excited" },
+  { id: "happy", emoji: "😄", label: "Happy" },
+  { id: "contentment", emoji: "😌", label: "Content" },
   { id: "neutral", emoji: "😐", label: "Neutral" },
   { id: "sad", emoji: "😢", label: "Sad" },
-  { id: "anxious", emoji: "😰", label: "Anxious" },
+  { id: "fear", emoji: "😰", label: "Anxious" },
+  { id: "anger", emoji: "😤", label: "Frustrated" },
+  { id: "disgust", emoji: "🤢", label: "Disgusted" },
+  { id: "surprise", emoji: "😮", label: "Surprised" },
+  { id: "fatigue", emoji: "😴", label: "Tired" },
 ];
 
 const PROMPTS = [
@@ -109,7 +111,7 @@ export default function JournalWriter({ onSave, onBack }) {
       id: Date.now().toString(),
       title,
       content: content.trim(),
-      mood: mood || "reflective",
+      mood: mood || "neutral",
       images,
       stickers,
       created_date: new Date().toISOString(),

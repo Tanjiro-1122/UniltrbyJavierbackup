@@ -6,6 +6,19 @@ import JournalEntryDetail from "@/components/journal/JournalEntryDetail";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import JournalEmptyState from "@/components/journal/JournalEmptyState";
 import JournalWriter from "@/components/journal/JournalWriter";
+import JournalFeedbackModal from "@/components/journal/JournalFeedbackModal";
+
+const FEEDBACK_FALLBACK = "Thank you for sharing this with me 💜";
+
+function getCompanionName() {
+  const nickname = localStorage.getItem("unfiltr_companion_nickname");
+  if (nickname) return nickname;
+  try {
+    const parsed = JSON.parse(localStorage.getItem("unfiltr_companion") || "{}");
+    if (parsed.displayName) return parsed.displayName;
+  } catch {}
+  return "Your Companion";
+}
 
 export default function Journal() {
   const navigate = useNavigate();
@@ -13,6 +26,10 @@ export default function Journal() {
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [writing, setWriting] = useState(false);
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackMood, setFeedbackMood] = useState("neutral");
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
@@ -38,11 +55,42 @@ export default function Journal() {
   });
   const sortedGroups = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a));
 
-  const handleSaveNewEntry = (entry) => {
+  const handleSaveNewEntry = async (entry) => {
     const updated = [entry, ...entries];
     setEntries(updated);
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
     setWriting(false);
+
+    // Trigger AI companion feedback
+    const companionName = getCompanionName();
+    const userName = localStorage.getItem("unfiltr_display_name") || "";
+
+    if (entry.content && entry.content.trim()) {
+      setFeedbackMood(entry.mood || "neutral");
+      setFeedbackText("");
+      setFeedbackLoading(true);
+      setFeedbackVisible(true);
+
+      try {
+        const res = await fetch("/api/utils", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "journalFeedback",
+            companionName,
+            entryMood: entry.mood || "neutral",
+            entryContent: entry.content,
+            userName,
+          }),
+        });
+        const data = await res.json();
+        setFeedbackText(data?.data?.feedback || FEEDBACK_FALLBACK);
+      } catch {
+        setFeedbackText(FEEDBACK_FALLBACK);
+      } finally {
+        setFeedbackLoading(false);
+      }
+    }
   };
 
   if (writing) {
@@ -119,6 +167,14 @@ export default function Journal() {
         </div>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <JournalFeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+        companionName={getCompanionName()}
+        entryMood={feedbackMood}
+        feedback={feedbackText}
+        loading={feedbackLoading}
+      />
     </AppShell>
   );
 }
