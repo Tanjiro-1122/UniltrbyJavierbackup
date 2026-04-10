@@ -373,11 +373,55 @@ const { action } = req.body;
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
     if (action === "deleteAccount")       return await handleDeleteAccount(req, res);
     if (action === "updateCompanion")     return await handleUpdateCompanion(req, res);
+    if (action === "journalFeedback")     return await handleJournalFeedback(req, res);
     if (action === "saveJournalEntry")    return await handleSaveJournalEntry(req, res);
     if (action === "saveChatHistory")     return await handleSaveChatHistory(req, res);
         return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     console.error("[utils] Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+} ──────────────────────────────────────────────────────────
+async function handleJournalFeedback(req, res) {
+  const { companionName, entryMood, entryContent, userName } = req.body || {};
+  if (!entryMood || !entryContent) return res.status(400).json({ error: "entryMood and entryContent required" });
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const name = userName || "you";
+  const companion = companionName || "Your companion";
+
+  const MOOD_LABEL = {
+    happy: "happy",
+    contentment: "content",
+    neutral: "neutral",
+    sad: "sad",
+    fear: "anxious",
+    anger: "frustrated",
+    disgust: "disgusted",
+    surprise: "surprised",
+    fatigue: "tired",
+  };
+  const moodLabel = MOOD_LABEL[entryMood] || entryMood;
+
+  const systemPrompt = `You are ${companion}, a warm and empathetic AI companion. ${name} just saved a journal entry while feeling ${moodLabel}. Write a short, genuine response (2-3 sentences) acknowledging their mood and what they shared. Be supportive, validating, and speak like a close caring friend — not a therapist. No hashtags, no bullet points, no more than 3 sentences.`;
+
+  const snippet = entryContent.trim().slice(0, 300);
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Here's what I wrote: "${snippet}"` },
+      ],
+      max_tokens: 120,
+      temperature: 0.88,
+    });
+
+    const feedback = response.choices[0]?.message?.content?.trim() || "Thank you for sharing this with me 💜";
+    res.status(200).json({ data: { feedback } });
+  } catch (err) {
+    console.error("[journalFeedback] OpenAI error:", err);
     res.status(500).json({ error: err.message });
   }
 }
