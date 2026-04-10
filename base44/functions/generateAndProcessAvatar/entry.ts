@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 // Converts a base64 data URL to a Blob-like Uint8Array + mime type
 function dataUrlToBytes(dataUrl) {
