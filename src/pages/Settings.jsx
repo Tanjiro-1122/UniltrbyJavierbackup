@@ -14,6 +14,11 @@ import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import MemoryEditor from "@/components/chat/MemoryEditor";
 import { getMoodWeek } from "@/components/utils/moodTracker";
+import SettingsProfile from "@/components/settings/SettingsProfile";
+import SettingsCompanion from "@/components/settings/SettingsCompanion";
+import SettingsVoice from "@/components/settings/SettingsVoice";
+import SettingsNotifications from "@/components/settings/SettingsNotifications";
+import SettingsAdmin from "@/components/settings/SettingsAdmin";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -107,6 +112,7 @@ export default function Settings() {
   const [showDebug, setShowDebug]             = useState(false);
   const [debugLog, setDebugLog]               = useState([]);
   const [iapTesting, setIapTesting]           = useState(false);
+  const [activeTab, setActiveTab]             = useState("profile");
 
   const addLog = (msg, type = "info") => {
     const ts = new Date().toLocaleTimeString();
@@ -868,123 +874,160 @@ export default function Settings() {
         {isPremium && <span style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>✨ Premium</span>}
       </div>
 
-      {/* ── Main scroll ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 100px" }}>
-
-        {/* ── Streak Card ── */}
-        {(() => {
-          const longestStreak = window.__unfiltr_longest_streak || streak;
-          const streakColor = streak >= 30 ? "#f59e0b" : streak >= 7 ? "#a855f7" : "#f97316";
-          const streakLabel = streak >= 100 ? "🚀 Legend" : streak >= 30 ? "🏆 On Fire" : streak >= 7 ? "⚡ Weekly" : streak >= 3 ? "🔥 Going!" : "Start your streak";
-          // Mini calendar: last 7 days, show which had activity
-          const today = new Date();
-          const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{}');
-          const lastDate = sd.date ? new Date(sd.date) : null;
-          const days = ["S","M","T","W","T","F","S"];
-          const dayDots = Array.from({length:7}, (_,i) => {
-            const d = new Date(today); d.setDate(today.getDate() - (6 - i));
-            const dStr = d.toDateString();
-            let active = false;
-            if (lastDate && streak > 0) {
-              const diff = Math.round((lastDate - d) / 86400000);
-              active = diff >= 0 && diff < streak;
-            }
-            return { label: days[d.getDay()], active, isToday: dStr === today.toDateString() };
-          });
-          return (
-            <div style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(219,39,119,0.1))", border: `1px solid ${streakColor}33`, borderRadius: 20, padding: 16, marginBottom: 16 }}>
-              {/* Top row */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <div>
-                  <div style={{ color: streakColor, fontWeight: 900, fontSize: 32, lineHeight: 1 }}>
-                    {streak} 🔥
-                  </div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 2 }}>Day Streak</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 18 }}>{longestStreak} 👑</div>
-                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>Personal Best</div>
-                </div>
-              </div>
-              {/* 7-day dot calendar */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                {dayDots.map((d, i) => (
-                  <div key={i} style={{ textAlign: "center", flex: 1 }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%", margin: "0 auto 4px",
-                      background: d.active ? streakColor : "rgba(255,255,255,0.06)",
-                      border: d.isToday ? `2px solid ${streakColor}` : "none",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {d.active && <span style={{ fontSize: 13 }}>🔥</span>}
-                    </div>
-                    <div style={{ color: d.isToday ? streakColor : "rgba(255,255,255,0.25)", fontSize: 9, fontWeight: d.isToday ? 700 : 400 }}>{d.label}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Badge label */}
-              <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>
-                {streakLabel} · {daysSince} days together
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Stats row */}
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "12px 16px", display: "flex", marginBottom: 16 }}>
-          {[
-            { label: "Messages", value: userProfile?.message_count || 0, sub: "total sent" },
-            { label: "Days Together", value: daysSince, sub: "with companion" },
-            { label: "Moods Tracked", value: moodHistory.filter(Boolean).length, sub: "this week" },
-          ].map((s, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-              <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 18, margin: 0 }}>{s.value}</p>
-              <p style={{ color: "white", fontWeight: 600, fontSize: 11, margin: "2px 0 0" }}>{s.label}</p>
-              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, margin: "1px 0 0" }}>{s.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Premium banner (if not premium) */}
-        {!isPremium && (
-          <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginBottom: 20 }}>
-            <span style={{ fontSize: 22 }}>✨</span>
-            <div style={{ flex: 1, textAlign: "left" }}>
-              <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages · Voice · All companions</p>
-            </div>
-            <ChevronRight size={16} color="rgba(168,85,247,0.7)" />
+      {/* ── Tab Bar ── */}
+      <div style={{ flexShrink: 0, display: "flex", overflowX: "auto", padding: "0 12px", background: "#06020f", borderBottom: "1px solid rgba(255,255,255,0.06)", scrollbarWidth: "none" }}>
+        {[
+          { id: "profile", icon: "👤", label: "Profile" },
+          { id: "companion", icon: "💜", label: "Companion" },
+          { id: "voice", icon: "🎤", label: "Voice" },
+          { id: "notifications", icon: "🔔", label: "Notifications" },
+          ...(isAdmin ? [{ id: "admin", icon: "🛡️", label: "Admin" }] : []),
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              flexShrink: 0, display: "flex", alignItems: "center", gap: 5,
+              padding: "10px 14px", background: "none", border: "none", cursor: "pointer",
+              borderBottom: activeTab === tab.id ? "2px solid #a855f7" : "2px solid transparent",
+              color: activeTab === tab.id ? "#c084fc" : "rgba(255,255,255,0.4)",
+              fontWeight: activeTab === tab.id ? 700 : 500, fontSize: 13,
+              marginBottom: -1, transition: "color 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 14 }}>{tab.icon}</span>
+            {tab.label}
           </button>
+        ))}
+      </div>
+
+      {/* ── Main scroll ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 100px" }}>
+
+        {/* ── PROFILE TAB ── */}
+        {activeTab === "profile" && (
+          <>
+            {/* Streak Card */}
+            {(() => {
+              const longestStreak = window.__unfiltr_longest_streak || streak;
+              const streakColor = streak >= 30 ? "#f59e0b" : streak >= 7 ? "#a855f7" : "#f97316";
+              const streakLabel = streak >= 100 ? "🚀 Legend" : streak >= 30 ? "🏆 On Fire" : streak >= 7 ? "⚡ Weekly" : streak >= 3 ? "🔥 Going!" : "Start your streak";
+              const today = new Date();
+              const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{}');
+              const lastDate = sd.date ? new Date(sd.date) : null;
+              const days = ["S","M","T","W","T","F","S"];
+              const dayDots = Array.from({length:7}, (_,i) => {
+                const d = new Date(today); d.setDate(today.getDate() - (6 - i));
+                const dStr = d.toDateString();
+                let active = false;
+                if (lastDate && streak > 0) {
+                  const diff = Math.round((lastDate - d) / 86400000);
+                  active = diff >= 0 && diff < streak;
+                }
+                return { label: days[d.getDay()], active, isToday: dStr === today.toDateString() };
+              });
+              return (
+                <div style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(219,39,119,0.1))", border: `1px solid ${streakColor}33`, borderRadius: 20, padding: 16, marginTop: 16, marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div>
+                      <div style={{ color: streakColor, fontWeight: 900, fontSize: 32, lineHeight: 1 }}>{streak} 🔥</div>
+                      <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 2 }}>Day Streak</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 18 }}>{longestStreak} 👑</div>
+                      <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>Personal Best</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    {dayDots.map((d, i) => (
+                      <div key={i} style={{ textAlign: "center", flex: 1 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", margin: "0 auto 4px", background: d.active ? streakColor : "rgba(255,255,255,0.06)", border: d.isToday ? `2px solid ${streakColor}` : "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {d.active && <span style={{ fontSize: 13 }}>🔥</span>}
+                        </div>
+                        <div style={{ color: d.isToday ? streakColor : "rgba(255,255,255,0.25)", fontSize: 9, fontWeight: d.isToday ? 700 : 400 }}>{d.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600 }}>{streakLabel} · {daysSince} days together</div>
+                </div>
+              );
+            })()}
+
+            {/* SettingsProfile sub-component */}
+            <SettingsProfile
+              profile={userProfile}
+              onUpdate={updates => setUserProfile(p => ({ ...p, ...updates }))}
+              onSignOut={handleSignOut}
+            />
+
+            {/* More options */}
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8, marginTop: 8 }}>More</p>
+            <Section>
+              <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
+              <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
+              <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
+              <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
+              <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
+            </Section>
+
+            {!isPremium && (
+              <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginTop: 12 }}>
+                <span style={{ fontSize: 22 }}>✨</span>
+                <div style={{ flex: 1, textAlign: "left" }}>
+                  <p style={{ color: "white", fontWeight: 700, fontSize: 14, margin: 0 }}>Upgrade to Premium</p>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>Unlimited messages · Voice · All companions</p>
+                </div>
+                <ChevronRight size={16} color="rgba(168,85,247,0.7)" />
+              </button>
+            )}
+
+            <div style={{ textAlign: "center", paddingTop: 16 }}>
+              <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.2.0</span>
+            </div>
+          </>
         )}
 
-        {/* Main menu */}
-        <Section>
-          <Row icon={<User size={15} color="white" />} iconBg="#3b1a6e" label="Profile" value={userProfile?.display_name || localStorage.getItem("unfiltr_display_name") || ""} onPress={() => setScreen("profile")} />
-          <Row icon={<Mic size={15} color="white" />} iconBg="#6d1a40" label="Companion & Voice" value={companion?.name || ""} onPress={() => setScreen("companion")} />
-          <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
-          <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
-          <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
-          <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
-          <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
-          <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
-          <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} last />
-        </Section>
-
-        <Section>
-          <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
-        </Section>
-
-        {isAdmin && (
-          <Section>
-            <Row icon={<span style={{ fontSize: 14 }}>🛡️</span>} iconBg="#1a0a3d" label="Admin Dashboard" onPress={() => navigate("/AdminDashboard")} last />
-          </Section>
+        {/* ── COMPANION TAB ── */}
+        {activeTab === "companion" && (
+          <>
+            <SettingsCompanion
+              profile={userProfile}
+              companion={companion}
+              onCompanionChange={handleChangeCompanion}
+              onUpdate={updates => {}}
+            />
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Advanced</p>
+            <Section>
+              <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
+              <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
+              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} last />
+            </Section>
+          </>
         )}
 
+        {/* ── VOICE TAB ── */}
+        {activeTab === "voice" && (
+          <SettingsVoice
+            profile={userProfile}
+            onUpdate={updates => {
+              if (updates.voice_gender) setVoiceGender(updates.voice_gender);
+              if (updates.voice_personality) setVoicePersonality(updates.voice_personality);
+            }}
+          />
+        )}
 
+        {/* ── NOTIFICATIONS TAB ── */}
+        {activeTab === "notifications" && (
+          <SettingsNotifications
+            profile={userProfile}
+            onUpdate={() => {}}
+          />
+        )}
 
-        <div style={{ textAlign: "center", paddingTop: 8 }}>
-          <span onClick={handleAdminTap} style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, userSelect: "none", cursor: "default" }}>v1.2.0</span>
-        </div>
+        {/* ── ADMIN TAB ── */}
+        {activeTab === "admin" && isAdmin && (
+          <SettingsAdmin profile={userProfile} />
+        )}
       </div>
 
       {/* ── Sub-screens (slide in) ── */}

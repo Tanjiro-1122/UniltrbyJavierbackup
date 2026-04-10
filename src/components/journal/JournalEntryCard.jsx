@@ -2,22 +2,31 @@ import React from "react";
 import { Trash2 } from "lucide-react";
 
 const MOOD_EMOJI = {
-  happy: "😊", neutral: "😐", sad: "😢", anxious: "😰",
-  grateful: "🙏", reflective: "🪞", excited: "🎉",
+  happy: "😄",
+  contentment: "😌",
+  neutral: "😐",
+  sad: "😢",
+  fear: "😰",
+  anger: "😤",
+  disgust: "🤢",
+  surprise: "😮",
+  fatigue: "😴",
 };
 
 const MOOD_COLORS = {
   happy: "rgba(250,204,21,0.15)",
+  contentment: "rgba(74,222,128,0.15)",
   neutral: "rgba(148,163,184,0.12)",
   sad: "rgba(96,165,250,0.15)",
-  anxious: "rgba(251,146,60,0.15)",
-  grateful: "rgba(74,222,128,0.15)",
-  reflective: "rgba(168,85,247,0.15)",
-  excited: "rgba(244,114,182,0.15)",
+  fear: "rgba(251,146,60,0.15)",
+  anger: "rgba(239,68,68,0.15)",
+  disgust: "rgba(163,230,53,0.12)",
+  surprise: "rgba(251,191,36,0.15)",
+  fatigue: "rgba(139,92,246,0.15)",
 };
 
 export default function JournalEntryCard({ entry, onSelect, onDelete }) {
-  const mood = entry.mood || "reflective";
+  const mood = entry.mood || "neutral";
   const bgColor = MOOD_COLORS[mood] || "rgba(139,92,246,0.08)";
 
   return (

@@ -4,13 +4,15 @@ import { base44 } from "@/api/base44Client";
 import StickerPicker from "./StickerPicker";
 
 const MOODS = [
-  { id: "happy", emoji: "😊", label: "Happy" },
-  { id: "grateful", emoji: "🙏", label: "Grateful" },
-  { id: "reflective", emoji: "🪞", label: "Reflective" },
-  { id: "excited", emoji: "🎉", label: "Excited" },
+  { id: "happy", emoji: "😄", label: "Happy" },
+  { id: "contentment", emoji: "😌", label: "Content" },
   { id: "neutral", emoji: "😐", label: "Neutral" },
   { id: "sad", emoji: "😢", label: "Sad" },
-  { id: "anxious", emoji: "😰", label: "Anxious" },
+  { id: "fear", emoji: "😰", label: "Anxious" },
+  { id: "anger", emoji: "😤", label: "Frustrated" },
+  { id: "disgust", emoji: "🤢", label: "Disgusted" },
+  { id: "surprise", emoji: "😮", label: "Surprised" },
+  { id: "fatigue", emoji: "😴", label: "Tired" },
 ];
 
 const PROMPTS = [
@@ -32,6 +34,7 @@ export default function JournalWriter({ onSave, onBack }) {
   const [stickers, setStickers] = useState([]);
   const [showStickers, setShowStickers] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
@@ -94,7 +97,11 @@ export default function JournalWriter({ onSave, onBack }) {
   const removeSticker = (idx) => setStickers(prev => prev.filter((_, i) => i !== idx));
 
   const handleSave = async () => {
-    if (!content.trim() && images.length === 0 && stickers.length === 0) return;
+    if (!content.trim() && images.length === 0 && stickers.length === 0) {
+      setSaveError("Write something first before saving.");
+      return;
+    }
+    setSaveError("");
     setSaving(true);
 
     let title = "Untitled Entry";
@@ -109,7 +116,7 @@ export default function JournalWriter({ onSave, onBack }) {
       id: Date.now().toString(),
       title,
       content: content.trim(),
-      mood: mood || "reflective",
+      mood: mood || "neutral",
       images,
       stickers,
       created_date: new Date().toISOString(),
@@ -120,6 +127,7 @@ export default function JournalWriter({ onSave, onBack }) {
   };
 
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const charCount = content.length;
   const hasContent = content.trim() || images.length > 0 || stickers.length > 0;
 
   return (
@@ -141,17 +149,17 @@ export default function JournalWriter({ onSave, onBack }) {
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>
-            {wordCount} {wordCount === 1 ? "word" : "words"}
+            {wordCount} {wordCount === 1 ? "word" : "words"} · {charCount} chars
           </span>
           <button
             onClick={handleSave}
-            disabled={!hasContent || saving}
+            disabled={saving}
             style={{
               display: "flex", alignItems: "center", gap: 6,
               background: hasContent ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.05)",
               border: hasContent ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 20, padding: "8px 16px", cursor: hasContent ? "pointer" : "default",
-              opacity: hasContent ? 1 : 0.4,
+              borderRadius: 20, padding: "8px 16px", cursor: "pointer",
+              opacity: saving ? 0.6 : 1,
             }}
           >
             {saving ? (
@@ -191,6 +199,11 @@ export default function JournalWriter({ onSave, onBack }) {
             </button>
           ))}
         </div>
+        {saveError && (
+          <p style={{ color: "#f87171", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
+            ⚠ {saveError}
+          </p>
+        )}
       </div>
 
       {/* Divider line */}
