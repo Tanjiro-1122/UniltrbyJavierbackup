@@ -8,6 +8,9 @@ import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import BottomTabs from "@/components/BottomTabs";
 import SplashScreen from "@/components/SplashScreen";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import FeatureErrorBoundary from "@/components/FeatureErrorBoundary";
+import { useStorageCleanup } from "@/hooks/useStorageCleanup";
 import { useEffect, useState } from "react";
 
 import HomePage               from "./pages/HomePage";
@@ -185,6 +188,7 @@ function useNativeBridge() {
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
   useNativeBridge();
+  useStorageCleanup();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -289,10 +293,10 @@ const AuthenticatedApp = ({ splashDone }) => {
 
         {/* Main app */}
         <Route path="/"                      element={<HomePage />} />
-        <Route path="/chat"                  element={<ChatPage />} />
+        <Route path="/chat"                  element={<FeatureErrorBoundary feature="Chat"><ChatPage /></FeatureErrorBoundary>} />
         <Route path="/chat-history"          element={<ChatHistory />} />
         <Route path="/vibe"                  element={<VibePage />} />
-        <Route path="/settings"              element={<Settings />} />
+        <Route path="/settings"              element={<FeatureErrorBoundary feature="Settings"><Settings /></FeatureErrorBoundary>} />
         <Route path="/Pricing"               element={<Pricing />} />
         <Route path="/pricing"               element={<Pricing />} />
         <Route path="/feedback"              element={<FeedbackPage />} />
@@ -306,7 +310,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/journal/list"          element={<JournalList />} />
         <Route path="/journal/entry"         element={<JournalEntry />} />
         <Route path="/journal/world"         element={<JournalWorldPicker />} />
-        <Route path="/journal/immersive"     element={<JournalImmersive />} />
+        <Route path="/journal/immersive"     element={<FeatureErrorBoundary feature="Journal"><JournalImmersive /></FeatureErrorBoundary>} />
         <Route path="/journal/entry/:id"     element={<JournalEntry />} />
         <Route path="/AdminAvatarProcessor"  element={<AdminAvatarProcessor />} />
         <Route path="/AdminDashboard"        element={<AdminDashboard />} />
@@ -325,22 +329,24 @@ function App() {
   const [splashDone, setSplashDone] = useState(!isFirstLaunch);
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <SafeAreaFix />
-          {showSplash && (
-            <SplashScreen onComplete={() => {
-              setShowSplash(false);
-              setSplashDone(true);
-            }} />
-          )}
-          <AuthenticatedApp splashDone={splashDone} />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-      <DebugPanel />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <SafeAreaFix />
+            {showSplash && (
+              <SplashScreen onComplete={() => {
+                setShowSplash(false);
+                setSplashDone(true);
+              }} />
+            )}
+            <AuthenticatedApp splashDone={splashDone} />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+        <DebugPanel />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Smile, Image, Settings } from "lucide-react";
 import { COMPANIONS } from "../components/companionData";
+import { addJournalEntry } from "@/lib/storageManager";
 
 function getTier() {
   if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
@@ -221,8 +222,7 @@ export default function JournalImmersive() {
       content: entry.trim(), mood: localStorage.getItem("unfiltr_mood") || "neutral", world: worldId,
       created_date: new Date().toISOString(),
     };
-    const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
-    localStorage.setItem("unfiltr_journal_entries", JSON.stringify([fullEntry, ...existing]));
+    addJournalEntry(fullEntry);
     saveJournalEntryToDB(fullEntry);
     setEntry("");
     setSaving(false);

@@ -8,6 +8,7 @@ import {
 import ChatCustomizePanel from "@/components/chat/ChatCustomizePanel";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { addJournalEntry } from "@/lib/storageManager";
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
@@ -42,7 +43,6 @@ export default function ChatHeader({
         },
       },
     });
-    const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     const entry = {
       id: Date.now().toString(),
       title: res.title || "Journal Entry",
@@ -51,8 +51,7 @@ export default function ChatHeader({
       companion_name: companion.displayName || companion.name,
       created_date: new Date().toISOString(),
     };
-    existing.unshift(entry);
-    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(existing));
+    addJournalEntry(entry);
     setSaving(false);
     toast.success("Journal entry saved ✨");
     navigate("/journal");

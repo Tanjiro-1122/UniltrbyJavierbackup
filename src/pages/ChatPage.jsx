@@ -7,6 +7,7 @@ import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge"
 import ShareCardModal from "@/components/ShareCardModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
+import { getMoodEmoji } from "@/lib/moodConfig";
 
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatMessages from "@/components/chat/ChatMessages";
@@ -733,26 +734,37 @@ export default function ChatPage() {
       triggerAnim("talk", 99999);
       const cleanText = text.replace(/[\*\_\~\#\>`]/g, "").slice(0, 400);
       if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
-      
+
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
-      
-      const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: cleanText, companionId, voiceGender, voicePersonality }) }).then(r => r.json()).then(d => ({ data: d }));
-      
-      const base64 = res.data?.audio;
-      if (!base64) { 
-        console.warn("[TTS] No audio in response"); 
-        setIsSpeaking(false); setAvatarState("idle"); return; 
+
+      const ttsRes = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanText, companionId, voiceGender, voicePersonality }),
+      });
+
+      if (!ttsRes.ok) {
+        console.warn("[TTS] API error:", ttsRes.status);
+        setIsSpeaking(false); setAvatarState("idle"); return;
       }
-      
+
+      const ttsData = await ttsRes.json();
+      const base64 = ttsData?.audio;
+      if (!base64) {
+        console.warn("[TTS] No audio in response");
+        setIsSpeaking(false); setAvatarState("idle"); return;
+      }
+
       // Resume again right before playback (iOS may have re-suspended during the API call)
       try { await resumeAudioContext(); } catch {}
-      
+
       await playAudioFromBase64(base64);
       setIsSpeaking(false); setAvatarState("idle");
-    } catch (e) { 
-      console.error("[TTS] speakText failed:", e?.message, e); 
-      setIsSpeaking(false); setAvatarState("idle"); 
+    } catch (e) {
+      console.error("[TTS] speakText failed:", e?.message, e);
+      setIsSpeaking(false); setAvatarState("idle");
+      // Silently fall back to text-only — user already sees the reply
     }
   };
 
@@ -986,23 +998,42 @@ export default function ChatPage() {
       const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-      // Save memory after every 5 user messages (was 8-10 — too infrequent)
-      // Also always save at end-of-session marker (4 messages for a meaningful note)
+      // Save memory after every N user messages
       const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
       if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
-        fetch("/api/summarizeSession", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-          messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
-          profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
-        }) }).then(r => r.json()).then(r => {
-          if (r.data?.ok && !r.data?.skipped) {
-            base44.entities.UserProfile.get(profileId2).then(p => {
-              if (p?.session_memory) setSessionMemory(p.session_memory);
-              if (p?.user_facts)     setUserFacts(p.user_facts);
-              if (p?.memory_summary) setMemorySummary(p.memory_summary);
-            }).catch(() => {});
+        // Retry helper with exponential backoff
+        const trySummarize = async (attempt = 0) => {
+          try {
+            const sumRes = await fetch("/api/summarizeSession", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
+                profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
+              }),
+            });
+            const sumData = await sumRes.json();
+            if (sumData?.ok && !sumData?.skipped) {
+              try {
+                const p = await base44.entities.UserProfile.get(profileId2);
+                if (p?.session_memory) setSessionMemory(p.session_memory);
+                if (p?.user_facts)     setUserFacts(p.user_facts);
+                if (p?.memory_summary) setMemorySummary(p.memory_summary);
+              } catch (profileErr) {
+                console.warn("[Memory] Profile update fetch failed:", profileErr?.message);
+              }
+            }
+          } catch (sumErr) {
+            console.warn(`[Memory] Summarize attempt ${attempt + 1} failed:`, sumErr?.message);
+            if (attempt < 2) {
+              setTimeout(() => trySummarize(attempt + 1), (attempt + 1) * 2000);
+            } else {
+              console.error("[Memory] Summarize failed after retries — memory will save on next interval.");
+            }
           }
-        }).catch(() => {});
+        };
+        trySummarize();
       }
     } catch (error) {
       console.error("Chat send failed:", error?.message || error, error?.response?.data);
@@ -1398,7 +1429,7 @@ export default function ChatPage() {
                           fontSize: 13,
                           border: "1.5px solid rgba(196,180,252,0.25)",
                         }}>
-                          {companionMood==="happy"?"😄":companionMood==="sad"?"😢":companionMood==="surprise"?"😮":companionMood==="anger"?"😤":companionMood==="fear"?"😰":companionMood==="disgust"?"😒":companionMood==="contentment"?"😌":companionMood==="fatigue"?"😴":""}
+                          {getMoodEmoji(companionMood)}
                         </div>
                       )}
                     </div>

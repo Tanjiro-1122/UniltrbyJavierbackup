@@ -1,29 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { X, TrendingUp } from "lucide-react";
+import { MOOD_COLORS, MOOD_LABELS, getMoodColor, getMoodLabel } from "@/lib/moodConfig";
 
 const STORAGE_KEY = "unfiltr_mood_history";
-
-const MOOD_COLORS = {
-  happy: "#facc15",
-  calm: "#4ade80",
-  neutral: "#94a3b8",
-  sad: "#60a5fa",
-  frustrated: "#f97316",
-  anxious: "#f43f5e",
-  loved: "#ec4899",
-  motivated: "#ef4444",
-};
-
-const MOOD_LABELS = {
-  happy: "Happy 😊",
-  calm: "Calm 😌",
-  neutral: "Neutral 😐",
-  sad: "Sad 😔",
-  frustrated: "Frustrated 😤",
-  anxious: "Anxious 😰",
-  loved: "Loved 🥰",
-  motivated: "Motivated 🔥",
-};
 
 function getMoodHistory(days = 30) {
   const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -104,8 +83,8 @@ export default function MoodInsights({ visible, onClose }) {
             {data.map((d, i) => (
               <div key={i} title={d.mood || "No log"} style={{
                 width: 24, height: 24, borderRadius: 6,
-                background: d.mood ? (MOOD_COLORS[d.mood] || "#6b7280") + "40" : "rgba(255,255,255,0.04)",
-                border: d.mood ? `1px solid ${MOOD_COLORS[d.mood] || "#6b7280"}50` : "1px solid rgba(255,255,255,0.06)",
+                background: d.mood ? (getMoodColor(d.mood)) + "40" : "rgba(255,255,255,0.04)",
+                border: d.mood ? `1px solid ${getMoodColor(d.mood)}50` : "1px solid rgba(255,255,255,0.06)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 9, color: "rgba(255,255,255,0.4)",
               }}>
@@ -127,9 +106,9 @@ export default function MoodInsights({ visible, onClose }) {
               {counts.slice(0, 4).map(({ mood, count }) => (
                 <div key={mood} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(count / logged) * 100}%`, borderRadius: 4, background: MOOD_COLORS[mood] || "#6b7280" }} />
+                    <div style={{ height: "100%", width: `${(count / logged) * 100}%`, borderRadius: 4, background: getMoodColor(mood) }} />
                   </div>
-                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, minWidth: 80 }}>{MOOD_LABELS[mood] || mood}</span>
+                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, minWidth: 80 }}>{getMoodLabel(mood)}</span>
                   <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>{count}</span>
                 </div>
               ))}
@@ -142,7 +121,7 @@ export default function MoodInsights({ visible, onClose }) {
             }}>
               <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, margin: 0, lineHeight: 1.6 }}>
                 You logged your mood <strong style={{ color: "#c084fc" }}>{logged}</strong> out of {data.length} days.
-                {topMood && <> Your most frequent mood was <strong style={{ color: MOOD_COLORS[topMood] }}>{MOOD_LABELS[topMood]}</strong>.</>}
+                {topMood && <> Your most frequent mood was <strong style={{ color: getMoodColor(topMood) }}>{getMoodLabel(topMood)}</strong>.</>}
               </p>
             </div>
           </>

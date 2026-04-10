@@ -1,13 +1,18 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
 const AuthContext = createContext();
+
+const PROFILE_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser]                       = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth]     = useState(true);
   const [authError, setAuthError]             = useState(null);
+
+  // UserProfile cache: { data, timestamp }
+  const profileCache = useRef(null);
 
   const checkAuth = () => {
     const userId    = localStorage.getItem("unfiltr_user_id");
@@ -40,8 +45,36 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  /**
+   * getCachedProfile — returns a cached UserProfile, refreshing if expired.
+   * @param {string} profileId - The Base44 UserProfile record ID
+   * @returns {Promise<Object|null>}
+   */
+  const getCachedProfile = async (profileId) => {
+    if (!profileId) return null;
+    const now = Date.now();
+    if (profileCache.current && profileCache.current.id === profileId &&
+        now - profileCache.current.timestamp < PROFILE_CACHE_TTL_MS) {
+      return profileCache.current.data;
+    }
+    try {
+      const profile = await base44.entities.UserProfile.get(profileId);
+      profileCache.current = { id: profileId, data: profile, timestamp: now };
+      return profile;
+    } catch (e) {
+      console.warn("[AuthContext] getCachedProfile failed:", e?.message);
+      return profileCache.current?.data || null;
+    }
+  };
+
+  /** Invalidate the profile cache (call after settings changes). */
+  const invalidateProfileCache = () => {
+    profileCache.current = null;
+  };
+
   const logout = async () => {
     try { await base44.auth.logout(); } catch (e) {}
+    profileCache.current = null;
     localStorage.removeItem("unfiltr_auth_token");
     localStorage.removeItem("unfiltr_user_id");
     localStorage.removeItem("unfiltr_user_email");
@@ -65,6 +98,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkAppState: checkAuth,
+      getCachedProfile,
+      invalidateProfileCache,
     }}>
       {children}
     </AuthContext.Provider>
