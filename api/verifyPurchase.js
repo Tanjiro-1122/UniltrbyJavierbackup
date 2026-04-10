@@ -1,12 +1,10 @@
-// ✅ Hardcoded prod app ID — VITE_ vars are unavailable in serverless
-const B44_APP     = "69b332a392004d139d4ba495";
-const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+import { B44_ENTITIES, b44Token } from "./_b44.js";
 
 async function b44FindAndUpdate(appleUserId, data) {
+  const token = b44Token();
   const searchRes = await fetch(
-    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
+    `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: { "Authorization": `Bearer ${token}` } }
   );
   let profiles = [];
   try { profiles = await searchRes.json(); } catch {}
@@ -14,8 +12,8 @@ async function b44FindAndUpdate(appleUserId, data) {
   // Fallback: search by user_id field
   if (!profiles?.length) {
     const r2 = await fetch(
-      `${B44_BASE}/UserProfile?user_id=${encodeURIComponent(appleUserId)}`,
-      { headers: { "Authorization": `Bearer ${B44_API_KEY}` } }
+      `${B44_ENTITIES}/UserProfile?user_id=${encodeURIComponent(appleUserId)}`,
+      { headers: { "Authorization": `Bearer ${token}` } }
     );
     try { profiles = await r2.json(); } catch {}
   }
@@ -26,9 +24,9 @@ async function b44FindAndUpdate(appleUserId, data) {
   }
 
   const profileId = profiles[0].id;
-  const res = await fetch(`${B44_BASE}/UserProfile/${profileId}`, {
+  const res = await fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
     body: JSON.stringify(data),
   });
   return res.ok;

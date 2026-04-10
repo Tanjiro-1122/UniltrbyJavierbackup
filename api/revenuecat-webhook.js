@@ -5,10 +5,13 @@
  * Finds the user by apple_user_id and updates their premium status.
  *
  * RevenueCat sends the Apple User ID as `app_user_id` after Purchases.logIn(appleUserId).
+ *
+ * Required environment variables:
+ *   BASE44_SERVICE_TOKEN         — Base44 service-role token
+ *   REVENUECAT_WEBHOOK_AUTH_HEADER — expected Authorization header value from RevenueCat
  */
 
-const B44_APP = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+import { B44_ENTITIES, b44Headers } from "./_b44.js";
 
 // Events that grant premium
 const GRANT_EVENTS = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "SUBSCRIBER_ALIAS"];
@@ -22,10 +25,9 @@ const PRODUCT_MAP = {
 };
 
 async function findProfile(appleUserId) {
-  const apiKey = process.env.BASE44_SERVICE_TOKEN;
   const res = await fetch(
-    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+    `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+    { headers: b44Headers() }
   );
   const data = await res.json();
   const records = Array.isArray(data) ? data : (data?.records || data?.data || []);
@@ -33,31 +35,51 @@ async function findProfile(appleUserId) {
 }
 
 async function updateProfile(profileId, updates) {
-  const apiKey = process.env.BASE44_SERVICE_TOKEN;
-  const res = await fetch(`${B44_BASE}/UserProfile/${profileId}`, {
+  const res = await fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
     method: "PUT",
-    headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: b44Headers(),
     body: JSON.stringify(updates),
   });
   return res.ok;
 }
 
+/** Constant-time string comparison to prevent timing-based token oracle. */
+function timingSafeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) {
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i % b.length) || 0);
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // Auth check
+  // Auth check (constant-time comparison)
   const authHeader = req.headers["authorization"] || "";
   const expected = process.env.REVENUECAT_WEBHOOK_AUTH_HEADER || "";
   // Strip "Bearer " prefix from both sides for flexible matching
   const incomingToken = authHeader.replace(/^Bearer\s+/i, "").trim();
   const expectedToken = expected.replace(/^Bearer\s+/i, "").trim();
 
-  if (!incomingToken || incomingToken !== expectedToken) {
+  if (!incomingToken || !timingSafeEqual(incomingToken, expectedToken)) {
     console.error("[RC Webhook] Unauthorized");
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const event = req.body?.event || req.body;
+  // Defensive JSON parsing — Vercel may deliver body as a string depending on config.
+  let rawBody = req.body;
+  if (typeof rawBody === "string") {
+    try { rawBody = JSON.parse(rawBody); } catch {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+  }
+
+  const event = rawBody?.event || rawBody;
   const eventType = event?.type;
   const appUserId = event?.app_user_id;
   const aliases   = event?.aliases || [];

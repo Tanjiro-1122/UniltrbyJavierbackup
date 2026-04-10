@@ -1,5 +1,5 @@
 import OpenAI from 'npm:openai';
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
@@ -8,7 +8,26 @@ Deno.serve(async (req) => {
     // Auth is handled by the SDK on the frontend — base44.functions.invoke() 
     // already requires a logged-in user. We skip server-side auth.me() check 
     // because it has been causing false 401s on mobile apps.
-    const { messages, systemPrompt, isPremium, sessionMemory, memorySummary, imageBase64 } = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const { messages, systemPrompt, isPremium, sessionMemory, memorySummary, imageBase64 } = body as {
+      messages?: Array<{ role: string; content: string }>;
+      systemPrompt?: string;
+      isPremium?: boolean;
+      sessionMemory?: Array<{ date: string; summary: string }>;
+      memorySummary?: string;
+      imageBase64?: string;
+    };
+
+    // Validate required fields.
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return Response.json({ error: 'messages array is required and must not be empty' }, { status: 400 });
+    }
 
     // Build memory block (premium gets session_memory array, free gets condensed summary)
     let memoryBlock = "";
@@ -110,8 +129,9 @@ DO NOT default to neutral. Read the emotional context carefully. This tag MUST b
     const isCrisis = lastUserMsg && crisisKeywords.some(kw => lastUserMsg.content.toLowerCase().includes(kw));
 
     return Response.json({ reply, mood, crisis: isCrisis || false });
-  } catch (error) {
-    console.error('Chat function error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Chat function error:', msg);
+    return Response.json({ error: 'An error occurred processing your request' }, { status: 500 });
   }
 });
