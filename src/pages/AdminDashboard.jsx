@@ -82,10 +82,10 @@ function UserDetailPanel({ user, adminToken, onAction, showToast }) {
     if (!reason.trim()) { setSaveMsg("❌ Reason is required"); return; }
     setSaving(true); setSaveMsg("");
     try {
-      const res = await fetch("/api/admin/subscriptionOverride", {
+      const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken, userId: user.id, subscription: subForm, reason }),
+        body: JSON.stringify({ adminToken, action: "subscriptionOverride", userId: user.id, subscription: subForm, reason }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Failed");
@@ -284,10 +284,10 @@ export default function AdminDashboard() {
   const doSearch = async (q) => {
     setSearching(true);
     try {
-      const res = await fetch("/api/admin/userSearch", {
+      const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, query: q }),
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -299,10 +299,10 @@ export default function AdminDashboard() {
   const doMemSearch = async (q) => {
     setMemSearching(true);
     try {
-      const res = await fetch("/api/admin/userSearch", {
+      const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, query: q }),
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -314,10 +314,10 @@ export default function AdminDashboard() {
   const loadAuditLog = async () => {
     setAuditLoading(true);
     try {
-      const res = await fetch("/api/admin/auditLog", {
+      const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN }),
+        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "auditLog" }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
