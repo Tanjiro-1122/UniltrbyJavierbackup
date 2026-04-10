@@ -6,6 +6,7 @@ import JournalEntryDetail from "@/components/journal/JournalEntryDetail";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import JournalEmptyState from "@/components/journal/JournalEmptyState";
 import JournalWriter from "@/components/journal/JournalWriter";
+import { saveJournalEntries } from "@/lib/storageManager";
 
 export default function Journal() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function Journal() {
   const handleDelete = (id) => {
     const updated = entries.filter(x => x.id !== id);
     setEntries(updated);
-    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
+    saveJournalEntries(updated);
     if (selectedEntry?.id === id) setSelectedEntry(null);
   };
 
@@ -41,7 +42,7 @@ export default function Journal() {
   const handleSaveNewEntry = (entry) => {
     const updated = [entry, ...entries];
     setEntries(updated);
-    localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
+    saveJournalEntries(updated);
     setWriting(false);
   };
 

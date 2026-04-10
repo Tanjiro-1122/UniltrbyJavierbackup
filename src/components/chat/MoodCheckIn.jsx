@@ -1,16 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { saveMood } from "@/components/utils/moodTracker";
-
-const MOODS = [
-  { emoji: "😊", label: "Happy", value: "happy" },
-  { emoji: "😌", label: "Calm", value: "calm" },
-  { emoji: "😐", label: "Meh", value: "neutral" },
-  { emoji: "😔", label: "Sad", value: "sad" },
-  { emoji: "😤", label: "Frustrated", value: "frustrated" },
-  { emoji: "😰", label: "Anxious", value: "anxious" },
-  { emoji: "🥰", label: "Loved", value: "loved" },
-  { emoji: "🔥", label: "Motivated", value: "motivated" },
-];
+import { MOODS } from "@/lib/moodConfig";
 
 export default function MoodCheckIn({ visible, onSelect, onDismiss, companionName }) {
   const [selected, setSelected] = useState(null);
