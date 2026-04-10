@@ -9,7 +9,7 @@ function NicknameField() {
   const save = () => {
     const trimmed = nick.trim();
     if (!trimmed) { setError("Nickname cannot be empty."); return; }
-    if (trimmed.length < 1 || trimmed.length > 30) { setError("Nickname must be 1–30 characters."); return; }
+    if (trimmed.length > 30) { setError("Max 30 characters."); return; }
     setError("");
     localStorage.setItem("unfiltr_companion_nickname", trimmed);
     setSaved(true);

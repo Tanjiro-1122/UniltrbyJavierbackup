@@ -28,7 +28,7 @@ export default function SettingsCompanion({ profile, companion, onCompanionChang
 
   const saveNick = () => {
     const trimmed = nick.trim();
-    if (trimmed.length < 1) { setNickError("Nickname cannot be empty."); return; }
+    if (!trimmed) { setNickError("Nickname cannot be empty."); return; }
     if (trimmed.length > 30) { setNickError("Max 30 characters."); return; }
     setNickError("");
     localStorage.setItem("unfiltr_companion_nickname", trimmed);
