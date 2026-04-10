@@ -117,6 +117,14 @@ const STICKER_DEFS = [
   },
 ];
 
+const AI_SUGGESTIONS = [
+  { at: 20,  key: "20",  msg: "You're off to a great start. What feeling is strongest right now?" },
+  { at: 50,  key: "50",  msg: "Keep going — what do you wish someone understood about this?" },
+  { at: 100, key: "100", msg: "You're really opening up 💜. What would feel like relief right now?" },
+  { at: 150, key: "150", msg: "What do you want to remember about today, a year from now?" },
+  { at: 200, key: "200", msg: "Amazing depth. Is there anything you haven't written yet that still needs to come out?" },
+];
+
 function PlacedSticker({ sticker, onRemove, constraintsRef }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const tapRef = useRef(0);
@@ -214,13 +222,6 @@ export default function JournalEntry() {
   }, []);
 
   // ── AI suggestion triggers based on word count ─────────────────────────
-  const AI_SUGGESTIONS = [
-    { at: 20,  key: "20",  msg: "You're off to a great start. What feeling is strongest right now?" },
-    { at: 50,  key: "50",  msg: "Keep going — what do you wish someone understood about this?" },
-    { at: 100, key: "100", msg: "You're really opening up 💜. What would feel like relief right now?" },
-    { at: 150, key: "150", msg: "What do you want to remember about today, a year from now?" },
-    { at: 200, key: "200", msg: "Amazing depth. Is there anything you haven't written yet that still needs to come out?" },
-  ];
   const wordCount = entry.trim() ? entry.trim().split(/\s+/).length : 0;
 
   useEffect(() => {
@@ -229,8 +230,8 @@ export default function JournalEntry() {
       if (wordCount >= s.at && !aiSuggestionShownRef.current.has(s.key)) {
         aiSuggestionShownRef.current.add(s.key);
         setAiSuggestion({ key: s.key, msg: s.msg, name: companionName });
-        const timer = setTimeout(() => setAiSuggestion(null), 8000);
-        return () => clearTimeout(timer);
+        const suggestionDismissTimer = setTimeout(() => setAiSuggestion(null), 8000);
+        return () => clearTimeout(suggestionDismissTimer);
       }
     }
   }, [wordCount, companionData]);

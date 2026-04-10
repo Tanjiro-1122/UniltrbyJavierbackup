@@ -54,6 +54,15 @@ const VIBES_SUFFIX = {
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
+const JOURNAL_MOMENT_KEYWORDS = [
+  "i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking",
+  "i can't stop thinking","i need to talk","going through","hard time","struggling with",
+  "i don't know what to do","so confused","miss him","miss her","miss them","heartbroken",
+  "crying","cried","hurt so much","can't get over","i just need","venting","needed to vent",
+  "no one understands","lonely","alone","lost","overwhelmed by","scared of","afraid of",
+  "i wish","i regret","i keep thinking",
+];
+
 export default function ChatPage() {
   const navigate = useNavigate();
   const [companion, setCompanion]       = useState(null);
@@ -897,7 +906,6 @@ export default function ChatPage() {
       }
 
       // ── Journal nudge detection ─────────────────────────────────────────
-      const JOURNAL_MOMENT_KEYWORDS = ["i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking","i can't stop thinking","i need to talk","going through","hard time","struggling with","i don't know what to do","so confused","miss him","miss her","miss them","heartbroken","crying","cried","hurt so much","can't get over","i just need","venting","needed to vent","no one understands","lonely","alone","lost","overwhelmed by","scared of","afraid of","i wish","i regret","i keep thinking"];
       const userSaidEmotional = JOURNAL_MOMENT_KEYWORDS.some(kw => lowerText.includes(kw));
       const lastJournalNudge = parseInt(localStorage.getItem("unfiltr_last_journal_nudge") || "0");
       const journalNudgeCooldown = Date.now() - lastJournalNudge > 1000 * 60 * 45; // 45 min cooldown
