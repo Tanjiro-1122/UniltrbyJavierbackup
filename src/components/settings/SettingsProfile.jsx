@@ -1,0 +1,142 @@
+import React, { useState } from "react";
+import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
+
+function NicknameField() {
+  const [nick, setNick] = useState(localStorage.getItem("unfiltr_companion_nickname") || "");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = () => {
+    const trimmed = nick.trim();
+    if (!trimmed) { setError("Nickname cannot be empty."); return; }
+    if (trimmed.length < 1 || trimmed.length > 30) { setError("Nickname must be 1–30 characters."); return; }
+    setError("");
+    localStorage.setItem("unfiltr_companion_nickname", trimmed);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div>
+      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 10 }}>
+        Give your companion a personal nickname only you call them.
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          type="text"
+          value={nick}
+          onChange={e => { setNick(e.target.value); setError(""); }}
+          onKeyDown={e => e.key === "Enter" && save()}
+          placeholder={`e.g. "Max", "Luna babe"`}
+          maxLength={30}
+          style={{
+            flex: 1, padding: "11px 14px", borderRadius: 12,
+            border: error ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(139,92,246,0.25)",
+            background: "rgba(139,92,246,0.08)", color: "white", fontSize: 14, outline: "none",
+          }}
+        />
+        <button
+          onClick={save}
+          disabled={!nick.trim()}
+          style={{
+            padding: "11px 18px", borderRadius: 12, border: "none", color: "white",
+            fontSize: 13, fontWeight: 700, cursor: "pointer",
+            background: saved ? "rgba(34,197,94,0.35)" : "linear-gradient(135deg,#7c3aed,#db2777)",
+            opacity: !nick.trim() ? 0.3 : 1,
+          }}
+        >
+          {saved ? "✓" : "Save"}
+        </button>
+      </div>
+      {error && <p style={{ color: "#f87171", fontSize: 12, marginTop: 6 }}>{error}</p>}
+    </div>
+  );
+}
+
+export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
+  return (
+    <div style={{ padding: "16px 0" }}>
+      {/* Display Name */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+          Display Name
+        </p>
+        <DisplayNameEditor
+          userProfile={profile}
+          onSave={n => onUpdate && onUpdate({ display_name: n })}
+        />
+      </div>
+
+      {/* Apple ID Email */}
+      {(() => {
+        const em = profile?.email || localStorage.getItem("unfiltr_apple_email") || localStorage.getItem("unfiltr_user_email") || null;
+        if (!em) return null;
+        return (
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+              Apple ID Email
+            </p>
+            <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>{em}</p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Companion Nickname */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+          Companion Nickname
+        </p>
+        <NicknameField />
+      </div>
+
+      {/* Profile Stats */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+          Stats
+        </p>
+        <div style={{
+          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 16, padding: "12px 16px", display: "flex",
+        }}>
+          {[
+            { label: "Messages", value: profile?.message_count || 0, sub: "total sent" },
+            { label: "Member Since", value: profile?.created_date ? new Date(profile.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—", sub: "joined" },
+            { label: "Premium", value: profile?.is_premium ? "✨ Yes" : "Free", sub: "plan" },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+              <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 16, margin: 0 }}>{s.value}</p>
+              <p style={{ color: "white", fontWeight: 600, fontSize: 11, margin: "2px 0 0" }}>{s.label}</p>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, margin: "1px 0 0" }}>{s.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Account Actions */}
+      <div style={{ marginTop: 8 }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+          Account
+        </p>
+        <div style={{ borderRadius: 16, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <button
+            onClick={onSignOut}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 12,
+              padding: "13px 16px", background: "none", border: "none",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              color: "rgba(255,255,255,0.8)", fontWeight: 500, fontSize: 15,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 16 }}>🚪</span> Sign Out
+          </button>
+          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, padding: "10px 16px", margin: 0 }}>
+            To delete your account, go to Settings → Account.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -6,6 +6,8 @@ import JournalEntryDetail from "@/components/journal/JournalEntryDetail";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";
 import JournalEmptyState from "@/components/journal/JournalEmptyState";
 import JournalWriter from "@/components/journal/JournalWriter";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { SkeletonJournalList } from "@/components/SkeletonJournalEntry";
 
 export default function Journal() {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ export default function Journal() {
   const [loading, setLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [writing, setWriting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // entry id to delete
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
@@ -25,6 +28,11 @@ export default function Journal() {
     setEntries(updated);
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify(updated));
     if (selectedEntry?.id === id) setSelectedEntry(null);
+    setConfirmDelete(null);
+  };
+
+  const requestDelete = (id) => {
+    setConfirmDelete(id);
   };
 
   // Group entries by month
@@ -58,7 +66,7 @@ export default function Journal() {
       <JournalEntryDetail
         entry={selectedEntry}
         onBack={() => setSelectedEntry(null)}
-        onDelete={handleDelete}
+        onDelete={requestDelete}
       />
     );
   }
@@ -90,9 +98,7 @@ export default function Journal() {
         {/* Content */}
         <div className="scroll-area" style={{ flex: 1, padding: "4px 16px 24px", overflowY: "auto" }}>
           {loading ? (
-            <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.3)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
-            </div>
+            <SkeletonJournalList count={5} />
           ) : entries.length === 0 ? (
             <JournalEmptyState onStartJournal={() => setWriting(true)} />
           ) : (
@@ -108,7 +114,7 @@ export default function Journal() {
                         key={entry.id}
                         entry={entry}
                         onSelect={() => setSelectedEntry(entry)}
-                        onDelete={() => handleDelete(entry.id)}
+                        onDelete={() => requestDelete(entry.id)}
                       />
                     ))}
                   </div>
@@ -118,6 +124,18 @@ export default function Journal() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        visible={!!confirmDelete}
+        title="Delete Entry?"
+        message="This journal entry will be permanently deleted and cannot be recovered."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        countdown={3}
+        onConfirm={() => handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </AppShell>
   );
