@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, Play, StopCircle } from "lucide-react";
+import { COMPANIONS } from "@/components/companionData";
 
 // Real recorded ambient audio — hosted on Base44 CDN
 const AUDIO_URLS = {
@@ -151,10 +152,27 @@ export default function MeditatePage() {
   const [breathCount,    setBreathCount]    = useState(0);
   const [breathScale,    setBreathScale]    = useState(1);
   const [loading,        setLoading]        = useState(false);
+  const [intent,         setIntent]         = useState("");
+  const [companionData,  setCompanionData]  = useState(null);
+  const [companionMood,  setCompanionMood]  = useState("neutral");
   const audioCtxRef = useRef(null);
   const soundRef    = useRef(null);
   const timerRef    = useRef(null);
   const breathRef   = useRef(null);
+
+  // Load companion from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("unfiltr_companion");
+      if (raw) {
+        const c = JSON.parse(raw);
+        const found = COMPANIONS.find(x => x.id === c.id);
+        if (found) setCompanionData(found);
+      }
+      const savedMood = localStorage.getItem("unfiltr_mood") || "neutral";
+      setCompanionMood(savedMood);
+    } catch {}
+  }, []);
 
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
   const sound      = SOUNDS.find(s => s.id === selectedSound);
@@ -197,7 +215,14 @@ export default function MeditatePage() {
     localStorage.setItem("unfiltr_just_meditated", JSON.stringify({
       timestamp: Date.now(), duration: timer,
       sound: sound.label, breathwork: breathwork.label,
+      intent: intent.trim() || "",
     }));
+    // Track meditation history
+    try {
+      const existing = JSON.parse(localStorage.getItem("unfiltr_meditation_history") || "[]");
+      existing.unshift({ timestamp: Date.now(), duration: timer, sound: sound.label, breathwork: breathwork.label, intent: intent.trim() || "" });
+      localStorage.setItem("unfiltr_meditation_history", JSON.stringify(existing.slice(0, 50)));
+    } catch {}
     setPhase("done");
   };
 
@@ -214,23 +239,45 @@ export default function MeditatePage() {
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (phase === "done") {
     const mins = Math.floor(timer/60), secs = timer%60;
+    const companionAvatar = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
+    const intentMsg = intent.trim()
+      ? `You came in thinking about "${intent.trim().slice(0,40)}${intent.trim().length > 40 ? "..." : ""}". Take a moment to notice how you feel now.`
+      : "Notice how your mind and body feel different now.";
+    const breathworkMessages = {
+      "478":    "The 4-7-8 technique slows your nervous system beautifully.",
+      "box":    "Box breathing is incredible for grounding yourself.",
+      "simple": "Simple rhythmic breathing — sometimes the gentlest approach is the best.",
+      "none":   "Sometimes just being present with ambient sound is enough.",
+    };
+    const breathMsg = breathworkMessages[breathwork.id] || "Great session.";
     return (
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          <div style={{ fontSize:72, marginBottom:16 }}>🧘</div>
+          {companionAvatar ? (
+            <motion.img src={companionAvatar} alt={companionData?.name}
+              initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
+              style={{ width:100, height:100, objectFit:"contain", margin:"0 auto 12px", filter:"drop-shadow(0 0 18px rgba(168,85,247,0.55))", display:"block" }} />
+          ) : (
+            <div style={{ fontSize:72, marginBottom:16 }}>🧘</div>
+          )}
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
           </p>
-          <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
+          <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 8px", lineHeight:1.5 }}>{breathMsg}</p>
+          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:12, margin:"0 0 28px", lineHeight:1.5 }}>{intentMsg}</p>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
+            <motion.button whileTap={{ scale:0.97 }} onClick={() => { navigate("/chat"); }}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-              Choose Something Else ✦
+              Chat with {companionData?.name || "my companion"} 💜
             </motion.button>
-            <button onClick={() => navigate('/hub')}
+            <button onClick={() => setPhase("setup")}
               style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"rgba(255,255,255,0.5)", fontWeight:600, fontSize:14, cursor:"pointer" }}>
+              Meditate again
+            </button>
+            <button onClick={() => navigate('/hub')}
+              style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:14, color:"rgba(255,255,255,0.3)", fontWeight:500, fontSize:14, cursor:"pointer" }}>
               ← Go Back
             </button>
           </div>
@@ -241,6 +288,7 @@ export default function MeditatePage() {
 
   // ── ACTIVE ────────────────────────────────────────────────────────────────
   if (phase === "active") {
+    const companionAvatar = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
     return (
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"max(52px,env(safe-area-inset-top)) 24px 52px" }}>
         <div style={{ textAlign:"center" }}>
@@ -248,6 +296,12 @@ export default function MeditatePage() {
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:24 }}>
+          {/* Companion avatar floating above orb */}
+          {companionAvatar && (
+            <motion.img src={companionAvatar} alt={companionData?.name}
+              animate={{ y: [0, -6, 0] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
+              style={{ width:64, height:64, objectFit:"contain", filter:"drop-shadow(0 0 14px rgba(168,85,247,0.5))", marginBottom:-8 }} />
+          )}
           {/* Outer pulse rings */}
           <div style={{ position:"relative", width:220, height:220, display:"flex", alignItems:"center", justifyContent:"center" }}>
             {/* Ring 3 — outermost ambient pulse */}
@@ -313,6 +367,7 @@ export default function MeditatePage() {
   }
 
   // ── SETUP ─────────────────────────────────────────────────────────────────
+  const companionAvatarSetup = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
   return (
     <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
@@ -320,10 +375,28 @@ export default function MeditatePage() {
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        <span style={{ fontSize:24 }}>🧘</span>
+        {companionAvatarSetup ? (
+          <motion.img src={companionAvatarSetup} alt={companionData?.name}
+            animate={{ y:[0,-4,0] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+            style={{ width:36, height:36, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(168,85,247,0.5))" }} />
+        ) : (
+          <span style={{ fontSize:24 }}>🧘</span>
+        )}
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
+        {/* Intent capture */}
+        <div style={{ marginBottom:24 }}>
+          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>What's on your mind?</p>
+          <textarea
+            value={intent}
+            onChange={e => setIntent(e.target.value)}
+            placeholder="Optional: share what you're hoping to release or find in this session..."
+            maxLength={120}
+            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"rgba(255,255,255,0.8)", fontSize:13, lineHeight:1.5, padding:"12px 14px", resize:"none", outline:"none", boxSizing:"border-box", minHeight:68, fontFamily:"inherit" }}
+          />
+        </div>
+
         <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ambient Sound</p>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:28 }}>
           {SOUNDS.map(s => (

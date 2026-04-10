@@ -130,6 +130,7 @@ export default function ChatPage() {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showMeditationNudge, setShowMeditationNudge] = useState(false);
+  const [showJournalNudge, setShowJournalNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -894,6 +895,21 @@ export default function ChatPage() {
         localStorage.setItem("unfiltr_last_med_nudge", Date.now().toString());
         setTimeout(() => setShowMeditationNudge(true), 1200);
       }
+
+      // ── Journal nudge detection ─────────────────────────────────────────
+      const JOURNAL_MOMENT_KEYWORDS = ["i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking","i can't stop thinking","i need to talk","going through","hard time","struggling with","i don't know what to do","so confused","miss him","miss her","miss them","heartbroken","crying","cried","hurt so much","can't get over","i just need","venting","needed to vent","no one understands","lonely","alone","lost","overwhelmed by","scared of","afraid of","i wish","i regret","i keep thinking"];
+      const userSaidEmotional = JOURNAL_MOMENT_KEYWORDS.some(kw => lowerText.includes(kw));
+      const lastJournalNudge = parseInt(localStorage.getItem("unfiltr_last_journal_nudge") || "0");
+      const journalNudgeCooldown = Date.now() - lastJournalNudge > 1000 * 60 * 45; // 45 min cooldown
+      if (userSaidEmotional && journalNudgeCooldown && !userSaidStress) {
+        localStorage.setItem("unfiltr_last_journal_nudge", Date.now().toString());
+        // Store recent chat context for one-tap journal save
+        const recentMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
+        const chatSnippet = recentMsgs.slice(-6).map(m => `${m.role === "user" ? "Me" : companionDisplayName}: ${m.content}`).join("\n");
+        localStorage.setItem("unfiltr_journal_context", chatSnippet);
+        setTimeout(() => setShowJournalNudge(true), 1400);
+      }
+
       if (isCrisis) setShowCrisisBanner(true);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
@@ -988,6 +1004,15 @@ export default function ChatPage() {
     // Send mood as first message context
     const moodText = `I'm feeling ${mood.label.toLowerCase()} ${mood.emoji} today`;
     handleSend(moodText);
+  };
+
+  const handleSaveToJournal = () => {
+    // Grab the last several messages to use as journal context
+    const recentMsgs = messages.slice(-8);
+    const chatSnippet = recentMsgs.map(m => `${m.role === "user" ? "Me" : (companion?.displayName || companion?.name || "My companion")}: ${m.content}`).join("\n");
+    localStorage.setItem("unfiltr_journal_context", chatSnippet);
+    setShowJournalNudge(false);
+    navigate("/journal/entry");
   };
 
   const handleRetry = () => {
@@ -1506,6 +1531,34 @@ export default function ChatPage() {
                 Let's go
               </button>
               <button onClick={() => setShowMeditationNudge(false)}
+                style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showJournalNudge && (
+        <div style={{ position:"fixed", bottom:130, left:16, right:16, zIndex:80 }}>
+          <div style={{
+            background:"linear-gradient(135deg,rgba(124,58,237,0.22),rgba(168,85,247,0.1))",
+            border:"1px solid rgba(168,85,247,0.4)", borderRadius:18,
+            padding:"14px 16px", display:"flex", alignItems:"center", gap:12,
+            backdropFilter:"blur(12px)",
+            boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+            <span style={{ fontSize:26, flexShrink:0 }}>📓</span>
+            <div style={{ flex:1 }}>
+              <p style={{ color:"white", fontWeight:700, fontSize:13, margin:"0 0 2px" }}>Want to write about this?</p>
+              <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, margin:0 }}>Save this moment in your journal</p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <button onClick={handleSaveToJournal}
+                style={{ padding:"7px 12px", background:"linear-gradient(135deg,#7c3aed,#a855f7)", border:"none", borderRadius:10, color:"white", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                Write it
+              </button>
+              <button onClick={() => setShowJournalNudge(false)}
                 style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
                 Not now
               </button>
