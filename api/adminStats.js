@@ -1,6 +1,49 @@
-const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
+import crypto from "crypto";
+import { b44Fetch, B44_ENTITIES } from "./_b44.js";
+
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "unfiltr_admin_javier1122_secret";
 const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = "https://app.base44.com/api";
+
+/** Constant-time string comparison to prevent timing-based token enumeration. */
+function safeCompare(a, b) {
+  try {
+    const bufA = Buffer.from(String(a));
+    const bufB = Buffer.from(String(b));
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
+/** Map a raw UserProfile record to the shape used by AdminDashboard. */
+function mapUser(p) {
+  return {
+    id: p.id,
+    display_name: p.display_name || "Anonymous",
+    email: p.email || null,
+    apple_user_id: p.apple_user_id || null,
+    created_date: p.created_date || null,
+    last_seen: p.last_seen || null,
+    last_active: p.last_active || null,
+    onboarding_complete: !!(p.onboarding_complete),
+    push_enabled: !!(p.push_enabled),
+    push_token_present: !!(p.push_token || p.expo_push_token),
+    tokens_used_today: p.tokens_used_today || 0,
+    tokens_used_total: p.tokens_used_total || p.total_tokens_used || 0,
+    message_count: p.message_count || 0,
+    is_premium: !!(p.is_premium),
+    pro_plan: !!(p.pro_plan),
+    annual_plan: !!(p.annual_plan),
+    trial_active: !!(p.trial_active),
+    subscription_expires: p.subscription_expires || null,
+    account_paused: !!(p.account_paused),
+    account_delete_requested: !!(p.account_delete_requested),
+    memory_summary: p.memory_summary || null,
+    memory_updated_at: p.memory_updated_at || null,
+  };
+}
 
 async function fetchEntity(entity, params = {}) {
   const url = new URL(`${BASE44_API}/apps/${APP_ID}/entities/${entity}`);
@@ -66,8 +109,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { adminToken, action, userId, type } = req.body || {};
-  if (adminToken !== ADMIN_TOKEN) return res.status(401).json({ error: "Unauthorized" });
+  const { adminToken, action, userId, type, query, subscription, reason } = req.body || {};
+  if (!safeCompare(adminToken, ADMIN_TOKEN)) return res.status(401).json({ error: "Unauthorized" });
 
   // ── ACTION HANDLERS ──────────────────────────────────────────────────────
   if (action === "grantAccess") {
@@ -102,6 +145,98 @@ export default async function handler(req, res) {
     if (!userId) return res.status(400).json({ error: "userId required" });
     await deleteEntity("UserProfile", userId);
     return res.status(200).json({ ok: true });
+  }
+
+  // ── userSearch ────────────────────────────────────────────────────────────
+  if (action === "userSearch") {
+    try {
+      if (userId) {
+        const profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`);
+        return res.status(200).json({ users: [mapUser(profile)] });
+      }
+      const raw = await b44Fetch(`${B44_ENTITIES}/UserProfile?limit=1000`);
+      const profiles = Array.isArray(raw) ? raw : (raw.records || raw.data || []);
+      if (!query || query.trim() === "") {
+        const sorted = [...profiles]
+          .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
+          .slice(0, 30);
+        return res.status(200).json({ users: sorted.map(mapUser) });
+      }
+      const q = query.trim().toLowerCase();
+      const matched = profiles
+        .filter(p =>
+          (p.display_name || "").toLowerCase().includes(q) ||
+          (p.email || "").toLowerCase().includes(q) ||
+          (p.apple_user_id || "").toLowerCase().includes(q) ||
+          (p.id || "").toLowerCase().includes(q)
+        )
+        .slice(0, 50);
+      return res.status(200).json({ users: matched.map(mapUser) });
+    } catch (err) {
+      console.error("[adminStats/userSearch] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── subscriptionOverride ──────────────────────────────────────────────────
+  if (action === "subscriptionOverride") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    try {
+      const updateData = {
+        is_premium: !!(subscription?.is_premium),
+        pro_plan: !!(subscription?.pro_plan),
+        annual_plan: !!(subscription?.annual_plan),
+        trial_active: !!(subscription?.trial_active),
+      };
+      if (subscription?.subscription_expires) {
+        updateData.subscription_expires = subscription.subscription_expires;
+      }
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify(updateData),
+      });
+      // Write audit log entry (non-fatal — log failure won't block the override)
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id: userId,
+            action: "subscription_override",
+            changes: JSON.stringify(updateData),
+            reason: reason.trim(),
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/subscriptionOverride] Audit log write failed (non-fatal):", logErr.message);
+      }
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error("[adminStats/subscriptionOverride] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── auditLog ──────────────────────────────────────────────────────────────
+  if (action === "auditLog") {
+    try {
+      const raw = await b44Fetch(`${B44_ENTITIES}/AdminAuditLog?limit=100`).catch((e) => {
+        console.warn("[adminStats/auditLog] AdminAuditLog fetch failed, returning empty list:", e.message);
+        return [];
+      });
+      const entries = Array.isArray(raw) ? raw : (raw.records || raw.data || []);
+      const sorted = [...entries].sort((a, b) =>
+        (b.timestamp || b.created_date || "").localeCompare(a.timestamp || a.created_date || "")
+      );
+      return res.status(200).json({ entries: sorted.slice(0, 100) });
+    } catch (err) {
+      console.error("[adminStats/auditLog] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   // ── STATS FETCH ──────────────────────────────────────────────────────────
