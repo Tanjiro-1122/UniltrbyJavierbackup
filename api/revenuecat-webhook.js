@@ -11,7 +11,7 @@
  *   REVENUECAT_WEBHOOK_AUTH_HEADER — expected Authorization header value from RevenueCat
  */
 
-import { B44_ENTITIES, b44Headers } from "./_b44.js";
+import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
 // Events that grant premium
 const GRANT_EVENTS = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "SUBSCRIBER_ALIAS"];
@@ -25,22 +25,29 @@ const PRODUCT_MAP = {
 };
 
 async function findProfile(appleUserId) {
-  const res = await fetch(
-    `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: b44Headers() }
-  );
-  const data = await res.json();
-  const records = Array.isArray(data) ? data : (data?.records || data?.data || []);
-  return records[0] || null;
+  try {
+    const data = await b44Fetch(
+      `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`
+    );
+    const records = Array.isArray(data) ? data : (data?.records || data?.data || []);
+    return records[0] || null;
+  } catch (err) {
+    console.error(`[RC Webhook] findProfile failed for ${appleUserId}: ${err.message}`);
+    return null;
+  }
 }
 
 async function updateProfile(profileId, updates) {
-  const res = await fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
-    method: "PUT",
-    headers: b44Headers(),
-    body: JSON.stringify(updates),
-  });
-  return res.ok;
+  try {
+    await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+    return true;
+  } catch (err) {
+    console.error(`[RC Webhook] updateProfile failed for ${profileId}: ${err.message}`);
+    return false;
+  }
 }
 
 /** Constant-time string comparison to prevent timing-based token oracle. */
