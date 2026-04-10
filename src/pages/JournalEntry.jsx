@@ -117,6 +117,14 @@ const STICKER_DEFS = [
   },
 ];
 
+const AI_SUGGESTIONS = [
+  { at: 20,  key: "20",  msg: "You're off to a great start. What feeling is strongest right now?" },
+  { at: 50,  key: "50",  msg: "Keep going — what do you wish someone understood about this?" },
+  { at: 100, key: "100", msg: "You're really opening up 💜. What would feel like relief right now?" },
+  { at: 150, key: "150", msg: "What do you want to remember about today, a year from now?" },
+  { at: 200, key: "200", msg: "Amazing depth. Is there anything you haven't written yet that still needs to come out?" },
+];
+
 function PlacedSticker({ sticker, onRemove, constraintsRef }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const tapRef = useRef(0);
@@ -176,9 +184,13 @@ export default function JournalEntry() {
   const [showStickers, setShowStickers] = useState(false);
   const [placedStickers, setPlacedStickers] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [showChatContext, setShowChatContext] = useState(false);
+  const [chatContext, setChatContext] = useState("");
   const journalRef = useRef(null);
   const fileInputRef = useRef(null);
   const stickerIdRef = useRef(0);
+  const aiSuggestionShownRef = useRef(new Set());
 
   useEffect(() => {
     const now = new Date();
@@ -198,7 +210,31 @@ export default function JournalEntry() {
         }
       }
     } catch {}
+    // Load chat context if coming from chat
+    try {
+      const ctx = localStorage.getItem("unfiltr_journal_context");
+      if (ctx) {
+        setChatContext(ctx);
+        setShowChatContext(true);
+        localStorage.removeItem("unfiltr_journal_context");
+      }
+    } catch {}
   }, []);
+
+  // ── AI suggestion triggers based on word count ─────────────────────────
+  const wordCount = entry.trim() ? entry.trim().split(/\s+/).length : 0;
+
+  useEffect(() => {
+    const companionName = companionData?.name || "your companion";
+    for (const s of AI_SUGGESTIONS) {
+      if (wordCount >= s.at && !aiSuggestionShownRef.current.has(s.key)) {
+        aiSuggestionShownRef.current.add(s.key);
+        setAiSuggestion({ key: s.key, msg: s.msg, name: companionName });
+        const suggestionDismissTimer = setTimeout(() => setAiSuggestion(null), 8000);
+        return () => clearTimeout(suggestionDismissTimer);
+      }
+    }
+  }, [wordCount, companionData]);
 
   const handleMic = () => {
     if (isListening) {
@@ -309,8 +345,6 @@ export default function JournalEntry() {
     });
   };
 
-  const wordCount = entry.trim() ? entry.trim().split(/\s+/).length : 0;
-
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: "linear-gradient(160deg, #0d0520 0%, #1a0a35 60%, #0a1020 100%)" }}>
@@ -334,6 +368,30 @@ export default function JournalEntry() {
         </button>
       </div>
 
+      {/* Chat context banner — shown when navigating from chat */}
+      <AnimatePresence>
+        {showChatContext && chatContext && (
+          <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }}
+            className="mx-4 mb-2 rounded-2xl p-3 shrink-0"
+            style={{ background:"rgba(124,58,237,0.15)", border:"1px solid rgba(168,85,247,0.3)" }}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <p className="text-purple-300 text-xs font-semibold mb-1">✨ From your chat — use as inspiration</p>
+                <p className="text-white/40 text-xs leading-relaxed line-clamp-3">{chatContext.slice(0, 180)}{chatContext.length > 180 ? "..." : ""}</p>
+              </div>
+              <button onClick={() => setShowChatContext(false)} className="shrink-0 mt-0.5">
+                <X className="w-3.5 h-3.5 text-white/30" />
+              </button>
+            </div>
+            <button onClick={() => { setEntry(prev => prev ? prev + "\n\n" + chatContext : chatContext); setShowChatContext(false); }}
+              className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white active:scale-95 transition-all"
+              style={{ background:"rgba(124,58,237,0.5)" }}>
+              Add to entry
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Journal card */}
       <div className="flex-1 px-4 pb-2 overflow-hidden flex flex-col min-h-0">
         <motion.div ref={journalRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -343,6 +401,29 @@ export default function JournalEntry() {
           {placedStickers.map((s) => (
             <PlacedSticker key={s.id} sticker={s} onRemove={removeSticker} constraintsRef={journalRef} />
           ))}
+
+          {/* AI suggestion floating prompt */}
+          <AnimatePresence>
+            {aiSuggestion && (
+              <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:8 }}
+                style={{ position:"absolute", bottom:48, left:12, right:12, zIndex:20,
+                  background:"rgba(20,8,50,0.96)", border:"1px solid rgba(168,85,247,0.35)",
+                  borderRadius:14, padding:"10px 14px", display:"flex", alignItems:"flex-start", gap:10,
+                  boxShadow:"0 8px 24px rgba(0,0,0,0.5)", backdropFilter:"blur(10px)" }}>
+                {companionMoodUrl && (
+                  <img src={companionMoodUrl} alt={companionData?.name}
+                    style={{ width:30, height:30, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 0 6px rgba(168,85,247,0.5))", marginTop:2 }} />
+                )}
+                <div style={{ flex:1 }}>
+                  <p style={{ color:"rgba(168,85,247,0.9)", fontSize:11, fontWeight:700, margin:"0 0 3px" }}>{aiSuggestion.name} suggests</p>
+                  <p style={{ color:"rgba(255,255,255,0.75)", fontSize:12, margin:0, lineHeight:1.5 }}>{aiSuggestion.msg}</p>
+                </div>
+                <button onClick={() => setAiSuggestion(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:0, flexShrink:0, marginTop:2 }}>
+                  <X style={{ width:14, height:14, color:"rgba(255,255,255,0.3)" }} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="px-5 pt-4 pb-3 border-b border-white/10 shrink-0 flex items-center gap-3">
             {companionMoodUrl && (

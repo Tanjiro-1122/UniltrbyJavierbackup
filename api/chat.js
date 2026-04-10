@@ -221,12 +221,19 @@ export default async function handler(req, res) {
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
+    // Detect mood check-in — when user shares how they're feeling at the start of chat
+    const lastMsg = messages[messages.length - 1];
+    const isMoodCheckIn = lastMsg?.role === "user" && /^I'?m feeling .+ today$/iu.test(lastMsg?.content || "");
+    const moodCheckInCtx = isMoodCheckIn
+      ? `\n\nIMPORTANT: The user just shared their mood: "${lastMsg.content}". This is a mood check-in. In your FIRST sentence, acknowledge their feeling directly and warmly — show you genuinely heard them. Use their specific emotion word. Then respond in a way that matches and supports their emotional state.`
+      : "";
+
     const response = await openai.chat.completions.create({
       model,
       messages: [
         {
           role: "system",
-          content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx +
+          content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
             `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
         },
         ...trimmedMessages,

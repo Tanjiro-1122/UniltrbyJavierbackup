@@ -54,6 +54,15 @@ const VIBES_SUFFIX = {
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
+const JOURNAL_MOMENT_KEYWORDS = [
+  "i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking",
+  "i can't stop thinking","i need to talk","going through","hard time","struggling with",
+  "i don't know what to do","so confused","miss him","miss her","miss them","heartbroken",
+  "crying","cried","hurt so much","can't get over","i just need","venting","needed to vent",
+  "no one understands","lonely","alone","lost","overwhelmed by","scared of","afraid of",
+  "i wish","i regret","i keep thinking",
+];
+
 export default function ChatPage() {
   const navigate = useNavigate();
   const [companion, setCompanion]       = useState(null);
@@ -130,6 +139,7 @@ export default function ChatPage() {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const [showMeditationNudge, setShowMeditationNudge] = useState(false);
+  const [showJournalNudge, setShowJournalNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
 
@@ -539,9 +549,27 @@ export default function ChatPage() {
       "I'm glad you're here. Sometimes the night feels like the only time we can think clearly..."
     }`;
 
+    // Personalize greeting with the mood the user selected on the MoodPicker screen
+    const savedMoodId = localStorage.getItem("unfiltr_mood");
+    const moodGreetingSuffixes = {
+      happy:       " I can already tell you're in a good headspace — love that energy 😊",
+      contentment: " You seem settled and at peace today — that's a beautiful place to be 🌿",
+      neutral:     " No pressure here — we can just hang and talk about whatever 😌",
+      sad:         " I saw you're feeling a little down today. I'm really glad you came. I'm here 💙",
+      fear:        " I saw you're feeling anxious. Take a breath — you're safe here, and I've got you 💜",
+      anger:       " Sounds like something's got you fired up. Let it out — no filter needed here 🔥",
+      surprise:    " Something caught you off guard today? I want to hear all about it 👀",
+      disgust:     " Something's off for you today — I get it. Let's talk it through 🌱",
+      fatigue:     " You seem tired today — no need to bring the energy. Just rest here with me 🌙",
+      hopeful:     " I love that hopeful feeling you've got — let's keep that going ✨",
+      lonely:      " I'm really glad you're here. You're not alone — not right now 💜",
+      excited:     " You've got some exciting energy today!! Tell me everything 🌟",
+    };
+    const moodGreetingSuffix = savedMoodId ? (moodGreetingSuffixes[savedMoodId] || "") : "";
+
     const greeting = {
       role: "assistant",
-      content: `${greetingText}${lateNightSuffix}`,
+      content: `${greetingText}${moodGreetingSuffix}${lateNightSuffix}`,
     };
     setMessages([greeting]);
   })(); }, [companion]);
@@ -661,6 +689,15 @@ export default function ChatPage() {
       img.src = url;
     });
   }, [companion?.id]);
+
+  /* ─── SET INITIAL AVATAR MOOD from MoodPicker selection ─── */
+  useEffect(() => {
+    const savedMood = localStorage.getItem("unfiltr_mood");
+    const validAvatarMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+    if (savedMood && validAvatarMoods.includes(savedMood)) {
+      setCompanionMood(savedMood);
+    }
+  }, []);
 
   /* ─── IDLE ANIM ─── */
   useEffect(() => {
@@ -894,6 +931,20 @@ export default function ChatPage() {
         localStorage.setItem("unfiltr_last_med_nudge", Date.now().toString());
         setTimeout(() => setShowMeditationNudge(true), 1200);
       }
+
+      // ── Journal nudge detection ─────────────────────────────────────────
+      const userSaidEmotional = JOURNAL_MOMENT_KEYWORDS.some(kw => lowerText.includes(kw));
+      const lastJournalNudge = parseInt(localStorage.getItem("unfiltr_last_journal_nudge") || "0");
+      const journalNudgeCooldown = Date.now() - lastJournalNudge > 1000 * 60 * 45; // 45 min cooldown
+      if (userSaidEmotional && journalNudgeCooldown && !userSaidStress) {
+        localStorage.setItem("unfiltr_last_journal_nudge", Date.now().toString());
+        // Store recent chat context for one-tap journal save
+        const recentMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
+        const chatSnippet = recentMsgs.slice(-6).map(m => `${m.role === "user" ? "Me" : companionDisplayName}: ${m.content}`).join("\n");
+        localStorage.setItem("unfiltr_journal_context", chatSnippet);
+        setTimeout(() => setShowJournalNudge(true), 1400);
+      }
+
       if (isCrisis) setShowCrisisBanner(true);
 
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
@@ -984,10 +1035,29 @@ export default function ChatPage() {
 
   const handleMoodSelect = (mood) => {
     localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString());
+    localStorage.setItem("unfiltr_mood", mood.value);
     setShowMoodCheckIn(false);
+    // Immediately switch avatar to match the user's selected mood
+    const moodToAvatarMap = {
+      happy: "happy", calm: "contentment", neutral: "neutral",
+      sad: "sad", frustrated: "anger", anxious: "fear",
+      loved: "happy", motivated: "happy",
+      hopeful: "happy", lonely: "sad", excited: "happy",
+    };
+    const avatarMood = moodToAvatarMap[mood.value] || "neutral";
+    setCompanionMood(avatarMood);
     // Send mood as first message context
     const moodText = `I'm feeling ${mood.label.toLowerCase()} ${mood.emoji} today`;
     handleSend(moodText);
+  };
+
+  const handleSaveToJournal = () => {
+    // Grab the last several messages to use as journal context
+    const recentMsgs = messages.slice(-8);
+    const chatSnippet = recentMsgs.map(m => `${m.role === "user" ? "Me" : (companion?.displayName || companion?.name || "My companion")}: ${m.content}`).join("\n");
+    localStorage.setItem("unfiltr_journal_context", chatSnippet);
+    setShowJournalNudge(false);
+    navigate("/journal/entry");
   };
 
   const handleRetry = () => {
@@ -1506,6 +1576,34 @@ export default function ChatPage() {
                 Let's go
               </button>
               <button onClick={() => setShowMeditationNudge(false)}
+                style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showJournalNudge && (
+        <div style={{ position:"fixed", bottom:130, left:16, right:16, zIndex:80 }}>
+          <div style={{
+            background:"linear-gradient(135deg,rgba(124,58,237,0.22),rgba(168,85,247,0.1))",
+            border:"1px solid rgba(168,85,247,0.4)", borderRadius:18,
+            padding:"14px 16px", display:"flex", alignItems:"center", gap:12,
+            backdropFilter:"blur(12px)",
+            boxShadow:"0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+            <span style={{ fontSize:26, flexShrink:0 }}>📓</span>
+            <div style={{ flex:1 }}>
+              <p style={{ color:"white", fontWeight:700, fontSize:13, margin:"0 0 2px" }}>Want to write about this?</p>
+              <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, margin:0 }}>Save this moment in your journal</p>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <button onClick={handleSaveToJournal}
+                style={{ padding:"7px 12px", background:"linear-gradient(135deg,#7c3aed,#a855f7)", border:"none", borderRadius:10, color:"white", fontWeight:700, fontSize:11, cursor:"pointer" }}>
+                Write it
+              </button>
+              <button onClick={() => setShowJournalNudge(false)}
                 style={{ padding:"5px 12px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:10, color:"rgba(255,255,255,0.4)", fontSize:11, cursor:"pointer" }}>
                 Not now
               </button>
