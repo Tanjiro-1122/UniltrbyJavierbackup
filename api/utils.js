@@ -5,7 +5,7 @@ import OpenAI from "openai";
 import { safeLogError, withAbortController } from "./_helpers.js";
 
 const B44_APP  = "69b332a392004d139d4ba495";
-const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
+const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 async function b44Get(entity, id) {
@@ -485,7 +485,6 @@ async function handleSaveJournalEntry(req, res) {
 async function handleSaveChatHistory(req, res) {
   const { appleUserId, messages, tier = "free" } = req.body || {};
   if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
-  if (tier === "free") return res.status(403).json({ error: "Requires subscription" });
   if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
 
   const limit = tier === "annual" ? 999999 : 50;
