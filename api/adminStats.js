@@ -21,8 +21,9 @@ const ADMIN_PASS   = process.env.ADMIN_PASS   || "javier1122admin";
  * Support staff can view user data and trigger safe memory rebuilds.
  * They cannot perform destructive actions (delete, revoke, bulk changes).
  * Set the SUPPORT_PASS environment variable in Vercel.
+ * If not set, the support staff login is effectively disabled.
  */
-const SUPPORT_PASS = process.env.SUPPORT_PASS || "javier1122support";
+const SUPPORT_PASS = process.env.SUPPORT_PASS;
 
 const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = "https://app.base44.com/api";
@@ -66,8 +67,8 @@ function safeCompare(a, b) {
  * null      — unauthorized
  */
 function getRole(token) {
-  if (safeCompare(token, ADMIN_PASS))   return "admin";
-  if (safeCompare(token, SUPPORT_PASS)) return "support";
+  if (safeCompare(token, ADMIN_PASS))                      return "admin";
+  if (SUPPORT_PASS && safeCompare(token, SUPPORT_PASS))    return "support";
   return null;
 }
 
@@ -134,19 +135,25 @@ function buildRichSummaryFromStored(facts = {}, sessions = [], emotionalTimeline
   return parts.join(" ");
 }
 
+/**
+ * Count the number of populated fields in a user_facts object.
+ * A field is "populated" if it is a non-empty string, a non-empty array,
+ * or a non-empty object. Null/undefined/"" are treated as unpopulated.
+ */
+function countPopulatedFacts(userFacts) {
+  return Object.entries(userFacts || {}).filter(([, v]) => {
+    if (v === null || v === undefined || v === "") return false;
+    if (Array.isArray(v))      return v.length > 0;
+    if (typeof v === "object") return Object.keys(v).length > 0;
+    return true;
+  }).length;
+}
+
 /** Map a raw UserProfile record to the shape used by AdminDashboard. */
 function mapUser(p) {
   const userFacts      = p.user_facts      || {};
   const sessionMemory  = p.session_memory  || [];
   const memoryVectors  = p.memory_vectors  || [];
-
-  // Count populated fact fields (non-empty scalars, non-empty arrays/objects)
-  const factsCount = Object.entries(userFacts).filter(([, v]) => {
-    if (v === null || v === undefined || v === "") return false;
-    if (Array.isArray(v))    return v.length > 0;
-    if (typeof v === "object") return Object.keys(v).length > 0;
-    return true;
-  }).length;
 
   return {
     id: p.id,
@@ -172,7 +179,7 @@ function mapUser(p) {
     memory_summary: p.memory_summary || null,
     memory_updated_at: p.memory_updated_at || null,
     // Memory health indicators
-    memory_facts_count:         factsCount,
+    memory_facts_count:         countPopulatedFacts(userFacts),
     memory_session_notes_count: sessionMemory.length,
     memory_vectors_count:       memoryVectors.length,
   };
@@ -598,7 +605,7 @@ export default async function handler(req, res) {
             action:      "rebuild_memory",
             changes:     JSON.stringify({
               summary_length: newSummary.length,
-              facts_count:    Object.keys(facts).length,
+              facts_count:    countPopulatedFacts(facts),
               sessions_count: sessions.length,
             }),
             reason:      "Structured memory rebuild (no transcript access)",
@@ -612,7 +619,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         summary_length:  newSummary.length,
-        facts_count:     Object.keys(facts).length,
+        facts_count:     countPopulatedFacts(facts),
         sessions_count:  sessions.length,
       });
     } catch (err) {

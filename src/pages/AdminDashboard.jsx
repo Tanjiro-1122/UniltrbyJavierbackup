@@ -20,12 +20,10 @@ const ADMIN_PASS   = "javier1122admin";
 
 /**
  * SUPPORT_PASS — credential for the Support Staff role.
- * Support staff can view users, plan flags, and memory health, and can
- * trigger structured-memory rebuilds.  They cannot delete users, revoke
- * subscriptions, or see raw chat transcripts.
- * Set the SUPPORT_PASS environment variable in Vercel.
+ * Set VITE_SUPPORT_PASS at build time (Vercel → Settings → Environment Variables).
+ * If not set, the support staff login is disabled in the UI.
  */
-const SUPPORT_PASS = "javier1122support";
+const SUPPORT_PASS = import.meta.env.VITE_SUPPORT_PASS;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (s) =>
