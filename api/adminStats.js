@@ -184,6 +184,118 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── hardDeleteUser ────────────────────────────────────────────────────────
+  // Hard-deletes a test/user account by profileId, apple_user_id, or email.
+  // Also deletes ChatHistory and optionally JournalEntry records.
+  // Body: { userId?, appleUserId?, email?, deleteJournals?: boolean, reason }
+  if (action === "hardDeleteUser") {
+    const { appleUserId, email, deleteJournals } = req.body || {};
+    if (!userId && !appleUserId && !email) {
+      return res.status(400).json({ error: "One of userId, appleUserId, or email is required" });
+    }
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    try {
+      // Resolve to a UserProfile record
+      let profileId = userId || null;
+      let resolvedAppleId = appleUserId || null;
+
+      if (!profileId) {
+        const raw = await b44Fetch(`${B44_ENTITIES}/UserProfile?limit=1000`);
+        const profiles = Array.isArray(raw) ? raw : (raw.records || raw.data || []);
+        let match = null;
+        if (appleUserId) {
+          match = profiles.find(p => p.apple_user_id === appleUserId);
+        } else if (email) {
+          match = profiles.find(p => (p.email || "").toLowerCase() === email.toLowerCase());
+        }
+        if (!match) return res.status(404).json({ error: "No user found with the given identifier" });
+        profileId = match.id;
+        resolvedAppleId = resolvedAppleId || match.apple_user_id || null;
+      } else if (!resolvedAppleId) {
+        // profileId given but no appleUserId — fetch the profile to get apple_user_id
+        try {
+          const profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`);
+          resolvedAppleId = profile?.apple_user_id || null;
+        } catch (_) { /* non-fatal */ }
+      }
+
+      // Step 1: revoke premium flags before deleting (no-op if delete succeeds, but helps if partial)
+      try {
+        await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            is_premium: false, premium: false, pro_plan: false,
+            annual_plan: false, trial_active: false, subscription_override: false,
+          }),
+        });
+      } catch (revokeErr) {
+        console.warn("[adminStats/hardDeleteUser] Premium revoke failed (non-fatal):", revokeErr.message);
+      }
+
+      // Step 2: delete ChatHistory records for this user
+      let chatDeleted = 0;
+      if (resolvedAppleId) {
+        try {
+          const chatRaw = await b44Fetch(`${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=500`);
+          const chats = Array.isArray(chatRaw) ? chatRaw : (chatRaw.records || chatRaw.data || []);
+          await Promise.allSettled(chats.map(c => deleteEntity("ChatHistory", c.id)));
+          chatDeleted = chats.length;
+        } catch (chatErr) {
+          console.warn("[adminStats/hardDeleteUser] ChatHistory delete failed (non-fatal):", chatErr.message);
+        }
+      }
+
+      // Step 3: optionally delete JournalEntry records
+      let journalDeleted = 0;
+      if (deleteJournals && resolvedAppleId) {
+        try {
+          const jRaw = await b44Fetch(`${B44_ENTITIES}/JournalEntry?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=500`);
+          const journals = Array.isArray(jRaw) ? jRaw : (jRaw.records || jRaw.data || []);
+          await Promise.allSettled(journals.map(j => deleteEntity("JournalEntry", j.id)));
+          journalDeleted = journals.length;
+        } catch (jErr) {
+          console.warn("[adminStats/hardDeleteUser] JournalEntry delete failed (non-fatal):", jErr.message);
+        }
+      }
+
+      // Step 4: delete the UserProfile
+      await deleteEntity("UserProfile", profileId);
+
+      // Step 5: write audit log
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id: profileId,
+            action: "hard_delete_user",
+            changes: JSON.stringify({
+              apple_user_id: resolvedAppleId,
+              chat_history_deleted: chatDeleted,
+              journal_entries_deleted: journalDeleted,
+            }),
+            reason: reason.trim(),
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/hardDeleteUser] Audit log write failed (non-fatal):", logErr.message);
+      }
+
+      return res.status(200).json({
+        ok: true,
+        profileDeleted: true,
+        chatHistoryDeleted: chatDeleted,
+        journalEntriesDeleted: journalDeleted,
+      });
+    } catch (err) {
+      console.error("[adminStats/hardDeleteUser] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // ── userSearch ────────────────────────────────────────────────────────────
   if (action === "userSearch") {
     try {

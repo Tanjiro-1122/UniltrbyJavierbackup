@@ -356,6 +356,12 @@ export default function AdminDashboard() {
   const [auditLoading,  setAuditLoading]  = useState(false);
   const [auditFilter,   setAuditFilter]   = useState("all");
 
+  // Hard Delete tab
+  const [hdIdentifier,  setHdIdentifier]  = useState("");
+  const [hdDeleteJournals, setHdDeleteJournals] = useState(false);
+  const [hdReason,      setHdReason]      = useState("");
+  const [hdWorking,     setHdWorking]     = useState(false);
+
   const navigate = useNavigate();
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
@@ -527,6 +533,47 @@ export default function AdminDashboard() {
     });
   };
 
+  const doHardDelete = () => {
+    const id = hdIdentifier.trim();
+    if (!id) { showToast("❌ Enter an apple_user_id or email"); return; }
+    if (!hdReason.trim() || hdReason.trim().length < 3) { showToast("❌ Enter a reason (min 3 chars)"); return; }
+
+    // Determine if it's an email or an apple_user_id
+    const isEmail = id.includes("@");
+    const body = {
+      adminToken: ADMIN_PASS,
+      action: "hardDeleteUser",
+      ...(isEmail ? { email: id } : { appleUserId: id }),
+      deleteJournals: hdDeleteJournals,
+      reason: hdReason.trim(),
+    };
+
+    const journalNote = hdDeleteJournals ? " + journal entries" : "";
+    requestConfirm({
+      title: "Hard Delete User?",
+      message: `Permanently delete profile, chat history${journalNote} for:\n"${id}"\n\nReason: "${hdReason}"\n\nThis cannot be undone.`,
+      confirmLabel: "Delete Everything",
+      confirmVariant: "danger",
+      countdown: 5,
+      onConfirm: async () => {
+        setHdWorking(true);
+        try {
+          const res = await fetch("/api/adminStats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error);
+          showToast(`✅ Deleted — chats: ${data.chatHistoryDeleted}, journals: ${data.journalEntriesDeleted}`);
+          setHdIdentifier(""); setHdReason(""); setHdDeleteJournals(false);
+          loadData();
+        } catch (e) { showToast("❌ " + e.message); }
+        setHdWorking(false);
+      },
+    });
+  };
+
   // ── LOGIN ─────────────────────────────────────────────────────────────────
   if (!unlocked) return (
     <div style={{ position:"fixed", inset:0, background:BG, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'SF Pro Display',system-ui,sans-serif" }}>
@@ -558,11 +605,12 @@ export default function AdminDashboard() {
 
   // ── TABS ──────────────────────────────────────────────────────────────────
   const TABS = [
-    { id:"overview",  label:"Overview",  icon:"🏠" },
-    { id:"support",   label:"Support",   icon:"🎧" },
-    { id:"memory",    label:"Memory",    icon:"🧠" },
-    { id:"audit",     label:"Audit",     icon:"📋" },
-    { id:"feedback",  label:"Feedback",  icon:"💬" },
+    { id:"overview",   label:"Overview",    icon:"🏠" },
+    { id:"support",    label:"Support",     icon:"🎧" },
+    { id:"memory",     label:"Memory",      icon:"🧠" },
+    { id:"audit",      label:"Audit",       icon:"📋" },
+    { id:"feedback",   label:"Feedback",    icon:"💬" },
+    { id:"harddelete", label:"Hard Delete", icon:"🗑️" },
   ];
 
   const totalUsers = stats?.totalUsers  ?? 0;
@@ -1032,6 +1080,68 @@ export default function AdminDashboard() {
                   <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{f.message || "—"}</div>
                 </div>
               ))}
+            </div>
+          </>
+        )}
+
+        {/* ── HARD DELETE ── */}
+        {tab === "harddelete" && (
+          <>
+            <div style={{ background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:14, padding:"12px 14px", marginBottom:16 }}>
+              <div style={{ fontSize:13, color:"#fca5a5", fontWeight:700, marginBottom:4 }}>⚠️ Hard Delete — TestFlight / Test Account Wipe</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.6 }}>
+                Permanently deletes the UserProfile, all ChatHistory records, and optionally JournalEntry records
+                for a given user. Use this to reset a TestFlight account so the user can log in fresh.
+                An audit log entry is always written.
+              </div>
+            </div>
+
+            <div style={{ ...CARD_STYLE, marginBottom:12 }}>
+              <SectionTitle color="#f87171">🗑️ Delete by Apple User ID or Email</SectionTitle>
+
+              <div style={{ marginBottom:10 }}>
+                <label style={{ fontSize:12, color:"rgba(255,255,255,0.45)", display:"block", marginBottom:4 }}>
+                  Apple User ID or Email address
+                </label>
+                <input
+                  value={hdIdentifier}
+                  onChange={e => setHdIdentifier(e.target.value)}
+                  placeholder="e.g. 001234.abc...def or user@example.com"
+                  style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit" }}
+                />
+              </div>
+
+              <div style={{ marginBottom:10 }}>
+                <label style={{ fontSize:12, color:"rgba(255,255,255,0.45)", display:"block", marginBottom:4 }}>
+                  Reason (required)
+                </label>
+                <input
+                  value={hdReason}
+                  onChange={e => setHdReason(e.target.value)}
+                  placeholder="e.g. TestFlight account reset request"
+                  style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit" }}
+                />
+              </div>
+
+              <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", marginBottom:14 }}>
+                <input
+                  type="checkbox"
+                  checked={hdDeleteJournals}
+                  onChange={e => setHdDeleteJournals(e.target.checked)}
+                  style={{ width:16, height:16, accentColor:"#f87171", cursor:"pointer" }}
+                />
+                <span style={{ fontSize:13, color: hdDeleteJournals ? "#f87171" : "rgba(255,255,255,0.55)" }}>
+                  Also delete Journal Entries <span style={{ color:"rgba(255,255,255,0.3)" }}>(default: off)</span>
+                </span>
+              </label>
+
+              <button
+                onClick={doHardDelete}
+                disabled={hdWorking}
+                style={{ width:"100%", padding:"11px", borderRadius:12, border:"none", cursor: hdWorking ? "default" : "pointer", background:"linear-gradient(135deg,#dc2626,#991b1b)", color:"#fff", fontWeight:700, fontSize:13, opacity: hdWorking ? 0.6 : 1 }}
+              >
+                {hdWorking ? "Deleting…" : "🗑️ Hard Delete This User"}
+              </button>
             </div>
           </>
         )}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye, RotateCcw
 } from "lucide-react"
 
 import ReferralSection from "@/components/ReferralSection";
@@ -98,6 +98,7 @@ export default function Settings() {
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting]               = useState(false);
+  const [showResetConfirm, setShowResetConfirm]   = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
   const [pausing, setPausing]                 = useState(false);
@@ -367,6 +368,16 @@ export default function Settings() {
   const handleSignOut = () => {
     Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
     navigate("/", { replace: true });
+  };
+  const handleResetTestAccount = () => {
+    // Clear ALL app storage so the device behaves like a fresh install
+    localStorage.clear();
+    sessionStorage.clear();
+    // Clear in-memory globals
+    try { delete window.__currentChatDbId; } catch (_) {}
+    try { delete window.__unfiltr_longest_streak; } catch (_) {}
+    try { delete window.__nativeBus; } catch (_) {}
+    navigate("/home-screen", { replace: true });
   };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
@@ -1009,6 +1020,9 @@ export default function Settings() {
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
           <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
+          <Row icon={<RotateCcw size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
+            label="Sign out & Clear Device Data"
+            onPress={() => setShowResetConfirm(true)} />
           <Row icon={<PauseCircle size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)"
             label={userProfile?.account_paused ? "Account Paused 💙" : "Pause My Account"}
             onPress={() => setShowPauseModal(true)} last />
@@ -1349,6 +1363,28 @@ export default function Settings() {
                   <button onClick={() => setShowPauseModal(false)} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel</button>
                 </>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Reset Confirm ── */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={() => setShowResetConfirm(false)}>
+            <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: "100%", background: "#1a0a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "24px 24px 0 0", padding: "24px 24px max(2rem,env(safe-area-inset-bottom,2rem))" }}>
+              <div style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 99, margin: "0 auto 20px" }} />
+              <h3 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: "0 0 8px" }}>Clear Device Data?</h3>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, marginBottom: 20 }}>This clears all locally stored data (login, premium flags, chat cache, settings) from this device and returns you to the sign-in screen. Your server-side profile is not deleted.</p>
+              <button onClick={handleResetTestAccount}
+                style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg,#ea580c,#dc2626)", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 10 }}>
+                Clear &amp; Sign Out
+              </button>
+              <button onClick={() => setShowResetConfirm(false)} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel</button>
             </motion.div>
           </motion.div>
         )}
