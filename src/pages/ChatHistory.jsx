@@ -9,7 +9,13 @@ const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
 const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
 
-const HISTORY_LIMITS = { free: 10, plus: 50, pro: 100, annual: 9999 };
+const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
+const HISTORY_LABELS = {
+  free:   "Free — last 2 conversations kept",
+  plus:   "Premium — last 20 conversations kept",
+  pro:    "Pro — last 100 conversations kept",
+  annual: "Annual — unlimited history",
+};
 
 function getTier() {
   if (localStorage.getItem("unfiltr_family_unlock") === "true" || localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
@@ -136,16 +142,17 @@ export default function ChatHistory() {
                 {sessions.length > 0 ? `${sessions.length} saved session${sessions.length !== 1 ? "s" : ""} with ${nickName}` : `Conversations with ${nickName}`}
               </p>
             </div>
-            {tier === "free" && (
-              <div style={{
-                padding: "5px 11px", borderRadius: 99, flexShrink: 0,
-                background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)",
-                display: "flex", alignItems: "center", gap: 4,
-              }}>
-                <Lock size={11} color="#fbbf24" />
-                <span style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>Free: {limit}</span>
-              </div>
-            )}
+            <div style={{
+              padding: "5px 11px", borderRadius: 99, flexShrink: 0,
+              background: tier === "free" ? "rgba(251,191,36,0.12)" : "rgba(139,92,246,0.12)",
+              border: `1px solid ${tier === "free" ? "rgba(251,191,36,0.3)" : "rgba(139,92,246,0.3)"}`,
+              display: "flex", alignItems: "center", gap: 4,
+            }}>
+              <Lock size={11} color={tier === "free" ? "#fbbf24" : "#a78bfa"} />
+              <span style={{ color: tier === "free" ? "#fbbf24" : "#a78bfa", fontSize: 11, fontWeight: 700 }}>
+                {tier === "annual" ? "∞" : limit} saved
+              </span>
+            </div>
           </div>
 
           {/* Search bar */}
@@ -170,6 +177,19 @@ export default function ChatHistory() {
                 <X size={15} color="rgba(255,255,255,0.4)" />
               </button>
             )}
+          </div>
+
+          {/* Retention policy info */}
+          <div style={{
+            marginTop: 10, padding: "8px 14px", borderRadius: 10,
+            background: tier === "free" ? "rgba(251,191,36,0.07)" : "rgba(139,92,246,0.07)",
+            border: `1px solid ${tier === "free" ? "rgba(251,191,36,0.18)" : "rgba(139,92,246,0.18)"}`,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ fontSize: 14 }}>{tier === "free" ? "🔒" : "✨"}</span>
+            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, lineHeight: 1.4 }}>
+              {HISTORY_LABELS[tier]}. AI memory (summaries & facts) is always preserved.
+            </span>
           </div>
         </motion.div>
 

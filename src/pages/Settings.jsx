@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye
 } from "lucide-react"
 
 import ReferralSection from "@/components/ReferralSection";
@@ -231,6 +231,13 @@ export default function Settings() {
   const [personalitySaved, setPersonalitySaved]         = useState(false);
   const [relationshipMode, setRelationshipMode]         = useState(localStorage.getItem("unfiltr_relationship_mode") || "friend");
   const [modeSaved, setModeSaved]                       = useState(false);
+
+  // Privacy state
+  const [privateSession, setPrivateSession]             = useState(() => localStorage.getItem("unfiltr_private_session") === "true");
+  const [clearingChat, setClearingChat]                 = useState(false);
+  const [clearChatDone, setClearChatDone]               = useState(false);
+  const [deletingMemory, setDeletingMemory]             = useState(false);
+  const [deleteMemoryDone, setDeleteMemoryDone]         = useState(false);
 
   // PIN state
   const [pinScreen, setPinScreen]     = useState(null); // null | "set" | "change" | "disable"
@@ -525,6 +532,70 @@ export default function Settings() {
   const handlePinDelete = () => {
     if (pinStage === "confirm") setPinConfirm(p => p.slice(0, -1));
     else setPinInput(p => p.slice(0, -1));
+  };
+
+  // ── Privacy helpers ───────────────────────────────────────────────────────
+  const handleTogglePrivateSession = (val) => {
+    setPrivateSession(val);
+    if (val) {
+      localStorage.setItem("unfiltr_private_session", "true");
+    } else {
+      localStorage.removeItem("unfiltr_private_session");
+    }
+  };
+
+  const handleClearChatHistory = async () => {
+    setClearingChat(true);
+    try {
+      // Clear local storage chat data
+      localStorage.removeItem("unfiltr_chat_history");
+      localStorage.removeItem("unfiltr_chat_sessions");
+      // Clear DB records for this user (fire-and-forget)
+      const appleId = localStorage.getItem("unfiltr_apple_user_id");
+      if (appleId) {
+        const B44_APP = "69b332a392004d139d4ba495";
+        const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+        const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+        try {
+          const r = await fetch(`${B44_BASE}/ChatHistory/query`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ filters: [{ field: "apple_user_id", operator: "eq", value: appleId }], limit: 500 }),
+          });
+          const data = await r.json();
+          const all = Array.isArray(data) ? data : (data.items || []);
+          await Promise.all(all.map(s =>
+            fetch(`${B44_BASE}/ChatHistory/${s.id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${DB_TOKEN}` } }).catch(() => {})
+          ));
+        } catch (_) {}
+      }
+      setClearChatDone(true);
+      setTimeout(() => setClearChatDone(false), 2500);
+    } catch (_) {}
+    setClearingChat(false);
+  };
+
+  const handleDeleteMemory = async () => {
+    setDeletingMemory(true);
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            profileId,
+            updateData: { memory_summary: "", user_facts: {}, session_memory: [], emotional_timeline: [] },
+          }),
+        }).catch(() => {});
+      }
+      // Also clear local caches
+      setUserProfile(p => p ? { ...p, memory_summary: "", user_facts: {}, session_memory: [] } : p);
+      setDeleteMemoryDone(true);
+      setTimeout(() => setDeleteMemoryDone(false), 2500);
+    } catch (_) {}
+    setDeletingMemory(false);
   };
 
   // ── Sub-screens ────────────────────────────────────────────────────────────
@@ -839,6 +910,101 @@ export default function Settings() {
         </div>
       </SubScreen>
     ),
+    privacy: (() => {
+      const tier = (() => {
+        if (localStorage.getItem("unfiltr_family_unlock") === "true" || localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
+        if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
+        if (localStorage.getItem("unfiltr_is_pro")    === "true") return "pro";
+        if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
+        return "free";
+      })();
+      const limits = { free: 2, plus: 20, pro: 100, annual: "Unlimited" };
+      const tierLabel = { free: "Free", plus: "Premium", pro: "Pro", annual: "Annual" };
+      return (
+        <SubScreen title="Privacy & Data" onBack={() => setScreen(null)}>
+          {/* Retention policy card */}
+          <div style={{ borderRadius: 16, background: tier === "free" ? "rgba(251,191,36,0.07)" : "rgba(139,92,246,0.08)", border: `1px solid ${tier === "free" ? "rgba(251,191,36,0.2)" : "rgba(139,92,246,0.2)"}`, padding: "16px", marginBottom: 20 }}>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Your Retention Plan</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>{tierLabel[tier]} — {limits[tier]} conversations</span>
+              {!isPremium && <button onClick={() => navigate("/Pricing")} style={{ padding: "6px 12px", borderRadius: 99, background: "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", color: "white", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Upgrade</button>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[
+                { t: "Free", v: "Last 2 conversations", active: tier === "free" },
+                { t: "Premium", v: "Last 20 conversations", active: tier === "plus" },
+                { t: "Pro", v: "Last 100 conversations", active: tier === "pro" },
+                { t: "Annual", v: "Unlimited history", active: tier === "annual" },
+              ].map(row => (
+                <div key={row.t} style={{ display: "flex", justifyContent: "space-between", padding: "7px 10px", borderRadius: 10, background: row.active ? "rgba(255,255,255,0.07)" : "transparent", border: row.active ? "1px solid rgba(255,255,255,0.1)" : "1px solid transparent" }}>
+                  <span style={{ color: row.active ? "white" : "rgba(255,255,255,0.35)", fontWeight: row.active ? 700 : 400, fontSize: 13 }}>{row.t}</span>
+                  <span style={{ color: row.active ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)", fontSize: 13 }}>{row.v}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 12, lineHeight: 1.5 }}>
+              AI memory (summaries &amp; facts) is preserved for all tiers — older raw transcripts are pruned automatically.
+            </p>
+          </div>
+
+          {/* Private Session toggle */}
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Private Session</p>
+          <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 3px" }}>🔕 Private Mode</p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>Chat won't be saved to history or memory. Turns off automatically when you toggle it back.</p>
+            </div>
+            <button
+              onClick={() => handleTogglePrivateSession(!privateSession)}
+              style={{
+                width: 48, height: 28, borderRadius: 99, border: "none", cursor: "pointer", flexShrink: 0,
+                background: privateSession ? "#7c3aed" : "rgba(255,255,255,0.1)",
+                transition: "background 0.2s", position: "relative",
+              }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: "50%", background: "white",
+                position: "absolute", top: 3,
+                left: privateSession ? 23 : 3,
+                transition: "left 0.2s",
+              }} />
+            </button>
+          </div>
+
+          {/* Clear chat history */}
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Data Controls</p>
+          <Section>
+            <button
+              onClick={handleClearChatHistory}
+              disabled={clearingChat}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)", textAlign: "left", opacity: clearingChat ? 0.5 : 1 }}
+            >
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Trash2 size={15} color="#f87171" />
+              </div>
+              <span style={{ flex: 1, color: "#f87171", fontWeight: 500, fontSize: 15 }}>
+                {clearingChat ? "Clearing…" : clearChatDone ? "✓ Chat history cleared" : "Clear Chat History"}
+              </span>
+            </button>
+            <button
+              onClick={handleDeleteMemory}
+              disabled={deletingMemory}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left", opacity: deletingMemory ? 0.5 : 1 }}
+            >
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Brain size={15} color="#f87171" />
+              </div>
+              <span style={{ flex: 1, color: "#f87171", fontWeight: 500, fontSize: 15 }}>
+                {deletingMemory ? "Deleting…" : deleteMemoryDone ? "✓ AI memory cleared" : "Delete AI Memory"}
+              </span>
+            </button>
+          </Section>
+          <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, marginTop: 8, lineHeight: 1.5, padding: "0 4px" }}>
+            Clearing AI memory removes summaries and facts. Your companion will start fresh but can rebuild over time.
+          </p>
+        </SubScreen>
+      );
+    })(),
     account: (
       <SubScreen title="Account" onBack={() => setScreen(null)}>
         <Section>
@@ -964,6 +1130,7 @@ export default function Settings() {
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8, marginTop: 8 }}>More</p>
             <Section>
               <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
+              <Row icon={<Eye size={15} color="white" />} iconBg="#1a3a2e" label="Privacy & Data" value={privateSession ? "Private Mode 🔕" : undefined} onPress={() => setScreen("privacy")} />
               <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
               <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
               <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
