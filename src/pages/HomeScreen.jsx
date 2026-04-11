@@ -35,6 +35,8 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     if (profile.is_premium)   localStorage.setItem("unfiltr_is_premium", "true");
     if (profile.annual_plan)  localStorage.setItem("unfiltr_is_annual",  "true");
     if (profile.pro_plan)     localStorage.setItem("unfiltr_is_pro",     "true");
+    // Clear sign-out guard so useProfileRecovery can work for this session
+    localStorage.removeItem("unfiltr_signed_out");
   }
 
   // Restore companion if returning user

@@ -91,8 +91,10 @@ function useProfileRecovery() {
   useEffect(() => {
     const profileId   = localStorage.getItem("userProfileId");
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    const signedOut   = localStorage.getItem("unfiltr_signed_out");
     if (profileId) return; // already restored
     if (!appleUserId) return; // no apple id — user needs to sign in
+    if (signedOut) return; // user explicitly signed out — don't auto-restore
 
     (async () => {
       try {

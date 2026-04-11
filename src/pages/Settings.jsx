@@ -97,6 +97,7 @@ export default function Settings() {
   const [userProfile, setUserProfile]         = useState(null);
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm]   = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
@@ -364,9 +365,45 @@ export default function Settings() {
       setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2000);
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
   };
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try { await base44.auth.logout(); } catch (_) {}
     Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
-    navigate("/", { replace: true });
+    sessionStorage.clear();
+    if (typeof window !== "undefined") window.__currentChatDbId = null;
+    // Prevent useProfileRecovery from silently re-hydrating on next mount
+    localStorage.setItem("unfiltr_signed_out", "1");
+    navigate("/home-screen", { replace: true });
+  };
+
+  const handleResetApp = async () => {
+    try { await base44.auth.logout(); } catch (_) {}
+    // Preserve age-gate so user isn't forced through it again
+    const ageVerified = localStorage.getItem("unfiltr_age_verified");
+    localStorage.clear();
+    sessionStorage.clear();
+    if (ageVerified) localStorage.setItem("unfiltr_age_verified", ageVerified);
+    // Prevent useProfileRecovery from silently re-hydrating
+    localStorage.setItem("unfiltr_signed_out", "1");
+    // Clear in-memory globals
+    if (typeof window !== "undefined") window.__currentChatDbId = null;
+    navigate("/home-screen", { replace: true });
+  };
+
+  const handleResetRelationshipMode = () => {
+    localStorage.removeItem("unfiltr_relationship_mode");
+    setRelationshipMode("friend");
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update", profileId, updateData: { relationship_mode: null } }),
+        }).catch(() => {});
+      }
+    } catch (_) {}
+    setModeSaved(false);
+    navigate("/onboarding/mode", { replace: false });
   };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
@@ -426,10 +463,10 @@ export default function Settings() {
     } catch (e) {
       console.error("Delete account error:", e);
     }
-    // Clear all local storage regardless
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k);
-    });
+    // Clear all local + session storage regardless
+    localStorage.clear();
+    sessionStorage.clear();
+    if (typeof window !== "undefined") window.__currentChatDbId = null;
     setDeleting(false);
     setShowDeleteConfirm(false);
     navigate("/age-verification", { replace: true });
@@ -884,6 +921,17 @@ export default function Settings() {
             ✓ Saved — takes effect next chat
           </motion.p>
         )}
+        <button
+          onClick={handleResetRelationshipMode}
+          style={{
+            marginTop: 24, width: "100%", padding: "13px 16px",
+            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 14, color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          🔄 Reset — Show Picker Again
+        </button>
       </SubScreen>
     ),
 
@@ -1016,6 +1064,26 @@ export default function Settings() {
         <Section>
           <Row icon={<Trash2 size={15} color="#f87171" />} iconBg="rgba(239,68,68,0.12)" label="Delete My Account" onPress={() => setShowDeleteConfirm(true)} danger last />
         </Section>
+        <div style={{ marginTop: 20 }}>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Troubleshooting</p>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 12,
+              padding: "14px 16px", background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.25)", borderRadius: 14,
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <Trash2 size={15} color="#f87171" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "#f87171", fontWeight: 700, fontSize: 15, margin: "0 0 2px" }}>Clear Data / Reset App</p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: 0, lineHeight: 1.4 }}>Signs you out and wipes all local app data. Your account is not deleted.</p>
+            </div>
+          </button>
+        </div>
       </SubScreen>
     ),
   };
@@ -1356,6 +1424,24 @@ export default function Settings() {
 
       {/* ── Delete Confirm ── */}
       <AnimatePresence>
+        {showResetConfirm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={() => setShowResetConfirm(false)}>
+            <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: "100%", background: "#1a0a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "24px 24px 0 0", padding: "24px 24px max(2rem,env(safe-area-inset-bottom,2rem))" }}>
+              <div style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 99, margin: "0 auto 20px" }} />
+              <h3 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: "0 0 8px" }}>Clear Data / Reset App?</h3>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, marginBottom: 20 }}>Signs you out and wipes all local app data (messages, settings, cache). Your account is not deleted — you can sign back in at any time.</p>
+              <button onClick={handleResetApp}
+                style={{ width: "100%", padding: "13px", background: "#dc2626", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 10 }}>
+                Yes, clear all data
+              </button>
+              <button onClick={() => setShowResetConfirm(false)} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel</button>
+            </motion.div>
+          </motion.div>
+        )}
         {showDeleteConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
