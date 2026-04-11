@@ -19,7 +19,7 @@ import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset } from "@/lib/entitlements";
+import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, DAILY_MSG_LIMITS, performFullReset } from "@/lib/entitlements";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -1130,13 +1130,44 @@ export default function Settings() {
             {/* More options */}
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8, marginTop: 8 }}>More</p>
             <Section>
-              <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
+              <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Memory active ✓" : "Premium feature"} onPress={() => setScreen("memory")} />
               <Row icon={<Eye size={15} color="white" />} iconBg="#1a3a2e" label="Privacy & Data" value={privateSession ? "Private Mode 🔕" : undefined} onPress={() => setScreen("privacy")} />
               <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
               <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
               <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
               <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
             </Section>
+
+            {/* Plan features — messages and memory shown separately */}
+            {(() => {
+              const tier = getTier();
+              const msgLimit = DAILY_MSG_LIMITS[tier];
+              const msgLabel = tier === "annual" ? "Unlimited" : `${msgLimit}/day`;
+              const memEnabled = tier !== "free";
+              return (
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", marginTop: 12, marginBottom: 4 }}>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 10px" }}>Plan Features</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>💬 Messages</span>
+                      <span style={{ color: "white", fontWeight: 700, fontSize: 13 }}>{msgLabel}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>🧠 AI Memory</span>
+                      {memEnabled
+                        ? <span style={{ background: "linear-gradient(135deg,#0ea5e9,#2563eb)", color: "white", fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99 }}>Active</span>
+                        : <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Not included</span>}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>📚 History</span>
+                      <span style={{ color: tier === "annual" ? "#34d399" : "white", fontWeight: 600, fontSize: 13 }}>
+                        {tier === "annual" ? "Unlimited" : tier === "pro" ? "Last 100" : tier === "plus" ? "Last 20" : "Last 2"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {!isPremium && (
               <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginTop: 12 }}>

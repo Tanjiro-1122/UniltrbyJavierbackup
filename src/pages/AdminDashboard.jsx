@@ -16,7 +16,16 @@ import ConfirmDialog from "../components/ConfirmDialog";
  * true server-side secrecy.  Set the ADMIN_PASS environment variable in
  * Vercel to a long random string that is NOT committed to the repository.
  */
-const ADMIN_PASS  = "javier1122admin";
+const ADMIN_PASS   = "javier1122admin";
+
+/**
+ * SUPPORT_PASS — credential for the Support Staff role.
+ * Support staff can view users, plan flags, and memory health, and can
+ * trigger structured-memory rebuilds.  They cannot delete users, revoke
+ * subscriptions, or see raw chat transcripts.
+ * Set the SUPPORT_PASS environment variable in Vercel.
+ */
+const SUPPORT_PASS = "javier1122support";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (s) =>
@@ -75,7 +84,7 @@ function PlanBadge({ u }) {
 }
 
 // ── User Detail Panel ─────────────────────────────────────────────────────────
-function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm }) {
+function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm, isSupport }) {
   const [subForm, setSubForm] = useState({
     is_premium:            user.is_premium,
     pro_plan:              user.pro_plan,
@@ -185,7 +194,8 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — admin only */}
+      {!isSupport && (
       <div style={{ ...CARD_STYLE, marginBottom:12 }}>
         <SectionTitle color="#fb923c">⚡ Quick Actions</SectionTitle>
         <div style={{ marginBottom:10 }}>
@@ -233,8 +243,10 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
           </div>
         )}
       </div>
+      )}
 
-      {/* Advanced Subscription Override */}
+      {/* Advanced Subscription Override — admin only */}
+      {!isSupport && (
       <div style={{ ...CARD_STYLE, marginBottom:12 }}>
         <SectionTitle color="#a855f7">💳 Advanced Subscription Override</SectionTitle>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
@@ -297,6 +309,7 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
           {saving ? "Saving…" : "💾 Save Subscription Override"}
         </button>
       </div>
+      )}
 
       {/* Memory summary (if available) */}
       {(user.memory_summary || user.memory_updated_at) && (
@@ -321,13 +334,15 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
 
 // ── main ──────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [unlocked,      setUnlocked]      = useState(() => sessionStorage.getItem("unfiltr_admin_session") === "true");
+  const savedSession = sessionStorage.getItem("unfiltr_admin_session");
+  const [unlocked,      setUnlocked]      = useState(() => savedSession === "admin" || savedSession === "support");
+  const [role,          setRole]          = useState(() => (savedSession === "admin" || savedSession === "support") ? savedSession : "");
   const [pwInput,       setPwInput]       = useState("");
   const [pwError,       setPwError]       = useState(false);
   const [stats,         setStats]         = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
-  const [tab,           setTab]           = useState("overview");
+  const [tab,           setTab]           = useState(() => savedSession === "support" ? "support" : "overview");
   const [toast,         setToast]         = useState("");
 
   // Support tab
@@ -351,12 +366,18 @@ export default function AdminDashboard() {
   const [memResults,    setMemResults]    = useState(null);
   const [selectedMem,   setSelectedMem]   = useState(null);
 
+  // Memory tab rebuild state
+  const [rebuilding,    setRebuilding]    = useState(false);
+
   // Audit tab
   const [auditLog,      setAuditLog]      = useState(null);
   const [auditLoading,  setAuditLoading]  = useState(false);
   const [auditFilter,   setAuditFilter]   = useState("all");
 
   const navigate = useNavigate();
+
+  // Token to send with all admin API calls — varies by role
+  const activeToken = role === "support" ? SUPPORT_PASS : ADMIN_PASS;
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
@@ -383,8 +404,11 @@ export default function AdminDashboard() {
 
   const handleUnlock = () => {
     if (pwInput.trim() === ADMIN_PASS) {
-      sessionStorage.setItem("unfiltr_admin_session", "true");
-      setUnlocked(true); setPwError(false);
+      sessionStorage.setItem("unfiltr_admin_session", "admin");
+      setUnlocked(true); setRole("admin"); setTab("overview"); setPwError(false);
+    } else if (pwInput.trim() === SUPPORT_PASS) {
+      sessionStorage.setItem("unfiltr_admin_session", "support");
+      setUnlocked(true); setRole("support"); setTab("support"); setPwError(false);
     } else {
       setPwError(true); setTimeout(() => setPwError(false), 1500);
     }
@@ -393,7 +417,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     sessionStorage.removeItem("unfiltr_admin_session");
     localStorage.removeItem("unfiltr_admin_unlocked");
-    setUnlocked(false); setStats(null); setPwInput("");
+    setUnlocked(false); setRole(""); setStats(null); setPwInput("");
   };
 
   const loadData = async () => {
@@ -402,7 +426,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS }),
+        body: JSON.stringify({ adminToken: activeToken }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Failed");
@@ -417,7 +441,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: activeToken, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -432,7 +456,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: activeToken, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -441,13 +465,30 @@ export default function AdminDashboard() {
     setMemSearching(false);
   };
 
+  const doRebuildMemory = async (userId, displayName) => {
+    setRebuilding(true);
+    try {
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken: activeToken, action: "rebuildMemory", userId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      showToast(`✅ Memory rebuilt for ${displayName || "user"} (${data.summary_length} chars from ${data.facts_count} facts, ${data.sessions_count} sessions)`);
+      // Refresh memory results so updated timestamp shows
+      if (memSearch.trim()) doMemSearch(memSearch);
+    } catch (e) { showToast("❌ " + e.message); }
+    setRebuilding(false);
+  };
+
   const loadAuditLog = async () => {
     setAuditLoading(true);
     try {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "auditLog" }),
+        body: JSON.stringify({ adminToken: activeToken, action: "auditLog" }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -462,7 +503,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "grantAccess", userId, type }),
+        body: JSON.stringify({ adminToken: activeToken, action: "grantAccess", userId, type }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -483,7 +524,7 @@ export default function AdminDashboard() {
           const res = await fetch("/api/adminStats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ adminToken: ADMIN_PASS, action: "deleteUser", userId }),
+            body: JSON.stringify({ adminToken: activeToken, action: "deleteUser", userId }),
           });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
@@ -512,7 +553,7 @@ export default function AdminDashboard() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              adminToken: ADMIN_PASS, action: "bulkAction",
+              adminToken: activeToken, action: "bulkAction",
               userIds: [...selectedIds], bulkType, reason: bulkReason,
             }),
           });
@@ -536,13 +577,13 @@ export default function AdminDashboard() {
         <div style={{ width:76, height:76, borderRadius:24, background:GRAD_PURPLE, margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 36px rgba(168,85,247,0.45)" }}>
           <ShieldAlert style={{ width:38, height:38, color:"white" }} />
         </div>
-        <h1 style={{ color:"white", fontWeight:900, fontSize:26, margin:"0 0 4px", letterSpacing:"-0.5px" }}>Unfiltr Admin</h1>
-        <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 32px" }}>Management portal — authorized access only.</p>
+        <h1 style={{ color:"white", fontWeight:900, fontSize:26, margin:"0 0 4px", letterSpacing:"-0.5px" }}>Unfiltr Portal</h1>
+        <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 32px" }}>Admin or Support Staff — authorized access only.</p>
         <input
           type="password" value={pwInput}
           onChange={e => setPwInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleUnlock()}
-          placeholder="Admin password" autoFocus
+          placeholder="Enter your password" autoFocus
           style={{ width:"100%", boxSizing:"border-box", padding:"14px 16px", borderRadius:16, border: pwError ? "1.5px solid #f87171" : "1.5px solid rgba(168,85,247,0.35)", background:"rgba(168,85,247,0.08)", color:"white", fontSize:15, outline:"none", marginBottom: pwError ? 8 : 14 }}
         />
         {pwError && <p style={{ color:"#f87171", fontSize:12, margin:"0 0 12px" }}>Incorrect password</p>}
@@ -556,14 +597,14 @@ export default function AdminDashboard() {
     </div>
   );
 
-  // ── TABS ──────────────────────────────────────────────────────────────────
+  // ── TABS — filtered by role ───────────────────────────────────────────────
   const TABS = [
-    { id:"overview",  label:"Overview",  icon:"🏠" },
-    { id:"support",   label:"Support",   icon:"🎧" },
-    { id:"memory",    label:"Memory",    icon:"🧠" },
-    { id:"audit",     label:"Audit",     icon:"📋" },
-    { id:"feedback",  label:"Feedback",  icon:"💬" },
-  ];
+    { id:"overview",  label:"Overview",  icon:"🏠", adminOnly: true  },
+    { id:"support",   label:"Support",   icon:"🎧", adminOnly: false },
+    { id:"memory",    label:"Memory",    icon:"🧠", adminOnly: false },
+    { id:"audit",     label:"Audit",     icon:"📋", adminOnly: true  },
+    { id:"feedback",  label:"Feedback",  icon:"💬", adminOnly: true  },
+  ].filter(t => role === "admin" || !t.adminOnly);
 
   const totalUsers = stats?.totalUsers  ?? 0;
   const proUsers   = stats?.premiumUsers ?? 0;
@@ -579,10 +620,10 @@ export default function AdminDashboard() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div>
             <div style={{ fontSize:19, fontWeight:900, background:GRAD_PURPLE, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:"-0.3px" }}>
-              ✨ Unfiltr Admin
+              {role === "support" ? "🎧 Unfiltr Support" : "✨ Unfiltr Admin"}
             </div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:1 }}>
-              {totalUsers} users · {new Date().toLocaleTimeString()}
+              {role === "support" ? "Support Staff Portal" : `${totalUsers} users · ${new Date().toLocaleTimeString()}`}
             </div>
           </div>
           <div style={{ display:"flex", gap:8 }}>
@@ -698,16 +739,18 @@ export default function AdminDashboard() {
                   <div style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", width:14, height:14, borderRadius:"50%", border:"2px solid rgba(168,85,247,0.3)", borderTopColor:"#a855f7", animation:"spin 0.7s linear infinite" }} />
                 )}
               </div>
+              {role === "admin" && (
               <button
                 onClick={() => { setBulkMode(m => !m); setSelectedIds(new Set()); setSelectedUser(null); }}
                 style={{ padding:"10px 14px", borderRadius:12, border: bulkMode ? "1px solid rgba(168,85,247,0.5)" : "1px solid rgba(255,255,255,0.12)", background: bulkMode ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.06)", color: bulkMode ? "#c084fc" : "rgba(255,255,255,0.4)", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}
               >
                 {bulkMode ? "✓ Selecting" : "Select"}
               </button>
+              )}
             </div>
 
-            {/* Bulk action bar */}
-            {bulkMode && (
+            {/* Bulk action bar — admin only */}
+            {role === "admin" && bulkMode && (
               <div style={{ background:"rgba(168,85,247,0.08)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:14, padding:"10px 12px", marginBottom:12 }}>
                 <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
                   <span style={{ fontSize:12, color:"#c084fc", fontWeight:700, flexShrink:0 }}>
@@ -803,7 +846,8 @@ export default function AdminDashboard() {
                       <div style={{ padding:"0 14px 14px" }}>
                         <UserDetailPanel
                           user={u}
-                          adminToken={ADMIN_PASS}
+                          adminToken={activeToken}
+                          isSupport={role === "support"}
                           showToast={showToast}
                           requestConfirm={requestConfirm}
                           onAction={() => { doSearch(search); showToast("✅ Updated — refreshing list…"); }}
@@ -821,9 +865,9 @@ export default function AdminDashboard() {
         {tab === "memory" && (
           <>
             <div style={{ ...CARD_STYLE, marginBottom:12 }}>
-              <SectionTitle color="#34d399">🧠 Memory & Sync Health</SectionTitle>
+              <SectionTitle color="#34d399">🧠 Memory Health</SectionTitle>
               <p style={{ fontSize:12, color:"rgba(255,255,255,0.4)", margin:"0 0 12px", lineHeight:1.6 }}>
-                Search a user to view their memory summary and last chat activity.
+                Search a user to view memory health indicators and rebuild from structured data only (no transcript access).
               </p>
               <div style={{ position:"relative" }}>
                 <Search size={13} style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"rgba(255,255,255,0.3)" }} />
@@ -864,7 +908,9 @@ export default function AdminDashboard() {
                         <div>
                           <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name}</div>
                           <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>
-                            {u.message_count} msgs · Last active: {fmtDateTime(u.last_active)}
+                            <span style={{ marginRight:8 }}>💬 {u.message_count} msgs</span>
+                            <span style={{ marginRight:8 }}>🧠 {u.memory_facts_count ?? 0} facts</span>
+                            <span>Last active: {fmtDateTime(u.last_active)}</span>
                           </div>
                         </div>
                         {selectedMem?.id === u.id
@@ -874,39 +920,60 @@ export default function AdminDashboard() {
                     </div>
                     {selectedMem?.id === u.id && (
                       <div style={{ padding:"14px" }}>
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
-                          {[
-                            ["Memory Summary",  u.memory_summary ? u.memory_summary.length + " chars" : "Not available"],
-                            ["Memory Updated",  fmtDateTime(u.memory_updated_at)],
-                            ["Last Active",     fmtDateTime(u.last_active)],
-                            ["Last Seen",       fmtDateTime(u.last_seen)],
-                            ["Total Messages",  u.message_count],
-                            ["Tokens Total",    u.tokens_used_total || "—"],
-                          ].map(([k, v]) => (
-                            <div key={k} style={{ background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.1)", borderRadius:10, padding:"8px 10px" }}>
-                              <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{k}</div>
-                              <div style={{ fontSize:12, color:"#fff", fontWeight:600, marginTop:2 }}>{v}</div>
-                            </div>
-                          ))}
+                        {/* Memory health indicators */}
+                        <div style={{ marginBottom:6 }}>
+                          <div style={{ fontSize:10, color:"rgba(52,211,153,0.6)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6, fontWeight:700 }}>🧠 Memory Health</div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+                            {[
+                              ["Memory Summary",        u.memory_summary ? u.memory_summary.length + " chars" : "Not available"],
+                              ["Facts Present",         u.memory_facts_count ?? "—"],
+                              ["Session Notes",         u.memory_session_notes_count ?? "—"],
+                              ["Memory Vectors",        u.memory_vectors_count ?? "—"],
+                              ["Last Updated",          fmtDateTime(u.memory_updated_at)],
+                            ].map(([k, v]) => (
+                              <div key={k} style={{ background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.1)", borderRadius:10, padding:"8px 10px" }}>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{k}</div>
+                                <div style={{ fontSize:12, color: k === "Memory Summary" && !u.memory_summary ? "rgba(251,146,60,0.8)" : "#fff", fontWeight:600, marginTop:2 }}>{String(v)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Message activity (separate from memory) */}
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ fontSize:10, color:"rgba(96,165,250,0.6)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6, fontWeight:700 }}>💬 Message Activity</div>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px" }}>
+                            {[
+                              ["Total Messages",  u.message_count],
+                              ["Tokens Total",    u.tokens_used_total || "—"],
+                              ["Last Active",     fmtDateTime(u.last_active)],
+                              ["Last Seen",       fmtDateTime(u.last_seen)],
+                            ].map(([k, v]) => (
+                              <div key={k} style={{ background:"rgba(96,165,250,0.05)", border:"1px solid rgba(96,165,250,0.1)", borderRadius:10, padding:"8px 10px" }}>
+                                <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{k}</div>
+                                <div style={{ fontSize:12, color:"#fff", fontWeight:600, marginTop:2 }}>{String(v)}</div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         <div style={{ display:"flex", gap:8 }}>
                           <button
-                            disabled
-                            title="Rebuild memory requires a backend endpoint not yet configured"
-                            style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(52,211,153,0.2)", background:"rgba(52,211,153,0.06)", color:"rgba(52,211,153,0.35)", fontWeight:700, fontSize:12, cursor:"not-allowed" }}
+                            onClick={() => doRebuildMemory(u.id, u.display_name)}
+                            disabled={rebuilding}
+                            title="Rebuilds memory_summary from stored facts, session notes, and emotional timeline — no raw transcript access"
+                            style={{ flex:1, padding:"10px", borderRadius:12, border:`1px solid rgba(52,211,153,${rebuilding ? "0.2" : "0.45"})`, background:`rgba(52,211,153,${rebuilding ? "0.04" : "0.12"})`, color: rebuilding ? "rgba(52,211,153,0.4)" : "#34d399", fontWeight:700, fontSize:12, cursor: rebuilding ? "default" : "pointer", transition:"all .2s" }}
                           >
-                            🔄 Rebuild Memory
+                            {rebuilding ? "Rebuilding…" : "🔄 Rebuild Memory"}
                           </button>
                           <button
                             disabled
-                            title="Export requires a backend endpoint not yet configured"
+                            title="Export chat history — coming soon"
                             style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(96,165,250,0.2)", background:"rgba(96,165,250,0.06)", color:"rgba(96,165,250,0.35)", fontWeight:700, fontSize:12, cursor:"not-allowed" }}
                           >
                             📤 Export History
                           </button>
                         </div>
                         <div style={{ marginTop:8, fontSize:11, color:"rgba(255,255,255,0.2)", textAlign:"center" }}>
-                          These actions require additional backend configuration.
+                          Memory rebuild uses structured data only — no transcript access.
                         </div>
                       </div>
                     )}

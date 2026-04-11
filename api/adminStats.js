@@ -14,7 +14,15 @@ import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
  * posture, set a long random string in the ADMIN_PASS Vercel env var that is
  * NOT committed to the repository.
  */
-const ADMIN_PASS = process.env.ADMIN_PASS || "javier1122admin";
+const ADMIN_PASS   = process.env.ADMIN_PASS   || "javier1122admin";
+
+/**
+ * SUPPORT_PASS — credential for the Support Staff role.
+ * Support staff can view user data and trigger safe memory rebuilds.
+ * They cannot perform destructive actions (delete, revoke, bulk changes).
+ * Set the SUPPORT_PASS environment variable in Vercel.
+ */
+const SUPPORT_PASS = process.env.SUPPORT_PASS || "javier1122support";
 
 const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = "https://app.base44.com/api";
@@ -51,8 +59,95 @@ function safeCompare(a, b) {
   }
 }
 
+/**
+ * Returns the role of the caller based on the provided token.
+ * "admin"   — full access
+ * "support" — read-only user search + safe memory rebuild; no destructive actions
+ * null      — unauthorized
+ */
+function getRole(token) {
+  if (safeCompare(token, ADMIN_PASS))   return "admin";
+  if (safeCompare(token, SUPPORT_PASS)) return "support";
+  return null;
+}
+
+/** Actions that support staff are NOT allowed to perform. */
+const SUPPORT_BLOCKED_ACTIONS = new Set([
+  "deleteUser",
+  "revokeAccess",
+  "grantAccess",
+  "bulkAction",
+  "subscriptionOverride",
+  "subscriptionClearOverride",
+  "syncRevenueCat",
+  "auditLog",
+]);
+
+/**
+ * Rebuild a memory_summary from existing structured profile fields.
+ * Mirrors the logic in summarizeSession.js buildRichSummary but works
+ * entirely from already-stored data — no AI call or transcript access needed.
+ */
+function buildRichSummaryFromStored(facts = {}, sessions = [], emotionalTimeline = []) {
+  const parts = [];
+
+  // Core identity
+  if (facts.name)                parts.push(`User's name is ${facts.name}.`);
+  if (facts.age)                 parts.push(`They are ${facts.age} years old.`);
+  if (facts.location)            parts.push(`Located in ${facts.location}.`);
+  if (facts.occupation)          parts.push(`Works as ${facts.occupation}.`);
+  if (facts.relationship_status) parts.push(`Relationship: ${facts.relationship_status}.`);
+
+  // Important people
+  if (facts.important_people?.length) {
+    parts.push(`Important people: ${facts.important_people.map(p => `${p.name} (${p.role})`).join(", ")}.`);
+  }
+
+  // Emotional patterns
+  if (facts.recurring_struggles?.length) {
+    parts.push(`Recurring struggles: ${facts.recurring_struggles.join(", ")}.`);
+  }
+  if (facts.core_values?.length) parts.push(`Core values: ${facts.core_values.join(", ")}.`);
+  if (facts.goals?.length)       parts.push(`Goals: ${facts.goals.join(", ")}.`);
+
+  // Personality
+  if (facts.humor_style)          parts.push(`Humor style: ${facts.humor_style}.`);
+  if (facts.communication_style)  parts.push(`Communication style: ${facts.communication_style}.`);
+  if (facts.hobbies?.length)      parts.push(`Hobbies/interests: ${facts.hobbies.join(", ")}.`);
+
+  // Session history
+  if (sessions.length > 0) {
+    const recent = sessions.slice(0, 5);
+    parts.push(`Recent sessions: ${recent.map(s => `[${s.date}] ${s.summary}`).join(" | ")}.`);
+  }
+
+  // Emotional timeline patterns
+  if (emotionalTimeline?.length >= 2) {
+    const recent7 = emotionalTimeline.slice(0, 7);
+    const emotionCounts = {};
+    recent7.forEach(e => { emotionCounts[e.emotion] = (emotionCounts[e.emotion] || 0) + 1; });
+    const topEmotions = Object.entries(emotionCounts)
+      .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
+    if (topEmotions.length > 0) parts.push(`Recent emotional patterns: ${topEmotions.join(", ")}.`);
+  }
+
+  return parts.join(" ");
+}
+
 /** Map a raw UserProfile record to the shape used by AdminDashboard. */
 function mapUser(p) {
+  const userFacts      = p.user_facts      || {};
+  const sessionMemory  = p.session_memory  || [];
+  const memoryVectors  = p.memory_vectors  || [];
+
+  // Count populated fact fields (non-empty scalars, non-empty arrays/objects)
+  const factsCount = Object.entries(userFacts).filter(([, v]) => {
+    if (v === null || v === undefined || v === "") return false;
+    if (Array.isArray(v))    return v.length > 0;
+    if (typeof v === "object") return Object.keys(v).length > 0;
+    return true;
+  }).length;
+
   return {
     id: p.id,
     display_name: p.display_name || "Anonymous",
@@ -76,6 +171,10 @@ function mapUser(p) {
     account_delete_requested: !!(p.account_delete_requested),
     memory_summary: p.memory_summary || null,
     memory_updated_at: p.memory_updated_at || null,
+    // Memory health indicators
+    memory_facts_count:         factsCount,
+    memory_session_notes_count: sessionMemory.length,
+    memory_vectors_count:       memoryVectors.length,
   };
 }
 
@@ -146,7 +245,13 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { adminToken, action, userId, type, query, subscription, reason } = req.body || {};
-  if (!safeCompare(adminToken, ADMIN_PASS)) return res.status(401).json({ error: "Unauthorized" });
+  const role = getRole(adminToken);
+  if (!role) return res.status(401).json({ error: "Unauthorized" });
+
+  // Block support staff from destructive / sensitive actions
+  if (role === "support" && action && SUPPORT_BLOCKED_ACTIONS.has(action)) {
+    return res.status(403).json({ error: "Support staff are not authorized for this action" });
+  }
 
   // ── ACTION HANDLERS ──────────────────────────────────────────────────────
   if (action === "grantAccess") {
@@ -458,6 +563,60 @@ export default async function handler(req, res) {
       return res.status(200).json({ entries: sorted.slice(0, 100) });
     } catch (err) {
       console.error("[adminStats/auditLog] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── rebuildMemory ─────────────────────────────────────────────────────────
+  // Rebuilds memory_summary from existing structured profile fields only.
+  // Does NOT access raw chat transcripts — safe for admin and support staff.
+  if (action === "rebuildMemory") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    try {
+      const profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`);
+      if (!profile || !profile.id) return res.status(404).json({ error: "User not found" });
+
+      const facts    = profile.user_facts      || {};
+      const sessions = profile.session_memory  || [];
+      const timeline = profile.emotional_timeline || [];
+
+      const newSummary = buildRichSummaryFromStored(facts, sessions, timeline);
+      const now = new Date().toISOString();
+
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ memory_summary: newSummary, memory_updated_at: now }),
+      });
+
+      // Write audit log (non-fatal)
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id:   userId,
+            action:      "rebuild_memory",
+            changes:     JSON.stringify({
+              summary_length: newSummary.length,
+              facts_count:    Object.keys(facts).length,
+              sessions_count: sessions.length,
+            }),
+            reason:      "Structured memory rebuild (no transcript access)",
+            timestamp:   now,
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/rebuildMemory] Audit log write failed (non-fatal):", logErr.message);
+      }
+
+      return res.status(200).json({
+        ok: true,
+        summary_length:  newSummary.length,
+        facts_count:     Object.keys(facts).length,
+        sessions_count:  sessions.length,
+      });
+    } catch (err) {
+      console.error("[adminStats/rebuildMemory] Error:", err);
       return res.status(500).json({ error: err.message });
     }
   }
