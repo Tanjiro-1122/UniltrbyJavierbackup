@@ -115,7 +115,8 @@ const IDENTITY_KEYS = [
   "unfiltr_apple_email",
   "unfiltr_user_email",
   "unfiltr_display_name",
-  // Onboarding flags
+  // Age gate / onboarding flags (maximum reset — wipe everything)
+  "unfiltr_age_verified",
   "unfiltr_consent_accepted",
   "unfiltr_onboarding_complete",
   // Premium flags
@@ -163,10 +164,11 @@ const IDENTITY_KEYS = [
  * - Removes every identity, premium, and cached key.
  * - Clears sessionStorage entirely.
  * - Clears in-memory globals used by ChatPage.
- * - Sets `unfiltr_fresh_start=true` so useProfileRecovery does NOT run until
- *   the user explicitly signs in again.
- * - Sends a CLEAR_SESSION message to the native iOS wrapper so it can purge
- *   any AsyncStorage / Keychain data it persisted.
+ * - Sets `unfiltr_fresh_start=true` and `unfiltr_signed_out=true` so
+ *   useProfileRecovery does NOT run until the user explicitly signs in again.
+ * - Sends a CLEAR_DATA message to the native iOS wrapper so it can purge
+ *   any AsyncStorage / Keychain data it persisted (fire-and-forget).
+ *   For the async variant that awaits CLEAR_DATA_COMPLETE, use clearDataAndReset().
  *
  * @param {function} [navigate] – react-router navigate fn; if provided,
  *                                navigates to "/" after clearing.
@@ -190,12 +192,13 @@ export function performFullReset(navigate) {
     window.__unfiltr_longest_streak = null;
   }
 
-  // 5. Set fresh-start guard AFTER clearing so useProfileRecovery skips auto-restore
+  // 5. Set guards AFTER clearing so useProfileRecovery skips auto-restore
   localStorage.setItem("unfiltr_fresh_start", "true");
+  localStorage.setItem("unfiltr_signed_out",  "true");
 
-  // 6. Notify native iOS wrapper to clear its persisted session
+  // 6. Notify native iOS wrapper to clear its persisted session (fire-and-forget)
   try {
-    const msg = JSON.stringify({ type: "CLEAR_SESSION" });
+    const msg = JSON.stringify({ type: "CLEAR_DATA" });
     if (window.ReactNativeWebView) {
       window.ReactNativeWebView.postMessage(msg);
     } else if (window.webkit?.messageHandlers?.ReactNativeWebView) {
@@ -207,4 +210,73 @@ export function performFullReset(navigate) {
   if (navigate) {
     navigate("/", { replace: true });
   }
+}
+
+/**
+ * Async bridge-aware reset.
+ *
+ * 1. Performs a synchronous full local clear (identical to performFullReset).
+ * 2. When running inside the iOS wrapper, sends CLEAR_DATA and waits up to
+ *    5 s for CLEAR_DATA_COMPLETE before reloading via window.location.replace.
+ * 3. For plain web usage, immediately navigates with react-router.
+ *
+ * @param {function} [navigate] – react-router navigate fn (used on web only).
+ */
+export async function clearDataAndReset(navigate) {
+  // ── Synchronous local clear ───────────────────────────────────────────────
+  IDENTITY_KEYS.forEach(k => localStorage.removeItem(k));
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith("unfiltr_")) localStorage.removeItem(k);
+  });
+  try { sessionStorage.clear(); } catch (_) {}
+  if (typeof window !== "undefined") {
+    window.__currentChatDbId        = null;
+    window.__chatDayUpsertKey       = null;
+    window.__unfiltr_longest_streak = null;
+  }
+  localStorage.setItem("unfiltr_fresh_start", "true");
+  localStorage.setItem("unfiltr_signed_out",  "true");
+
+  // ── Bridge path: send CLEAR_DATA, await CLEAR_DATA_COMPLETE (5 s cap) ────
+  const rnBridge = typeof window !== "undefined" &&
+    !!(window.ReactNativeWebView || window.webkit?.messageHandlers?.ReactNativeWebView);
+
+  if (rnBridge) {
+    await new Promise(resolve => {
+      let timer;
+      const handler = (e) => {
+        try {
+          const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+          if (d?.type === "CLEAR_DATA_COMPLETE") {
+            clearTimeout(timer);
+            window.removeEventListener("message", handler);
+            resolve();
+          }
+        } catch (_) {}
+      };
+      timer = setTimeout(() => {
+        window.removeEventListener("message", handler);
+        resolve();
+      }, 5000);
+      window.addEventListener("message", handler);
+      try {
+        const msg = JSON.stringify({ type: "CLEAR_DATA" });
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(msg);
+        } else {
+          window.webkit.messageHandlers.ReactNativeWebView.postMessage(msg);
+        }
+      } catch (_) {
+        clearTimeout(timer);
+        window.removeEventListener("message", handler);
+        resolve();
+      }
+    });
+    // Force a hard reload so the WebView re-initialises from "/" cleanly.
+    window.location.replace("/");
+    return;
+  }
+
+  // ── Web fallback ──────────────────────────────────────────────────────────
+  if (navigate) navigate("/", { replace: true });
 }

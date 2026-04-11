@@ -19,7 +19,7 @@ import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset, isFamilyUnlimited } from "@/lib/entitlements";
+import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -371,8 +371,8 @@ export default function Settings() {
       setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2500);
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
   };
-  const handleSignOut = () => {
-    performFullReset(navigate);
+  const handleSignOut = async () => {
+    await clearDataAndReset(navigate);
   };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
@@ -1015,10 +1015,10 @@ export default function Settings() {
         </Section>
         <Section>
           <Row icon={<RefreshCw size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
-            label="Reset App (Clear All Data)"
-            onPress={() => {
+            label="Sign out & Clear Device Data"
+            onPress={async () => {
               if (window.confirm("This will sign you out and erase all local data. You will need to sign in again. Continue?")) {
-                performFullReset(navigate);
+                await clearDataAndReset(navigate);
               }
             }} />
           <Row icon={<Trash2 size={15} color="#f87171" />} iconBg="rgba(239,68,68,0.12)" label="Delete My Account" onPress={() => setShowDeleteConfirm(true)} danger last />
