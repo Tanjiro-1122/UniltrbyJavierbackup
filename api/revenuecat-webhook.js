@@ -7,22 +7,17 @@
  * RevenueCat sends the Apple User ID as `app_user_id` after Purchases.logIn(appleUserId).
  *
  * Required environment variables:
- *   BASE44_SERVICE_TOKEN         — Base44 service-role token
+ *   BASE44_SERVICE_TOKEN           — Base44 service-role token
  *   REVENUECAT_WEBHOOK_AUTH_HEADER — expected Authorization header value from RevenueCat
  */
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
+import { planFromProductId } from "./_rcMapping.js";
 
 // Events that grant premium
-const GRANT_EVENTS = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "SUBSCRIBER_ALIAS"];
+const GRANT_EVENTS  = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "SUBSCRIBER_ALIAS"];
 // Events that revoke premium
 const REVOKE_EVENTS = ["CANCELLATION", "EXPIRATION", "BILLING_ISSUE"];
-
-const PRODUCT_MAP = {
-  "com.huertas.unfiltr.pro.monthly": "monthly",
-  "com.huertas.unfiltr.tier.pro":    "pro",
-  "com.huertas.unfiltr.pro.annual":  "annual",
-};
 
 async function findProfile(appleUserId) {
   try {
@@ -117,8 +112,7 @@ export default async function handler(req, res) {
   }
 
   // Determine what plan
-  const plan = PRODUCT_MAP[productId] ||
-    (productId.includes("annual") ? "annual" : productId.includes("pro") ? "pro" : "monthly");
+  const plan = planFromProductId(productId);
 
   let updates = {};
 

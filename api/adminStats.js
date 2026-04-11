@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { b44Fetch, B44_ENTITIES } from "./_b44.js";
+import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "unfiltr_admin_javier1122_secret";
 const APP_ID = "69b332a392004d139d4ba495";
@@ -309,6 +310,59 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     } catch (err) {
       console.error("[adminStats/subscriptionClearOverride] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── syncRevenueCat ────────────────────────────────────────────────────────
+  // Fetches the latest subscriber state from RevenueCat and syncs it to
+  // the given Base44 UserProfile record.
+  // Body: { userId, rcAppUserId, reason }
+  //   userId      — Base44 UserProfile record ID (required)
+  //   rcAppUserId — RevenueCat / Apple user ID to query (falls back to userId)
+  //   reason      — audit reason string (required, min 3 chars)
+  if (action === "syncRevenueCat") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    const rcAppUserId = req.body?.rcAppUserId || userId;
+    try {
+      let subscriberData;
+      try {
+        subscriberData = await fetchRCSubscriber(rcAppUserId);
+      } catch (rcErr) {
+        console.error("[adminStats/syncRevenueCat] RC fetch failed:", rcErr.message);
+        return res.status(502).json({ error: `RevenueCat fetch failed: ${rcErr.message}` });
+      }
+
+      const { flags, plan, expiresDate, isActive } = mapSubscriberToFlags(subscriberData);
+
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ ...flags, updated_date: new Date().toISOString() }),
+      });
+
+      // Write audit log entry (non-fatal)
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id:   userId,
+            action:      "sync_revenuecat",
+            changes:     JSON.stringify({ ...flags, plan, expiresDate }),
+            reason:      reason.trim(),
+            timestamp:   new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/syncRevenueCat] Audit log write failed (non-fatal):", logErr.message);
+      }
+
+      return res.status(200).json({ ok: true, isActive, plan, expiresDate, flags });
+    } catch (err) {
+      console.error("[adminStats/syncRevenueCat] Error:", err);
       return res.status(500).json({ error: err.message });
     }
   }
