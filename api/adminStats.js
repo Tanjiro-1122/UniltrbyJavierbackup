@@ -101,7 +101,7 @@ function buildRichSummaryFromStored(facts = {}, sessions = [], emotionalTimeline
 
   // Important people
   if (facts.important_people?.length) {
-    parts.push(`Important people: ${facts.important_people.map(p => `${p.name} (${p.role})`).join(", ")}.`);
+    parts.push(`Important people: ${facts.important_people.map(person => `${person.name} (${person.role})`).join(", ")}.`);
   }
 
   // Emotional patterns
@@ -119,16 +119,16 @@ function buildRichSummaryFromStored(facts = {}, sessions = [], emotionalTimeline
   // Session history
   if (sessions.length > 0) {
     const recent = sessions.slice(0, 5);
-    parts.push(`Recent sessions: ${recent.map(s => `[${s.date}] ${s.summary}`).join(" | ")}.`);
+    parts.push(`Recent sessions: ${recent.map(session => `[${session.date}] ${session.summary}`).join(" | ")}.`);
   }
 
   // Emotional timeline patterns
   if (emotionalTimeline?.length >= 2) {
     const recent7 = emotionalTimeline.slice(0, 7);
     const emotionCounts = {};
-    recent7.forEach(e => { emotionCounts[e.emotion] = (emotionCounts[e.emotion] || 0) + 1; });
+    recent7.forEach(entry => { emotionCounts[entry.emotion] = (emotionCounts[entry.emotion] || 0) + 1; });
     const topEmotions = Object.entries(emotionCounts)
-      .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
+      .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([emotion]) => emotion);
     if (topEmotions.length > 0) parts.push(`Recent emotional patterns: ${topEmotions.join(", ")}.`);
   }
 
