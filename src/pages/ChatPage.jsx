@@ -791,7 +791,7 @@ export default function ChatPage() {
       }
 
       const ttsData = await ttsRes.json();
-      const base64 = ttsData?.audio;
+      const base64 = ttsData?.data?.audio || ttsData?.audio; // support both { data: { audio } } and legacy { audio }
       if (!base64) {
         console.warn("[TTS] No audio in response");
         setIsSpeaking(false); setAvatarState("idle"); return;
