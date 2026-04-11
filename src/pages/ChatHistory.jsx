@@ -3,27 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Search, X, Trash2, Lock, MessageCircle } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
+import { getTier, HISTORY_LIMITS, PLAN_LABELS } from "@/lib/entitlements";
 
 const B44_APP  = "69b332a392004d139d4ba495";
 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
 const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
 
-const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
 const HISTORY_LABELS = {
-  free:   "Free — last 2 conversations kept",
-  plus:   "Premium — last 20 conversations kept",
-  pro:    "Pro — last 100 conversations kept",
-  annual: "Annual — unlimited history",
+  free:   `Free — last ${HISTORY_LIMITS.free} conversations kept`,
+  plus:   `${PLAN_LABELS.plus} — last ${HISTORY_LIMITS.plus} conversations kept`,
+  pro:    `${PLAN_LABELS.pro} — last ${HISTORY_LIMITS.pro} conversations kept`,
+  annual: `${PLAN_LABELS.annual} — unlimited history`,
 };
-
-function getTier() {
-  if (localStorage.getItem("unfiltr_family_unlock") === "true" || localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
-  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
-  return "free";
-}
 
 function formatDate(iso) {
   if (!iso) return "";

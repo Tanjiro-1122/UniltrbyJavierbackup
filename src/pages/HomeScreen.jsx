@@ -28,13 +28,19 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
   const isNewUser = result.isNewUser === true;
 
   if (profile?.profileId) {
+    // Clear fresh-start guard now that the user has explicitly signed in
+    localStorage.removeItem("unfiltr_fresh_start");
     localStorage.setItem("unfiltr_apple_user_id", appleUserId);
     if (email) localStorage.setItem("unfiltr_apple_email", email);
     localStorage.setItem("userProfileId", profile.profileId);
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
-    if (profile.is_premium)   localStorage.setItem("unfiltr_is_premium", "true");
-    if (profile.annual_plan)  localStorage.setItem("unfiltr_is_annual",  "true");
-    if (profile.pro_plan)     localStorage.setItem("unfiltr_is_pro",     "true");
+    // Set all three canonical premium flags consistently
+    const isAnnual  = !!(profile.annual_plan);
+    const isPro     = !!(profile.pro_plan);
+    const isPremium = !!(profile.is_premium || isPro || isAnnual);
+    localStorage.setItem("unfiltr_is_premium", String(isPremium));
+    localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
+    localStorage.setItem("unfiltr_is_pro",     String(isPro));
   }
 
   // Restore companion if returning user

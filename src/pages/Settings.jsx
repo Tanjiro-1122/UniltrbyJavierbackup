@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye
+  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye, RefreshCw
 } from "lucide-react"
 
 import ReferralSection from "@/components/ReferralSection";
@@ -19,6 +19,7 @@ import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
+import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset } from "@/lib/entitlements";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -365,8 +366,7 @@ export default function Settings() {
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
   };
   const handleSignOut = () => {
-    Object.keys(localStorage).forEach(k => { if (k.startsWith("unfiltr_") || k === "userProfileId") localStorage.removeItem(k); });
-    navigate("/", { replace: true });
+    performFullReset(navigate);
   };
   const handleChangeCompanion = async (c) => {
     if (savingCompanion) return;
@@ -911,15 +911,9 @@ export default function Settings() {
       </SubScreen>
     ),
     privacy: (() => {
-      const tier = (() => {
-        if (localStorage.getItem("unfiltr_family_unlock") === "true" || localStorage.getItem("unfiltr_msg_limit_override") === "true") return "annual";
-        if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
-        if (localStorage.getItem("unfiltr_is_pro")    === "true") return "pro";
-        if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
-        return "free";
-      })();
+      const tier = getTier();
       const limits = { free: 2, plus: 20, pro: 100, annual: "Unlimited" };
-      const tierLabel = { free: "Free", plus: "Premium", pro: "Pro", annual: "Annual" };
+      const tierLabel = PLAN_LABELS;
       return (
         <SubScreen title="Privacy & Data" onBack={() => setScreen(null)}>
           {/* Retention policy card */}
@@ -932,7 +926,7 @@ export default function Settings() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {[
                 { t: "Free", v: "Last 2 conversations", active: tier === "free" },
-                { t: "Premium", v: "Last 20 conversations", active: tier === "plus" },
+                { t: PLAN_LABELS.plus, v: "Last 20 conversations", active: tier === "plus" },
                 { t: "Pro", v: "Last 100 conversations", active: tier === "pro" },
                 { t: "Annual", v: "Unlimited history", active: tier === "annual" },
               ].map(row => (
@@ -1014,6 +1008,13 @@ export default function Settings() {
             onPress={() => setShowPauseModal(true)} last />
         </Section>
         <Section>
+          <Row icon={<RefreshCw size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
+            label="Reset App (Clear All Data)"
+            onPress={() => {
+              if (window.confirm("This will sign you out and erase all local data. You will need to sign in again. Continue?")) {
+                performFullReset(navigate);
+              }
+            }} />
           <Row icon={<Trash2 size={15} color="#f87171" />} iconBg="rgba(239,68,68,0.12)" label="Delete My Account" onPress={() => setShowDeleteConfirm(true)} danger last />
         </Section>
       </SubScreen>
@@ -1037,7 +1038,7 @@ export default function Settings() {
           </svg>
         </div>
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0, flex: 1 }}>Settings</h1>
-        {isPremium && <span style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>✨ Premium</span>}
+        {isPremium && <span style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>✨ {getPlanLabel()}</span>}
       </div>
 
       {/* ── Tab Bar ── */}
