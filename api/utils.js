@@ -2,6 +2,7 @@
 // Merged: generateReferralCode + ratingPrompt + generateMoodImage + sendDailyNotifs + savePushToken
 
 import OpenAI from "openai";
+import { safeLogError, withAbortController } from "./_helpers.js";
 
 const B44_APP  = "69b332a392004d139d4ba495";
 const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
@@ -63,13 +64,18 @@ async function generateCheckinMessage(openai, companionName, timeOfDay, userName
   const name = userName || "you";
   const isAM = timeOfDay === "morning";
   const systemPrompt = `You are ${companionName || "Sakura"}, a warm AI companion. Write a very short, personal ${isAM ? "good morning" : "goodnight"} message for ${name}. Keep it 1-2 sentences max. Be genuine, warm, and slightly playful — like a close friend checking in. No hashtags, no emojis overload (1 max). Vary the message each day so it never feels robotic.`;
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: "Send the check-in." }],
-    max_tokens: 60,
-    temperature: 0.9,
-  });
-  return response.choices[0]?.message?.content?.trim() || (isAM ? `Good morning ${name} ☀️` : `Goodnight ${name} 🌙`);
+  const { signal, cancel } = withAbortController();
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: "Send the check-in." }],
+      max_tokens: 60,
+      temperature: 0.9,
+    }, { signal });
+    return response.choices[0]?.message?.content?.trim() || (isAM ? `Good morning ${name} ☀️` : `Goodnight ${name} 🌙`);
+  } finally {
+    cancel();
+  }
 }
 
 // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -133,6 +139,7 @@ async function handleGenerateMoodImage(req, res) {
     prompt = `${prompt}, inspired by the feeling: "${snippet}"`;
   }
 
+  const { signal, cancel } = withAbortController(30_000);
   try {
     const response = await openai.images.generate({
       model: "dall-e-3",
@@ -141,14 +148,16 @@ async function handleGenerateMoodImage(req, res) {
       size: "1024x1024",
       quality: "standard",
       style: "vivid",
-    });
+    }, { signal });
 
     const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) return res.status(500).json({ error: "No image URL returned" });
     res.status(200).json({ data: { url: imageUrl } });
   } catch (err) {
-    console.error("[generateMoodImage] OpenAI error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "generateMoodImage" });
+    res.status(500).json({ error: "Image generation failed. Please try again." });
+  } finally {
+    cancel();
   }
 }
 
@@ -170,8 +179,8 @@ async function handleSavePushToken(req, res) {
     console.log(`[savePushToken] ✅ Saved token for ${appleUserId}`);
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[savePushToken] Error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "savePushToken" });
+    res.status(500).json({ error: "Failed to save push token. Please try again." });
   }
 }
 
@@ -300,8 +309,8 @@ async function handleUpdateNotifPrefs(req, res) {
     await b44Update("UserProfile", profile.id, updates);
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[updateNotifPrefs] Error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "updateNotifPrefs" });
+    res.status(500).json({ error: "Failed to update notification preferences." });
   }
 }
 
@@ -332,16 +341,16 @@ async function handleDeleteAccount(req, res) {
     });
 
     if (!delRes.ok) {
-      const err = await delRes.text();
-      console.error("[deleteAccount] Delete failed:", err);
+      const errText = await delRes.text();
+      safeLogError(new Error(errText.slice(0, 200)), { tag: "deleteAccount" });
       return res.status(500).json({ error: "Failed to delete profile" });
     }
 
     console.log(`[deleteAccount] ✅ Deleted profile ${id}`);
     res.status(200).json({ ok: true });
   } catch (err) {
-    console.error("[deleteAccount] Error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "deleteAccount" });
+    res.status(500).json({ error: "Account deletion failed. Please try again." });
   }
 }
 
@@ -378,10 +387,11 @@ const { action } = req.body;
     if (action === "saveChatHistory")     return await handleSaveChatHistory(req, res);
         return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
-    console.error("[utils] Error:", err);
-    return res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "utils" });
+    return res.status(500).json({ error: "An unexpected error occurred. Please try again." });
   }
-} ──────────────────────────────────────────────────────────
+}
+
 async function handleJournalFeedback(req, res) {
   const { companionName, entryMood, entryContent, userName } = req.body || {};
   if (!entryMood || !entryContent) return res.status(400).json({ error: "entryMood and entryContent required" });
@@ -408,21 +418,27 @@ async function handleJournalFeedback(req, res) {
   const snippet = entryContent.trim().slice(0, 300);
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Here's what I wrote: "${snippet}"` },
-      ],
-      max_tokens: 120,
-      temperature: 0.88,
-    });
+    const { signal, cancel } = withAbortController();
+    let response;
+    try {
+      response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Here's what I wrote: "${snippet}"` },
+        ],
+        max_tokens: 120,
+        temperature: 0.88,
+      }, { signal });
+    } finally {
+      cancel();
+    }
 
     const feedback = response.choices[0]?.message?.content?.trim() || "Thank you for sharing this with me 💜";
     res.status(200).json({ data: { feedback } });
   } catch (err) {
-    console.error("[journalFeedback] OpenAI error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "journalFeedback" });
+    res.status(500).json({ error: "Failed to generate journal feedback. Please try again." });
   }
 }
 

@@ -1,4 +1,11 @@
 import OpenAI from "openai";
+import {
+  safeLogError,
+  withAbortController,
+  getCachedProfile,
+  setCachedProfile,
+  invalidateCachedProfile,
+} from "./_helpers.js";
 
 const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const B44_APP     = "69b332a392004d139d4ba495";
@@ -171,27 +178,33 @@ JSON format:
 
 Only include array items that were actually mentioned. Use [] for empty arrays.`;
 
-    const [extractRes, summaryRes] = await Promise.all([
-      openai.chat.completions.create({
-        model: summaryModel,
-        messages: [
-          { role: "system", content: extractionPrompt },
-          { role: "user", content: transcript },
-        ],
-        max_tokens: 600,
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-      }),
-      openai.chat.completions.create({
-        model: summaryModel,
-        messages: [
-          { role: "system", content: "In 1-2 sentences, summarize the emotional tone and key topics of this conversation. Write as a warm, private note. Start with the emotional vibe, then the main topic. Example: 'User was feeling overwhelmed and anxious about a job interview. They talked through their fears and ended feeling slightly more grounded.'" },
-          { role: "user", content: transcript },
-        ],
-        max_tokens: 150,
-        temperature: 0.5,
-      }),
-    ]);
+    const { signal: aiSignal, cancel: cancelAi } = withAbortController();
+    let extractRes, summaryRes;
+    try {
+      [extractRes, summaryRes] = await Promise.all([
+        openai.chat.completions.create({
+          model: summaryModel,
+          messages: [
+            { role: "system", content: extractionPrompt },
+            { role: "user", content: transcript },
+          ],
+          max_tokens: 600,
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+        }, { signal: aiSignal }),
+        openai.chat.completions.create({
+          model: summaryModel,
+          messages: [
+            { role: "system", content: "In 1-2 sentences, summarize the emotional tone and key topics of this conversation. Write as a warm, private note. Start with the emotional vibe, then the main topic. Example: 'User was feeling overwhelmed and anxious about a job interview. They talked through their fears and ended feeling slightly more grounded.'" },
+            { role: "user", content: transcript },
+          ],
+          max_tokens: 150,
+          temperature: 0.5,
+        }, { signal: aiSignal }),
+      ]);
+    } finally {
+      cancelAi();
+    }
 
     let extracted = {};
     try { extracted = JSON.parse(extractRes.choices[0]?.message?.content || "{}"); } catch {}
@@ -201,8 +214,12 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
 
     const memoryDepth = isAnnual ? 60 : isPro ? 30 : isPremium ? 15 : 3;
 
-    // Fetch existing profile
-    const profile = await b44Get("UserProfile", profileId);
+    // Fetch existing profile — use short-lived cache to avoid duplicate B44 round-trips
+    let profile = getCachedProfile(profileId);
+    if (!profile) {
+      profile = await b44Get("UserProfile", profileId);
+      if (profile) setCachedProfile(profileId, profile);
+    }
     const existingFacts     = profile?.user_facts || {};
     const existingSessions  = profile?.session_memory || [];
     const existingTimeline  = profile?.emotional_timeline || [];
@@ -233,6 +250,8 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       memory_summary:     richSummary,
       updated_date:       new Date().toISOString(),
     });
+    // Evict stale cached profile after write
+    invalidateCachedProfile(profileId);
 
     // Vector memory store (premium+, fire-and-forget)
     try {
@@ -252,7 +271,7 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       emotion_topic: extracted.emotion_topic,
     });
   } catch (err) {
-    console.error("SummarizeSession error:", err);
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "summarizeSession" });
+    res.status(500).json({ error: "Session summarization failed. Please try again." });
   }
 }

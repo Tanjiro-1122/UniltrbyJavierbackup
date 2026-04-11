@@ -1,4 +1,12 @@
 import OpenAI from "openai";
+import {
+  createRequestContext,
+  safeLogError,
+  checkRateLimit,
+  withAbortController,
+  MAX_INPUT_CHARS,
+  MAX_OUTPUT_TOKENS,
+} from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -147,6 +155,17 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  // ── Rate limit ───────────────────────────────────────────────────────────
+  const rl = checkRateLimit(ctx.userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
+
   try {
     const {
       messages,
@@ -164,8 +183,17 @@ export default async function handler(req, res) {
 
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
 
+    // ── Input length guard ───────────────────────────────────────────────
+    const totalInputChars = messages.reduce((sum, m) => sum + (m.content?.length || 0), 0);
+    if (totalInputChars > MAX_INPUT_CHARS) {
+      return res.status(400).json({
+        error: "Your message is too long. Please shorten it and try again.",
+      });
+    }
+
     const model      = getModel(isPremium, isPro, isAnnual);
-    const maxTokens  = getMaxTokens(isPremium, isPro, isAnnual);
+    // Respect per-tier defaults but never exceed the hard server-side cap.
+    const maxTokens  = Math.min(getMaxTokens(isPremium, isPro, isAnnual), MAX_OUTPUT_TOKENS);
     const ctxWindow  = getContextWindow(isPremium, isPro, isAnnual);
 
     const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
@@ -228,19 +256,25 @@ export default async function handler(req, res) {
       ? `\n\nIMPORTANT: The user just shared their mood: "${lastMsg.content}". This is a mood check-in. In your FIRST sentence, acknowledge their feeling directly and warmly — show you genuinely heard them. Use their specific emotion word. Then respond in a way that matches and supports their emotional state.`
       : "";
 
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
-            `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
-        },
-        ...trimmedMessages,
-      ],
-      max_tokens: maxTokens,
-      temperature: 0.85,
-    });
+    const { signal, cancel } = withAbortController();
+    let response;
+    try {
+      response = await openai.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: "system",
+            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
+              `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
+          },
+          ...trimmedMessages,
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.85,
+      }, { signal });
+    } finally {
+      cancel();
+    }
 
     const raw = response.choices[0]?.message?.content || "Hey, I am here for you 💜";
 
@@ -294,7 +328,11 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    safeLogError(err, { ...ctx, tag: "chat" });
+    if (err.name === "AbortError" || err.message?.includes("aborted") || err.message?.includes("timed out")) {
+      return res.status(504).json({ error: "The AI took too long to respond. Please try again." });
+    }
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 }
 
