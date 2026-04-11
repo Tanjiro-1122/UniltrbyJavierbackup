@@ -565,7 +565,10 @@ export default function AdminDashboard() {
           });
           const data = await res.json();
           if (!res.ok || data.error) throw new Error(data.error);
-          showToast(`✅ Deleted — chats: ${data.chatHistoryDeleted}, journals: ${data.journalEntriesDeleted}`);
+          const failNote = (data.chatHistoryFailed || data.journalEntriesFailed)
+            ? ` (${(data.chatHistoryFailed || 0) + (data.journalEntriesFailed || 0)} failed)`
+            : "";
+          showToast(`✅ Deleted — chats: ${data.chatHistoryDeleted}, journals: ${data.journalEntriesDeleted}${failNote}`);
           setHdIdentifier(""); setHdReason(""); setHdDeleteJournals(false);
           loadData();
         } catch (e) { showToast("❌ " + e.message); }

@@ -373,10 +373,9 @@ export default function Settings() {
     // Clear ALL app storage so the device behaves like a fresh install
     localStorage.clear();
     sessionStorage.clear();
-    // Clear in-memory globals
-    try { delete window.__currentChatDbId; } catch (_) {}
-    try { delete window.__unfiltr_longest_streak; } catch (_) {}
-    try { delete window.__nativeBus; } catch (_) {}
+    // Clear in-memory globals set by the app at runtime
+    const IN_MEMORY_GLOBALS = ["__currentChatDbId", "__unfiltr_longest_streak", "__nativeBus"];
+    IN_MEMORY_GLOBALS.forEach(k => { try { delete window[k]; } catch (_) {} });
     navigate("/home-screen", { replace: true });
   };
   const handleChangeCompanion = async (c) => {

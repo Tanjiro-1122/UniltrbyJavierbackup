@@ -236,12 +236,16 @@ export default async function handler(req, res) {
 
       // Step 2: delete ChatHistory records for this user
       let chatDeleted = 0;
+      let chatFailed = 0;
       if (resolvedAppleId) {
         try {
-          const chatRaw = await b44Fetch(`${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=500`);
+          // Use limit=2000 to cover large test accounts; Base44 free tier chats are naturally capped
+          const chatRaw = await b44Fetch(`${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=2000`);
           const chats = Array.isArray(chatRaw) ? chatRaw : (chatRaw.records || chatRaw.data || []);
-          await Promise.allSettled(chats.map(c => deleteEntity("ChatHistory", c.id)));
-          chatDeleted = chats.length;
+          const chatResults = await Promise.allSettled(chats.map(c => deleteEntity("ChatHistory", c.id)));
+          chatDeleted = chatResults.filter(r => r.status === "fulfilled").length;
+          chatFailed = chatResults.filter(r => r.status === "rejected").length;
+          if (chatFailed > 0) console.warn(`[adminStats/hardDeleteUser] ${chatFailed} ChatHistory record(s) failed to delete`);
         } catch (chatErr) {
           console.warn("[adminStats/hardDeleteUser] ChatHistory delete failed (non-fatal):", chatErr.message);
         }
@@ -249,12 +253,15 @@ export default async function handler(req, res) {
 
       // Step 3: optionally delete JournalEntry records
       let journalDeleted = 0;
+      let journalFailed = 0;
       if (deleteJournals && resolvedAppleId) {
         try {
-          const jRaw = await b44Fetch(`${B44_ENTITIES}/JournalEntry?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=500`);
+          const jRaw = await b44Fetch(`${B44_ENTITIES}/JournalEntry?apple_user_id=${encodeURIComponent(resolvedAppleId)}&limit=2000`);
           const journals = Array.isArray(jRaw) ? jRaw : (jRaw.records || jRaw.data || []);
-          await Promise.allSettled(journals.map(j => deleteEntity("JournalEntry", j.id)));
-          journalDeleted = journals.length;
+          const jResults = await Promise.allSettled(journals.map(j => deleteEntity("JournalEntry", j.id)));
+          journalDeleted = jResults.filter(r => r.status === "fulfilled").length;
+          journalFailed = jResults.filter(r => r.status === "rejected").length;
+          if (journalFailed > 0) console.warn(`[adminStats/hardDeleteUser] ${journalFailed} JournalEntry record(s) failed to delete`);
         } catch (jErr) {
           console.warn("[adminStats/hardDeleteUser] JournalEntry delete failed (non-fatal):", jErr.message);
         }
@@ -274,7 +281,9 @@ export default async function handler(req, res) {
             changes: JSON.stringify({
               apple_user_id: resolvedAppleId,
               chat_history_deleted: chatDeleted,
+              chat_history_failed: chatFailed,
               journal_entries_deleted: journalDeleted,
+              journal_entries_failed: journalFailed,
             }),
             reason: reason.trim(),
             timestamp: new Date().toISOString(),
@@ -288,7 +297,9 @@ export default async function handler(req, res) {
         ok: true,
         profileDeleted: true,
         chatHistoryDeleted: chatDeleted,
+        chatHistoryFailed: chatFailed,
         journalEntriesDeleted: journalDeleted,
+        journalEntriesFailed: journalFailed,
       });
     } catch (err) {
       console.error("[adminStats/hardDeleteUser] Error:", err);
