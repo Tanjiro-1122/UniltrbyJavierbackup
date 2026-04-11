@@ -627,7 +627,8 @@ export default function ChatPage() {
     const userMsgs = messages.filter(m => m.role === "user");
     // Only save every 5 user messages — avoids hammering DB on every keystroke
     if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
-      const appleId = localStorage.getItem("unfiltr_apple_user_id");
+      // Use apple_user_id if available, fall back to anonymous device_id
+      const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
       if (!appleId) return;
       const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
       if (msgs.length < 2) return;
@@ -640,6 +641,12 @@ export default function ChatPage() {
       const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
       const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
 
+      // Restore the session DB record ID from localStorage if it was lost on page reload
+      if (!window.__currentChatDbId) {
+        const storedId = localStorage.getItem("unfiltr_current_chat_db_id");
+        if (storedId) window.__currentChatDbId = storedId;
+      }
+
       // Check if we already have a DB record for this session (stored in ref)
       const existingId = window.__currentChatDbId;
       if (existingId) {
@@ -650,14 +657,19 @@ export default function ChatPage() {
           body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
         }).catch(() => {});
       } else {
-        // Create new record and remember its ID
+        // Create new record and persist its ID to survive page reloads
         fetch(`${B44_BASE}/ChatHistory`, {
           method: "POST",
           headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify({ apple_user_id: appleId, companion_name: companionName, messages: JSON.stringify(msgs), saved_at: new Date().toISOString(), tier, message_count: msgs.length }),
         })
           .then(r => r.json())
-          .then(data => { if (data?.id) window.__currentChatDbId = data.id; })
+          .then(data => {
+            if (data?.id) {
+              window.__currentChatDbId = data.id;
+              localStorage.setItem("unfiltr_current_chat_db_id", data.id);
+            }
+          })
           .catch(() => {});
       }
     }
@@ -694,25 +706,49 @@ export default function ChatPage() {
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
 
             // 💾 Also save to DB ChatHistory entity for cross-device sync
-            const appleId = localStorage.getItem("unfiltr_apple_user_id");
+            // Use apple_user_id if available, fall back to anonymous device_id
+            const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
             if (appleId && msgs.length >= 2) {
               try {
                 const B44_APP = "69b332a392004d139d4ba495";
                 const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
                 const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-                fetch(`${B44_BASE}/ChatHistory`, {
-                  method: "POST",
-                  headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    apple_user_id: appleId,
-                    messages: JSON.stringify(msgs.slice(-40)),
-                    saved_at: new Date().toISOString(),
-                    tier,
-                    message_count: msgs.length,
-                  }),
-                })
-                  .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
-                  .catch(() => {});
+                // If the every-5-messages effect already created a record this session,
+                // update it instead of creating a duplicate.
+                const sessionDbId = window.__currentChatDbId || localStorage.getItem("unfiltr_current_chat_db_id");
+                if (sessionDbId) {
+                  fetch(`${B44_BASE}/ChatHistory/${sessionDbId}`, {
+                    method: "PUT",
+                    headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      messages: JSON.stringify(msgs.slice(-40)),
+                      saved_at: new Date().toISOString(),
+                      tier,
+                      message_count: msgs.length,
+                    }),
+                    keepalive: true,
+                  })
+                    .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
+                    .catch(() => {});
+                } else {
+                  fetch(`${B44_BASE}/ChatHistory`, {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      apple_user_id: appleId,
+                      messages: JSON.stringify(msgs.slice(-40)),
+                      saved_at: new Date().toISOString(),
+                      tier,
+                      message_count: msgs.length,
+                    }),
+                    keepalive: true,
+                  })
+                    .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
+                    .catch(() => {});
+                }
+                // Clear the session record ID so the next chat visit starts a fresh record
+                window.__currentChatDbId = null;
+                localStorage.removeItem("unfiltr_current_chat_db_id");
               } catch(e) {}
             }
           }

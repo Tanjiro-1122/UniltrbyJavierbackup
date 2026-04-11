@@ -94,6 +94,7 @@ export function clearEntitlements() {
 const IDENTITY_KEYS = [
   // Auth / identity
   "unfiltr_apple_user_id",
+  "unfiltr_device_id",
   "userProfileId",
   "unfiltr_user_id",
   "unfiltr_auth_token",

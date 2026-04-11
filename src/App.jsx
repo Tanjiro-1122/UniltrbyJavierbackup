@@ -331,6 +331,16 @@ const AuthenticatedApp = ({ splashDone }) => {
 };
 
 function App() {
+  // Ensure a stable anonymous identifier exists before Apple Sign-In completes.
+  // ChatPage and ChatHistory both use apple_user_id || device_id, so without this
+  // users who haven't completed Apple Sign-In would silently drop all history saves.
+  // Use crypto.getRandomValues for a cryptographically strong identifier.
+  if (!localStorage.getItem("unfiltr_apple_user_id") && !localStorage.getItem("unfiltr_device_id")) {
+    const bytes = crypto.getRandomValues(new Uint8Array(12));
+    const hex   = Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+    localStorage.setItem("unfiltr_device_id", "device_" + hex);
+  }
+
   // Only show splash on true first launch — skip if user already verified/onboarded
   const isFirstLaunch = !localStorage.getItem("unfiltr_age_verified") && !localStorage.getItem("unfiltr_onboarding_complete");
   const [showSplash, setShowSplash] = useState(isFirstLaunch);
