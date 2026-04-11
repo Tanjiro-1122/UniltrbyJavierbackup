@@ -7,9 +7,14 @@
  *
  * Required environment variables:
  *   REVENUECAT_SECRET_KEY — RevenueCat server-side secret key
+ *
+ * Optional environment variables:
+ *   REVENUECAT_ENTITLEMENT_ID — RevenueCat entitlement identifier
+ *                               (default: "unfiltr by javier Pro")
  */
 
-export const ENTITLEMENT_ID = "unfiltr by javier Pro";
+export const ENTITLEMENT_ID =
+  process.env.REVENUECAT_ENTITLEMENT_ID || "unfiltr by javier Pro";
 export const RC_API_BASE    = "https://api.revenuecat.com/v1";
 
 /**
@@ -42,13 +47,14 @@ export function planFromProductId(productId = "") {
  *
  * @param {object|null|undefined} entitlement  - RC entitlement object (or null/undefined).
  * @param {string} [fallbackProductId]         - Product ID to use when entitlement lacks one.
- * @returns {{ is_premium: boolean, pro_plan: boolean, annual_plan: boolean,
+ * @returns {{ is_premium: boolean, premium: boolean, pro_plan: boolean, annual_plan: boolean,
  *             trial_active: boolean, subscription_expires: string|null }}
  */
 export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
   if (!entitlement) {
     return {
       is_premium:           false,
+      premium:              false,
       pro_plan:             false,
       annual_plan:          false,
       trial_active:         false,
@@ -63,6 +69,7 @@ export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
   if (!isActive) {
     return {
       is_premium:           false,
+      premium:              false,
       pro_plan:             false,
       annual_plan:          false,
       trial_active:         false,
@@ -76,6 +83,7 @@ export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
 
   return {
     is_premium:           true,
+    premium:              true,
     pro_plan:             plan === "pro",
     annual_plan:          plan === "annual",
     trial_active:         isTrial,
