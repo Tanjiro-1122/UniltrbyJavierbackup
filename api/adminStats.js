@@ -79,12 +79,18 @@ function mapUser(p) {
   };
 }
 
+/** Returns the Base44 service token, supporting both env var names. */
+function getServiceToken() {
+  const token = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY;
+  if (!token) throw new Error("BASE44_SERVICE_TOKEN or BASE44_API_KEY env var not set");
+  return token;
+}
+
 async function fetchEntity(entity, params = {}) {
   const url = new URL(`${BASE44_API}/apps/${APP_ID}/entities/${entity}`);
   url.searchParams.set("limit", params.limit || 500);
   if (params.skip) url.searchParams.set("skip", params.skip);
-  const serviceToken = process.env.BASE44_SERVICE_TOKEN;
-  if (!serviceToken) throw new Error("BASE44_SERVICE_TOKEN env var not set");
+  const serviceToken = getServiceToken();
   const res = await fetch(url.toString(), {
     headers: {
       "Authorization": `Bearer ${serviceToken}`,
@@ -101,8 +107,7 @@ async function fetchEntity(entity, params = {}) {
 }
 
 async function updateEntity(entity, id, data) {
-  const serviceToken = process.env.BASE44_SERVICE_TOKEN;
-  if (!serviceToken) throw new Error("BASE44_SERVICE_TOKEN env var not set");
+  const serviceToken = getServiceToken();
   const res = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/${entity}/${id}`, {
     method: "PUT",
     headers: {
@@ -120,8 +125,7 @@ async function updateEntity(entity, id, data) {
 }
 
 async function deleteEntity(entity, id) {
-  const serviceToken = process.env.BASE44_SERVICE_TOKEN;
-  if (!serviceToken) throw new Error("BASE44_SERVICE_TOKEN env var not set");
+  const serviceToken = getServiceToken();
   const res = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/${entity}/${id}`, {
     method: "DELETE",
     headers: {
@@ -147,7 +151,7 @@ export default async function handler(req, res) {
   // ── ACTION HANDLERS ──────────────────────────────────────────────────────
   if (action === "grantAccess") {
     if (!userId) return res.status(400).json({ error: "userId required" });
-    const updateData = { is_premium: true };
+    const updateData = { is_premium: true, premium: true };
     if (type === "trial") {
       updateData.trial_active = true;
       updateData.trial_start_date = new Date().toISOString();
@@ -166,6 +170,7 @@ export default async function handler(req, res) {
     if (!userId) return res.status(400).json({ error: "userId required" });
     await updateEntity("UserProfile", userId, {
       is_premium: false,
+      premium: false,
       trial_active: false,
       annual_plan: false,
       pro_plan: false,
@@ -219,6 +224,7 @@ export default async function handler(req, res) {
     try {
       const updateData = {
         is_premium: !!(subscription?.is_premium),
+        premium: !!(subscription?.is_premium),
         pro_plan: !!(subscription?.pro_plan),
         annual_plan: !!(subscription?.annual_plan),
         trial_active: !!(subscription?.trial_active),
@@ -270,6 +276,7 @@ export default async function handler(req, res) {
       }
       const updateData = {
         is_premium: true,
+        premium: true,
         pro_plan: true,
         trial_active: false,
         subscription_expires: expires,
@@ -311,6 +318,7 @@ export default async function handler(req, res) {
     try {
       const updateData = {
         is_premium: false,
+        premium: false,
         pro_plan: false,
         annual_plan: false,
         trial_active: false,
