@@ -59,7 +59,7 @@ const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"]
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
 
 /**
- * Upsert today's ChatHistory record via the Vercel proxy (/api/saveChatHistory).
+ * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
  * Routing through same-origin avoids WKWebView CORS issues with api.base44.com
  * and keeps the Base44 service token off the client bundle.
  *
@@ -101,11 +101,12 @@ function doUpsertChatHistory(msgs, onError) {
   const msgSlice = msgs.slice(-50).map(m => ({ role: m.role, content: m.content }));
 
   // Use keepalive:true so the request survives tab/app backgrounding on iOS
-  fetch("/api/saveChatHistory", {
+  fetch("/api/base44", {
     method: "POST",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      action:           "saveChatHistory",
       apple_user_id:    appleId,
       companion_id:     companionId,
       companion_name:   companionName,
@@ -1008,11 +1009,12 @@ export default function ChatPage() {
           debugLog("[SaveMessages] Skipped — companion_id not set");
         } else {
           const now = new Date().toISOString();
-          fetch("/api/saveMessages", {
+          fetch("/api/base44", {
             method: "POST",
             keepalive: true,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              action: "saveMessages",
               messages: [
                 { apple_user_id: appleId, companion_id: compId, role: "user",      content: userContent, created_date: now },
                 { apple_user_id: appleId, companion_id: compId, role: "assistant", content: replyText,   created_date: now },
