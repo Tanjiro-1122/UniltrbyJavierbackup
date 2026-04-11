@@ -71,7 +71,8 @@ const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
 function doUpsertChatHistory(msgs, onError) {
   if (localStorage.getItem("unfiltr_private_session") === "true") return;
 
-  const appleId = localStorage.getItem("unfiltr_apple_user_id");
+  // Use apple_user_id if available, fall back to anonymous device_id
+  const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
   const companionRaw = localStorage.getItem("unfiltr_companion");
   let parsedComp = null;
   try { parsedComp = companionRaw ? JSON.parse(companionRaw) : null; } catch {}
@@ -81,12 +82,18 @@ function doUpsertChatHistory(msgs, onError) {
   const companionName = parsedComp?.displayName || parsedComp?.name || "Companion";
 
   if (!appleId) {
-    debugLog("[AutoSave] Skipped — unfiltr_apple_user_id not set");
+    debugLog("[AutoSave] Skipped — neither unfiltr_apple_user_id nor unfiltr_device_id is set");
     return;
   }
   if (!companionId) {
     debugLog("[AutoSave] Skipped — companion_id not set (companion not yet loaded)");
     return;
+  }
+
+  // Restore the session DB record ID from localStorage if it was lost on page reload
+  if (!window.__currentChatDbId) {
+    const storedId = localStorage.getItem("unfiltr_current_chat_db_id");
+    if (storedId) window.__currentChatDbId = storedId;
   }
 
   const isFamilyOrAnnual =
@@ -125,6 +132,8 @@ function doUpsertChatHistory(msgs, onError) {
     if (data?.id) {
       window.__currentChatDbId  = data.id;
       window.__chatDayUpsertKey = data.key;
+      // Persist to localStorage so the record ID survives page reloads
+      localStorage.setItem("unfiltr_current_chat_db_id", data.id);
     }
   })
   .catch(err => {
@@ -688,12 +697,6 @@ export default function ChatPage() {
     // Count all messages excluding the initial greeting (index 0)
     const allMsgs = messages.slice(1);
     if (allMsgs.length < 2) return;
-
-    const appleId = localStorage.getItem("unfiltr_apple_user_id");
-    if (!appleId) {
-      debugLog("[AutoSave] Skipped — unfiltr_apple_user_id not set");
-      return;
-    }
 
     // Throttle: don't write to DB more than once every 15 seconds.
     // The first save (lastChatHistorySaveRef starts at 0) always passes immediately.
