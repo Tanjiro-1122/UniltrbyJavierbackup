@@ -4,6 +4,8 @@ import { b44Fetch, B44_ENTITIES } from "./_b44.js";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "unfiltr_admin_javier1122_secret";
 const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = "https://app.base44.com/api";
+const MS_PER_HOUR = 3600000;
+const MS_PER_DAY  = 86400000;
 
 /** Constant-time string comparison to prevent timing-based token enumeration. */
 function safeCompare(a, b) {
@@ -221,6 +223,96 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── subscriptionQuickGrant ────────────────────────────────────────────────
+  if (action === "subscriptionQuickGrant") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    const { durationDays, durationHours } = req.body || {};
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    try {
+      const now = new Date();
+      let expires;
+      if (durationHours) {
+        expires = new Date(now.getTime() + Number(durationHours) * MS_PER_HOUR).toISOString();
+      } else {
+        expires = new Date(now.getTime() + Number(durationDays || 7) * MS_PER_DAY).toISOString();
+      }
+      const updateData = {
+        is_premium: true,
+        pro_plan: true,
+        trial_active: false,
+        subscription_expires: expires,
+        subscription_override: true,
+      };
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify(updateData),
+      });
+      const label = durationHours ? `${durationHours}h` : `${durationDays || 7}d`;
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id: userId,
+            action: `quick_grant_pro_${label}`,
+            changes: JSON.stringify(updateData),
+            reason: reason.trim(),
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/quickGrant] Audit log write failed (non-fatal):", logErr.message);
+      }
+      return res.status(200).json({ ok: true, expires });
+    } catch (err) {
+      console.error("[adminStats/subscriptionQuickGrant] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── subscriptionClearOverride ─────────────────────────────────────────────
+  if (action === "subscriptionClearOverride") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    try {
+      const updateData = {
+        is_premium: false,
+        pro_plan: false,
+        annual_plan: false,
+        trial_active: false,
+        subscription_override: false,
+        subscription_expires: null,
+      };
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify(updateData),
+      });
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id: userId,
+            action: "clear_override",
+            changes: JSON.stringify(updateData),
+            reason: reason.trim(),
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/clearOverride] Audit log write failed (non-fatal):", logErr.message);
+      }
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error("[adminStats/subscriptionClearOverride] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // ── auditLog ──────────────────────────────────────────────────────────────
   if (action === "auditLog") {
     try {
@@ -249,7 +341,7 @@ export default async function handler(req, res) {
     const totalMessages = allProfiles.reduce((sum, p) => sum + (p.message_count || 0), 0);
 
     const now = new Date();
-    const weekAgo = new Date(now - 7 * 86400000).toISOString();
+    const weekAgo = new Date(now - 7 * MS_PER_DAY).toISOString();
     const fiveMinAgo = new Date(now - 5 * 60 * 1000).toISOString();
     const onlineNow = allProfiles.filter(p => p.last_seen && p.last_seen >= fiveMinAgo).length;
     const appleUsers = allProfiles.filter(p => p.apple_user_id && p.apple_user_id.trim() !== "").length;

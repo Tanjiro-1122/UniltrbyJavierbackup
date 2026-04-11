@@ -74,9 +74,51 @@ function UserDetailPanel({ user, adminToken, onAction, showToast }) {
     trial_active:          user.trial_active,
     subscription_expires:  user.subscription_expires || "",
   });
-  const [reason,  setReason]  = useState("");
-  const [saving,  setSaving]  = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
+  const [reason,       setReason]       = useState("");
+  const [saving,       setSaving]       = useState(false);
+  const [saveMsg,      setSaveMsg]      = useState("");
+  const [quickReason,  setQuickReason]  = useState("");
+  const [quickSaving,  setQuickSaving]  = useState(false);
+  const [quickMsg,     setQuickMsg]     = useState("");
+
+  const doQuickGrant = async ({ durationDays, durationHours, label }) => {
+    if (!quickReason.trim()) { setQuickMsg("❌ Reason is required"); return; }
+    setQuickSaving(true); setQuickMsg("");
+    try {
+      const body = { adminToken, action: "subscriptionQuickGrant", userId: user.id, reason: quickReason };
+      if (durationHours) body.durationHours = durationHours;
+      else body.durationDays = durationDays;
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      setQuickMsg(`✅ Pro granted for ${label}!`);
+      setQuickReason("");
+      onAction();
+    } catch (e) { setQuickMsg("❌ " + e.message); }
+    setQuickSaving(false);
+  };
+
+  const doClearOverride = async () => {
+    if (!quickReason.trim()) { setQuickMsg("❌ Reason is required"); return; }
+    setQuickSaving(true); setQuickMsg("");
+    try {
+      const res = await fetch("/api/adminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken, action: "subscriptionClearOverride", userId: user.id, reason: quickReason }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      setQuickMsg("✅ Override cleared — user returned to normal.");
+      setQuickReason("");
+      onAction();
+    } catch (e) { setQuickMsg("❌ " + e.message); }
+    setQuickSaving(false);
+  };
 
   const saveOverride = async () => {
     if (!reason.trim()) { setSaveMsg("❌ Reason is required"); return; }
@@ -110,6 +152,7 @@ function UserDetailPanel({ user, adminToken, onAction, showToast }) {
             ["Last Active",   fmtDateTime(user.last_active)],
             ["Onboarded",     user.onboarding_complete ? "✅ Yes" : "⏳ No"],
             ["Push Enabled",  user.push_enabled ? "✅ Yes" : "❌ No"],
+            ["Push Token",    user.push_token_present ? "✅ present" : "❌ not registered"],
             ["Messages",      user.message_count],
             ["Tokens Today",  user.tokens_used_today],
             ["Tokens Total",  user.tokens_used_total],
@@ -123,9 +166,58 @@ function UserDetailPanel({ user, adminToken, onAction, showToast }) {
         </div>
       </div>
 
-      {/* Subscription override */}
+      {/* Quick Actions */}
       <div style={{ ...CARD_STYLE, marginBottom:12 }}>
-        <SectionTitle color="#a855f7">💳 Subscription Override</SectionTitle>
+        <SectionTitle color="#fb923c">⚡ Quick Actions</SectionTitle>
+        <div style={{ marginBottom:10 }}>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginBottom:4 }}>Reason <span style={{ color:"#f87171" }}>*</span></div>
+          <textarea
+            value={quickReason}
+            onChange={e => setQuickReason(e.target.value)}
+            placeholder="e.g. Customer support — plan not activating after purchase"
+            rows={2}
+            style={{
+              width:"100%", boxSizing:"border-box",
+              background:"rgba(255,255,255,0.06)",
+              border:`1px solid ${!quickReason.trim() && quickMsg.startsWith("❌ Reason") ? "#f87171" : "rgba(255,255,255,0.12)"}`,
+              borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none",
+              resize:"none", fontFamily:"inherit",
+            }}
+          />
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+          {[
+            { label:"Grant Pro 24h",  durationHours: 24 },
+            { label:"Grant Pro 7d",   durationDays:  7  },
+            { label:"Grant Pro 30d",  durationDays:  30 },
+          ].map(({ label, durationDays, durationHours }) => (
+            <button
+              key={label}
+              onClick={() => doQuickGrant({ durationDays, durationHours, label })}
+              disabled={quickSaving}
+              style={{ padding:"10px 8px", borderRadius:12, border:"none", cursor: quickSaving ? "default" : "pointer", background:"linear-gradient(135deg,#a855f7,#7c3aed)", color:"#fff", fontWeight:700, fontSize:12, opacity: quickSaving ? 0.6 : 1 }}
+            >
+              🚀 {label}
+            </button>
+          ))}
+          <button
+            onClick={doClearOverride}
+            disabled={quickSaving}
+            style={{ padding:"10px 8px", borderRadius:12, border:"1px solid rgba(239,68,68,0.4)", cursor: quickSaving ? "default" : "pointer", background:"rgba(239,68,68,0.1)", color:"#fca5a5", fontWeight:700, fontSize:12, opacity: quickSaving ? 0.6 : 1 }}
+          >
+            🚫 Remove Override
+          </button>
+        </div>
+        {quickMsg && (
+          <div style={{ fontSize:12, color: quickMsg.startsWith("✅") ? "#34d399" : "#f87171" }}>
+            {quickMsg}
+          </div>
+        )}
+      </div>
+
+      {/* Advanced Subscription Override */}
+      <div style={{ ...CARD_STYLE, marginBottom:12 }}>
+        <SectionTitle color="#a855f7">💳 Advanced Subscription Override</SectionTitle>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
           {[
             ["is_premium",  "Premium",      "#f59e0b"],
