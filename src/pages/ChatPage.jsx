@@ -175,6 +175,7 @@ export default function ChatPage() {
   const [showJournalNudge, setShowJournalNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [autosaveToast, setAutosaveToast] = useState(null); // { type: "error"|"limit", msg: string }
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -620,46 +621,143 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  /* ─── AUTO-SAVE to DB every 5 messages (crash-safe) ─── */
+  /* ─── AUTO-SAVE to DB every 8 total messages (crash-safe, daily per-companion upsert) ─── */
   useEffect(() => {
     // Skip all DB saves in private session mode
     if (localStorage.getItem("unfiltr_private_session") === "true") return;
-    const userMsgs = messages.filter(m => m.role === "user");
-    // Only save every 5 user messages — avoids hammering DB on every keystroke
-    if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
-      const appleId = localStorage.getItem("unfiltr_apple_user_id");
-      if (!appleId) return;
-      const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
-      if (msgs.length < 2) return;
-      const companionRaw = localStorage.getItem("unfiltr_companion");
-      const companionName = companionRaw ? (JSON.parse(companionRaw)?.displayName || JSON.parse(companionRaw)?.name) : "Companion";
-      const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
-                 : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
-                 : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
-      const B44_APP  = "69b332a392004d139d4ba495";
-      const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-      const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+    // Count all messages excluding the initial greeting (index 0)
+    const allMsgs = messages.slice(1);
+    // Only save every 8 total messages (user + assistant)
+    if (allMsgs.length < 2 || allMsgs.length % 8 !== 0) return;
 
-      // Check if we already have a DB record for this session (stored in ref)
-      const existingId = window.__currentChatDbId;
-      if (existingId) {
-        // Update existing record
-        fetch(`${B44_BASE}/ChatHistory/${existingId}`, {
-          method: "PUT",
-          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
-        }).catch(() => {});
-      } else {
-        // Create new record and remember its ID
-        fetch(`${B44_BASE}/ChatHistory`, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ apple_user_id: appleId, companion_name: companionName, messages: JSON.stringify(msgs), saved_at: new Date().toISOString(), tier, message_count: msgs.length }),
+    const appleId = localStorage.getItem("unfiltr_apple_user_id");
+    if (!appleId) return;
+
+    const msgs = allMsgs.slice(-50).map(m => ({ role: m.role, content: m.content }));
+    const companionRaw = localStorage.getItem("unfiltr_companion");
+    let parsedCompanion = null;
+    try { parsedCompanion = companionRaw ? JSON.parse(companionRaw) : null; } catch {}
+    const companionId   = parsedCompanion?.id || localStorage.getItem("unfiltr_companion_id") || "unknown";
+    const companionName = parsedCompanion?.displayName || parsedCompanion?.name || "Companion";
+
+    const isFamilyOrAnnual =
+      localStorage.getItem("unfiltr_family_unlimited") === "true" ||
+      localStorage.getItem("unfiltr_family_unlock")    === "true" ||
+      localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+      localStorage.getItem("unfiltr_is_annual")        === "true";
+
+    const tier = isFamilyOrAnnual ? "annual"
+               : localStorage.getItem("unfiltr_is_pro")     === "true" ? "pro"
+               : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+
+    // Enforce retention cap for non-unlimited users
+    if (!isFamilyOrAnnual) {
+      const RETENTION = { free: 2, plus: 20, pro: 100 };
+      const cap = RETENTION[tier] ?? 2;
+      const B44_APP2  = "69b332a392004d139d4ba495";
+      const B44_BASE2 = `https://api.base44.com/api/apps/${B44_APP2}/entities`;
+      const DB_TOKEN2 = "1156284fb9144ad9ab95afc962e848d8";
+      fetch(`${B44_BASE2}/ChatHistory/query`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${DB_TOKEN2}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filters: [{ field: "apple_user_id", operator: "eq", value: appleId }],
+          sort: [{ field: "saved_at", direction: "desc" }],
+          limit: cap + 1,
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          const existing = Array.isArray(data) ? data : (data.items || []);
+          if (existing.length >= cap) {
+            setAutosaveToast({ type: "limit", msg: "History limit reached. Upgrade to save more sessions." });
+            setTimeout(() => setAutosaveToast(null), 5000);
+          }
         })
-          .then(r => r.json())
-          .then(data => { if (data?.id) window.__currentChatDbId = data.id; })
-          .catch(() => {});
-      }
+        .catch(() => {});
+    }
+
+    // Build the daily key: YYYYMMDD in user's local time
+    const now = new Date();
+    const localDate = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+
+    const B44_APP  = "69b332a392004d139d4ba495";
+    const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
+    const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+
+    // Upsert: check if a record already exists for (appleId, companionId, localDate)
+    const upsertKey = window.__chatDayUpsertKey;
+    const expectedKey = `${appleId}|${companionId}|${localDate}`;
+
+    if (upsertKey === expectedKey && window.__currentChatDbId) {
+      // Update the existing daily record
+      fetch(`${B44_BASE}/ChatHistory/${window.__currentChatDbId}`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
+      }).catch(err => {
+        console.error("[AutoSave] PUT failed:", err?.message);
+        setAutosaveToast({ type: "error", msg: "Could not save chat history. Check your connection." });
+        setTimeout(() => setAutosaveToast(null), 4000);
+      });
+    } else {
+      // Query for an existing record matching the daily key
+      fetch(`${B44_BASE}/ChatHistory/query`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filters: [
+            { field: "apple_user_id", operator: "eq", value: appleId },
+            { field: "companion_id",  operator: "eq", value: companionId },
+            { field: "local_date",    operator: "eq", value: localDate },
+          ],
+          limit: 1,
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          const records = Array.isArray(data) ? data : (data.items || []);
+          if (records.length > 0) {
+            // Record found — update it
+            const recordId = records[0].id;
+            window.__currentChatDbId  = recordId;
+            window.__chatDayUpsertKey = expectedKey;
+            return fetch(`${B44_BASE}/ChatHistory/${recordId}`, {
+              method: "PUT",
+              headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
+            });
+          } else {
+            // No record yet — create one
+            return fetch(`${B44_BASE}/ChatHistory`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                apple_user_id: appleId,
+                companion_id:  companionId,
+                companion_name: companionName,
+                local_date:    localDate,
+                messages:      JSON.stringify(msgs),
+                saved_at:      new Date().toISOString(),
+                tier,
+                message_count: msgs.length,
+              }),
+            })
+              .then(r => r.json())
+              .then(newData => {
+                if (newData?.id) {
+                  window.__currentChatDbId  = newData.id;
+                  window.__chatDayUpsertKey = expectedKey;
+                  pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN);
+                }
+              });
+          }
+        })
+        .catch(err => {
+          console.error("[AutoSave] Upsert failed:", err?.message);
+          setAutosaveToast({ type: "error", msg: "Could not save chat history. Check your connection." });
+          setTimeout(() => setAutosaveToast(null), 4000);
+        });
     }
   }, [messages]);
 
@@ -667,6 +765,9 @@ export default function ChatPage() {
   useEffect(() => {
     return () => {
       stopCurrentAudio();
+      // Clear autosave tracking on unmount so next session gets a fresh lookup
+      window.__currentChatDbId  = null;
+      window.__chatDayUpsertKey = null;
       // Skip all saves in private session mode
       if (localStorage.getItem("unfiltr_private_session") === "true") return;
       // Save session snapshot to unfiltr_chat_sessions for ChatHistory page
@@ -686,35 +787,17 @@ export default function ChatPage() {
           const last = sessions[0];
           const tooRecent = last && (Date.now() - parseInt(last.id)) < 5 * 60 * 1000;
           if (!tooRecent) {
-            const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
-                       : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
-                       : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
-            const localLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
+            const isFamilyOrAnnualCleanup =
+              localStorage.getItem("unfiltr_family_unlimited") === "true" ||
+              localStorage.getItem("unfiltr_family_unlock")    === "true" ||
+              localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+              localStorage.getItem("unfiltr_is_annual")        === "true";
+            const tierCleanup = isFamilyOrAnnualCleanup ? "annual"
+                           : localStorage.getItem("unfiltr_is_pro")     === "true" ? "pro"
+                           : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+            const localLimit = CHAT_RETENTION_LIMITS[tierCleanup] ?? 2;
             const updated = [snapshot, ...sessions].slice(0, Math.min(localLimit, 500));
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
-
-            // 💾 Also save to DB ChatHistory entity for cross-device sync
-            const appleId = localStorage.getItem("unfiltr_apple_user_id");
-            if (appleId && msgs.length >= 2) {
-              try {
-                const B44_APP = "69b332a392004d139d4ba495";
-                const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-                const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-                fetch(`${B44_BASE}/ChatHistory`, {
-                  method: "POST",
-                  headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    apple_user_id: appleId,
-                    messages: JSON.stringify(msgs.slice(-40)),
-                    saved_at: new Date().toISOString(),
-                    tier,
-                    message_count: msgs.length,
-                  }),
-                })
-                  .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
-                  .catch(() => {});
-              } catch(e) {}
-            }
           }
         }
       } catch (e) {}
@@ -1186,6 +1269,21 @@ export default function ChatPage() {
           .particle     { animation: particleFly 1s ease-out forwards; }
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
+
+        {/* ── Autosave feedback toast ── */}
+        {autosaveToast && (
+          <div style={{
+            position: "absolute", top: 70, left: "50%", transform: "translateX(-50%)",
+            zIndex: 9999, maxWidth: 340, width: "90%",
+            background: autosaveToast.type === "limit" ? "rgba(251,191,36,0.95)" : "rgba(239,68,68,0.95)",
+            color: "#1a1a1a", borderRadius: 12, padding: "10px 16px",
+            fontSize: 13, fontWeight: 600, textAlign: "center",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            animation: "bannerSlide 0.3s ease-out",
+          }}>
+            {autosaveToast.type === "limit" ? "⚠️" : "❌"} {autosaveToast.msg}
+          </div>
+        )}
 
         {/* ── Content layer ── */}
         <div style={{

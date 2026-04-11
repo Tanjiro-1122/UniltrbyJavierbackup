@@ -19,7 +19,7 @@ import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset } from "@/lib/entitlements";
+import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset, isFamilyUnlimited } from "@/lib/entitlements";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -214,6 +214,7 @@ export default function Settings() {
     setIapTesting(false);
   };
   const [tapCount, setTapCount]               = useState(0);
+  const tapTimerRef = React.useRef(null);
   const [adminTapCount, setAdminTapCount]     = useState(0);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyCode, setFamilyCode]           = useState("");
@@ -323,7 +324,15 @@ export default function Settings() {
 
   const handleTriquetraTap = () => {
     const next = tapCount + 1; setTapCount(next);
-    if (next >= 5) { setTapCount(0); setShowFamilyModal(true); }
+    // Reset tap count if no tap within 3 seconds
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => setTapCount(0), 3000);
+    if (next >= 5) {
+      clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = null;
+      setTapCount(0);
+      setShowFamilyModal(true);
+    }
   };
 
   const handleAdminTap = () => {
@@ -346,23 +355,20 @@ export default function Settings() {
       setAdminCode("");
     }
   };
-  const handleFamilyCodeSubmit = async () => {
+  const handleFamilyCodeSubmit = () => {
     if (familyCode.trim().toLowerCase() === "huertasfam") {
+      // Device-only unlock — no backend writes
+      const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      localStorage.setItem("unfiltr_family_unlimited", "true");
+      localStorage.setItem("unfiltr_unlimited", "true");
+      localStorage.setItem("unfiltr_family_unlimited_expires_at", oneYearFromNow);
+      // Keep legacy flags for backward compatibility
       localStorage.setItem("unfiltr_is_premium", "true");
       localStorage.setItem("unfiltr_family_unlock", "true");
       localStorage.setItem("unfiltr_msg_limit_override", "true");
       localStorage.setItem("unfiltr_bonus_messages", "99999");
-      try {
-        const profileId = localStorage.getItem("userProfileId");
-        if (profileId) {
-          await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, bonus_messages: 99999 } }) });
-        } else {
-          // No profile yet — create one so the flag persists server-side
-          console.warn('[Settings] No profileId for admin grant — skipping');
-        }
-      } catch (e) { console.warn("[FAMILY CODE] DB update failed (non-fatal):", e); }
       setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
-      setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2000);
+      setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2500);
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
   };
   const handleSignOut = () => {
@@ -1038,7 +1044,7 @@ export default function Settings() {
           </svg>
         </div>
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0, flex: 1 }}>Settings</h1>
-        {isPremium && <span style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>✨ {getPlanLabel()}</span>}
+        {(isPremium || isFamilyUnlimited()) && <span style={{ background: isFamilyUnlimited() ? "linear-gradient(135deg,#7c3aed,#c026d3)" : "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>{isFamilyUnlimited() ? "👨‍👩‍👧 Family Unlimited" : `✨ ${getPlanLabel()}`}</span>}
       </div>
 
       {/* ── Tab Bar ── */}
@@ -1138,7 +1144,7 @@ export default function Settings() {
               <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
             </Section>
 
-            {!isPremium && (
+            {!isPremium && !isFamilyUnlimited() && (
               <button onClick={() => navigate('/Pricing')} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "linear-gradient(135deg,rgba(124,58,237,0.2),rgba(219,39,119,0.15))", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, cursor: "pointer", marginTop: 12 }}>
                 <span style={{ fontSize: 22 }}>✨</span>
                 <div style={{ flex: 1, textAlign: "left" }}>
@@ -1273,8 +1279,9 @@ export default function Settings() {
               {familySuccess ? (
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 46, marginBottom: 10 }}>🎉</div>
-                  <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 20, margin: "0 0 6px" }}>Access Granted!</p>
-                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>Welcome to the family 💜</p>
+                  <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 20, margin: "0 0 6px" }}>Welcome to the family!</p>
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginBottom: 8 }}>Family Unlimited unlocked 💜</p>
+                  <span style={{ background: "linear-gradient(135deg,#7c3aed,#c026d3)", color: "white", fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 99 }}>👨‍👩‍👧 Family Unlimited</span>
                 </div>
               ) : (
                 <>
