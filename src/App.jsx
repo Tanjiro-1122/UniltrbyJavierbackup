@@ -87,8 +87,13 @@ function SafeAreaFix() {
 
 // Session recovery: if userProfileId is missing but apple_user_id is in localStorage,
 // look up the profile by apple_user_id and restore the session.
+// Skipped when unfiltr_fresh_start=true (set by "Reset App") so a wiped device
+// does not silently re-hydrate the old identity before the user signs in.
 function useProfileRecovery() {
   useEffect(() => {
+    // Do not auto-restore after an explicit reset — wait for the user to sign in.
+    if (localStorage.getItem("unfiltr_fresh_start") === "true") return;
+
     const profileId   = localStorage.getItem("userProfileId");
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     if (profileId) return; // already restored
@@ -113,10 +118,13 @@ function useProfileRecovery() {
             localStorage.setItem("companionId", p.companion_id);
             localStorage.setItem("unfiltr_companion_id", p.companion_id);
           }
-          if (p.is_premium || p.annual_plan) {
-            localStorage.setItem("unfiltr_is_premium", "true");
-            localStorage.setItem("unfiltr_plan", p.annual_plan ? "annual_plan" : "pro_plan");
-          }
+          // Set all three canonical premium flags so every page is consistent
+          const isAnnual  = !!(p.annual_plan);
+          const isPro     = !!(p.pro_plan);
+          const isPremium = !!(p.is_premium || p.premium || isPro || isAnnual);
+          localStorage.setItem("unfiltr_is_premium", String(isPremium));
+          localStorage.setItem("unfiltr_is_pro",     String(isPro));
+          localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
           window.dispatchEvent(new Event("unfiltr_auth_updated"));
           console.log("[Recovery] Profile restored via apple_user_id:", p.id, p.display_name);
         }

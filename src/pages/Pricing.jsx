@@ -272,7 +272,6 @@ export default function Pricing() {
       const userId    = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
       // Update localStorage immediately so chat page sees premium status
       localStorage.setItem('unfiltr_is_premium', 'true');
-      localStorage.setItem('unfiltr_plan', selectedPlan.isAnnual ? 'annual_plan' : 'pro_plan');
       localStorage.setItem('unfiltr_is_annual',  String(selectedPlan.isAnnual));
       localStorage.setItem('unfiltr_is_pro',     String(selectedPlan.isPro));
       // Notify rest of app
