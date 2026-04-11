@@ -6,8 +6,16 @@ import {
   Trash2, Star, Apple, Search, ChevronDown, ChevronUp,
 } from "lucide-react";
 
+/**
+ * ADMIN_PASS — used both for the local UI unlock screen (5-tap + passcode) and
+ * as the credential sent with every admin API request.
+ *
+ * IMPORTANT: This value lives in the compiled JS bundle and is visible to
+ * anyone who inspects it.  It provides UI convenience gating only, not
+ * true server-side secrecy.  Set the ADMIN_PASS environment variable in
+ * Vercel to a long random string that is NOT committed to the repository.
+ */
 const ADMIN_PASS  = "javier1122admin";
-const ADMIN_TOKEN = "unfiltr_admin_javier1122_secret";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (s) =>
@@ -364,7 +372,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Failed");
@@ -379,7 +387,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -394,7 +402,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -409,7 +417,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "auditLog" }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "auditLog" }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -424,7 +432,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "grantAccess", userId, type }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "grantAccess", userId, type }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -439,7 +447,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_TOKEN, action: "deleteUser", userId }),
+        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "deleteUser", userId }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -657,7 +665,7 @@ export default function AdminDashboard() {
                       <div style={{ padding:"0 14px 14px" }}>
                         <UserDetailPanel
                           user={u}
-                          adminToken={ADMIN_TOKEN}
+                          adminToken={ADMIN_PASS}
                           showToast={showToast}
                           onAction={() => { doSearch(search); showToast("✅ Updated — refreshing list…"); }}
                         />
