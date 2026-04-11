@@ -55,6 +55,38 @@ const VIBES_SUFFIX = {
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
+// Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
+const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
+
+// Fire-and-forget: after saving a new session, delete any sessions beyond the tier limit
+function pruneOldChatHistory(appleId, tier, b44Base, dbToken) {
+  try {
+    const retainLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
+    if (retainLimit >= 9999) return; // annual: unlimited, skip pruning
+    fetch(`${b44Base}/ChatHistory/query`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${dbToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filters: [{ field: "apple_user_id", operator: "eq", value: appleId }],
+        sort: [{ field: "saved_at", direction: "desc" }],
+        limit: 500,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        const all = Array.isArray(data) ? data : (data.items || []);
+        const toDelete = all.slice(retainLimit);
+        toDelete.forEach(session => {
+          fetch(`${b44Base}/ChatHistory/${session.id}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${dbToken}` },
+          }).catch(() => {});
+        });
+      })
+      .catch(() => {});
+  } catch (_) {}
+}
+
 const JOURNAL_MOMENT_KEYWORDS = [
   "i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking",
   "i can't stop thinking","i need to talk","going through","hard time","struggling with",
@@ -581,6 +613,8 @@ export default function ChatPage() {
   /* ─── AUTO-SAVE chat history on every message update ─── */
   useEffect(() => {
     if (messages.length > 1) {
+      // Skip localStorage save in private session mode
+      if (localStorage.getItem("unfiltr_private_session") === "true") return;
       const toSave = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
       localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
     }
@@ -588,6 +622,8 @@ export default function ChatPage() {
 
   /* ─── AUTO-SAVE to DB every 5 messages (crash-safe) ─── */
   useEffect(() => {
+    // Skip all DB saves in private session mode
+    if (localStorage.getItem("unfiltr_private_session") === "true") return;
     const userMsgs = messages.filter(m => m.role === "user");
     // Only save every 5 user messages — avoids hammering DB on every keystroke
     if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
@@ -631,6 +667,8 @@ export default function ChatPage() {
   useEffect(() => {
     return () => {
       stopCurrentAudio();
+      // Skip all saves in private session mode
+      if (localStorage.getItem("unfiltr_private_session") === "true") return;
       // Save session snapshot to unfiltr_chat_sessions for ChatHistory page
       try {
         const msgs = JSON.parse(localStorage.getItem("unfiltr_chat_history") || "[]");
@@ -648,14 +686,15 @@ export default function ChatPage() {
           const last = sessions[0];
           const tooRecent = last && (Date.now() - parseInt(last.id)) < 5 * 60 * 1000;
           if (!tooRecent) {
-            const updated = [snapshot, ...sessions].slice(0, 50); // max 50 sessions
+            const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
+                       : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
+                       : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+            const localLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
+            const updated = [snapshot, ...sessions].slice(0, Math.min(localLimit, 500));
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
 
             // 💾 Also save to DB ChatHistory entity for cross-device sync
             const appleId = localStorage.getItem("unfiltr_apple_user_id");
-            const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
-                       : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
-                       : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
             if (appleId && msgs.length >= 2) {
               try {
                 const B44_APP = "69b332a392004d139d4ba495";
@@ -671,7 +710,9 @@ export default function ChatPage() {
                     tier,
                     message_count: msgs.length,
                   }),
-                }).catch(() => {});
+                })
+                  .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
+                  .catch(() => {});
               } catch(e) {}
             }
           }
