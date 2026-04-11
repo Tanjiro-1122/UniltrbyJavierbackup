@@ -28,11 +28,12 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     let monthly = FREE_MONTHLY;
 
     // Family/admin override — unlimited if flag is set in localStorage
-    const hasOverride  = localStorage.getItem("unfiltr_msg_limit_override") === "true";
-    const hasFamilyKey = localStorage.getItem("unfiltr_family_unlock") === "true";
+    const hasOverride   = localStorage.getItem("unfiltr_msg_limit_override") === "true";
+    const hasFamilyKey  = localStorage.getItem("unfiltr_family_unlock") === "true";
+    const hasFamilyUnlimited = localStorage.getItem("unfiltr_family_unlimited") === "true";
     const lsPremium    = localStorage.getItem("unfiltr_is_premium") === "true";
 
-    if (hasOverride || hasFamilyKey || isAnnual) {
+    if (hasOverride || hasFamilyKey || hasFamilyUnlimited || isAnnual) {
       daily   = ANNUAL_DAILY;
       monthly = ANNUAL_MONTHLY;
     } else if (isPro) {

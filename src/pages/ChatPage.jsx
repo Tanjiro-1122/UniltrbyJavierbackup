@@ -58,33 +58,88 @@ const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"]
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
 
-// Fire-and-forget: after saving a new session, delete any sessions beyond the tier limit
-function pruneOldChatHistory(appleId, tier, b44Base, dbToken) {
-  try {
-    const retainLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
-    if (retainLimit >= 9999) return; // annual: unlimited, skip pruning
-    fetch(`${b44Base}/ChatHistory/query`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${dbToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filters: [{ field: "apple_user_id", operator: "eq", value: appleId }],
-        sort: [{ field: "saved_at", direction: "desc" }],
-        limit: 500,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        const all = Array.isArray(data) ? data : (data.items || []);
-        const toDelete = all.slice(retainLimit);
-        toDelete.forEach(session => {
-          fetch(`${b44Base}/ChatHistory/${session.id}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${dbToken}` },
-          }).catch(() => {});
-        });
-      })
-      .catch(() => {});
-  } catch (_) {}
+/**
+ * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
+ * Routing through same-origin avoids WKWebView CORS issues with api.base44.com
+ * and keeps the Base44 service token off the client bundle.
+ *
+ * Reads context from localStorage so it is safe to call from unmount / event handlers.
+ *
+ * @param {Array}    msgs      - Array of {role, content} messages (greeting excluded).
+ * @param {Function} [onError] - Optional callback(errorMessage) invoked on failure.
+ */
+function doUpsertChatHistory(msgs, onError) {
+  if (localStorage.getItem("unfiltr_private_session") === "true") return;
+
+  // Use apple_user_id if available, fall back to anonymous device_id
+  const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
+  const companionRaw = localStorage.getItem("unfiltr_companion");
+  let parsedComp = null;
+  try { parsedComp = companionRaw ? JSON.parse(companionRaw) : null; } catch {}
+  // Prefer companion.id from the cached companion object; fall back to dedicated key.
+  // Never save under a null/empty companion_id.
+  const companionId   = parsedComp?.id || localStorage.getItem("unfiltr_companion_id") || null;
+  const companionName = parsedComp?.displayName || parsedComp?.name || "Companion";
+
+  if (!appleId) {
+    debugLog("[AutoSave] Skipped — neither unfiltr_apple_user_id nor unfiltr_device_id is set");
+    return;
+  }
+  if (!companionId) {
+    debugLog("[AutoSave] Skipped — companion_id not set (companion not yet loaded)");
+    return;
+  }
+
+  // Restore the session DB record ID from localStorage if it was lost on page reload
+  if (!window.__currentChatDbId) {
+    const storedId = localStorage.getItem("unfiltr_current_chat_db_id");
+    if (storedId) window.__currentChatDbId = storedId;
+  }
+
+  const isFamilyOrAnnual =
+    localStorage.getItem("unfiltr_family_unlimited")   === "true" ||
+    localStorage.getItem("unfiltr_family_unlock")      === "true" ||
+    localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+    localStorage.getItem("unfiltr_is_annual")          === "true";
+  const tier = isFamilyOrAnnual ? "annual"
+             : localStorage.getItem("unfiltr_is_pro")     === "true" ? "pro"
+             : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+
+  const msgSlice = msgs.slice(-50).map(m => ({ role: m.role, content: m.content }));
+
+  // Use keepalive:true so the request survives tab/app backgrounding on iOS
+  fetch("/api/base44", {
+    method: "POST",
+    keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action:           "saveChatHistory",
+      apple_user_id:    appleId,
+      companion_id:     companionId,
+      companion_name:   companionName,
+      messages:         msgSlice,
+      tier,
+      // Pass the cached record ID + key so the server can skip the query round-trip
+      existingRecordId: window.__currentChatDbId  || null,
+      upsertKey:        window.__chatDayUpsertKey || null,
+    }),
+  })
+  .then(r => {
+    if (!r.ok) return r.text().then(t => Promise.reject(new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`)));
+    return r.json();
+  })
+  .then(data => {
+    if (data?.id) {
+      window.__currentChatDbId  = data.id;
+      window.__chatDayUpsertKey = data.key;
+      // Persist to localStorage so the record ID survives page reloads
+      localStorage.setItem("unfiltr_current_chat_db_id", data.id);
+    }
+  })
+  .catch(err => {
+    console.error("[AutoSave] Upsert failed:", err?.message);
+    if (onError) onError("Could not save chat history. Check your connection.");
+  });
 }
 
 const JOURNAL_MOMENT_KEYWORDS = [
@@ -114,7 +169,11 @@ export default function ChatPage() {
     const onCompanionChange = () => {
       const updated = localStorage.getItem("unfiltr_companion");
       if (updated) {
-        try { setCompanion(JSON.parse(updated)); } catch {}
+        try {
+          const parsed = JSON.parse(updated);
+          if (parsed?.id) localStorage.setItem("unfiltr_companion_id", parsed.id);
+          setCompanion(parsed);
+        } catch {}
       }
     };
     window.addEventListener("unfiltr_companion_changed", onCompanionChange);
@@ -175,6 +234,7 @@ export default function ChatPage() {
   const [showJournalNudge, setShowJournalNudge] = useState(false);
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [autosaveToast, setAutosaveToast] = useState(null); // { type: "error"|"limit", msg: string }
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -213,12 +273,14 @@ export default function ChatPage() {
     return () => window.removeEventListener('message', handleNativeMessage);
   }, [profileId]);
 
-  const particleId     = useRef(0);
-  const stateTimeout   = useRef(null);
-  const messagesEndRef = useRef(null);
-  const recognitionRef = useRef(null);
+  const particleId             = useRef(0);
+  const stateTimeout           = useRef(null);
+  const messagesEndRef         = useRef(null);
+  const recognitionRef         = useRef(null);
   // audioRef removed — using shared AudioContext via audioUnlock module
-  const fileInputRef   = useRef(null);
+  const fileInputRef           = useRef(null);
+  // Tracks the last time we wrote to DB ChatHistory (used to throttle saves to ≥15 s apart)
+  const lastChatHistorySaveRef = useRef(0);
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
@@ -274,11 +336,15 @@ export default function ChatPage() {
       parsedCompanion.displayName = (savedNickname && savedNickname.trim()) ? savedNickname.trim() : parsedCompanion.name;
 
       setCompanion(parsedCompanion);
+      // Ensure unfiltr_companion_id is always consistent with the active companion
+      if (parsedCompanion?.id) localStorage.setItem("unfiltr_companion_id", parsedCompanion.id);
       setEnvironment(parsedEnv);
       if (v) setVibe(v);
 
       const pid = localStorage.getItem("userProfileId");
-      if (pid) {
+      if (!pid) {
+        debugLog("[ChatPage] ⚠️ userProfileId not set — skipping profile fetch (memory/subscription won't load)");
+      } else {
         try {
           const profile = await base44.entities.UserProfile.get(pid);
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
@@ -544,7 +610,11 @@ export default function ChatPage() {
     {
       const appleId = localStorage.getItem("unfiltr_apple_user_id");
       const compId  = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
-      if (appleId && compId && compId !== "pending") {
+      if (!appleId) {
+        debugLog("[ChatPage] ⚠️ Skipping DB message restore — unfiltr_apple_user_id not set");
+      } else if (!compId || compId === "pending") {
+        debugLog(`[ChatPage] ⚠️ Skipping DB message restore — companion_id is "${compId || "not set"}"`);
+      } else {
         try {
           const B44_APP = "69b332a392004d139d4ba495";
           const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
@@ -620,59 +690,24 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  /* ─── AUTO-SAVE to DB every 5 messages (crash-safe) ─── */
+  /* ─── AUTO-SAVE to DB (throttled: first reply after ≥2 messages, then at most every 15 s) ─── */
   useEffect(() => {
     // Skip all DB saves in private session mode
     if (localStorage.getItem("unfiltr_private_session") === "true") return;
-    const userMsgs = messages.filter(m => m.role === "user");
-    // Only save every 5 user messages — avoids hammering DB on every keystroke
-    if (userMsgs.length > 0 && userMsgs.length % 5 === 0) {
-      // Use apple_user_id if available, fall back to anonymous device_id
-      const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
-      if (!appleId) return;
-      const msgs = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
-      if (msgs.length < 2) return;
-      const companionRaw = localStorage.getItem("unfiltr_companion");
-      const companionName = companionRaw ? (JSON.parse(companionRaw)?.displayName || JSON.parse(companionRaw)?.name) : "Companion";
-      const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
-                 : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
-                 : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
-      const B44_APP  = "69b332a392004d139d4ba495";
-      const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-      const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
+    // Count all messages excluding the initial greeting (index 0)
+    const allMsgs = messages.slice(1);
+    if (allMsgs.length < 2) return;
 
-      // Restore the session DB record ID from localStorage if it was lost on page reload
-      if (!window.__currentChatDbId) {
-        const storedId = localStorage.getItem("unfiltr_current_chat_db_id");
-        if (storedId) window.__currentChatDbId = storedId;
-      }
+    // Throttle: don't write to DB more than once every 15 seconds.
+    // The first save (lastChatHistorySaveRef starts at 0) always passes immediately.
+    const now = Date.now();
+    if (now - lastChatHistorySaveRef.current < 15000) return;
+    lastChatHistorySaveRef.current = now;
 
-      // Check if we already have a DB record for this session (stored in ref)
-      const existingId = window.__currentChatDbId;
-      if (existingId) {
-        // Update existing record
-        fetch(`${B44_BASE}/ChatHistory/${existingId}`, {
-          method: "PUT",
-          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: JSON.stringify(msgs), message_count: msgs.length, saved_at: new Date().toISOString() }),
-        }).catch(() => {});
-      } else {
-        // Create new record and persist its ID to survive page reloads
-        fetch(`${B44_BASE}/ChatHistory`, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ apple_user_id: appleId, companion_name: companionName, messages: JSON.stringify(msgs), saved_at: new Date().toISOString(), tier, message_count: msgs.length }),
-        })
-          .then(r => r.json())
-          .then(data => {
-            if (data?.id) {
-              window.__currentChatDbId = data.id;
-              localStorage.setItem("unfiltr_current_chat_db_id", data.id);
-            }
-          })
-          .catch(() => {});
-      }
-    }
+    doUpsertChatHistory(allMsgs, errMsg => {
+      setAutosaveToast({ type: "error", msg: errMsg });
+      setTimeout(() => setAutosaveToast(null), 4000);
+    });
   }, [messages]);
 
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
@@ -680,11 +715,18 @@ export default function ChatPage() {
     return () => {
       stopCurrentAudio();
       // Skip all saves in private session mode
-      if (localStorage.getItem("unfiltr_private_session") === "true") return;
+      if (localStorage.getItem("unfiltr_private_session") === "true") {
+        window.__currentChatDbId  = null;
+        window.__chatDayUpsertKey = null;
+        return;
+      }
       // Save session snapshot to unfiltr_chat_sessions for ChatHistory page
       try {
         const msgs = JSON.parse(localStorage.getItem("unfiltr_chat_history") || "[]");
         if (msgs.length >= 2) {
+          // Push final state to DB ChatHistory before clearing the window cache
+          doUpsertChatHistory(msgs, null);
+
           const companionRaw = localStorage.getItem("unfiltr_companion");
           const companionName = companionRaw ? JSON.parse(companionRaw)?.displayName || JSON.parse(companionRaw)?.name : "Companion";
           const sessions = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
@@ -698,63 +740,36 @@ export default function ChatPage() {
           const last = sessions[0];
           const tooRecent = last && (Date.now() - parseInt(last.id)) < 5 * 60 * 1000;
           if (!tooRecent) {
-            const tier = localStorage.getItem("unfiltr_is_annual") === "true" ? "annual"
-                       : localStorage.getItem("unfiltr_is_pro")    === "true" ? "pro"
-                       : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
-            const localLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
+            const isFamilyOrAnnualCleanup =
+              localStorage.getItem("unfiltr_family_unlimited") === "true" ||
+              localStorage.getItem("unfiltr_family_unlock")    === "true" ||
+              localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+              localStorage.getItem("unfiltr_is_annual")        === "true";
+            const tierCleanup = isFamilyOrAnnualCleanup ? "annual"
+                           : localStorage.getItem("unfiltr_is_pro")     === "true" ? "pro"
+                           : localStorage.getItem("unfiltr_is_premium") === "true" ? "plus" : "free";
+            const localLimit = CHAT_RETENTION_LIMITS[tierCleanup] ?? 2;
             const updated = [snapshot, ...sessions].slice(0, Math.min(localLimit, 500));
             localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(updated));
-
-            // 💾 Also save to DB ChatHistory entity for cross-device sync
-            // Use apple_user_id if available, fall back to anonymous device_id
-            const appleId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_device_id");
-            if (appleId && msgs.length >= 2) {
-              try {
-                const B44_APP = "69b332a392004d139d4ba495";
-                const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-                const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-                // If the every-5-messages effect already created a record this session,
-                // update it instead of creating a duplicate.
-                const sessionDbId = window.__currentChatDbId || localStorage.getItem("unfiltr_current_chat_db_id");
-                if (sessionDbId) {
-                  fetch(`${B44_BASE}/ChatHistory/${sessionDbId}`, {
-                    method: "PUT",
-                    headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      messages: JSON.stringify(msgs.slice(-40)),
-                      saved_at: new Date().toISOString(),
-                      tier,
-                      message_count: msgs.length,
-                    }),
-                    keepalive: true,
-                  })
-                    .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
-                    .catch(() => {});
-                } else {
-                  fetch(`${B44_BASE}/ChatHistory`, {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      apple_user_id: appleId,
-                      messages: JSON.stringify(msgs.slice(-40)),
-                      saved_at: new Date().toISOString(),
-                      tier,
-                      message_count: msgs.length,
-                    }),
-                    keepalive: true,
-                  })
-                    .then(() => { pruneOldChatHistory(appleId, tier, B44_BASE, DB_TOKEN); })
-                    .catch(() => {});
-                }
-                // Clear the session record ID so the next chat visit starts a fresh record
-                window.__currentChatDbId = null;
-                localStorage.removeItem("unfiltr_current_chat_db_id");
-              } catch(e) {}
-            }
           }
         }
       } catch (e) {}
+      // Clear autosave tracking AFTER initiating the async DB save above
+      window.__currentChatDbId  = null;
+      window.__chatDayUpsertKey = null;
     };
+  }, []);
+
+  /* ─── FLUSH DB save when the app goes to background (iOS home-button / tab switch) ─── */
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (localStorage.getItem("unfiltr_private_session") === "true") return;
+      const msgs = JSON.parse(localStorage.getItem("unfiltr_chat_history") || "[]");
+      if (msgs.length >= 2) doUpsertChatHistory(msgs, null);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   /* ─── PRELOAD all mood poses for current companion ─── */
@@ -985,24 +1000,29 @@ export default function ChatPage() {
       }
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
-      // 💾 Save messages to DB (fire-and-forget — never blocks chat)
+      // 💾 Save messages to DB via server proxy (fire-and-forget — never blocks chat)
       {
         const appleId = localStorage.getItem("unfiltr_apple_user_id");
-        const compId  = localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId") || "unknown";
-        if (appleId) {
-          const B44_APP = "69b332a392004d139d4ba495";
-          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-          const dbHeaders = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
-          // Save user message
-          fetch(`${B44_BASE}/Message`, {
-            method: "POST", headers: dbHeaders,
-            body: JSON.stringify({ apple_user_id: appleId, companion_id: compId, role: "user", content: userContent, created_date: new Date().toISOString() }),
-          }).catch(() => {});
-          // Save assistant reply
-          fetch(`${B44_BASE}/Message`, {
-            method: "POST", headers: dbHeaders,
-            body: JSON.stringify({ apple_user_id: appleId, companion_id: compId, role: "assistant", content: replyText, created_date: new Date().toISOString() }),
+        // Prefer companion.id from the live companion object; fall back to localStorage.
+        // Never save under a null/missing companion_id.
+        const compId  = companion?.id || localStorage.getItem("unfiltr_companion_id") || null;
+        if (!appleId) {
+          debugLog("[SaveMessages] Skipped — unfiltr_apple_user_id not set");
+        } else if (!compId) {
+          debugLog("[SaveMessages] Skipped — companion_id not set");
+        } else {
+          const now = new Date().toISOString();
+          fetch("/api/base44", {
+            method: "POST",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "saveMessages",
+              messages: [
+                { apple_user_id: appleId, companion_id: compId, role: "user",      content: userContent, created_date: now },
+                { apple_user_id: appleId, companion_id: compId, role: "assistant", content: replyText,   created_date: now },
+              ],
+            }),
           }).catch(() => {});
         }
       }
@@ -1190,8 +1210,10 @@ export default function ChatPage() {
 
   return (
     <>
-      {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
+      {/* Hidden file input — no `capture` attribute so iOS shows the standard
+          picker (Photo Library + Take Photo). Using capture="environment"
+          forces camera-only on iOS Safari/WKWebView and blocks gallery access. */}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
 
       {/* ═══ MAIN WRAPPER — position:fixed; inset:0; flex column ═══ */}
       <div style={{
@@ -1222,6 +1244,21 @@ export default function ChatPage() {
           .particle     { animation: particleFly 1s ease-out forwards; }
           .listen-pulse { animation: listenPulse 0.8s ease-in-out infinite; }
         `}</style>
+
+        {/* ── Autosave feedback toast ── */}
+        {autosaveToast && (
+          <div style={{
+            position: "absolute", top: 70, left: "50%", transform: "translateX(-50%)",
+            zIndex: 9999, maxWidth: 340, width: "90%",
+            background: autosaveToast.type === "limit" ? "rgba(251,191,36,0.95)" : "rgba(239,68,68,0.95)",
+            color: "#1a1a1a", borderRadius: 12, padding: "10px 16px",
+            fontSize: 13, fontWeight: 600, textAlign: "center",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            animation: "bannerSlide 0.3s ease-out",
+          }}>
+            {autosaveToast.type === "limit" ? "⚠️" : "❌"} {autosaveToast.msg}
+          </div>
+        )}
 
         {/* ── Content layer ── */}
         <div style={{

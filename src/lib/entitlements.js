@@ -3,6 +3,7 @@
  * Single source of truth for tier/plan detection and identity reset.
  *
  * Tier hierarchy (highest → lowest):
+ *   family  – Family Unlimited (device-only, 1-yr)  → unlimited everything
  *   annual  – Annual plan ($59.99/yr)  → unlimited history, unlimited messages
  *   pro     – Pro plan   ($14.99/mo)  → 100 history, 200 msg/day
  *   plus    – Monthly    ($9.99/mo)   → 20 history, 100 msg/day
@@ -11,9 +12,9 @@
 
 // ─── Plan constants ───────────────────────────────────────────────────────────
 
-export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
+export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
-export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: 99999 };
+export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: 99999, family: 99999 };
 
 /** Human-readable label shown in UI (e.g. badge in Settings header) */
 export const PLAN_LABELS = {
@@ -21,7 +22,16 @@ export const PLAN_LABELS = {
   plus:   "Premium (Monthly)",
   pro:    "Pro",
   annual: "Annual",
+  family: "Family Unlimited",
 };
+
+/** Returns true if the device has an active (non-expired) Family Unlimited unlock. */
+export function isFamilyUnlimited() {
+  if (localStorage.getItem("unfiltr_family_unlimited") !== "true") return false;
+  const expiresAt = localStorage.getItem("unfiltr_family_unlimited_expires_at");
+  if (!expiresAt) return true; // no expiry set → treat as active
+  return new Date(expiresAt).getTime() > Date.now();
+}
 
 // ─── Tier detection ───────────────────────────────────────────────────────────
 
@@ -30,9 +40,10 @@ export const PLAN_LABELS = {
  * Reads the three canonical flags: unfiltr_is_annual, unfiltr_is_pro,
  * unfiltr_is_premium (plus family-unlock / msg-override admin flags).
  *
- * @returns {"annual"|"pro"|"plus"|"free"}
+ * @returns {"family"|"annual"|"pro"|"plus"|"free"}
  */
 export function getTier() {
+  if (isFamilyUnlimited()) return "family";
   if (
     localStorage.getItem("unfiltr_family_unlock") === "true" ||
     localStorage.getItem("unfiltr_msg_limit_override") === "true"
@@ -83,6 +94,9 @@ export function clearEntitlements() {
   localStorage.removeItem("unfiltr_family_unlock");
   localStorage.removeItem("unfiltr_msg_limit_override");
   localStorage.removeItem("unfiltr_bonus_messages");
+  localStorage.removeItem("unfiltr_family_unlimited");
+  localStorage.removeItem("unfiltr_unlimited");
+  localStorage.removeItem("unfiltr_family_unlimited_expires_at");
 }
 
 // ─── Full identity + app reset ────────────────────────────────────────────────
@@ -112,6 +126,9 @@ const IDENTITY_KEYS = [
   "unfiltr_family_unlock",
   "unfiltr_msg_limit_override",
   "unfiltr_bonus_messages",
+  "unfiltr_family_unlimited",
+  "unfiltr_unlimited",
+  "unfiltr_family_unlimited_expires_at",
   // Companion / env caches
   "unfiltr_companion",
   "unfiltr_companion_id",
@@ -169,6 +186,7 @@ export function performFullReset(navigate) {
   // 4. Clear in-memory globals used by ChatPage
   if (typeof window !== "undefined") {
     window.__currentChatDbId      = null;
+    window.__chatDayUpsertKey     = null;
     window.__unfiltr_longest_streak = null;
   }
 
