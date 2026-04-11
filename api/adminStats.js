@@ -2,11 +2,42 @@ import crypto from "crypto";
 import { b44Fetch, B44_ENTITIES } from "./_b44.js";
 import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "unfiltr_admin_javier1122_secret";
+/**
+ * ADMIN_PASS — the credential the AdminDashboard client sends for every admin
+ * action.  Set the ADMIN_PASS environment variable in Vercel to a strong,
+ * unique value.  The hardcoded fallback is intentionally short and well-known
+ * so it never accidentally works in production once the env var is set.
+ *
+ * NOTE: because the admin dashboard is a client-side React app, this value is
+ * visible to anyone who inspects the JS bundle.  It provides UI gating
+ * (convenience) only — not true server-side secrecy.  For a higher security
+ * posture, set a long random string in the ADMIN_PASS Vercel env var that is
+ * NOT committed to the repository.
+ */
+const ADMIN_PASS = process.env.ADMIN_PASS || "javier1122admin";
+
 const APP_ID = "69b332a392004d139d4ba495";
 const BASE44_API = "https://app.base44.com/api";
 const MS_PER_HOUR = 3600000;
 const MS_PER_DAY  = 86400000;
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = new Set([
+  "https://unfiltrbyjavier2.vercel.app",
+  // Allow localhost during development (only when running via `vercel dev`).
+  "http://localhost:5173",
+  "http://localhost:3000",
+]);
+
+function setCorsHeaders(req, res) {
+  const origin = req.headers.origin || "";
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
 
 /** Constant-time string comparison to prevent timing-based token enumeration. */
 function safeCompare(a, b) {
@@ -106,14 +137,12 @@ async function deleteEntity(entity, id) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { adminToken, action, userId, type, query, subscription, reason } = req.body || {};
-  if (!safeCompare(adminToken, ADMIN_TOKEN)) return res.status(401).json({ error: "Unauthorized" });
+  if (!safeCompare(adminToken, ADMIN_PASS)) return res.status(401).json({ error: "Unauthorized" });
 
   // ── ACTION HANDLERS ──────────────────────────────────────────────────────
   if (action === "grantAccess") {
