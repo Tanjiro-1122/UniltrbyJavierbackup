@@ -5,6 +5,7 @@ import {
   RefreshCw, BookOpen, AlertTriangle, LogOut,
   Trash2, Star, Apple, Search, ChevronDown, ChevronUp,
 } from "lucide-react";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 /**
  * ADMIN_PASS — used both for the local UI unlock screen (5-tap + passcode) and
@@ -74,7 +75,7 @@ function PlanBadge({ u }) {
 }
 
 // ── User Detail Panel ─────────────────────────────────────────────────────────
-function UserDetailPanel({ user, adminToken, onAction, showToast }) {
+function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm }) {
   const [subForm, setSubForm] = useState({
     is_premium:            user.is_premium,
     pro_plan:              user.pro_plan,
@@ -110,22 +111,32 @@ function UserDetailPanel({ user, adminToken, onAction, showToast }) {
     setQuickSaving(false);
   };
 
-  const doClearOverride = async () => {
+  const doClearOverride = () => {
     if (!quickReason.trim()) { setQuickMsg("❌ Reason is required"); return; }
-    setQuickSaving(true); setQuickMsg("");
-    try {
-      const res = await fetch("/api/adminStats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken, action: "subscriptionClearOverride", userId: user.id, reason: quickReason }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Failed");
-      setQuickMsg("✅ Override cleared — user returned to normal.");
-      setQuickReason("");
-      onAction();
-    } catch (e) { setQuickMsg("❌ " + e.message); }
-    setQuickSaving(false);
+    if (!requestConfirm) return;
+    requestConfirm({
+      title: "Remove Subscription Override?",
+      message: `This will revert "${user.display_name}" to free tier and clear all subscription flags.\nReason: "${quickReason}"`,
+      confirmLabel: "Remove Override",
+      confirmVariant: "danger",
+      countdown: 2,
+      onConfirm: async () => {
+        setQuickSaving(true); setQuickMsg("");
+        try {
+          const res = await fetch("/api/adminStats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminToken, action: "subscriptionClearOverride", userId: user.id, reason: quickReason }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "Failed");
+          setQuickMsg("✅ Override cleared — user returned to normal.");
+          setQuickReason("");
+          onAction();
+        } catch (e) { setQuickMsg("❌ " + e.message); }
+        setQuickSaving(false);
+      },
+    });
   };
 
   const saveOverride = async () => {
@@ -325,6 +336,15 @@ export default function AdminDashboard() {
   const [searchResults, setSearchResults] = useState(null);
   const [selectedUser,  setSelectedUser]  = useState(null);
 
+  // Bulk selection (Support tab)
+  const [bulkMode,      setBulkMode]      = useState(false);
+  const [selectedIds,   setSelectedIds]   = useState(new Set());
+  const [bulkReason,    setBulkReason]    = useState("");
+  const [bulkWorking,   setBulkWorking]   = useState(false);
+
+  // Confirm dialog
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
   // Memory tab
   const [memSearch,     setMemSearch]     = useState("");
   const [memSearching,  setMemSearching]  = useState(false);
@@ -334,17 +354,27 @@ export default function AdminDashboard() {
   // Audit tab
   const [auditLog,      setAuditLog]      = useState(null);
   const [auditLoading,  setAuditLoading]  = useState(false);
+  const [auditFilter,   setAuditFilter]   = useState("all");
 
   const navigate = useNavigate();
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
+  const requestConfirm = (cfg) => setConfirmDialog({
+    ...cfg,
+    onConfirm: async () => { setConfirmDialog(null); await cfg.onConfirm?.(); },
+    onCancel:  ()       => { setConfirmDialog(null); cfg.onCancel?.(); },
+  });
+
   useEffect(() => { if (unlocked) loadData(); }, [unlocked]);
 
-  // Load initial user list when Support tab first opens
+  // Debounced user search — fires on search input change or when Support tab is opened
   useEffect(() => {
-    if (tab === "support" && unlocked && searchResults === null) doSearch("");
-  }, [tab, unlocked]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (tab !== "support" || !unlocked) return;
+    const delay = search.trim() ? 350 : 0;
+    const timer = setTimeout(() => doSearch(search), delay);
+    return () => clearTimeout(timer);
+  }, [search, tab, unlocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load audit log when Audit tab first opens
   useEffect(() => {
@@ -441,19 +471,60 @@ export default function AdminDashboard() {
     } catch (e) { showToast("❌ " + e.message); }
   };
 
-  const deleteUser = async (userId, name) => {
-    if (!window.confirm(`Delete "${name}" permanently? This cannot be undone.`)) return;
-    try {
-      const res = await fetch("/api/adminStats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "deleteUser", userId }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      showToast("✅ User deleted");
-      loadData();
-    } catch (e) { showToast("❌ " + e.message); }
+  const deleteUser = (userId, name) => {
+    requestConfirm({
+      title: "Delete User?",
+      message: `Permanently delete "${name}"? This cannot be undone and all their data will be lost.`,
+      confirmLabel: "Delete",
+      confirmVariant: "danger",
+      countdown: 3,
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/adminStats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminToken: ADMIN_PASS, action: "deleteUser", userId }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          showToast("✅ User deleted");
+          loadData();
+        } catch (e) { showToast("❌ " + e.message); }
+      },
+    });
+  };
+
+  const doBulkAction = (bulkType) => {
+    if (!bulkReason.trim() || selectedIds.size === 0) {
+      showToast("❌ Select users and enter a reason first"); return;
+    }
+    const label = bulkType === "grantPro7d" ? "Grant Pro 7d" : "Revoke Premium";
+    requestConfirm({
+      title: `Bulk ${label}?`,
+      message: `Apply "${label}" to ${selectedIds.size} user(s).\nReason: "${bulkReason}"`,
+      confirmLabel: label,
+      confirmVariant: bulkType === "revokePremium" ? "danger" : "default",
+      countdown: bulkType === "revokePremium" ? 2 : 0,
+      onConfirm: async () => {
+        setBulkWorking(true);
+        try {
+          const res = await fetch("/api/adminStats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              adminToken: ADMIN_PASS, action: "bulkAction",
+              userIds: [...selectedIds], bulkType, reason: bulkReason,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error);
+          showToast(`✅ ${label} applied to ${data.processed} user(s)${data.failed ? ` (${data.failed} failed)` : ""}`);
+          setSelectedIds(new Set()); setBulkMode(false); setBulkReason("");
+          doSearch(search);
+        } catch (e) { showToast("❌ " + e.message); }
+        setBulkWorking(false);
+      },
+    });
   };
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
@@ -612,28 +683,77 @@ export default function AdminDashboard() {
         {/* ── SUPPORT ── */}
         {tab === "support" && (
           <>
-            <div style={{ position:"relative", marginBottom:12 }}>
-              <Search size={14} style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:"rgba(255,255,255,0.3)" }} />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && doSearch(search)}
-                placeholder="Search by name, email, or Apple ID…"
-                style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:14, padding:"11px 14px 11px 38px", color:"#fff", fontSize:13, outline:"none" }}
-              />
-              {search.trim() && (
-                <button
-                  onClick={() => doSearch(search)}
-                  disabled={searching}
-                  style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:GRAD_PURPLE, border:"none", borderRadius:8, padding:"5px 11px", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", opacity: searching ? 0.6 : 1 }}
-                >
-                  {searching ? "…" : "Search"}
-                </button>
-              )}
+            {/* Search bar + bulk toggle */}
+            <div style={{ display:"flex", gap:8, marginBottom:12, alignItems:"center" }}>
+              <div style={{ position:"relative", flex:1 }}>
+                <Search size={14} style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color: searching ? "rgba(168,85,247,0.7)" : "rgba(255,255,255,0.3)", transition:"color .2s" }} />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && doSearch(search)}
+                  placeholder="Search by name, email, or Apple ID…"
+                  style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:14, padding:"11px 14px 11px 38px", color:"#fff", fontSize:13, outline:"none" }}
+                />
+                {searching && (
+                  <div style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", width:14, height:14, borderRadius:"50%", border:"2px solid rgba(168,85,247,0.3)", borderTopColor:"#a855f7", animation:"spin 0.7s linear infinite" }} />
+                )}
+              </div>
+              <button
+                onClick={() => { setBulkMode(m => !m); setSelectedIds(new Set()); setSelectedUser(null); }}
+                style={{ padding:"10px 14px", borderRadius:12, border: bulkMode ? "1px solid rgba(168,85,247,0.5)" : "1px solid rgba(255,255,255,0.12)", background: bulkMode ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.06)", color: bulkMode ? "#c084fc" : "rgba(255,255,255,0.4)", fontWeight:700, fontSize:12, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}
+              >
+                {bulkMode ? "✓ Selecting" : "Select"}
+              </button>
             </div>
 
-            {searching && (
-              <div style={{ textAlign:"center", color:"rgba(255,255,255,0.3)", fontSize:13, padding:"32px 0" }}>Searching…</div>
+            {/* Bulk action bar */}
+            {bulkMode && (
+              <div style={{ background:"rgba(168,85,247,0.08)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:14, padding:"10px 12px", marginBottom:12 }}>
+                <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+                  <span style={{ fontSize:12, color:"#c084fc", fontWeight:700, flexShrink:0 }}>
+                    {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select users below"}
+                  </span>
+                  {searchResults && searchResults.length > 0 && (
+                    <button
+                      onClick={() => setSelectedIds(selectedIds.size === searchResults.length ? new Set() : new Set(searchResults.map(u => u.id)))}
+                      style={{ padding:"4px 10px", borderRadius:8, border:"1px solid rgba(168,85,247,0.3)", background:"transparent", color:"rgba(192,132,252,0.7)", fontSize:11, fontWeight:700, cursor:"pointer" }}
+                    >
+                      {selectedIds.size === searchResults.length ? "Deselect All" : "Select All"}
+                    </button>
+                  )}
+                  {selectedIds.size > 0 && (
+                    <>
+                      <input
+                        value={bulkReason}
+                        onChange={e => setBulkReason(e.target.value)}
+                        placeholder="Reason (required)…"
+                        style={{ flex:"1 1 120px", minWidth:100, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"6px 10px", color:"#fff", fontSize:12, outline:"none" }}
+                      />
+                      <button
+                        onClick={() => doBulkAction("grantPro7d")}
+                        disabled={bulkWorking || !bulkReason.trim()}
+                        style={{ padding:"7px 12px", borderRadius:10, border:"none", background:GRAD_PURPLE, color:"#fff", fontWeight:700, fontSize:11, cursor:(bulkWorking || !bulkReason.trim()) ? "default" : "pointer", opacity:(bulkWorking || !bulkReason.trim()) ? 0.5 : 1, whiteSpace:"nowrap", flexShrink:0 }}
+                      >
+                        🚀 Grant Pro 7d
+                      </button>
+                      <button
+                        onClick={() => doBulkAction("revokePremium")}
+                        disabled={bulkWorking || !bulkReason.trim()}
+                        style={{ padding:"7px 12px", borderRadius:10, border:"1px solid rgba(239,68,68,0.4)", background:"rgba(239,68,68,0.08)", color:"#fca5a5", fontWeight:700, fontSize:11, cursor:(bulkWorking || !bulkReason.trim()) ? "default" : "pointer", opacity:(bulkWorking || !bulkReason.trim()) ? 0.5 : 1, whiteSpace:"nowrap", flexShrink:0 }}
+                      >
+                        🚫 Revoke
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Result count */}
+            {!searching && searchResults !== null && searchResults.length > 0 && (
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginBottom:8, paddingLeft:2 }}>
+                {searchResults.length} user{searchResults.length !== 1 ? "s" : ""}{search.trim() ? ` matching "${search}"` : ""}
+              </div>
             )}
 
             {!searching && searchResults !== null && (
@@ -643,30 +763,49 @@ export default function AdminDashboard() {
                 ) : searchResults.map((u, i) => (
                   <div key={u.id || i}>
                     <div
-                      onClick={() => setSelectedUser(selectedUser?.id === u.id ? null : u)}
-                      style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedUser?.id === u.id ? "rgba(168,85,247,0.09)" : "transparent", transition:"background .15s" }}
+                      onClick={() => !bulkMode && setSelectedUser(selectedUser?.id === u.id ? null : u)}
+                      style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor: bulkMode ? "default" : "pointer", background: selectedUser?.id === u.id ? "rgba(168,85,247,0.09)" : "transparent", transition:"background .15s" }}
                     >
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div>
-                          <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name}</div>
-                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>
-                            {u.email || "no email"} · {u.apple_user_id ? "🍎" : "no apple"} · {u.message_count} msgs
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          {bulkMode && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(u.id)}
+                              onChange={e => {
+                                e.stopPropagation();
+                                setSelectedIds(prev => {
+                                  const next = new Set(prev);
+                                  e.target.checked ? next.add(u.id) : next.delete(u.id);
+                                  return next;
+                                });
+                              }}
+                              onClick={e => e.stopPropagation()}
+                              style={{ width:16, height:16, accentColor:"#a855f7", cursor:"pointer", flexShrink:0 }}
+                            />
+                          )}
+                          <div>
+                            <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{u.display_name}</div>
+                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:2 }}>
+                              {u.email || "no email"} · {u.apple_user_id ? "🍎" : "no apple"} · {u.message_count} msgs
+                            </div>
                           </div>
                         </div>
                         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                           <PlanBadge u={u} />
-                          {selectedUser?.id === u.id
+                          {!bulkMode && (selectedUser?.id === u.id
                             ? <ChevronUp size={14} color="rgba(255,255,255,0.3)"/>
-                            : <ChevronDown size={14} color="rgba(255,255,255,0.3)"/>}
+                            : <ChevronDown size={14} color="rgba(255,255,255,0.3)"/>)}
                         </div>
                       </div>
                     </div>
-                    {selectedUser?.id === u.id && (
+                    {!bulkMode && selectedUser?.id === u.id && (
                       <div style={{ padding:"0 14px 14px" }}>
                         <UserDetailPanel
                           user={u}
                           adminToken={ADMIN_PASS}
                           showToast={showToast}
+                          requestConfirm={requestConfirm}
                           onAction={() => { doSearch(search); showToast("✅ Updated — refreshing list…"); }}
                         />
                       </div>
@@ -781,7 +920,7 @@ export default function AdminDashboard() {
         {/* ── AUDIT ── */}
         {tab === "audit" && (
           <>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <SectionTitle color="#fb923c">📋 Admin Audit Log</SectionTitle>
               <button
                 onClick={loadAuditLog}
@@ -792,42 +931,83 @@ export default function AdminDashboard() {
               </button>
             </div>
 
+            {/* Action-type filter pills */}
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+              {[
+                { id:"all",                   label:"All" },
+                { id:"quick_grant",           label:"Grants" },
+                { id:"subscription_override", label:"Overrides" },
+                { id:"clear_override",        label:"Revokes" },
+                { id:"bulk_",                 label:"Bulk" },
+                { id:"sync_revenuecat",       label:"RC Syncs" },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setAuditFilter(f.id)}
+                  style={{
+                    padding:"5px 10px", borderRadius:8, border:"none", fontSize:11, fontWeight:700, cursor:"pointer",
+                    background: auditFilter === f.id ? "rgba(251,146,60,0.22)" : "rgba(255,255,255,0.07)",
+                    color: auditFilter === f.id ? "#fb923c" : "rgba(255,255,255,0.35)",
+                    transition:"all .15s",
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
             {auditLoading && (
               <div style={{ textAlign:"center", color:"rgba(255,255,255,0.3)", padding:"32px 0" }}>Loading audit log…</div>
             )}
 
-            {auditLog !== null && !auditLoading && auditLog.length === 0 && (
-              <div style={{ ...CARD_STYLE, textAlign:"center" }}>
-                <div style={{ fontSize:32, marginBottom:8 }}>📋</div>
-                <p style={{ color:"rgba(255,255,255,0.4)", fontSize:13, margin:0 }}>
-                  No audit log entries yet. Subscription overrides you save will appear here.
-                </p>
-              </div>
-            )}
-
-            {auditLog !== null && !auditLoading && auditLog.length > 0 && (
-              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, overflow:"hidden" }}>
-                {auditLog.map((entry, i) => (
-                  <div key={entry.id || i} style={{ padding:"12px 14px", borderBottom: i < auditLog.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
-                      <Badge text={entry.action || "change"} color="#fb923c" />
-                      <span style={{ fontSize:11, color:"rgba(255,255,255,0.25)" }}>{fmtDateTime(entry.timestamp || entry.created_date)}</span>
-                    </div>
-                    <div style={{ fontSize:12, color:"#fff", marginBottom:2 }}>
-                      User: <span style={{ color:"rgba(255,255,255,0.55)" }}>{entry.entity_id}</span>
-                    </div>
-                    {entry.reason && (
-                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>Reason: {entry.reason}</div>
-                    )}
-                    {entry.changes && (
-                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:4, fontFamily:"monospace", background:"rgba(255,255,255,0.03)", borderRadius:6, padding:"4px 8px", wordBreak:"break-all" }}>
-                        {entry.changes}
-                      </div>
-                    )}
+            {(() => {
+              const filtered = auditFilter === "all"
+                ? (auditLog || [])
+                : (auditLog || []).filter(e => (e.action || "").startsWith(auditFilter));
+              if (auditLog !== null && !auditLoading && filtered.length === 0) {
+                return (
+                  <div style={{ ...CARD_STYLE, textAlign:"center" }}>
+                    <div style={{ fontSize:32, marginBottom:8 }}>📋</div>
+                    <p style={{ color:"rgba(255,255,255,0.4)", fontSize:13, margin:0 }}>
+                      {auditLog.length === 0
+                        ? "No audit log entries yet. Subscription overrides you save will appear here."
+                        : `No "${auditFilter.replace(/_/g, " ")}" entries found.`}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              }
+              if (auditLog !== null && !auditLoading && filtered.length > 0) {
+                return (
+                  <>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginBottom:8 }}>
+                      {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
+                    </div>
+                    <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, overflow:"hidden" }}>
+                      {filtered.map((entry, i) => (
+                        <div key={entry.id || i} style={{ padding:"12px 14px", borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                            <Badge text={entry.action || "change"} color="#fb923c" />
+                            <span style={{ fontSize:11, color:"rgba(255,255,255,0.25)" }}>{fmtDateTime(entry.timestamp || entry.created_date)}</span>
+                          </div>
+                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", marginBottom:2, fontFamily:"monospace" }}>
+                            {entry.entity_id}
+                          </div>
+                          {entry.reason && (
+                            <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>Reason: {entry.reason}</div>
+                          )}
+                          {entry.changes && (
+                            <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:4, fontFamily:"monospace", background:"rgba(255,255,255,0.03)", borderRadius:6, padding:"4px 8px", wordBreak:"break-all" }}>
+                              {entry.changes}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })()}
           </>
         )}
 
@@ -858,6 +1038,18 @@ export default function AdminDashboard() {
 
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      {confirmDialog && (
+        <ConfirmDialog
+          visible={true}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          confirmVariant={confirmDialog.confirmVariant}
+          countdown={confirmDialog.countdown || 0}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={confirmDialog.onCancel}
+        />
+      )}
     </div>
   );
 }

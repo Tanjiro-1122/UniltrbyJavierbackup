@@ -404,6 +404,46 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── bulkAction ────────────────────────────────────────────────────────────
+  // Body: { userIds: string[], bulkType: "grantPro7d" | "revokePremium", reason }
+  if (action === "bulkAction") {
+    const { userIds, bulkType } = req.body || {};
+    if (!Array.isArray(userIds) || userIds.length === 0) return res.status(400).json({ error: "userIds[] required" });
+    if (!bulkType) return res.status(400).json({ error: "bulkType required" });
+    if (!reason || reason.trim().length < 3) return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    let updateData;
+    if (bulkType === "grantPro7d") {
+      const expires = new Date(Date.now() + 7 * MS_PER_DAY).toISOString();
+      updateData = { is_premium: true, premium: true, pro_plan: true, trial_active: false, subscription_expires: expires, subscription_override: true };
+    } else if (bulkType === "revokePremium") {
+      updateData = { is_premium: false, premium: false, pro_plan: false, annual_plan: false, trial_active: false, subscription_override: false, subscription_expires: null };
+    } else {
+      return res.status(400).json({ error: "Unknown bulkType" });
+    }
+    const results = await Promise.allSettled(
+      userIds.map(id => b44Fetch(`${B44_ENTITIES}/UserProfile/${id}`, { method: "PUT", body: JSON.stringify(updateData) }))
+    );
+    const failed = results.filter(r => r.status === "rejected").length;
+    try {
+      await Promise.all(userIds.map(id =>
+        b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id: id,
+            action: `bulk_${bulkType}`,
+            changes: JSON.stringify(updateData),
+            reason: reason.trim(),
+            timestamp: new Date().toISOString(),
+          }),
+        })
+      ));
+    } catch (logErr) {
+      console.warn("[adminStats/bulkAction] Audit log write failed (non-fatal):", logErr.message);
+    }
+    return res.status(200).json({ ok: true, processed: userIds.length, failed });
+  }
+
   // ── auditLog ──────────────────────────────────────────────────────────────
   if (action === "auditLog") {
     try {
