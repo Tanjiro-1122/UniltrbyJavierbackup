@@ -1237,8 +1237,10 @@ export default function ChatPage() {
 
   return (
     <>
-      {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFileChange} />
+      {/* Hidden file input — no `capture` attribute so iOS shows the standard
+          picker (Photo Library + Take Photo). Using capture="environment"
+          forces camera-only on iOS Safari/WKWebView and blocks gallery access. */}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
 
       {/* ═══ MAIN WRAPPER — position:fixed; inset:0; flex column ═══ */}
       <div style={{
