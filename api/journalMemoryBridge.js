@@ -4,25 +4,20 @@
 // This means memory grows even when the user isn't chatting.
 
 import OpenAI from "openai";
+import { B44_ENTITIES, b44Headers } from "./_b44.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const B44_APP = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_KEY = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
 
-const headers = () => ({
-  "Authorization": `Bearer ${B44_KEY()}`,
-  "Content-Type": "application/json",
-});
+const headers = b44Headers;
 
 async function b44Get(entity, id) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, { headers: headers() });
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, { headers: headers() });
   if (!res.ok) return null;
   return res.json();
 }
 
 async function b44Update(entity, id, data) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     method: "PUT",
     headers: headers(),
     body: JSON.stringify(data),

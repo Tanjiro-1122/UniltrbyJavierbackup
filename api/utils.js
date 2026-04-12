@@ -3,14 +3,13 @@
 
 import OpenAI from "openai";
 import { safeLogError, withAbortController } from "./_helpers.js";
+import { B44_ENTITIES, b44Token } from "./_b44.js";
 
-const B44_APP  = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 async function b44Get(entity, id) {
-  const token = process.env.BASE44_SERVICE_TOKEN;
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+  const token = b44Token();
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { "Authorization": `Bearer ${token}` } : {}),
@@ -21,10 +20,10 @@ async function b44Get(entity, id) {
 }
 
 async function b44Filter(entity, query) {
-  const token = process.env.BASE44_SERVICE_TOKEN;
+  const token = b44Token();
   const params = new URLSearchParams();
   Object.entries(query).forEach(([k, v]) => params.append(k, v));
-  const res = await fetch(`${B44_BASE}/${entity}?${params.toString()}`, {
+  const res = await fetch(`${B44_ENTITIES}/${entity}?${params.toString()}`, {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { "Authorization": `Bearer ${token}` } : {}),
@@ -36,8 +35,8 @@ async function b44Filter(entity, query) {
 }
 
 async function b44Update(entity, id, data) {
-  const token = process.env.BASE44_SERVICE_TOKEN;
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
+  const token = b44Token();
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

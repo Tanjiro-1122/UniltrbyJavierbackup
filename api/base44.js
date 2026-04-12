@@ -82,18 +82,12 @@ export default async function handler(req, res) {
 // ── saveChatHistory ────────────────────────────────────────────────────────────
 
 async function handleSaveChatHistory(req, res, body) {
-  const envToken = b44Token();
-  if (!envToken) {
-    console.warn(
-      "[base44/saveChatHistory] BASE44_SERVICE_TOKEN is not set — " +
-        "using built-in fallback token. Set the env var in Vercel for best security."
-    );
+  const token = b44Token();
+  if (!token) {
+    console.error("[base44/saveChatHistory] BASE44_SERVICE_TOKEN is not set — cannot save chat history.");
+    return res.status(500).json({ error: "Server configuration error: BASE44_SERVICE_TOKEN not set" });
   }
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  const headers = b44Headers();
 
   const {
     apple_user_id,
@@ -278,9 +272,8 @@ async function handleGetChatHistory(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const token = b44Token();
+  const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 9999, 9999);
   try {
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
@@ -316,9 +309,8 @@ async function handleDeleteChatHistory(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const token = b44Token();
+  const headers = b44Headers();
   try {
     // Verify the record belongs to the requesting user before deleting
     const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
@@ -350,18 +342,12 @@ async function handleDeleteChatHistory(req, res, body) {
 // ── saveMessages ───────────────────────────────────────────────────────────────
 
 async function handleSaveMessages(req, res, body) {
-  const envToken = b44Token();
-  if (!envToken) {
-    console.warn(
-      "[base44/saveMessages] BASE44_SERVICE_TOKEN is not set — " +
-        "using built-in fallback token. Set the env var in Vercel for best security."
-    );
+  const token = b44Token();
+  if (!token) {
+    console.error("[base44/saveMessages] BASE44_SERVICE_TOKEN is not set — cannot save messages.");
+    return res.status(500).json({ error: "Server configuration error: BASE44_SERVICE_TOKEN not set" });
   }
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  const headers = b44Headers();
 
   const { messages } = body;
 
@@ -424,9 +410,8 @@ async function handleClearAllChatHistory(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const token = b44Token();
+  const headers = b44Headers();
   try {
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
       method: "POST",
@@ -461,8 +446,7 @@ async function handleGetMoodEntries(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const token = b44Token();
   const headers = { Authorization: `Bearer ${token}` };
   const limit = Math.min(parseInt(limitArg, 10) || 60, 200);
   try {
@@ -492,8 +476,7 @@ async function handleGetRecentMessages(req, res, body) {
   if (!companion_id || typeof companion_id !== "string") {
     return res.status(400).json({ error: "companion_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const token = b44Token();
   const headers = { Authorization: `Bearer ${token}` };
   const limit = Math.min(parseInt(limitArg, 10) || 20, 100);
   try {
@@ -520,8 +503,7 @@ async function handleGetJournalEntries(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const token = b44Token();
   const headers = { Authorization: `Bearer ${token}` };
   const limit = Math.min(parseInt(limitArg, 10) || 200, 500);
   try {
@@ -551,9 +533,8 @@ async function handleDeleteJournalEntry(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const token = b44Token();
+  const headers = b44Headers();
   try {
     // Verify ownership before deleting
     const checkRes = await fetch(`${B44_ENTITIES}/JournalEntry/${record_id}`, { headers });
@@ -583,8 +564,7 @@ async function handleGetUserProfile(req, res, body) {
   if (!apple_user_id && !profile_id) {
     return res.status(400).json({ error: "apple_user_id or profile_id is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const token = b44Token();
   const headers = { Authorization: `Bearer ${token}` };
   try {
     let profile = null;
@@ -621,9 +601,8 @@ async function handleUpdateUserProfile(req, res, body) {
   if (!updateData || typeof updateData !== "object") {
     return res.status(400).json({ error: "data object is required" });
   }
-  const envToken = b44Token();
-  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const token = b44Token();
+  const headers = b44Headers();
   try {
     // Verify ownership when apple_user_id is provided
     if (apple_user_id) {

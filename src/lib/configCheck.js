@@ -6,7 +6,7 @@
  * No secrets are exposed; all checks use known constants / env vars.
  */
 
-const EXPECTED_BASE44_APP_ID = "69b332a392004d139d4ba495";
+const EXPECTED_BASE44_APP_ID = import.meta.env.VITE_BASE44_APP_ID || "69b332a392004d139d4ba495";
 const EXPECTED_ORIGIN       = "unfiltrbyjavier2.vercel.app";
 const KNOWN_PRODUCT_IDS = [
   "com.huertas.unfiltr.pro.monthly",

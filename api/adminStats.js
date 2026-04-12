@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { b44Fetch, B44_ENTITIES } from "./_b44.js";
+import { b44Fetch, B44_ENTITIES, B44_APP_ID, b44Token } from "./_b44.js";
 import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
 
 /**
@@ -16,8 +16,6 @@ import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
  */
 const ADMIN_PASS = process.env.ADMIN_PASS || "javier1122admin";
 
-const APP_ID = "69b332a392004d139d4ba495";
-const BASE44_API = "https://app.base44.com/api";
 const MS_PER_HOUR = 3600000;
 const MS_PER_DAY  = 86400000;
 
@@ -81,20 +79,20 @@ function mapUser(p) {
 
 /** Returns the Base44 service token, supporting both env var names. */
 function getServiceToken() {
-  const token = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY;
+  const token = b44Token();
   if (!token) throw new Error("BASE44_SERVICE_TOKEN or BASE44_API_KEY env var not set");
   return token;
 }
 
 async function fetchEntity(entity, params = {}) {
-  const url = new URL(`${BASE44_API}/apps/${APP_ID}/entities/${entity}`);
+  const url = new URL(`${B44_ENTITIES}/${entity}`);
   url.searchParams.set("limit", params.limit || 500);
   if (params.skip) url.searchParams.set("skip", params.skip);
   const serviceToken = getServiceToken();
   const res = await fetch(url.toString(), {
     headers: {
       "Authorization": `Bearer ${serviceToken}`,
-      "X-App-Id": APP_ID,
+      "X-App-Id": B44_APP_ID,
       "Content-Type": "application/json",
     },
   });
@@ -108,11 +106,11 @@ async function fetchEntity(entity, params = {}) {
 
 async function updateEntity(entity, id, data) {
   const serviceToken = getServiceToken();
-  const res = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/${entity}/${id}`, {
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     method: "PUT",
     headers: {
       "Authorization": `Bearer ${serviceToken}`,
-      "X-App-Id": APP_ID,
+      "X-App-Id": B44_APP_ID,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
@@ -126,11 +124,11 @@ async function updateEntity(entity, id, data) {
 
 async function deleteEntity(entity, id) {
   const serviceToken = getServiceToken();
-  const res = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/${entity}/${id}`, {
+  const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${serviceToken}`,
-      "X-App-Id": APP_ID,
+      "X-App-Id": B44_APP_ID,
     },
   });
   if (!res.ok) {

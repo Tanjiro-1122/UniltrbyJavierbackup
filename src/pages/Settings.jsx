@@ -577,20 +577,12 @@ export default function Settings() {
       // Clear DB records for this user (fire-and-forget)
       const appleId = localStorage.getItem("unfiltr_apple_user_id");
       if (appleId) {
-        const B44_APP = "69b332a392004d139d4ba495";
-        const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-        const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
         try {
-          const r = await fetch(`${B44_BASE}/ChatHistory/query`, {
+          await fetch("/api/base44", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ filters: [{ field: "apple_user_id", operator: "eq", value: appleId }], limit: 500 }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "clearAllChatHistory", apple_user_id: appleId }),
           });
-          const data = await r.json();
-          const all = Array.isArray(data) ? data : (data.items || []);
-          await Promise.all(all.map(s =>
-            fetch(`${B44_BASE}/ChatHistory/${s.id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${DB_TOKEN}` } }).catch(() => {})
-          ));
         } catch (_) {}
       }
       setClearChatDone(true);
