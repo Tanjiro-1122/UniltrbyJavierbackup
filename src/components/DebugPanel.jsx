@@ -146,14 +146,16 @@ export function DebugPanel() {
   };
 
   const handleCopy = () => {
+    const subTier = localStorage.getItem('unfiltr_is_annual') === 'true' ? 'Annual'
+      : localStorage.getItem('unfiltr_is_pro') === 'true' ? 'Pro'
+      : localStorage.getItem('unfiltr_is_premium') === 'true' ? 'Premium'
+      : 'Free';
     const snapshot = [
       `=== UNFILTR DEBUG SNAPSHOT ${new Date().toISOString()} ===`,
       `User ID:      ${localStorage.getItem('unfiltr_user_id') || '—'}`,
       `Apple ID:     ${localStorage.getItem('unfiltr_apple_user_id') || '—'}`,
       `Device ID:    ${localStorage.getItem('unfiltr_device_id') || '—'}`,
-      `Premium:      ${localStorage.getItem('unfiltr_is_premium') || '—'}`,
-      `Pro:          ${localStorage.getItem('unfiltr_is_pro') || '—'}`,
-      `Annual:       ${localStorage.getItem('unfiltr_is_annual') || '—'}`,
+      `Sub Tier:     ${subTier}`,
       `Display Name: ${localStorage.getItem('unfiltr_display_name') || '—'}`,
       `Native Bridge: ${window.ReactNativeWebView ? 'YES' : 'NO'}`,
       `UA: ${navigator.userAgent}`,
@@ -277,16 +279,18 @@ export function DebugPanel() {
               {/* Quick snapshot */}
               <div style={{ marginBottom: 8, padding: '6px 8px', background: 'rgba(168,85,247,0.08)', borderRadius: 8, fontSize: 10 }}>
                 <div style={{ color: '#a855f7', fontWeight: 'bold', marginBottom: 4 }}>QUICK SNAPSHOT</div>
-                {[
-                  ['User ID',       localStorage.getItem('unfiltr_user_id') || '—'],
-                  ['Apple ID',      localStorage.getItem('unfiltr_apple_user_id') || '—'],
-                  ['Device ID',     localStorage.getItem('unfiltr_device_id') || '—'],
-                  ['Premium',       localStorage.getItem('unfiltr_is_premium') || '—'],
-                  ['Pro',           localStorage.getItem('unfiltr_is_pro') || '—'],
-                  ['Annual',        localStorage.getItem('unfiltr_is_annual') || '—'],
-                  ['Display Name',  localStorage.getItem('unfiltr_display_name') || '—'],
-                  ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
-                ].map(([k, v]) => (
+                {(() => {
+                  const tier = localStorage.getItem('unfiltr_is_annual') === 'true' ? 'Annual'
+                    : localStorage.getItem('unfiltr_is_pro') === 'true' ? 'Pro'
+                    : localStorage.getItem('unfiltr_is_premium') === 'true' ? 'Premium'
+                    : 'Free';
+                  return [
+                    ['User ID',       localStorage.getItem('unfiltr_user_id') || '—'],
+                    ['Apple ID',      localStorage.getItem('unfiltr_apple_user_id') || '—'],
+                    ['Sub Tier',      tier],
+                    ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
+                  ];
+                })().map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span style={{ color: 'rgba(255,255,255,0.4)' }}>{k}</span>
                     <span style={{ color: v === '—' ? '#f43f5e' : v.includes('✅') ? '#4ade80' : '#e2e8f0', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>
