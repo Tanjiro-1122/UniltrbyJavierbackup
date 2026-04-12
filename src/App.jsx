@@ -106,7 +106,7 @@ function useProfileRecovery() {
         const B44_APP = "69b332a392004d139d4ba495";
         const TOKEN   = "1156284fb9144ad9ab95afc962e848d8";
         const res = await fetch(
-          `https://base44.app/api/apps/${B44_APP}/entities/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+          `https://app.base44.com/api/apps/${B44_APP}/entities/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
           { headers: { "Authorization": `Bearer ${TOKEN}` } }
         );
         const data = await res.json();
@@ -114,6 +114,8 @@ function useProfileRecovery() {
         const p = records[0];
         if (p) {
           localStorage.setItem("userProfileId", p.id);
+          // Set unfiltr_user_id so AuthContext recognizes the restored session
+          localStorage.setItem("unfiltr_user_id", appleUserId);
           if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
           if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
           if (p.companion_id && p.companion_id !== "pending") {
@@ -225,7 +227,10 @@ const AuthenticatedApp = ({ splashDone }) => {
     // ALSO skip redirect if localStorage already has user_id — means sign-in just completed
     // but AuthContext hasn't re-run checkAuth yet (race condition after Apple Sign-In)
     if (authError?.type === "new_user" && !onboardingDone) {
-      const justSignedIn = !!localStorage.getItem("unfiltr_user_id");
+      const justSignedIn = !!(
+        localStorage.getItem("unfiltr_user_id") ||
+        localStorage.getItem("unfiltr_apple_user_id")
+      );
       if (!justSignedIn) {
         navigate("/home-screen", { replace: true });
         return;

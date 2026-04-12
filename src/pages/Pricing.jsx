@@ -190,13 +190,20 @@ function AdminPanel({ onClose, navigate }) {
       sessionStorage.setItem('unfiltr_admin_session', 'true');
       onClose();
       window.location.href = 'https://unfiltrbyjavier2.vercel.app/AdminDashboard';
-    } else if (code.trim().toLowerCase() === 'huertasfam') {
+    } else if (code.trim().toLowerCase() === 'huertasfam' || code.trim().toLowerCase() === 'huertsfam') {
       const profileId = localStorage.getItem('userProfileId');
       if (profileId) {
-        fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true } }) }).catch(() => {});
+        fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }) }).catch(() => {});
       }
+      const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      localStorage.setItem('unfiltr_family_unlimited', 'true');
+      localStorage.setItem('unfiltr_family_unlimited_expires_at', oneYearFromNow);
       localStorage.setItem('unfiltr_is_premium', 'true');
       localStorage.setItem('unfiltr_is_annual', 'true');
+      localStorage.setItem('unfiltr_family_unlock', 'true');
+      localStorage.setItem('unfiltr_msg_limit_override', 'true');
+      localStorage.setItem('unfiltr_bonus_messages', '99999');
+      window.dispatchEvent(new Event('unfiltr_auth_updated'));
       onClose();
       alert('✅ Family access unlocked!');
     } else {

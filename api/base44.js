@@ -62,10 +62,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "action is required" });
   }
 
-  if (action === "saveChatHistory") return handleSaveChatHistory(req, res, body);
-  if (action === "saveMessages")    return handleSaveMessages(req, res, body);
-  if (action === "health")          return handleHealth(req, res);
-  if (action === "proxy")           return handleProxy(req, res, body);
+  if (action === "saveChatHistory")    return handleSaveChatHistory(req, res, body);
+  if (action === "saveMessages")       return handleSaveMessages(req, res, body);
+  if (action === "getChatHistory")     return handleGetChatHistory(req, res, body);
+  if (action === "deleteChatHistory")  return handleDeleteChatHistory(req, res, body);
+  if (action === "health")             return handleHealth(req, res);
+  if (action === "proxy")              return handleProxy(req, res, body);
 
   return res.status(400).json({ error: `Unknown action: ${action}` });
 }
@@ -255,6 +257,69 @@ async function pruneOldChatHistory(appleId, tier, headers) {
       method: "DELETE",
       headers,
     }).catch(() => {});
+  }
+}
+
+// ── getChatHistory ─────────────────────────────────────────────────────────────
+
+async function handleGetChatHistory(req, res, body) {
+  const { apple_user_id, limit: limitArg } = body;
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  const limit = Math.min(parseInt(limitArg, 10) || 9999, 9999);
+  try {
+    const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        filters: [{ field: "apple_user_id", operator: "eq", value: apple_user_id }],
+        sort: [{ field: "saved_at", direction: "desc" }],
+        limit,
+      }),
+    });
+    if (!r.ok) {
+      const bodyText = await r.text();
+      console.error(`[base44/getChatHistory] Query failed HTTP ${r.status} — ${bodyText.slice(0, 200)}`);
+      return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
+    }
+    const data = await r.json();
+    const records = Array.isArray(data) ? data : (data.items || []);
+    return res.status(200).json({ ok: true, items: records });
+  } catch (err) {
+    console.error("[base44/getChatHistory] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error fetching chat history" });
+  }
+}
+
+// ── deleteChatHistory ──────────────────────────────────────────────────────────
+
+async function handleDeleteChatHistory(req, res, body) {
+  const { record_id } = body;
+  if (!record_id || typeof record_id !== "string") {
+    return res.status(400).json({ error: "record_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  try {
+    const r = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, {
+      method: "DELETE",
+      headers,
+    });
+    if (!r.ok) {
+      const bodyText = await r.text();
+      console.error(`[base44/deleteChatHistory] DELETE failed HTTP ${r.status} — ${bodyText.slice(0, 200)}`);
+      return res.status(r.status).json({ error: `Base44 delete failed: ${r.status}` });
+    }
+    console.log(`[base44/deleteChatHistory] Deleted ${record_id}`);
+    return res.status(200).json({ ok: true, deleted: record_id });
+  } catch (err) {
+    console.error("[base44/deleteChatHistory] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error deleting chat history" });
   }
 }
 

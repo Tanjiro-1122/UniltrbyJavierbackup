@@ -5,11 +5,6 @@ import { ChevronLeft, Search, X, Trash2, Lock, MessageCircle } from "lucide-reac
 import AppShell from "@/components/shell/AppShell";
 import { getTier, HISTORY_LIMITS, PLAN_LABELS } from "@/lib/entitlements";
 
-const B44_APP  = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
-
 const HISTORY_LABELS = {
   free:   `Free — last ${HISTORY_LIMITS.free} conversations kept`,
   plus:   `${PLAN_LABELS.plus} — last ${HISTORY_LIMITS.plus} conversations kept`,
@@ -48,12 +43,13 @@ export default function ChatHistory() {
 
   useEffect(() => {
     if (!appleUserId) { setLoading(false); return; }
-    fetch(`${B44_BASE}/ChatHistory/query`, {
-      method: "POST", headers: DB_HDR,
-      body: JSON.stringify({ filters: [{ field: "apple_user_id", operator: "eq", value: appleUserId }], sort: [{ field: "saved_at", direction: "desc" }], limit: limit }),
+    fetch("/api/base44", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "getChatHistory", apple_user_id: appleUserId, limit }),
     })
       .then(r => r.json())
-      .then(d => { setSessions(Array.isArray(d) ? d : (d.items || [])); })
+      .then(d => { setSessions(Array.isArray(d.items) ? d.items : []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [appleUserId, limit]);
@@ -70,7 +66,11 @@ export default function ChatHistory() {
     e.stopPropagation();
     setDeleting(id);
     try {
-      await fetch(`${B44_BASE}/ChatHistory/${id}`, { method: "DELETE", headers: DB_HDR });
+      await fetch("/api/base44", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteChatHistory", record_id: id }),
+      });
       setSessions(prev => prev.filter(s => s.id !== id));
       if (expandedId === id) setExpandedId(null);
     } catch {}
