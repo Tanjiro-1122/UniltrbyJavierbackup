@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, MessageCircle, Mic, Zap, RotateCcw, Clock, Loader2, Brain, BookOpen, Shield } from "lucide-react";
+import { X, MessageCircle, Mic, Zap, RotateCcw, Loader2, Brain, BookOpen } from "lucide-react";
 import { useAppleSubscriptions } from "@/components/hooks/useAppleSubscriptions";
 import { base44 } from "@/api/base44Client";
 

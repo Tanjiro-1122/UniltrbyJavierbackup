@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, TrendingUp } from "lucide-react";
-import { MOOD_COLORS, MOOD_LABELS, getMoodColor, getMoodLabel } from "@/lib/moodConfig";
+import { getMoodColor, getMoodLabel } from "@/lib/moodConfig";
 
 const STORAGE_KEY = "unfiltr_mood_history";
 

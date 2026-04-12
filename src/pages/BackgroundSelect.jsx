@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BACKGROUNDS, COMPANIONS } from "@/components/companionData";
-import { motion } from "framer-motion";
 
 // Accent colors per background for glow theming
 const ACCENTS = {

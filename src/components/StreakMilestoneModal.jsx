@@ -4,7 +4,7 @@
  * Drop into ChatPage — auto-shows when `milestone` prop is truthy.
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const MILESTONE_CONFIG = {

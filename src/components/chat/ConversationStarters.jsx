@@ -28,8 +28,6 @@ const TIME_STARTERS = {
 };
 
 export default function ConversationStarters({ onSelect, visible, isReturning }) {
-  if (!visible) return null;
-
   const starters = useMemo(() => {
     const hour = new Date().getHours();
     const base = isReturning ? RETURNING_STARTERS : NEW_USER_STARTERS;
@@ -45,6 +43,8 @@ export default function ConversationStarters({ onSelect, visible, isReturning })
     }
     return base;
   }, [isReturning]);
+
+  if (!visible) return null;
 
   return (
     <div style={{

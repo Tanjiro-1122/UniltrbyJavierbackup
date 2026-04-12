@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, X, BookOpen } from "lucide-react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 
 // ─── Book Content ─────────────────────────────────────────────────────────────
 // Each "chapter" is a section. Within each section, pages advance one at a time.

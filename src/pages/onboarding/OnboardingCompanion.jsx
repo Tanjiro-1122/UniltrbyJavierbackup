@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,11 +16,6 @@ export default function OnboardingCompanion() {
   const [dir, setDir] = useState(0);
   const [imgLoaded, setImgLoaded] = useState({});
   const startX = useRef(null);
-
-  if (!store.displayName.trim()) {
-    navigate("/onboarding", { replace: true });
-    return null;
-  }
 
   // Preload companion avatars in small batches — prevents WebView freeze on large images
   useEffect(() => {
@@ -48,6 +43,11 @@ export default function OnboardingCompanion() {
     preloadBatch();
     return () => { cancelled = true; };
   }, []);
+
+  if (!store.displayName.trim()) {
+    navigate("/onboarding", { replace: true });
+    return null;
+  }
 
   const go = (d) => {
     setDir(d);

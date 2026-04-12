@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Calendar } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 const EMOTION_COLORS = {
   happy:       "#facc15",

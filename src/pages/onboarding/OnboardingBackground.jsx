@@ -18,11 +18,6 @@ export default function OnboardingBackground() {
   const touchStartX = useRef(null);
   const mouseStartX = useRef(null);
 
-  if (!store.selectedCompanion) {
-    navigate("/onboarding/companion", { replace: true });
-    return null;
-  }
-
   const companionData = COMPANIONS.find(c => c.id === store.selectedCompanion);
   const bg = BG_LIST[idx];
 
@@ -41,6 +36,11 @@ export default function OnboardingBackground() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [idx, goTo]);
+
+  if (!store.selectedCompanion) {
+    navigate("/onboarding/companion", { replace: true });
+    return null;
+  }
 
   // Touch
   const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
