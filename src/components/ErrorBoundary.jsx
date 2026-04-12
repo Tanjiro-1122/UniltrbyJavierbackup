@@ -1,6 +1,6 @@
 import React from "react";
 
-const SUPPORT_EMAIL = "support@unfiltr.app";
+const SUPPORT_EMAIL = "huertasfam1@icloud.com";
 
 /**
  * ErrorBoundary — catches any unhandled render/lifecycle errors in its subtree.
