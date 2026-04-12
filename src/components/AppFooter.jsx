@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { restorePurchases } from "@/components/utils/iapBridge";
 import { debugLog } from "@/components/DebugPanel";
 
+const RESTORE_TOAST_DURATION_MS = 3500;
+
 export default function AppFooter({ dark = false }) {
   const navigate = useNavigate();
   const textClass = dark ? "text-white/55 hover:text-white/80" : "text-white/40 hover:text-white/70";
@@ -34,7 +36,7 @@ export default function AppFooter({ dark = false }) {
       debugLog(`[AppFooter] Restore error: ${e.message}`);
       setRestoreState('error');
     }
-    setTimeout(() => setRestoreState(null), 3500);
+    setTimeout(() => setRestoreState(null), RESTORE_TOAST_DURATION_MS);
   };
 
   const restoreLabel =
