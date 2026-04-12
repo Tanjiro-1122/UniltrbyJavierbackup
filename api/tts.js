@@ -43,8 +43,12 @@ export default async function handler(req, res) {
     // model across all API endpoints (no server-side session tokens). The check
     // prevents accidental free-tier access; it relies on the same trust boundary
     // as the rest of the API layer (e.g., chat.js, memoryEmbed.js).
-    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
-    if (!isPremium && !isPro && !isAnnual) {
+    const { isPremium, isPro, isAnnual, fetchFailed } = await getProfileTier(profileId);
+    // Block only when the tier is definitively verified as free. If the profile
+    // lookup failed (e.g., Base44 temporarily unavailable) and a profileId was
+    // provided, give the benefit of the doubt so registered premium users are
+    // not silently blocked during outages.
+    if (!isPremium && !isPro && !isAnnual && !(fetchFailed && profileId)) {
       return res.status(403).json({ error: "Voice playback requires a premium subscription." });
     }
 

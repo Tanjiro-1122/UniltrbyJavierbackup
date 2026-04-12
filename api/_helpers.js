@@ -322,10 +322,10 @@ export const DAILY_MSG_LIMITS = {
  * gracefully instead of blocking the user — the rate limiter still applies.
  *
  * @param {string} profileId
- * @returns {Promise<{ isPremium: boolean, isPro: boolean, isAnnual: boolean, profile: object|null }>}
+ * @returns {Promise<{ isPremium: boolean, isPro: boolean, isAnnual: boolean, profile: object|null, fetchFailed: boolean }>}
  */
 export async function getProfileTier(profileId) {
-  if (!profileId) return { isPremium: false, isPro: false, isAnnual: false, profile: null };
+  if (!profileId) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
 
   let profile = getCachedProfile(profileId);
   if (!profile) {
@@ -336,12 +336,12 @@ export async function getProfileTier(profileId) {
       if (profile) setCachedProfile(profileId, profile);
     } catch (e) {
       console.warn(`[getProfileTier] lookup failed for ${profileId}: ${e.message}`);
-      return { isPremium: false, isPro: false, isAnnual: false, profile: null };
+      return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: true };
     }
   }
 
   const isAnnual  = !!(profile?.annual_plan);
   const isPro     = !!(profile?.pro_plan);
   const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual);
-  return { isPremium, isPro, isAnnual, profile };
+  return { isPremium, isPro, isAnnual, profile, fetchFailed: false };
 }
