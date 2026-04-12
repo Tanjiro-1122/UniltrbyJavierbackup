@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Copy, Check } from "lucide-react";
+import { APP_URL } from "@/lib/appConfig";
 
 export default function ReferralSection({ profileId }) {
   const [code, setCode] = useState(null);
@@ -22,7 +23,7 @@ export default function ReferralSection({ profileId }) {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [profileId]);
 
-  const shareMessage = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\nunfiltrbyjavier2.vercel.app`;
+  const shareMessage = `I've been using Unfiltr – a private AI companion app 💜\nUse my code ${code} to get 50 free bonus messages!\n${APP_URL}`;
 
   const handleCopy = async () => {
     // Try native share first (mobile), fallback to clipboard

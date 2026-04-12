@@ -5,6 +5,7 @@
 
 import OpenAI from "openai";
 import { B44_ENTITIES, b44Headers } from "./_b44.js";
+import { createRequestContext, safeLogError, checkRateLimit } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -47,6 +48,16 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   try {
     const { profileId, journalContent, journalTitle, isPremium, isPro, isAnnual } = req.body;
@@ -139,7 +150,7 @@ Use [] for empty arrays. Use null if not mentioned.`,
 
     return res.status(200).json({ ok: true, merged: true });
   } catch (err) {
-    console.error("[journalMemoryBridge]", err);
-    return res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "journalMemoryBridge" });
+    return res.status(500).json({ error: "Journal memory processing failed. Please try again." });
   }
 }

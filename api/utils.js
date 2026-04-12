@@ -1,9 +1,39 @@
 // api/utils.js
 // Merged: generateReferralCode + ratingPrompt + generateMoodImage + sendDailyNotifs + savePushToken
 
+import crypto from "crypto";
 import OpenAI from "openai";
 import { safeLogError, withAbortController } from "./_helpers.js";
 import { B44_ENTITIES, b44Token } from "./_b44.js";
+
+// ── Admin / cron auth helpers ─────────────────────────────────────────────────
+// ADMIN_PASS must be set as a Vercel environment variable.
+const ADMIN_PASS   = process.env.ADMIN_PASS   || "";
+// FAMILY_CODE must be set as a Vercel environment variable.
+// Both the canonical spelling and the common typo variant are accepted.
+const FAMILY_CODE  = (process.env.FAMILY_CODE || "").toLowerCase();
+// CRON_SECRET is set automatically by Vercel for cron jobs.
+const CRON_SECRET  = process.env.CRON_SECRET  || "";
+
+function safeCompare(a, b) {
+  if (!a || !b) return false;
+  const ba = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ba.length !== bb.length) {
+    // Still run timingSafeEqual to avoid early-exit timing differences.
+    crypto.timingSafeEqual(ba, Buffer.alloc(ba.length));
+    return false;
+  }
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+function isAuthorizedAdmin(req) {
+  const cronSecret   = req.headers["x-vercel-cron-secret"] || "";
+  const adminToken   = req.body?.adminToken || "";
+  if (CRON_SECRET  && safeCompare(cronSecret, CRON_SECRET))  return true;
+  if (ADMIN_PASS   && safeCompare(adminToken, ADMIN_PASS))   return true;
+  return false;
+}
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
@@ -186,6 +216,10 @@ async function handleSavePushToken(req, res) {
 // Cron handler — called by the Base44 automation every hour
 // Checks who is due for a morning or night notification and sends it
 async function handleSendDailyNotifs(req, res) {
+  if (!isAuthorizedAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   // Get current UTC hour
@@ -384,11 +418,46 @@ const { action } = req.body;
     if (action === "journalFeedback")     return await handleJournalFeedback(req, res);
     if (action === "saveJournalEntry")    return await handleSaveJournalEntry(req, res);
     if (action === "saveChatHistory")     return await handleSaveChatHistory(req, res);
+    if (action === "verifySpecialCode")   return await handleVerifySpecialCode(req, res);
         return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     safeLogError(err, { tag: "utils" });
     return res.status(500).json({ error: "An unexpected error occurred. Please try again." });
   }
+}
+
+/**
+ * Verify a special access code (admin or family) server-side.
+ * The codes are stored only in Vercel environment variables (ADMIN_PASS and
+ * FAMILY_CODE) and are never exposed to the client.
+ *
+ * Response:
+ *   { type: "admin" }  — valid admin code
+ *   { type: "family" } — valid family code
+ *   { type: null }     — invalid (never 401, to avoid leaking info)
+ */
+async function handleVerifySpecialCode(req, res) {
+  const code = (req.body?.code || "").trim().toLowerCase();
+  if (!code) return res.status(400).json({ error: "Missing code" });
+
+  if (ADMIN_PASS && safeCompare(code, ADMIN_PASS.toLowerCase())) {
+    return res.status(200).json({ type: "admin" });
+  }
+
+  if (FAMILY_CODE) {
+    // Accept the canonical spelling and the common typo variant (trailing 's' before 'fam').
+    const typoVariant = FAMILY_CODE.endsWith("fam")
+      ? FAMILY_CODE.slice(0, -3) + "sfam"
+      : null;
+    if (
+      safeCompare(code, FAMILY_CODE) ||
+      (typoVariant && safeCompare(code, typoVariant))
+    ) {
+      return res.status(200).json({ type: "family" });
+    }
+  }
+
+  return res.status(200).json({ type: null });
 }
 
 async function handleJournalFeedback(req, res) {

@@ -339,55 +339,72 @@ export default function Settings() {
     const next = adminTapCount + 1; setAdminTapCount(next);
     if (next >= 5) { setAdminTapCount(0); setShowCodeModal(true); }
   };
-  const handleCodeSubmit = () => {
-    if (adminCode.trim().toLowerCase() === "javier1122admin") {
-      // Persist admin unlock permanently in localStorage
-      localStorage.setItem("unfiltr_admin_unlocked", "true");
-      sessionStorage.setItem("unfiltr_admin_session", "true");
-      setIsAdmin(true);
-      setShowCodeModal(false);
-      setAdminCode("");
-      setCodeError("");
-      // Navigate directly to the standalone admin page
-      navigate("/AdminDashboard");
-    } else {
-      setCodeError("Invalid code.");
+  const handleCodeSubmit = async () => {
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verifySpecialCode", code: adminCode }),
+      });
+      const data = await res.json();
+      if (data.type === "admin") {
+        localStorage.setItem("unfiltr_admin_unlocked", "true");
+        sessionStorage.setItem("unfiltr_admin_session", "true");
+        setIsAdmin(true);
+        setShowCodeModal(false);
+        setAdminCode("");
+        setCodeError("");
+        navigate("/AdminDashboard");
+      } else {
+        setCodeError("Invalid code.");
+        setAdminCode("");
+      }
+    } catch {
+      setCodeError("Could not verify code. Please try again.");
       setAdminCode("");
     }
   };
-  const handleFamilyCodeSubmit = () => {
-    // Accept both "huertsfam" and "huertasfam" (common user typo variants)
-    const code = familyCode.trim().toLowerCase();
-    if (code === "huertasfam" || code === "huertsfam") {
-      // Device-only unlock — no backend writes
-      const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-      localStorage.setItem("unfiltr_family_unlimited", "true");
-      localStorage.setItem("unfiltr_unlimited", "true");
-      localStorage.setItem("unfiltr_family_unlimited_expires_at", oneYearFromNow);
-      // Keep legacy flags for backward compatibility
-      localStorage.setItem("unfiltr_is_premium", "true");
-      localStorage.setItem("unfiltr_is_annual",  "true");
-      localStorage.setItem("unfiltr_family_unlock", "true");
-      localStorage.setItem("unfiltr_msg_limit_override", "true");
-      localStorage.setItem("unfiltr_bonus_messages", "99999");
-      // Notify all mounted components (ChatPage, entitlements, etc.) of the change
-      window.dispatchEvent(new Event("unfiltr_auth_updated"));
-      // Persist unlock to backend profile so it survives reinstalls
-      const pid = localStorage.getItem("userProfileId");
-      if (pid) {
-        fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "update",
-            profileId: pid,
-            updateData: { is_premium: true, annual_plan: true, family_unlimited: true },
-          }),
-        }).catch(() => {});
+  const handleFamilyCodeSubmit = async () => {
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verifySpecialCode", code: familyCode }),
+      });
+      const data = await res.json();
+      if (data.type === "family") {
+        const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+        localStorage.setItem("unfiltr_family_unlimited", "true");
+        localStorage.setItem("unfiltr_unlimited", "true");
+        localStorage.setItem("unfiltr_family_unlimited_expires_at", oneYearFromNow);
+        localStorage.setItem("unfiltr_is_premium", "true");
+        localStorage.setItem("unfiltr_is_annual",  "true");
+        localStorage.setItem("unfiltr_family_unlock", "true");
+        localStorage.setItem("unfiltr_msg_limit_override", "true");
+        localStorage.setItem("unfiltr_bonus_messages", "99999");
+        window.dispatchEvent(new Event("unfiltr_auth_updated"));
+        const pid = localStorage.getItem("userProfileId");
+        if (pid) {
+          fetch("/api/syncProfile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "update",
+              profileId: pid,
+              updateData: { is_premium: true, annual_plan: true, family_unlimited: true },
+            }),
+          }).catch(() => {});
+        }
+        setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
+        setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
+      } else {
+        setFamilyCodeError("Invalid code.");
+        setFamilyCode("");
       }
-      setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
-      setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
-    } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
+    } catch {
+      setFamilyCodeError("Could not verify code. Please try again.");
+      setFamilyCode("");
+    }
   };
   const handleSignOut = async () => {
     await clearDataAndReset(navigate);

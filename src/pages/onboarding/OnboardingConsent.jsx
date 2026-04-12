@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { Lock, ExternalLink, AlertTriangle, Eye } from "lucide-react";
+import { APP_URL } from "@/lib/appConfig";
 
 export default function OnboardingConsent() {
   const navigate = useNavigate();
@@ -135,7 +136,7 @@ export default function OnboardingConsent() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <a href="https://unfiltrbyjavier2.vercel.app/PrivacyPolicy" target="_blank" rel="noopener noreferrer"
+            <a href={`https://${APP_URL}/PrivacyPolicy`} target="_blank" rel="noopener noreferrer"
               style={{
                 flex: 1, padding: "9px 12px",
                 background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)",
@@ -145,7 +146,7 @@ export default function OnboardingConsent() {
               }}>
               <ExternalLink size={11} /> Privacy Policy
             </a>
-            <a href="https://unfiltrbyjavier2.vercel.app/TermsOfUse" target="_blank" rel="noopener noreferrer"
+            <a href={`https://${APP_URL}/TermsOfUse`} target="_blank" rel="noopener noreferrer"
               style={{
                 flex: 1, padding: "9px 12px",
                 background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)",

@@ -7,17 +7,6 @@ import {
 } from "lucide-react";
 import ConfirmDialog from "../components/ConfirmDialog";
 
-/**
- * ADMIN_PASS — used both for the local UI unlock screen (5-tap + passcode) and
- * as the credential sent with every admin API request.
- *
- * IMPORTANT: This value lives in the compiled JS bundle and is visible to
- * anyone who inspects it.  It provides UI convenience gating only, not
- * true server-side secrecy.  Set the ADMIN_PASS environment variable in
- * Vercel to a long random string that is NOT committed to the repository.
- */
-const ADMIN_PASS  = "javier1122admin";
-
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmtDate = (s) =>
   s ? new Date(s).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"2-digit" }) : "—";
@@ -321,7 +310,8 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
 
 // ── main ──────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [unlocked,      setUnlocked]      = useState(() => sessionStorage.getItem("unfiltr_admin_session") === "true");
+  const [unlocked,      setUnlocked]      = useState(false);
+  const [adminToken,    setAdminToken]    = useState("");
   const [pwInput,       setPwInput]       = useState("");
   const [pwError,       setPwError]       = useState(false);
   const [stats,         setStats]         = useState(null);
@@ -381,19 +371,28 @@ export default function AdminDashboard() {
     if (tab === "audit" && unlocked && auditLog === null) loadAuditLog();
   }, [tab, unlocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleUnlock = () => {
-    if (pwInput.trim() === ADMIN_PASS) {
-      sessionStorage.setItem("unfiltr_admin_session", "true");
-      setUnlocked(true); setPwError(false);
-    } else {
+  const handleUnlock = async () => {
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verifySpecialCode", code: pwInput }),
+      });
+      const data = await res.json();
+      if (data.type === "admin") {
+        setAdminToken(pwInput.trim());
+        setUnlocked(true); setPwError(false);
+      } else {
+        setPwError(true); setTimeout(() => setPwError(false), 1500);
+      }
+    } catch {
       setPwError(true); setTimeout(() => setPwError(false), 1500);
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("unfiltr_admin_session");
     localStorage.removeItem("unfiltr_admin_unlocked");
-    setUnlocked(false); setStats(null); setPwInput("");
+    setUnlocked(false); setAdminToken(""); setStats(null); setPwInput("");
   };
 
   const loadData = async () => {
@@ -402,7 +401,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS }),
+        body: JSON.stringify({ adminToken: adminToken }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Failed");
@@ -417,7 +416,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: adminToken, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -432,7 +431,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "userSearch", query: q }),
+        body: JSON.stringify({ adminToken: adminToken, action: "userSearch", query: q }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -447,7 +446,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "auditLog" }),
+        body: JSON.stringify({ adminToken: adminToken, action: "auditLog" }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error);
@@ -462,7 +461,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/adminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminToken: ADMIN_PASS, action: "grantAccess", userId, type }),
+        body: JSON.stringify({ adminToken: adminToken, action: "grantAccess", userId, type }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -483,7 +482,7 @@ export default function AdminDashboard() {
           const res = await fetch("/api/adminStats", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ adminToken: ADMIN_PASS, action: "deleteUser", userId }),
+            body: JSON.stringify({ adminToken: adminToken, action: "deleteUser", userId }),
           });
           const data = await res.json();
           if (data.error) throw new Error(data.error);
@@ -512,7 +511,7 @@ export default function AdminDashboard() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              adminToken: ADMIN_PASS, action: "bulkAction",
+              adminToken: adminToken, action: "bulkAction",
               userIds: [...selectedIds], bulkType, reason: bulkReason,
             }),
           });
@@ -803,7 +802,7 @@ export default function AdminDashboard() {
                       <div style={{ padding:"0 14px 14px" }}>
                         <UserDetailPanel
                           user={u}
-                          adminToken={ADMIN_PASS}
+                          adminToken={adminToken}
                           showToast={showToast}
                           requestConfirm={requestConfirm}
                           onAction={() => { doSearch(search); showToast("✅ Updated — refreshing list…"); }}

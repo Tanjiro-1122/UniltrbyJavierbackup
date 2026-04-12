@@ -10,6 +10,7 @@
 
 import OpenAI from "openai";
 import { B44_APP_ID, B44_ENTITIES, b44Token } from "./_b44.js";
+import { createRequestContext, safeLogError, checkRateLimit } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -155,6 +156,16 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
+
   const { action, profileId, facts, sessionNote, query, isPremium, isPro, isAnnual } = req.body || {};
 
   try {
@@ -168,7 +179,7 @@ export default async function handler(req, res) {
     }
     return res.status(400).json({ error: "action must be store or retrieve" });
   } catch (err) {
-    console.error("[memoryEmbed]", err);
-    return res.status(500).json({ error: err.message });
+    safeLogError(err, { tag: "memoryEmbed" });
+    return res.status(500).json({ error: "Memory operation failed. Please try again." });
   }
 }

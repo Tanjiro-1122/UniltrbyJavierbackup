@@ -5,6 +5,8 @@ import {
   getCachedProfile,
   setCachedProfile,
   invalidateCachedProfile,
+  createRequestContext,
+  checkRateLimit,
 } from "./_helpers.js";
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
@@ -133,6 +135,16 @@ function buildRichSummary(facts = {}, sessions = [], emotionalTimeline = []) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   try {
     const { messages, profileId, companionName, isPremium, isPro, isAnnual } = req.body;
