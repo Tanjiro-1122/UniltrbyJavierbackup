@@ -109,6 +109,7 @@ function useProfileRecovery() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "sync", appleUserId }),
         });
+        if (!res.ok) return;
         const data = await res.json();
         const p = data?.data;
         if (p?.profileId) {
