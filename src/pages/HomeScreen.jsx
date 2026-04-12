@@ -29,10 +29,21 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
   if (profile?.profileId) {
     // Clear fresh-start guard now that the user has explicitly signed in
     localStorage.removeItem("unfiltr_fresh_start");
+    localStorage.removeItem("unfiltr_signed_out");
     localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-    if (email) localStorage.setItem("unfiltr_apple_email", email);
+    // Set unfiltr_user_id to apple user ID for backward compatibility with
+    // AuthContext.checkAuth and any other code that checks unfiltr_user_id.
+    localStorage.setItem("unfiltr_user_id", appleUserId);
+    if (email) {
+      localStorage.setItem("unfiltr_apple_email", email);
+      localStorage.setItem("unfiltr_user_email", email);
+    }
     localStorage.setItem("userProfileId", profile.profileId);
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    // Restore companion ID from the UserProfile record first (most reliable)
+    if (profile.companion_id && profile.companion_id !== "pending") {
+      localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+    }
     // Set all three canonical premium flags consistently
     const isAnnual  = !!(profile.annual_plan);
     const isPro     = !!(profile.pro_plan);
@@ -40,11 +51,15 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     localStorage.setItem("unfiltr_is_premium", String(isPremium));
     localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
     localStorage.setItem("unfiltr_is_pro",     String(isPro));
+    // Notify all mounted components that auth state changed
+    window.dispatchEvent(new Event("unfiltr_auth_updated"));
   }
 
-  // Restore companion if returning user
+  // Restore companion details if returning user
   if (!isNewUser && profile?.companion) {
     const comp = profile.companion;
+    // avatar_id is the companion's display asset id — use as companion id if available,
+    // but profile.companion_id (set above) takes priority for ChatHistory keying.
     if (comp.avatar_id)           localStorage.setItem("unfiltr_companion_id",          comp.avatar_id);
     if (comp.name)                localStorage.setItem("unfiltr_companion_name",         comp.name);
     if (comp.nickname)            localStorage.setItem("unfiltr_companion_nickname",     comp.nickname);
@@ -54,6 +69,32 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     if (comp.personality_style)   localStorage.setItem("unfiltr_personality_style",      comp.personality_style);
     if (comp.personality_humor)   localStorage.setItem("unfiltr_personality_humor",      comp.personality_humor);
     if (comp.personality_empathy) localStorage.setItem("unfiltr_personality_empathy",    comp.personality_empathy);
+    // Persist a full companion JSON so ChatPage can load it without a DB round-trip.
+    // Prefer profile.companion_id (the canonical key used in ChatHistory records) and
+    // look it up in COMPANIONS for the full object (avatar URL, poses, etc.).
+    const companionId = (profile.companion_id && profile.companion_id !== "pending")
+      ? profile.companion_id
+      : comp.avatar_id;
+    if (companionId) {
+      const existingRaw = localStorage.getItem("unfiltr_companion");
+      const existing = existingRaw ? (() => { try { return JSON.parse(existingRaw); } catch { return null; } })() : null;
+      if (!existing || existing.id !== companionId) {
+        // Lazy-load COMPANIONS to find the full object (avatar URL, poses, systemPrompt…)
+        try {
+          const { COMPANIONS: COMP_LIST } = await import("@/components/companionData");
+          const found = COMP_LIST.find(c => c.id === companionId);
+          const companionObj = found
+            ? { ...found, displayName: comp.nickname || found.displayName || found.name }
+            : { id: companionId, name: comp.name || "", displayName: comp.nickname || comp.name || "" };
+          localStorage.setItem("unfiltr_companion", JSON.stringify(companionObj));
+        } catch {
+          // Fallback: minimal object — ChatPage will enrich from DB on first load
+          localStorage.setItem("unfiltr_companion", JSON.stringify({
+            id: companionId, name: comp.name || "", displayName: comp.nickname || comp.name || "",
+          }));
+        }
+      }
+    }
   }
 
   return { profile, isNewUser };
@@ -147,9 +188,8 @@ export default function HomeScreen() {
           const dbOnboarded = profile?.onboarding_complete === true;
           const localOnboarded = !!localStorage.getItem("unfiltr_onboarding_complete");
           const hasCompanion = profile?.companion_id && profile.companion_id !== "pending";
-          // If account was pending deletion (syncProfile may have wiped it), treat as new
-          const pendingDeletion = result?.isNewUser === true; // syncProfile wiped them
-          const onboardingDone = !isNewUser && !pendingDeletion && (dbOnboarded || localOnboarded || hasCompanion);
+          // If syncProfile wiped the account (pending-deletion), isNewUser=true handles it
+          const onboardingDone = !isNewUser && (dbOnboarded || localOnboarded || hasCompanion);
           debugLog(`[HomeScreen] Routing → ${onboardingDone ? "hub" : "onboarding"} | isNewUser=${isNewUser} dbOnboarded=${dbOnboarded} localOnboarded=${localOnboarded} hasCompanion=${hasCompanion}`);
           navigate(onboardingDone ? "/hub" : "/onboarding/consent", { replace: true });
         } catch (e) {

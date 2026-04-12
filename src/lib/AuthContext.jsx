@@ -15,12 +15,19 @@ export const AuthProvider = ({ children }) => {
   const profileCache = useRef(null);
 
   const checkAuth = () => {
-    const userId    = localStorage.getItem("unfiltr_user_id");
-    const authToken = localStorage.getItem("unfiltr_auth_token");
+    const userId      = localStorage.getItem("unfiltr_user_id");
+    const authToken   = localStorage.getItem("unfiltr_auth_token");
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     const onboardingComplete = localStorage.getItem("unfiltr_onboarding_complete");
 
-    if (userId && authToken) {
-      setUser({ id: userId, email: localStorage.getItem("unfiltr_user_email") || "" });
+    // Treat Apple Sign-In as authenticated (unfiltr_apple_user_id is set after sign-in).
+    // Also accept legacy base44 SDK auth (unfiltr_user_id + unfiltr_auth_token).
+    if (appleUserId || (userId && authToken)) {
+      setUser({
+        id:    userId || appleUserId,
+        email: localStorage.getItem("unfiltr_user_email") ||
+               localStorage.getItem("unfiltr_apple_email") || "",
+      });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthError(null);
@@ -78,6 +85,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("unfiltr_auth_token");
     localStorage.removeItem("unfiltr_user_id");
     localStorage.removeItem("unfiltr_user_email");
+    localStorage.removeItem("unfiltr_apple_user_id");
+    localStorage.removeItem("unfiltr_apple_email");
     setUser(null);
     setIsAuthenticated(false);
     setAuthError({ type: "logged_out" });

@@ -356,7 +356,9 @@ export default function Settings() {
     }
   };
   const handleFamilyCodeSubmit = () => {
-    if (familyCode.trim().toLowerCase() === "huertasfam") {
+    // Accept both "huertsfam" and "huertasfam" (common user typo variants)
+    const code = familyCode.trim().toLowerCase();
+    if (code === "huertasfam" || code === "huertsfam") {
       // Device-only unlock — no backend writes
       const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
       localStorage.setItem("unfiltr_family_unlimited", "true");
@@ -364,11 +366,27 @@ export default function Settings() {
       localStorage.setItem("unfiltr_family_unlimited_expires_at", oneYearFromNow);
       // Keep legacy flags for backward compatibility
       localStorage.setItem("unfiltr_is_premium", "true");
+      localStorage.setItem("unfiltr_is_annual",  "true");
       localStorage.setItem("unfiltr_family_unlock", "true");
       localStorage.setItem("unfiltr_msg_limit_override", "true");
       localStorage.setItem("unfiltr_bonus_messages", "99999");
+      // Notify all mounted components (ChatPage, entitlements, etc.) of the change
+      window.dispatchEvent(new Event("unfiltr_auth_updated"));
+      // Persist unlock to backend profile so it survives reinstalls
+      const pid = localStorage.getItem("userProfileId");
+      if (pid) {
+        fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            profileId: pid,
+            updateData: { is_premium: true, annual_plan: true, family_unlimited: true },
+          }),
+        }).catch(() => {});
+      }
       setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
-      setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true } : p); }, 2500);
+      setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
     } else { setFamilyCodeError("Invalid code."); setFamilyCode(""); }
   };
   const handleSignOut = async () => {

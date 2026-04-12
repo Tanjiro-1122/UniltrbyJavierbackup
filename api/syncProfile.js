@@ -160,16 +160,13 @@ export default async function handler(req, res) {
       let deleteId = profileId;
       // If only appleUserId provided, look up the profile first
       if (!deleteId && appleUserId) {
-        const found = await searchProfiles("apple_user_id", appleUserId);
-        if (found.length > 0) deleteId = found[0].id;
+        const found = await findByAppleId(appleUserId);
+        if (found) deleteId = found.id;
       }
       if (deleteId) {
-        const delRes = await fetch(`${BASE44_API}/apps/${APP_ID}/entities/UserProfile/${deleteId}`, {
+        const delRes = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, {
           method: "DELETE",
-          headers: {
-            "Authorization": `Bearer ${serviceToken}`,
-            "X-App-Id": APP_ID,
-          },
+          headers: b44Headers(),
         });
         console.log(`[syncProfile] Deleted profile ${deleteId}: ${delRes.status}`);
       }
