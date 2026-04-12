@@ -1,3 +1,4 @@
+import React from "react";
 // build: 2026-04-08-2054
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from "@tanstack/react-query"
