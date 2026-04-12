@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClientInstance } from "@/lib/query-client"
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import PageNotFound from "./lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
@@ -12,6 +12,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import FeatureErrorBoundary from "@/components/FeatureErrorBoundary";
 import { useStorageCleanup } from "@/hooks/useStorageCleanup";
 import { useEffect, useState } from "react";
+import { ensureBridgeInstalled } from "@/lib/nativeBridge";
+import { runConfigChecks } from "@/lib/configCheck";
 
 import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
@@ -135,7 +137,6 @@ function useProfileRecovery() {
   }, []);
 }
 
-
 // ─── Global Native Bridge ────────────────────────────────────────────────────
 // Must be in App.jsx so it's always alive before any page component mounts.
 // HomeScreen/ReturningScreen/IAP components chain onto window.__nativeBus.
@@ -170,24 +171,8 @@ function OnboardingResume() {
 
 function useNativeBridge() {
   useEffect(() => {
-    // The unified fan-out bridge is already installed by useAppleSubscriptions
-    // (with __rnBridgeInstalled guard). We only install here as a fallback
-    // in case that module hasn't loaded yet.
-    if (!window.__rnBridgeInstalled) {
-      window.__rnBridgeInstalled = true;
-      window.onMessageFromRN = (jsonStr) => {
-        try {
-          const msg = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-          if (typeof window.__nativeBus === 'function') window.__nativeBus(msg);
-          if (window._rnMessageHandlers?.[msg.type]) {
-            window._rnMessageHandlers[msg.type].forEach(fn => { try { fn(msg); } catch(e) {} });
-          }
-          window.dispatchEvent(new MessageEvent('message', { data: msg }));
-        } catch (e) {
-          console.warn('[Bridge] Parse error:', e.message, String(jsonStr).slice(0, 100));
-        }
-      };
-    }
+    // Use the shared helper — installs exactly once (guarded by __rnBridgeInstalled).
+    ensureBridgeInstalled();
     // Always ensure __nativeBus default exists so pages can safely chain onto it
     if (!window.__nativeBus) window.__nativeBus = () => {};
   }, []);
@@ -331,6 +316,9 @@ const AuthenticatedApp = ({ splashDone }) => {
 };
 
 function App() {
+  // Run config sanity checks once at startup (warns only, never fatal)
+  React.useEffect(() => { runConfigChecks(); }, []);
+
   // Ensure a stable anonymous identifier exists before Apple Sign-In completes.
   // ChatPage and ChatHistory both use apple_user_id || device_id, so without this
   // users who haven't completed Apple Sign-In would silently drop all history saves.

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { debugLog } from '@/components/DebugPanel';
+import { isNativeApp, sendNative, ensureBridgeInstalled } from '@/lib/nativeBridge';
 
 const MOCK_PRODUCTS = [
   { productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' },
@@ -7,126 +8,23 @@ const MOCK_PRODUCTS = [
   { productId: 'com.huertas.unfiltr.tier.pro',    title: 'Pro Tier',        price: '$14.99', period: 'month' },
 ];
 
-function isReactNativeWebView() {
-  return typeof window !== 'undefined' && !!window.ReactNativeWebView;
-}
-
-// ── UNIFIED Global Bridge ────────────────────────────────────────────────────
-// Native wrapper calls: window.onMessageFromRN(jsonString)
-// This fan-out dispatcher routes to ALL listeners — never overwrites, always adds.
-// Both _rnMessageHandlers (IAP) and __nativeBus (Auth) receive every message.
-if (typeof window !== 'undefined') {
-  window._rnMessageHandlers = window._rnMessageHandlers || {};
-
-  // Use a single install guard so no two modules can overwrite each other
-  if (!window.__rnBridgeInstalled) {
-    window.__rnBridgeInstalled = true;
-
-    window.onMessageFromRN = function(jsonStr) {
-      try {
-        const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
-        debugLog(`📨 [RN→WEB] ${data.type}`);
-
-        // 1. Route to _rnMessageHandlers (IAP / useAppleSubscriptions)
-        const handlers = window._rnMessageHandlers[data.type] || [];
-        handlers.forEach(fn => { try { fn(data); } catch(e) {} });
-
-        // 2. Route to __nativeBus (HomeScreen / ReturningScreen auth)
-        if (typeof window.__nativeBus === 'function') {
-          try { window.__nativeBus(data); } catch(e) {}
-        }
-
-        // 3. Dispatch as window event for any remaining listeners
-        window.dispatchEvent(new MessageEvent('message', { data }));
-      } catch(e) {
-        debugLog(`⚠️ onMessageFromRN parse error: ${e.message}`);
-      }
-    };
-  }
-}
-
-function onceFromNative(types, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    let resolved = false;
-    const typeArray = Array.isArray(types) ? types : [types];
-
-    const cleanup = () => {
-      typeArray.forEach(t => {
-        if (window._rnMessageHandlers[t]) {
-          window._rnMessageHandlers[t] = window._rnMessageHandlers[t].filter(f => f !== handler);
-        }
-      });
-    };
-
-    const handler = (data) => {
-      if (resolved) return;
-      // WAITING is just an ack — keep listening, don't resolve yet
-      if (data.type === 'APPLE_SIGN_IN_WAITING') {
-        debugLog('🍎 Apple overlay shown — waiting for user tap...');
-        return;
-      }
-      resolved = true;
-      cleanup();
-      if (data.type?.includes('ERROR')) {
-        reject(new Error(data.error || data.type));
-      } else {
-        resolve(data);
-      }
-    };
-
-    typeArray.forEach(t => {
-      window._rnMessageHandlers[t] = window._rnMessageHandlers[t] || [];
-      window._rnMessageHandlers[t].push(handler);
-    });
-
-    if (timeoutMs) {
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          cleanup();
-          debugLog(`❌ Timeout after ${timeoutMs / 1000}s — no response from native`);
-          reject(new Error('Timeout'));
-        }
-      }, timeoutMs);
-    }
-  });
-}
+// Ensure the shared bridge dispatcher is installed when this module loads.
+ensureBridgeInstalled();
 
 function sendToNative(type, payload = {}) {
-  const bridgeReady = isReactNativeWebView();
-  debugLog(`📡 sendToNative: ${type} | bridge: ${bridgeReady ? '✅ ready' : '❌ NOT FOUND'}`);
-
-  if (!bridgeReady) {
-    return Promise.reject(new Error('Not in React Native WebView'));
-  }
-
-  const responseTypes = {
-    'PURCHASE':          ['PURCHASE_SUCCESS', 'PURCHASE_ERROR'],
-    'RESTORE':           ['RESTORE_RESULT'],
-    'GET_OFFERINGS':     ['OFFERINGS_RESULT'],
-    'GET_CUSTOMER_INFO': ['CUSTOMER_INFO_RESULT'],
-    'SIGN_IN_WITH_APPLE': ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
-  };
-
-  // PURCHASE and SIGN_IN_WITH_APPLE have no timeout — user-driven flows
-  const timeoutMs = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : 30000;
-  const waitFor = onceFromNative(responseTypes[type] || [], timeoutMs);
-
-  try {
-    const msg = JSON.stringify({ type, ...payload });
-    debugLog(`📤 Posting to native: ${msg.substring(0, 80)}`);
-    window.ReactNativeWebView.postMessage(msg);
-  } catch(e) {
-    debugLog(`❌ postMessage failed: ${e.message}`);
-    return Promise.reject(new Error('Failed to send message'));
-  }
-
-  return waitFor.then(data => data.data !== undefined ? data.data : data);
+  debugLog(`📡 sendToNative: ${type} | bridge: ${isNativeApp() ? '✅ ready' : '❌ NOT FOUND'}`);
+  return sendNative(type, payload).then(data => {
+    debugLog(`📨 [RN→WEB] response for ${type}`);
+    return data;
+  }).catch(e => {
+    debugLog(`❌ sendNative(${type}) error: ${e.message}`);
+    throw e;
+  });
 }
 
 export class AppleStoreKitService {
   static isNative() {
-    const result = isReactNativeWebView();
+    const result = isNativeApp();
     debugLog(`🔍 isNative: ${result ? '✅ YES (iOS wrapper)' : '⚠️ NO (browser/web)'}`);
     return result;
   }
@@ -245,7 +143,7 @@ export class AppleStoreKitService {
   }
 
   static async signInWithApple() {
-    debugLog('🍎 signInWithApple called, bridge=' + isReactNativeWebView());
+    debugLog('🍎 signInWithApple called, bridge=' + isNativeApp());
     if (!this.isNative()) {
       return Promise.reject(new Error('Apple Sign-In only available in the iOS app'));
     }
