@@ -339,9 +339,9 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 16 }}>How your companion relates to you</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { id: "friend",   emoji: "👋", label: "Friend",  desc: "Warm, casual, real with you" },
-            { id: "coach",    emoji: "🎯", label: "Coach",   desc: "Motivating, direct, goal-focused" },
-            { id: "romantic", emoji: "💜", label: "Romantic", desc: "Caring, affectionate, devoted" },
+            { id: "friend",    emoji: "👋", label: "Friend",    desc: "Warm, casual, real with you" },
+            { id: "coach",     emoji: "🎯", label: "Coach",     desc: "Motivating, direct, goal-focused" },
+            { id: "companion", emoji: "💜", label: "Companion", desc: "Deep connection, always in your corner" },
           ].map(m => {
             const sel = relMode === m.id;
             return (

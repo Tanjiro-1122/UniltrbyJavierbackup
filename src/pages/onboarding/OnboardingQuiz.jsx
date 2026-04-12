@@ -6,18 +6,18 @@ import OnboardingLayout from "@/components/onboarding/OnboardingLayout";
 import { updateOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
 const COMPANION_PERSONALITY = {
-  luna:   { vibe: "chill",      style: "thoughtful",    humor: "subtle",   empathy: "high"     },
-  river:  { vibe: "chill",      style: "thoughtful",    humor: "none",     empathy: "high"     },
+  luna:   { vibe: "chill",      style: "thoughtful",    humor: "subtle",   empathy: "listener" },
+  river:  { vibe: "chill",      style: "thoughtful",    humor: "none",     empathy: "listener" },
   sage:   { vibe: "deep",       style: "philosophical", humor: "subtle",   empathy: "balanced" },
-  sakura: { vibe: "playful",    style: "casual",        humor: "moderate", empathy: "high"     },
-  ash:    { vibe: "chill",      style: "casual",        humor: "moderate", empathy: "balanced" },
+  sakura: { vibe: "playful",    style: "casual",        humor: "subtle",   empathy: "listener" },
+  ash:    { vibe: "chill",      style: "casual",        humor: "subtle",   empathy: "balanced" },
   kai:    { vibe: "motivating", style: "hype",          humor: "subtle",   empathy: "balanced" },
-  ryuu:   { vibe: "motivating", style: "thoughtful",    humor: "none",     empathy: "minimal"  },
-  nova:   { vibe: "playful",    style: "casual",        humor: "high",     empathy: "balanced" },
-  zara:   { vibe: "sarcastic",  style: "casual",        humor: "high",     empathy: "minimal"  },
-  echo:   { vibe: "deep",       style: "philosophical", humor: "subtle",   empathy: "high"     },
-  soleil: { vibe: "playful",    style: "hype",          humor: "moderate", empathy: "high"     },
-  juan:   { vibe: "playful",    style: "casual",        humor: "high",     empathy: "balanced" },
+  ryuu:   { vibe: "motivating", style: "thoughtful",    humor: "none",     empathy: "advisor"  },
+  nova:   { vibe: "playful",    style: "casual",        humor: "fullsend", empathy: "balanced" },
+  zara:   { vibe: "sarcastic",  style: "casual",        humor: "fullsend", empathy: "advisor"  },
+  echo:   { vibe: "deep",       style: "philosophical", humor: "subtle",   empathy: "listener" },
+  soleil: { vibe: "playful",    style: "hype",          humor: "subtle",   empathy: "listener" },
+  juan:   { vibe: "playful",    style: "casual",        humor: "fullsend", empathy: "balanced" },
 };
 
 const QUESTIONS = [
