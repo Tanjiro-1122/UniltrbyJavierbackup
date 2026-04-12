@@ -291,6 +291,7 @@ export default function ChatPage() {
   const fileInputRef           = useRef(null);
   // Tracks the last time we wrote to DB ChatHistory (used to throttle saves to ≥15 s apart)
   const lastChatHistorySaveRef = useRef(0);
+  const saveErrorShownRef      = useRef(false); // show save-error banner at most once per session
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
@@ -715,6 +716,8 @@ export default function ChatPage() {
     lastChatHistorySaveRef.current = now;
 
     doUpsertChatHistory(allMsgs, errMsg => {
+      if (saveErrorShownRef.current) return;
+      saveErrorShownRef.current = true;
       setAutosaveToast({ type: "error", msg: errMsg });
       setTimeout(() => setAutosaveToast(null), 4000);
     });
@@ -1108,10 +1111,11 @@ export default function ChatPage() {
       if (companionDbId && companionDbId !== "pending") {
         base44.entities.Companion.get(companionDbId).then(dbComp => {
           if (dbComp) {
+            // Update in-memory cache only — do NOT overwrite localStorage here.
+            // Voice settings saved by the user in ChatCustomizePanel must not be
+            // silently undone by this background DB read after every message.
             companion._voiceGender = dbComp.voice_gender || "female";
             companion._voicePersonality = dbComp.voice_personality || "cheerful";
-            localStorage.setItem("unfiltr_voice_gender", companion._voiceGender);
-            localStorage.setItem("unfiltr_voice_personality", companion._voicePersonality);
           }
         }).catch(() => {});
       }
