@@ -64,7 +64,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
       }, 200);
     };
     img.onerror = () => {
-      setDisplayUrl(fallbackUrl || poseUrl);
+      if (fallbackUrl) setDisplayUrl(fallbackUrl);
       setNextUrl(null);
     };
     img.src = poseUrl;

@@ -61,6 +61,26 @@ const IMAGES_TO_PROCESS = [
   { companion: "sage", mood: "fatigue",     url: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b332a392004d139d4ba495/45659d515_generated_image.png" },
 ];
 
+// These base poses (happy / neutral / sad) were never uploaded to CDN and need
+// to be generated via the base44 superagent, then pasted into companionData.jsx.
+const MISSING_BASE_POSES = [
+  { companion: "river", mood: "happy",   note: "Generate River happy pose" },
+  { companion: "river", mood: "neutral", note: "Generate River neutral pose" },
+  { companion: "river", mood: "sad",     note: "Generate River sad pose" },
+  { companion: "river", mood: "fear",        note: "Generate River fear pose" },
+  { companion: "river", mood: "disgust",     note: "Generate River disgust pose" },
+  { companion: "river", mood: "surprise",    note: "Generate River surprise pose" },
+  { companion: "river", mood: "anger",       note: "Generate River anger pose" },
+  { companion: "river", mood: "contentment", note: "Generate River contentment pose" },
+  { companion: "river", mood: "fatigue",     note: "Generate River fatigue pose" },
+  { companion: "sage",  mood: "happy",   note: "Generate Sage happy pose" },
+  { companion: "sage",  mood: "neutral", note: "Generate Sage neutral pose" },
+  { companion: "sage",  mood: "sad",     note: "Generate Sage sad pose" },
+  { companion: "zara",  mood: "happy",   note: "Generate Zara happy pose" },
+  { companion: "zara",  mood: "neutral", note: "Generate Zara neutral pose" },
+  { companion: "zara",  mood: "sad",     note: "Generate Zara sad pose" },
+];
+
 export default function AdminAvatarProcessor() {
   const [results, setResults] = useState({});
   const [processing, setProcessing] = useState(false);
@@ -153,6 +173,45 @@ export default function AdminAvatarProcessor() {
             {log.join('\n')}
           </div>
         )}
+
+        {/* Missing images that need to be generated via the base44 superagent */}
+        <div className="mt-10">
+          <h2 className="text-lg font-bold mb-1 text-yellow-400">⚠️ Missing Base Poses — Needs Generation</h2>
+          <p className="text-gray-400 text-sm mb-4">
+            The following {MISSING_BASE_POSES.length} images were never uploaded to CDN and currently show a
+            placeholder from another companion. Generate each one via the{" "}
+            <a
+              href="https://app.base44.com/superagent/69b22f8b58e45d23cafd78d2"
+              target="_blank"
+              rel="noreferrer"
+              className="text-purple-400 underline"
+            >
+              base44 superagent
+            </a>
+            , upload it to storage, then update the URL in{" "}
+            <code className="text-yellow-300">src/components/companionData.jsx</code>.
+          </p>
+          <div className="bg-gray-900 border border-yellow-800 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">
+                  <th className="text-left px-4 py-2">Companion</th>
+                  <th className="text-left px-4 py-2">Pose</th>
+                  <th className="text-left px-4 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MISSING_BASE_POSES.map((item, i) => (
+                  <tr key={i} className="border-b border-gray-800">
+                    <td className="px-4 py-2 font-medium capitalize">{item.companion}</td>
+                    <td className="px-4 py-2 text-gray-300 capitalize">{item.mood}</td>
+                    <td className="px-4 py-2 text-yellow-500 text-xs">⚠️ using placeholder — needs real image</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
