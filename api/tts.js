@@ -48,7 +48,8 @@ export default async function handler(req, res) {
     // lookup failed (e.g., Base44 temporarily unavailable) and a profileId was
     // provided, give the benefit of the doubt so registered premium users are
     // not silently blocked during outages.
-    if (!isPremium && !isPro && !isAnnual && !(fetchFailed && profileId)) {
+    const isDefinitelyFree = !isPremium && !isPro && !isAnnual && !(fetchFailed && profileId);
+    if (isDefinitelyFree) {
       return res.status(403).json({ error: "Voice playback requires a premium subscription." });
     }
 

@@ -715,7 +715,8 @@ export default function ChatPage() {
     if (now - lastChatHistorySaveRef.current < 15000) return;
     lastChatHistorySaveRef.current = now;
 
-    doUpsertChatHistory(allMsgs, saveErrorShownRef.current ? null : errMsg => {
+    doUpsertChatHistory(allMsgs, errMsg => {
+      if (saveErrorShownRef.current) return;
       saveErrorShownRef.current = true;
       setAutosaveToast({ type: "error", msg: errMsg });
       setTimeout(() => setAutosaveToast(null), 4000);
