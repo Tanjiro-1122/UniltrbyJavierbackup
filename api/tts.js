@@ -29,6 +29,10 @@ export default async function handler(req, res) {
     // ── Server-side tier verification ────────────────────────────────────────
     // TTS uses OpenAI's paid API — gate it behind at least plus/premium tier so
     // free users cannot consume TTS quota. profileId is required for the check.
+    // Note: profileId is supplied by the client — this matches the existing auth
+    // model across all API endpoints (no server-side session tokens). The check
+    // prevents accidental free-tier access; it relies on the same trust boundary
+    // as the rest of the API layer (e.g., chat.js, memoryEmbed.js).
     const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
     if (!isPremium && !isPro && !isAnnual) {
       return res.status(403).json({ error: "Voice playback requires a premium subscription." });

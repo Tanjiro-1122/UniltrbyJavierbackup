@@ -201,7 +201,10 @@ export default async function handler(req, res) {
             targetProfile = r.ok ? await r.json() : null;
           } catch { targetProfile = null; }
           if (!targetProfile) return res.status(404).json({ error: "Profile not found" });
-          if (targetProfile.apple_user_id && targetProfile.apple_user_id !== appleUserId) {
+          // Reject deletion when:
+          // 1. The target profile has no apple_user_id set (can't verify ownership of anonymous profiles)
+          // 2. The target profile's apple_user_id doesn't match the caller
+          if (!targetProfile.apple_user_id || targetProfile.apple_user_id !== appleUserId) {
             console.warn(`[syncProfile] delete rejected: appleUserId mismatch for profile ${deleteId}`);
             return res.status(403).json({ error: "Forbidden" });
           }
