@@ -13,16 +13,16 @@ const VOICE_PERSONALITIES = [
 
 const PERSONALITY_VIBES = [
   { id: "chill",      emoji: "😎", label: "Chill" },
-  { id: "supportive", emoji: "🤗", label: "Supportive" },
+  { id: "motivating", emoji: "🤗", label: "Motivating" },
   { id: "playful",    emoji: "🎉", label: "Playful" },
   { id: "deep",       emoji: "🌊", label: "Deep" },
 ];
 
 const PERSONALITY_STYLES = [
-  { id: "casual",   emoji: "👟", label: "Casual" },
-  { id: "poetic",   emoji: "🌸", label: "Poetic" },
-  { id: "direct",   emoji: "🎯", label: "Direct" },
-  { id: "nurturing",emoji: "🌱", label: "Nurturing" },
+  { id: "casual",        emoji: "👟", label: "Casual" },
+  { id: "thoughtful",    emoji: "🌸", label: "Thoughtful" },
+  { id: "philosophical", emoji: "🎯", label: "Philosophical" },
+  { id: "hype",          emoji: "🌱", label: "Hype" },
 ];
 
 const TABS = ["Companion", "Background", "Voice", "Personality", "Mode"];
@@ -60,10 +60,11 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const [voicePersonality, setVoicePersonality] = useState(() => localStorage.getItem("unfiltr_voice_personality") || "cheerful");
 
   // ── Personality ──
-  const [pVibe,    setPVibe]    = useState(() => localStorage.getItem("unfiltr_personality_vibe")    || "chill");
-  const [pStyle,   setPStyle]   = useState(() => localStorage.getItem("unfiltr_personality_style")   || "casual");
-  const [pHumor,   setPHumor]   = useState(() => localStorage.getItem("unfiltr_personality_humor")   || "subtle");
-  const [pEmpathy, setPEmpathy] = useState(() => localStorage.getItem("unfiltr_personality_empathy") || "balanced");
+  const [pVibe,      setPVibe]      = useState(() => localStorage.getItem("unfiltr_personality_vibe")      || "chill");
+  const [pStyle,     setPStyle]     = useState(() => localStorage.getItem("unfiltr_personality_style")     || "casual");
+  const [pHumor,     setPHumor]     = useState(() => localStorage.getItem("unfiltr_personality_humor")     || "subtle");
+  const [pEmpathy,   setPEmpathy]   = useState(() => localStorage.getItem("unfiltr_personality_empathy")   || "balanced");
+  const [pCuriosity, setPCuriosity] = useState(() => localStorage.getItem("unfiltr_personality_curiosity") || "moderate");
   const [saving,   setSaving]   = useState(false);
 
   // Sync from localStorage on open
@@ -72,10 +73,11 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
       setCurrentBg(localStorage.getItem("unfiltr_background") || "living_room");
       setVoiceGender(localStorage.getItem("unfiltr_voice_gender") || "female");
       setVoicePersonality(localStorage.getItem("unfiltr_voice_personality") || "cheerful");
-      setPVibe(localStorage.getItem("unfiltr_personality_vibe")    || "chill");
-      setPStyle(localStorage.getItem("unfiltr_personality_style")  || "casual");
-      setPHumor(localStorage.getItem("unfiltr_personality_humor")  || "subtle");
-      setPEmpathy(localStorage.getItem("unfiltr_personality_empathy") || "balanced");
+      setPVibe(localStorage.getItem("unfiltr_personality_vibe")      || "chill");
+      setPStyle(localStorage.getItem("unfiltr_personality_style")    || "casual");
+      setPHumor(localStorage.getItem("unfiltr_personality_humor")    || "subtle");
+      setPEmpathy(localStorage.getItem("unfiltr_personality_empathy")   || "balanced");
+      setPCuriosity(localStorage.getItem("unfiltr_personality_curiosity") || "moderate");
     }
   }, [open]);
 
@@ -138,6 +140,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
     localStorage.setItem("unfiltr_personality_style",     pStyle);
     localStorage.setItem("unfiltr_personality_humor",     pHumor);
+    localStorage.setItem("unfiltr_personality_curiosity", pCuriosity);
 
     // Persist to DB via syncProfile (server-side — avoids SDK scope issue)
     const profileId = localStorage.getItem("userProfileId");
@@ -150,10 +153,11 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
             action: "update",
             profileId,
             updateData: {
-              personality_vibe:    pVibe,
-              personality_empathy: pEmpathy,
-              personality_humor:   pHumor,
-              personality_style:   pStyle,
+              personality_vibe:      pVibe,
+              personality_empathy:   pEmpathy,
+              personality_humor:     pHumor,
+              personality_style:     pStyle,
+              personality_curiosity: pCuriosity,
             },
           }),
         });
@@ -290,15 +294,34 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
 
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Humor</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
-          {["none","subtle","moderate","high"].map(h => (
-            <Chip key={h} active={pHumor === h} onClick={() => setPHumor(h)}>{h.charAt(0).toUpperCase()+h.slice(1)}</Chip>
+          {[
+            { id: "none",     label: "None" },
+            { id: "subtle",   label: "Subtle" },
+            { id: "fullsend", label: "Full Send" },
+          ].map(h => (
+            <Chip key={h.id} active={pHumor === h.id} onClick={() => setPHumor(h.id)}>{h.label}</Chip>
           ))}
         </div>
 
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Empathy</p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+          {[
+            { id: "listener", label: "Listener" },
+            { id: "balanced", label: "Balanced" },
+            { id: "advisor",  label: "Advisor" },
+          ].map(e => (
+            <Chip key={e.id} active={pEmpathy === e.id} onClick={() => setPEmpathy(e.id)}>{e.label}</Chip>
+          ))}
+        </div>
+
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Curiosity</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 22 }}>
-          {["minimal","balanced","high"].map(e => (
-            <Chip key={e} active={pEmpathy === e} onClick={() => setPEmpathy(e)}>{e.charAt(0).toUpperCase()+e.slice(1)}</Chip>
+          {[
+            { id: "quiet",    label: "Quiet" },
+            { id: "moderate", label: "Moderate" },
+            { id: "curious",  label: "Curious" },
+          ].map(c => (
+            <Chip key={c.id} active={pCuriosity === c.id} onClick={() => setPCuriosity(c.id)}>{c.label}</Chip>
           ))}
         </div>
 
@@ -316,9 +339,9 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 16 }}>How your companion relates to you</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
-            { id: "friend",   emoji: "👋", label: "Friend",  desc: "Warm, casual, real with you" },
-            { id: "coach",    emoji: "🎯", label: "Coach",   desc: "Motivating, direct, goal-focused" },
-            { id: "romantic", emoji: "💜", label: "Romantic", desc: "Caring, affectionate, devoted" },
+            { id: "friend",    emoji: "👋", label: "Friend",    desc: "Warm, casual, real with you" },
+            { id: "coach",     emoji: "🎯", label: "Coach",     desc: "Motivating, direct, goal-focused" },
+            { id: "companion", emoji: "💜", label: "Companion", desc: "Deep connection, always in your corner" },
           ].map(m => {
             const sel = relMode === m.id;
             return (

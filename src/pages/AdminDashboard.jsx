@@ -308,6 +308,102 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
   );
 }
 
+// ── Memory Detail Panel ───────────────────────────────────────────────────────
+function MemoryDetailPanel({ user, adminToken, showToast, requestConfirm, onCleared }) {
+  const [clearReason, setClearReason] = useState("");
+  const [clearing,    setClearing]    = useState(false);
+  const [clearMsg,    setClearMsg]    = useState("");
+
+  const doClearMemory = () => {
+    if (!clearReason.trim()) { setClearMsg("❌ Reason is required"); return; }
+    requestConfirm({
+      title: "Clear User Memory?",
+      message: `This wipes "${user.display_name}"'s memory summary and all stored memory vectors. The AI will rebuild fresh memory on the next conversation.\n\nReason: "${clearReason}"`,
+      confirmLabel: "Clear Memory",
+      confirmVariant: "danger",
+      countdown: 2,
+      onConfirm: async () => {
+        setClearing(true); setClearMsg("");
+        try {
+          const res = await fetch("/api/adminStats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminToken, action: "clearMemory", userId: user.id, reason: clearReason }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "Failed");
+          setClearMsg("✅ Memory cleared — AI will start fresh on next chat.");
+          setClearReason("");
+          showToast(`✅ Memory cleared for ${user.display_name}`);
+          onCleared?.();
+        } catch (e) { setClearMsg("❌ " + e.message); }
+        setClearing(false);
+      },
+    });
+  };
+
+  return (
+    <div style={{ padding:"14px" }}>
+      {/* Stats grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+        {[
+          ["Memory Summary",  user.memory_summary ? user.memory_summary.length + " chars" : "Not available"],
+          ["Memory Updated",  fmtDateTime(user.memory_updated_at)],
+          ["Last Active",     fmtDateTime(user.last_active)],
+          ["Last Seen",       fmtDateTime(user.last_seen)],
+          ["Total Messages",  user.message_count],
+          ["Tokens Total",    user.tokens_used_total || "—"],
+        ].map(([k, v]) => (
+          <div key={k} style={{ background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.1)", borderRadius:10, padding:"8px 10px" }}>
+            <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{k}</div>
+            <div style={{ fontSize:12, color:"#fff", fontWeight:600, marginTop:2 }}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Memory summary preview */}
+      {user.memory_summary && (
+        <div style={{ background:"rgba(52,211,153,0.04)", border:"1px solid rgba(52,211,153,0.12)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Memory Content Preview</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", lineHeight:1.55, whiteSpace:"pre-wrap", maxHeight:120, overflowY:"auto" }}>
+            {user.memory_summary.slice(0, 600)}{user.memory_summary.length > 600 ? "…" : ""}
+          </div>
+        </div>
+      )}
+
+      {/* Clear memory */}
+      <div style={{ marginBottom:8 }}>
+        <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginBottom:4 }}>Reason <span style={{ color:"#f87171" }}>*</span></div>
+        <textarea
+          value={clearReason}
+          onChange={e => { setClearReason(e.target.value); setClearMsg(""); }}
+          placeholder="e.g. User reported AI confused them with another person"
+          rows={2}
+          style={{
+            width:"100%", boxSizing:"border-box",
+            background:"rgba(255,255,255,0.06)",
+            border:`1px solid ${!clearReason.trim() && clearMsg.startsWith("❌ Reason") ? "#f87171" : "rgba(255,255,255,0.12)"}`,
+            borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none",
+            resize:"none", fontFamily:"inherit",
+          }}
+        />
+      </div>
+      {clearMsg && (
+        <div style={{ fontSize:12, color: clearMsg.startsWith("✅") ? "#34d399" : "#f87171", marginBottom:8 }}>
+          {clearMsg}
+        </div>
+      )}
+      <button
+        onClick={doClearMemory}
+        disabled={clearing}
+        style={{ width:"100%", padding:"10px", borderRadius:12, border:"1px solid rgba(239,68,68,0.4)", background:"rgba(239,68,68,0.1)", color:"#fca5a5", fontWeight:700, fontSize:12, cursor: clearing ? "default" : "pointer", opacity: clearing ? 0.6 : 1 }}
+      >
+        {clearing ? "Clearing…" : "🗑️ Clear Memory (Fix Confused AI)"}
+      </button>
+    </div>
+  );
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [unlocked,      setUnlocked]      = useState(false);
@@ -872,42 +968,19 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     {selectedMem?.id === u.id && (
-                      <div style={{ padding:"14px" }}>
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
-                          {[
-                            ["Memory Summary",  u.memory_summary ? u.memory_summary.length + " chars" : "Not available"],
-                            ["Memory Updated",  fmtDateTime(u.memory_updated_at)],
-                            ["Last Active",     fmtDateTime(u.last_active)],
-                            ["Last Seen",       fmtDateTime(u.last_seen)],
-                            ["Total Messages",  u.message_count],
-                            ["Tokens Total",    u.tokens_used_total || "—"],
-                          ].map(([k, v]) => (
-                            <div key={k} style={{ background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.1)", borderRadius:10, padding:"8px 10px" }}>
-                              <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em" }}>{k}</div>
-                              <div style={{ fontSize:12, color:"#fff", fontWeight:600, marginTop:2 }}>{v}</div>
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ display:"flex", gap:8 }}>
-                          <button
-                            disabled
-                            title="Rebuild memory requires a backend endpoint not yet configured"
-                            style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(52,211,153,0.2)", background:"rgba(52,211,153,0.06)", color:"rgba(52,211,153,0.35)", fontWeight:700, fontSize:12, cursor:"not-allowed" }}
-                          >
-                            🔄 Rebuild Memory
-                          </button>
-                          <button
-                            disabled
-                            title="Export requires a backend endpoint not yet configured"
-                            style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid rgba(96,165,250,0.2)", background:"rgba(96,165,250,0.06)", color:"rgba(96,165,250,0.35)", fontWeight:700, fontSize:12, cursor:"not-allowed" }}
-                          >
-                            📤 Export History
-                          </button>
-                        </div>
-                        <div style={{ marginTop:8, fontSize:11, color:"rgba(255,255,255,0.2)", textAlign:"center" }}>
-                          These actions require additional backend configuration.
-                        </div>
-                      </div>
+                      <MemoryDetailPanel
+                        user={u}
+                        adminToken={adminToken}
+                        showToast={showToast}
+                        requestConfirm={requestConfirm}
+                        onCleared={() => {
+                          setMemResults(r => r.map(x => x.id === u.id
+                            ? { ...x, memory_summary: null, memory_vectors: [], memory_updated_at: null }
+                            : x
+                          ));
+                          setSelectedMem(null);
+                        }}
+                      />
                     )}
                   </div>
                 ))}

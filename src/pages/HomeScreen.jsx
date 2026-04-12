@@ -69,6 +69,7 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     if (comp.personality_style)   localStorage.setItem("unfiltr_personality_style",      comp.personality_style);
     if (comp.personality_humor)   localStorage.setItem("unfiltr_personality_humor",      comp.personality_humor);
     if (comp.personality_empathy) localStorage.setItem("unfiltr_personality_empathy",    comp.personality_empathy);
+    if (comp.personality_curiosity) localStorage.setItem("unfiltr_personality_curiosity", comp.personality_curiosity);
     // Persist a full companion JSON so ChatPage can load it without a DB round-trip.
     // Prefer profile.companion_id (the canonical key used in ChatHistory records) and
     // look it up in COMPANIONS for the full object (avatar URL, poses, etc.).
