@@ -2,28 +2,99 @@ import { useState, useEffect, useRef } from 'react';
 
 // Global floating debug panel — persists across all pages
 // Activate: tap the 🔍 floating button (bottom-right, above nav)
+// Also auto-shows when ?debug=1 is in the URL
 
 const logs = [];
 let setLogsExternal = null;
+let setErrorCountExternal = null;
+
+// Tracks how many error-level entries exist so the badge stays accurate
+// even when the panel hasn't mounted yet.
+let pendingErrorCount = 0;
+
+function _push(entry, isError) {
+  logs.unshift(entry);
+  if (logs.length > 200) logs.pop();
+  if (isError) {
+    pendingErrorCount += 1;
+    if (setErrorCountExternal) setErrorCountExternal(c => c + 1);
+  }
+  if (setLogsExternal) setLogsExternal([...logs]);
+}
 
 export function debugLog(msg) {
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   const entry = `[${time}] ${msg}`;
-  logs.unshift(entry);
-  if (logs.length > 100) logs.pop();
-  if (setLogsExternal) setLogsExternal([...logs]);
+  const isError = msg.startsWith('❌') || msg.startsWith('🔴');
+  _push(entry, isError);
   console.log('[UNFILTR DEBUG]', msg);
 }
 
+// ── Patch console.error / console.warn once at module load ──────────────────
+// Store originals so we can still forward to the real console and restore on cleanup.
+const _origError = console.error.bind(console);
+const _origWarn  = console.warn.bind(console);
+
+function _patchConsole() {
+  console.error = (...args) => {
+    _origError(...args);
+    const msg = args.map(a => (a instanceof Error ? `${a.message}` : String(a))).join(' ');
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+    _push(`[${time}] ❌ ${msg}`, true);
+  };
+  console.warn = (...args) => {
+    _origWarn(...args);
+    const msg = args.map(a => String(a)).join(' ');
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+    _push(`[${time}] ⚠️ ${msg}`, false);
+  };
+}
+
+function _restoreConsole() {
+  console.error = _origError;
+  console.warn  = _origWarn;
+}
+
+// ── Patch global fetch to log failed API calls ───────────────────────────────
+const _origFetch = window.fetch.bind(window);
+function _patchFetch() {
+  window.fetch = async function patchedFetch(input, init) {
+    const url = typeof input === 'string' ? input : input?.url || '?';
+    try {
+      const res = await _origFetch(input, init);
+      if (!res.ok) {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        _push(`[${time}] ❌ fetch ${res.status} ${url}`, true);
+      }
+      return res;
+    } catch (err) {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      _push(`[${time}] ❌ fetch ERR ${url} — ${err.message}`, true);
+      throw err;
+    }
+  };
+}
+function _restoreFetch() {
+  window.fetch = _origFetch;
+}
+
 export function DebugPanel() {
-  const [visible, setVisible] = useState(false);
-  const [logLines, setLogLines] = useState([]);
+  const [visible, setVisible]     = useState(false);
+  const [logLines, setLogLines]   = useState([...logs]);
   const [minimized, setMinimized] = useState(false);
-  const tapCount = useRef(0);
-  const lastTap = useRef(0);
+  const [errorCount, setErrorCount] = useState(pendingErrorCount);
+  const [copied, setCopied]       = useState(false);
 
   useEffect(() => {
-    setLogsExternal = setLogLines;
+    setLogsExternal      = setLogLines;
+    setErrorCountExternal = setErrorCount;
+    // Sync any logs that were captured before this component mounted
+    setLogLines([...logs]);
+    setErrorCount(pendingErrorCount);
+
+    // Apply patches on mount
+    _patchConsole();
+    _patchFetch();
 
     // Auto-show if ?debug=1 in URL
     if (window.location.search.includes('debug=1')) setVisible(true);
@@ -32,39 +103,88 @@ export function DebugPanel() {
     const handleNativeDebug = (event) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.type === 'NATIVE_DEBUG') debugLog(`🍎 ${data.message}`);
-        // Also capture Apple sign-in responses
+        if (data?.type === 'NATIVE_DEBUG')         debugLog(`🍎 ${data.message}`);
         if (data?.type === 'APPLE_SIGN_IN_SUCCESS') debugLog(`✅ APPLE_SIGN_IN_SUCCESS: ${JSON.stringify(data.data)}`);
         if (data?.type === 'APPLE_SIGN_IN_CANCELLED') debugLog(`🚫 APPLE_SIGN_IN_CANCELLED`);
-        if (data?.type === 'APPLE_SIGN_IN_ERROR') debugLog(`❌ APPLE_SIGN_IN_ERROR: ${data.error}`);
+        if (data?.type === 'APPLE_SIGN_IN_ERROR')   debugLog(`❌ APPLE_SIGN_IN_ERROR: ${data.error}`);
       } catch (e) {}
     };
+
+    // Catch uncaught JS errors
+    const handleWindowError = (event) => {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      _push(`[${time}] ❌ Uncaught: ${event.message} (${event.filename}:${event.lineno})`, true);
+    };
+
+    // Catch unhandled promise rejections
+    const handleUnhandledRejection = (event) => {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      const reason = event.reason instanceof Error ? event.reason.message : String(event.reason);
+      _push(`[${time}] ❌ UnhandledRejection: ${reason}`, true);
+    };
+
     window.addEventListener('message', handleNativeDebug);
+    window.addEventListener('error', handleWindowError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
     return () => {
-      setLogsExternal = null;
+      setLogsExternal       = null;
+      setErrorCountExternal = null;
+      _restoreConsole();
+      _restoreFetch();
       window.removeEventListener('message', handleNativeDebug);
+      window.removeEventListener('error', handleWindowError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, []);
 
-  // Secret 5-tap on the floating button to toggle
-  const handleTriggerTap = () => {
-    const now = Date.now();
-    tapCount.current = (now - lastTap.current < 2000) ? tapCount.current + 1 : 1;
-    lastTap.current = now;
-    if (tapCount.current >= 5) {
-      setVisible(v => !v);
-      tapCount.current = 0;
-    }
+  const handleClear = () => {
+    logs.length = 0;
+    pendingErrorCount = 0;
+    setLogLines([]);
+    setErrorCount(0);
   };
 
-  // Debug panel disabled in production
-  return null;
+  const handleCopy = () => {
+    const snapshot = [
+      `=== UNFILTR DEBUG SNAPSHOT ${new Date().toISOString()} ===`,
+      `User ID:      ${localStorage.getItem('unfiltr_user_id') || '—'}`,
+      `Apple ID:     ${localStorage.getItem('unfiltr_apple_user_id') || '—'}`,
+      `Device ID:    ${localStorage.getItem('unfiltr_device_id') || '—'}`,
+      `Premium:      ${localStorage.getItem('unfiltr_is_premium') || '—'}`,
+      `Pro:          ${localStorage.getItem('unfiltr_is_pro') || '—'}`,
+      `Annual:       ${localStorage.getItem('unfiltr_is_annual') || '—'}`,
+      `Display Name: ${localStorage.getItem('unfiltr_display_name') || '—'}`,
+      `Native Bridge: ${window.ReactNativeWebView ? 'YES' : 'NO'}`,
+      `UA: ${navigator.userAgent}`,
+      '',
+      '=== LOGS ===',
+      ...logs,
+    ].join('\n');
+    navigator.clipboard?.writeText(snapshot).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const lineColor = (line) => {
+    if (line.includes('❌') || line.includes('🔴')) return '#f87171';
+    if (line.includes('⚠️'))  return '#fbbf24';
+    if (line.includes('✅'))  return '#4ade80';
+    if (line.includes('🚫'))  return '#f97316';
+    if (line.includes('🍎'))  return '#60a5fa';
+    return '#e2e8f0';
+  };
 
   return (
     <>
-      {/* Floating toggle button — always on top, always accessible */}
+      {/* Floating toggle button — single tap to open/close */}
       <div
-        onClick={handleTriggerTap}
+        onClick={() => setVisible(v => {
+          // Clear the error badge when opening the panel
+          if (!v) { setErrorCount(0); pendingErrorCount = 0; }
+          return !v;
+        })}
         style={{
           position: 'fixed',
           bottom: 90,
@@ -73,18 +193,43 @@ export function DebugPanel() {
           height: 36,
           borderRadius: '50%',
           background: visible ? '#a855f7' : 'rgba(168,85,247,0.25)',
-          border: '1px solid rgba(168,85,247,0.6)',
+          border: `1px solid ${errorCount > 0 ? '#f87171' : 'rgba(168,85,247,0.6)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 16,
           zIndex: 99999,
           cursor: 'pointer',
-          boxShadow: visible ? '0 0 12px rgba(168,85,247,0.6)' : 'none',
+          boxShadow: errorCount > 0
+            ? '0 0 12px rgba(248,113,113,0.7)'
+            : visible ? '0 0 12px rgba(168,85,247,0.6)' : 'none',
           transition: 'all 0.2s',
         }}
       >
         🔍
+        {/* Error badge */}
+        {errorCount > 0 && (
+          <span style={{
+            position: 'absolute',
+            top: -4,
+            right: -4,
+            background: '#f43f5e',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 'bold',
+            borderRadius: 8,
+            minWidth: 16,
+            height: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 3px',
+            fontFamily: 'monospace',
+            lineHeight: 1,
+          }}>
+            {errorCount > 99 ? '99+' : errorCount}
+          </span>
+        )}
       </div>
 
       {/* Debug panel — floating overlay */}
@@ -98,7 +243,7 @@ export function DebugPanel() {
           border: '1px solid #a855f7',
           borderRadius: 14,
           zIndex: 99998,
-          maxHeight: minimized ? 44 : 320,
+          maxHeight: minimized ? 44 : 360,
           display: 'flex',
           flexDirection: 'column',
           fontFamily: 'monospace',
@@ -117,9 +262,10 @@ export function DebugPanel() {
             fontSize: 12,
             flexShrink: 0,
           }}>
-            <span>🔍 Debug Panel</span>
+            <span>🔍 Debug Panel {errorCount > 0 && <span style={{ color: '#f87171' }}>({errorCount} error{errorCount !== 1 ? 's' : ''})</span>}</span>
             <div style={{ display: 'flex', gap: 12 }}>
-              <span onClick={() => { logs.length = 0; setLogLines([]); }} style={{ color: '#888', cursor: 'pointer' }}>Clear</span>
+              <span onClick={handleCopy} style={{ color: copied ? '#4ade80' : '#888', cursor: 'pointer' }}>{copied ? '✓ Copied' : 'Copy'}</span>
+              <span onClick={handleClear} style={{ color: '#888', cursor: 'pointer' }}>Clear</span>
               <span onClick={() => setMinimized(m => !m)} style={{ color: '#a855f7', cursor: 'pointer' }}>{minimized ? '▲' : '▼'}</span>
               <span onClick={() => setVisible(false)} style={{ color: '#f43f5e', cursor: 'pointer' }}>✕</span>
             </div>
@@ -132,10 +278,13 @@ export function DebugPanel() {
               <div style={{ marginBottom: 8, padding: '6px 8px', background: 'rgba(168,85,247,0.08)', borderRadius: 8, fontSize: 10 }}>
                 <div style={{ color: '#a855f7', fontWeight: 'bold', marginBottom: 4 }}>QUICK SNAPSHOT</div>
                 {[
-                  ['User ID', localStorage.getItem('unfiltr_user_id') || '—'],
-                  ['Apple ID', localStorage.getItem('unfiltr_apple_user_id') || '—'],
-                  ['Premium', localStorage.getItem('unfiltr_is_premium') || '—'],
-                  ['Display Name', localStorage.getItem('unfiltr_display_name') || '—'],
+                  ['User ID',       localStorage.getItem('unfiltr_user_id') || '—'],
+                  ['Apple ID',      localStorage.getItem('unfiltr_apple_user_id') || '—'],
+                  ['Device ID',     localStorage.getItem('unfiltr_device_id') || '—'],
+                  ['Premium',       localStorage.getItem('unfiltr_is_premium') || '—'],
+                  ['Pro',           localStorage.getItem('unfiltr_is_pro') || '—'],
+                  ['Annual',        localStorage.getItem('unfiltr_is_annual') || '—'],
+                  ['Display Name',  localStorage.getItem('unfiltr_display_name') || '—'],
                   ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -152,12 +301,7 @@ export function DebugPanel() {
                   <div key={i} style={{
                     padding: '2px 0',
                     borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    color: line.includes('✅') ? '#4ade80'
-                         : line.includes('❌') ? '#f87171'
-                         : line.includes('⚠️') ? '#fbbf24'
-                         : line.includes('🚫') ? '#f97316'
-                         : line.includes('🍎') ? '#60a5fa'
-                         : '#e2e8f0',
+                    color: lineColor(line),
                     wordBreak: 'break-all',
                   }}>
                     {line}
