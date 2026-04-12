@@ -29,6 +29,7 @@
  */
 
 import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
+import { createRequestContext, checkRateLimit } from "./_helpers.js";
 
 // Retention caps per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
@@ -54,6 +55,16 @@ export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   const body = req.body || {};
   const { action } = body;

@@ -136,10 +136,15 @@ export async function storeMemoryVectors(profileId, facts, sessionNote, isPremiu
 
   const profile = await b44Get("UserProfile", profileId);
   const existing = profile?.memory_vectors || [];
-  const updated = [...vectors, ...existing].slice(0, maxVectors);
+  // Deduplicate: skip any chunk whose text is already stored (exact match).
+  // This prevents retries or double-summarise calls from wasting tier quota.
+  const existingTexts = new Set(existing.map(v => v.text));
+  const newVectors = vectors.filter(v => !existingTexts.has(v.text));
+  if (newVectors.length === 0) return { ok: true, skipped: "all_duplicates" };
+  const updated = [...newVectors, ...existing].slice(0, maxVectors);
 
   await b44Patch("UserProfile", profileId, { memory_vectors: updated });
-  return { ok: true, stored: vectors.length };
+  return { ok: true, stored: newVectors.length };
 }
 
 // ── Retrieve relevant memories with freshness weighting ──────────────────────

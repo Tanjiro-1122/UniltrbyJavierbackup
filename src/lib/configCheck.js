@@ -15,8 +15,8 @@ const KNOWN_PRODUCT_IDS = [
   "com.huertas.unfiltr.pro.annual",
   "com.huertas.unfiltr.tier.pro",
 ];
-const EXPECTED_ENTITLEMENT_ID = "premium";
-const SUPPORT_EMAIL = "support@sportswagerhelper.com";
+const EXPECTED_ENTITLEMENT_ID = "unfiltr by javier Pro";
+const SUPPORT_EMAIL = "huertasfam1@icloud.com";
 
 function warn(msg) {
   console.warn(`[ConfigCheck] ⚠️ ${msg}`);

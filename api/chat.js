@@ -192,17 +192,34 @@ export default async function handler(req, res) {
     // ── Server-side daily message limit ──────────────────────────────────────
     const tier = isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
     const dailyLimit = DAILY_MSG_LIMITS[tier] ?? DAILY_MSG_LIMITS.free;
+    let prevCount = 0;
+    let todayKey = new Date().toISOString().slice(0, 10);
     if (dailyLimit < UNLIMITED_MESSAGES && profile) {
-      const todayKey = new Date().toISOString().slice(0, 10);
       const storedDate = profile.daily_msg_date;
-      const msgCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
-      if (msgCount >= dailyLimit) {
+      prevCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
+      if (prevCount >= dailyLimit) {
         return res.status(429).json({
           error: "Daily message limit reached. Upgrade for more messages.",
           limitReached: true,
           tier,
           limit: dailyLimit,
         });
+      }
+      // Increment the counter BEFORE calling OpenAI so concurrent requests are less
+      // likely to both slip through the limit check on the same stale count.
+      // Non-fatal — if this write fails the message still proceeds (degrades to old behaviour).
+      try {
+        await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            daily_msg_count: prevCount + 1,
+            daily_msg_date:  todayKey,
+            message_count:   (profile.message_count || 0) + 1,
+          }),
+        });
+        invalidateCachedProfile(profileId);
+      } catch (e) {
+        console.warn("[chat] pre-increment failed (non-fatal):", e.message);
       }
     }
 
@@ -361,24 +378,6 @@ export default async function handler(req, res) {
         model,
       },
     });
-
-    // ── Increment daily message counter (fire-and-forget) ────────────────────
-    // Done after responding to keep chat latency minimal.
-    if (profileId && profile && dailyLimit < UNLIMITED_MESSAGES) {
-      const todayKey = new Date().toISOString().slice(0, 10);
-      const storedDate = profile.daily_msg_date;
-      const prevCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
-      b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          daily_msg_count: prevCount + 1,
-          daily_msg_date:  todayKey,
-          message_count:   (profile.message_count || 0) + 1,
-        }),
-      })
-        .then(() => invalidateCachedProfile(profileId))
-        .catch(e => console.warn("[chat] message count update failed:", e.message));
-    }
 
   } catch (err) {
     safeLogError(err, { ...ctx, tag: "chat" });

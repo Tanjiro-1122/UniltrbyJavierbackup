@@ -20,14 +20,16 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
         if (!profileId) {
           const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
           const displayName = localStorage.getItem("unfiltr_display_name");
-          if (appleUserId || displayName) {
+          // Only attempt recovery when we have a real Apple user ID.
+          // Never send "lookup" or a blank string — that could match an unrelated profile.
+          if (appleUserId) {
             try {
               const r = await fetch("/api/syncProfile", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   action: "sync",
-                  appleUserId: appleUserId || "lookup",
+                  appleUserId,
                   fullName: displayName,
                 }),
               });

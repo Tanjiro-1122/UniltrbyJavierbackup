@@ -8,11 +8,11 @@ import { B44_ENTITIES, b44Token } from "./_b44.js";
 
 // ── Admin / cron auth helpers ─────────────────────────────────────────────────
 // ADMIN_PASS must be set as a Vercel environment variable.
-// Stored lowercase so comparisons are case-insensitive (codes are typed by humans).
-const ADMIN_PASS   = (process.env.ADMIN_PASS   || "").toLowerCase();
+// Stored as-is (case-sensitive) to preserve full entropy.
+const ADMIN_PASS   = process.env.ADMIN_PASS   || "";
 // FAMILY_CODE must be set as a Vercel environment variable.
 // When not set the family-unlock feature is disabled (no fallback code).
-const FAMILY_CODE  = (process.env.FAMILY_CODE  || "").toLowerCase();
+const FAMILY_CODE  = process.env.FAMILY_CODE  || "";
 // CRON_SECRET is set automatically by Vercel for cron jobs.
 const CRON_SECRET  = process.env.CRON_SECRET  || "";
 
@@ -21,7 +21,7 @@ function safeCompare(a, b) {
   const ba = Buffer.from(String(a));
   const bb = Buffer.from(String(b));
   if (ba.length !== bb.length) {
-    // Still run timingSafeEqual to avoid early-exit timing differences.
+    // Run a dummy comparison to prevent early-exit timing oracle on length.
     crypto.timingSafeEqual(ba, Buffer.alloc(ba.length));
     return false;
   }
@@ -432,13 +432,16 @@ const { action } = req.body;
  * The codes are stored only in Vercel environment variables (ADMIN_PASS and
  * FAMILY_CODE) and are never exposed to the client.
  *
+ * Comparison is case-sensitive — set ADMIN_PASS and FAMILY_CODE in Vercel env
+ * exactly as users will type them.
+ *
  * Response:
  *   { type: "admin" }  — valid admin code
  *   { type: "family" } — valid family code
  *   { type: null }     — invalid (never 401, to avoid leaking info)
  */
 async function handleVerifySpecialCode(req, res) {
-  const code = (req.body?.code || "").trim().toLowerCase();
+  const code = (req.body?.code || "").trim();
   if (!code) return res.status(400).json({ error: "Missing code" });
 
   if (ADMIN_PASS && safeCompare(code, ADMIN_PASS)) {
