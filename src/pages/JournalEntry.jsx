@@ -3,19 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
+import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
+import { getTier as getEntitlementTier, JOURNAL_MONTHLY_LIMITS } from "@/lib/entitlements";
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
-function getTier() {
-  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
-  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
-  return "free";
-}
 async function saveJournalEntryToDB(entry) {
   try {
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     if (!appleUserId) return;
-    const tier = getTier();
+    const tier = getEntitlementTier();
     await fetch("/api/utils", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -24,8 +20,8 @@ async function saveJournalEntryToDB(entry) {
   } catch {}
 }
 
-// Journal entry limits per tier
-const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
+// Use the central JOURNAL_MONTHLY_LIMITS from entitlements as source of truth
+const JOURNAL_LIMITS = JOURNAL_MONTHLY_LIMITS;
 const JOURNAL_KEY = "unfiltr_journal_monthly";
 
 function getMonthKey() { return new Date().toISOString().slice(0, 7); }
@@ -45,13 +41,8 @@ function incrementJournalUsage() {
 }
 
 function getJournalLimit() {
-  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
-  const isPro     = localStorage.getItem("unfiltr_is_pro") === "true";
-  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
-  if (isAnnual)  return JOURNAL_LIMITS.annual;
-  if (isPro)     return JOURNAL_LIMITS.pro;
-  if (isPremium) return JOURNAL_LIMITS.plus;
-  return JOURNAL_LIMITS.free;
+  const tier = getEntitlementTier();
+  return JOURNAL_LIMITS[tier] ?? JOURNAL_LIMITS.free;
 }
 
 const STICKER_DEFS = [
@@ -191,6 +182,8 @@ export default function JournalEntry() {
   const fileInputRef = useRef(null);
   const stickerIdRef = useRef(0);
   const aiSuggestionShownRef = useRef(new Set());
+  const [showJournalSavePrompt, setShowJournalSavePrompt] = useState(false);
+  const journalWordCountRef = useRef(0); // tracks words typed since last prompt
 
   useEffect(() => {
     const now = new Date();
@@ -456,7 +449,15 @@ export default function JournalEntry() {
           <div className="flex-1 relative overflow-hidden min-h-0">
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.04) 31px, rgba(255,255,255,0.04) 32px)", backgroundPositionY: "48px" }} />
-            <textarea value={entry} onChange={(e) => setEntry(e.target.value)}
+            <textarea value={entry} onChange={(e) => {
+                setEntry(e.target.value);
+                // After ~80 words written, prompt to save (roughly 8 sentences)
+                const wordCount = e.target.value.trim().split(/\s+/).filter(Boolean).length;
+                if (wordCount >= 80 && journalWordCountRef.current < 80 && getSavePreference() !== "auto") {
+                  setShowJournalSavePrompt(true);
+                }
+                journalWordCountRef.current = wordCount;
+              }}
               placeholder={(() => {
                 const m = currentMood || "neutral";
                 const prompts = {
@@ -529,6 +530,22 @@ export default function JournalEntry() {
           <p className="text-white/20 text-xs">Write freely 🌙</p>
         </div>
       </div>
+
+      {/* ── Save progress prompt (after ~80 words written) ── */}
+      {(() => {
+        const dismissJournalSavePrompt = () => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; };
+        return (
+          <SaveProgressModal
+            visible={showJournalSavePrompt}
+            context="journal"
+            companionName=""
+            onSave={() => { dismissJournalSavePrompt(); handleSave(); }}
+            onAutoSave={() => { setSavePreference("auto"); dismissJournalSavePrompt(); handleSave(); }}
+            onAlwaysAsk={() => { setSavePreference("ask"); dismissJournalSavePrompt(); }}
+            onDismiss={dismissJournalSavePrompt}
+          />
+        );
+      })()}
     </div>
   );
 }

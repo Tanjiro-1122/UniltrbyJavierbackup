@@ -16,6 +16,12 @@ export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, famil
 
 export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: 99999, family: 99999 };
 
+/** Daily photo limit per tier when sending images in chat */
+export const PHOTO_DAILY_LIMITS = { free: 2, plus: 5, pro: 10, annual: 99999, family: 99999 };
+
+/** Monthly journal entry limit per tier */
+export const JOURNAL_MONTHLY_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999, family: 99999 };
+
 /** Human-readable label shown in UI (e.g. badge in Settings header) */
 export const PLAN_LABELS = {
   free:   "Free",
