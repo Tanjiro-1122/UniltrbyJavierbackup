@@ -68,7 +68,7 @@ export function clearPin() {
 
 /**
  * Synchronously check whether a PIN is currently set.
- * Safe to call during component initialisation (no async needed).
+ * Safe to call during component initialization (no async needed).
  * @returns {boolean}
  */
 export function hasPin() {

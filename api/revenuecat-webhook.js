@@ -61,8 +61,10 @@ function timingSafeEqual(a, b) {
     const bufA = Buffer.from(a);
     const bufB = Buffer.from(b);
     if (bufA.length !== bufB.length) {
-      // Run timingSafeEqual on same-length buffers to prevent timing leak on length.
-      crypto.timingSafeEqual(bufA, Buffer.alloc(bufA.length));
+      // Run a dummy timingSafeEqual to prevent early-exit timing oracle on length.
+      // Use a pre-allocated zero buffer of the same length as bufA.
+      const dummy = Buffer.alloc(bufA.length);
+      crypto.timingSafeEqual(bufA, dummy);
       return false;
     }
     return crypto.timingSafeEqual(bufA, bufB);

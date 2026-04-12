@@ -308,9 +308,9 @@ export function mergeFacts(existing = {}, extracted = {}) {
 export const UNLIMITED_MESSAGES = Number.MAX_SAFE_INTEGER;
 
 export const DAILY_MSG_LIMITS = {
-  free:   20,
-  plus:   100,
-  pro:    200,
+  free: 20,
+  plus: 100,
+  pro: 200,
   annual: UNLIMITED_MESSAGES,
 };
 

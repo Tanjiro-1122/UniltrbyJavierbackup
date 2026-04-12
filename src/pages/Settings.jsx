@@ -324,6 +324,16 @@ export default function Settings() {
       setAdminCode("");
     }
   };
+  // ── Convenience wrapper: fire-and-forget syncProfile update including owner proof ──
+  const syncProfileUpdate = (profileId, updateData) => {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || "";
+    fetch("/api/syncProfile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update", profileId, appleUserId, updateData }),
+    }).catch(() => {});
+  };
+
   const handleFamilyCodeSubmit = async () => {
     try {
       const res = await fetch("/api/utils", {
@@ -574,16 +584,6 @@ export default function Settings() {
       setTimeout(() => setDeleteMemoryDone(false), 2500);
     } catch (_) {}
     setDeletingMemory(false);
-  };
-
-  // ── Convenience wrapper: fire-and-forget syncProfile update including owner proof ──
-  const syncProfileUpdate = (profileId, updateData) => {
-    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || "";
-    fetch("/api/syncProfile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "update", profileId, appleUserId, updateData }),
-    }).catch(() => {});
   };
 
   // ── Sub-screens ────────────────────────────────────────────────────────────
