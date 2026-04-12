@@ -34,7 +34,7 @@ const PLANS = [
     id: 'pro',
     productId: 'com.huertas.unfiltr.tier.pro',
     label: '$14.99 / month',
-    sub: '250 msgs/day · Priority speed · 100 journal entries',
+    sub: '200 msgs/day · Priority speed · 100 journal entries',
     badge: 'MOST POPULAR ⚡',
     badgeBg: 'linear-gradient(135deg,#f59e0b,#a855f7)',
     isAnnual: false,

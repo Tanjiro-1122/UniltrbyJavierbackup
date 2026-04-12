@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { createRequestContext, safeLogError, withAbortController } from "./_helpers.js";
+import { createRequestContext, safeLogError, withAbortController, checkRateLimit } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,6 +13,14 @@ export default async function handler(req, res) {
 
   const ctx = createRequestContext(req);
   res.setHeader("X-Request-Id", ctx.requestId);
+
+  // ── Rate limit ───────────────────────────────────────────────────────────
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   try {
     const { text, voiceGender = "female", voicePersonality = "chill" } = req.body;

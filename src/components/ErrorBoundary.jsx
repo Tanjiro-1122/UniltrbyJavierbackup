@@ -1,6 +1,6 @@
 import React from "react";
 
-const SUPPORT_EMAIL = "support@sportswagerhelper.com";
+const SUPPORT_EMAIL = "support@unfiltr.app";
 
 /**
  * ErrorBoundary — catches any unhandled render/lifecycle errors in its subtree.

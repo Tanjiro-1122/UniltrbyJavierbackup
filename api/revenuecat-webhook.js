@@ -13,6 +13,7 @@
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 import { planFromProductId } from "./_rcMapping.js";
+import crypto from "crypto";
 
 // Events that grant premium
 const GRANT_EVENTS  = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "SUBSCRIBER_ALIAS"];
@@ -53,17 +54,21 @@ async function updateProfile(profileId, updates) {
   }
 }
 
-/** Constant-time string comparison to prevent timing-based token oracle. */
+/** Constant-time string comparison using Node's crypto module. */
 function timingSafeEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
-  if (a.length !== b.length) {
-    let diff = 0;
-    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i % b.length) || 0);
+  try {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) {
+      // Run timingSafeEqual on same-length buffers to prevent timing leak on length.
+      crypto.timingSafeEqual(bufA, Buffer.alloc(bufA.length));
+      return false;
+    }
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
     return false;
   }
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 export default async function handler(req, res) {
@@ -128,10 +133,11 @@ export default async function handler(req, res) {
 
   if (GRANT_EVENTS.includes(eventType)) {
     updates = {
-      is_premium:  true,
-      annual_plan: plan === "annual",
-      pro_plan:    plan === "pro",
-      premium:     true,
+      is_premium:   true,
+      annual_plan:  plan === "annual",
+      pro_plan:     plan === "pro",
+      premium:      true,
+      trial_active: false,
       ...(expiresDate ? { subscription_expires: expiresDate } : {}),
     };
     console.log(`[RC Webhook] ✅ Granting premium (${plan}) to profile ${profile.id}`);
