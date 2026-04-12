@@ -78,7 +78,9 @@ export default function TermsOfUse() {
 
           <div>
             <h2 className="text-lg font-semibold text-white mb-2">11. Contact</h2>
-            <p className="text-sm">Questions about these terms? Contact us at support@unfiltr.app</p>
+            <p className="text-sm">Questions about these terms? Contact us at{" "}
+              <a href="mailto:support@sportswagerhelper.com" className="text-purple-400 underline">support@sportswagerhelper.com</a>
+            </p>
           </div>
 
           <p className="text-white/40 text-xs pt-4">Last updated: March 15, 2026</p>
