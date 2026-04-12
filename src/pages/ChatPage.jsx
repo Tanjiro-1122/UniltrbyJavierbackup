@@ -1062,16 +1062,18 @@ export default function ChatPage() {
 
       // ── Track consecutive messages → show save progress prompt at 8 ──────
       consecutiveMsgRef.current += 1;
+      const SAVE_PROMPT_DELAY_MS = 600; // small delay so the reply bubble renders first
       const SAVE_PROMPT_THRESHOLD = 8;
       if (consecutiveMsgRef.current === SAVE_PROMPT_THRESHOLD) {
+        consecutiveMsgRef.current = 0;
         const pref = getSavePreference();
         if (pref === "auto") {
-          // Auto-save silently (doUpsertChatHistory already runs via the messages useEffect)
-          // Just reset the counter so the next group of 8 is tracked
-          consecutiveMsgRef.current = 0;
+          // Explicit save so we don't rely solely on the throttled useEffect
+          const allMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }].slice(1);
+          if (allMsgs.length >= 2) doUpsertChatHistory(allMsgs, null);
         } else {
           // "ask" preference or first time (no preference set) → show modal
-          setTimeout(() => setShowSavePrompt(true), 600);
+          setTimeout(() => setShowSavePrompt(true), SAVE_PROMPT_DELAY_MS);
         }
       }
 

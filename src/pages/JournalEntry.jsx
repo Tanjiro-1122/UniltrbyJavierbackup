@@ -4,19 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
+import { getTier as getEntitlementTier, JOURNAL_MONTHLY_LIMITS } from "@/lib/entitlements";
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
-function getTier() {
-  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
-  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
-  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
-  return "free";
-}
 async function saveJournalEntryToDB(entry) {
   try {
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     if (!appleUserId) return;
-    const tier = getTier();
+    const tier = getEntitlementTier();
     await fetch("/api/utils", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -25,8 +20,8 @@ async function saveJournalEntryToDB(entry) {
   } catch {}
 }
 
-// Journal entry limits per tier
-const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
+// Use the central JOURNAL_MONTHLY_LIMITS from entitlements as source of truth
+const JOURNAL_LIMITS = JOURNAL_MONTHLY_LIMITS;
 const JOURNAL_KEY = "unfiltr_journal_monthly";
 
 function getMonthKey() { return new Date().toISOString().slice(0, 7); }
@@ -46,13 +41,8 @@ function incrementJournalUsage() {
 }
 
 function getJournalLimit() {
-  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
-  const isPro     = localStorage.getItem("unfiltr_is_pro") === "true";
-  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
-  if (isAnnual)  return JOURNAL_LIMITS.annual;
-  if (isPro)     return JOURNAL_LIMITS.pro;
-  if (isPremium) return JOURNAL_LIMITS.plus;
-  return JOURNAL_LIMITS.free;
+  const tier = getEntitlementTier();
+  return JOURNAL_LIMITS[tier] ?? JOURNAL_LIMITS.free;
 }
 
 const STICKER_DEFS = [
@@ -463,13 +453,8 @@ export default function JournalEntry() {
                 setEntry(e.target.value);
                 // After ~80 words written, prompt to save (roughly 8 sentences)
                 const wordCount = e.target.value.trim().split(/\s+/).filter(Boolean).length;
-                if (wordCount >= 80 && journalWordCountRef.current < 80) {
-                  const pref = getSavePreference();
-                  if (pref === "auto") {
-                    // will save when user taps Save naturally; just track
-                  } else {
-                    setShowJournalSavePrompt(true);
-                  }
+                if (wordCount >= 80 && journalWordCountRef.current < 80 && getSavePreference() !== "auto") {
+                  setShowJournalSavePrompt(true);
                 }
                 journalWordCountRef.current = wordCount;
               }}
@@ -547,15 +532,20 @@ export default function JournalEntry() {
       </div>
 
       {/* ── Save progress prompt (after ~80 words written) ── */}
-      <SaveProgressModal
-        visible={showJournalSavePrompt}
-        context="journal"
-        companionName=""
-        onSave={() => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; handleSave(); }}
-        onAutoSave={() => { setSavePreference("auto"); setShowJournalSavePrompt(false); journalWordCountRef.current = 0; handleSave(); }}
-        onAlwaysAsk={() => { setSavePreference("ask"); setShowJournalSavePrompt(false); journalWordCountRef.current = 0; }}
-        onDismiss={() => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; }}
-      />
+      {(() => {
+        const dismissJournalSavePrompt = () => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; };
+        return (
+          <SaveProgressModal
+            visible={showJournalSavePrompt}
+            context="journal"
+            companionName=""
+            onSave={() => { dismissJournalSavePrompt(); handleSave(); }}
+            onAutoSave={() => { setSavePreference("auto"); dismissJournalSavePrompt(); handleSave(); }}
+            onAlwaysAsk={() => { setSavePreference("ask"); dismissJournalSavePrompt(); }}
+            onDismiss={dismissJournalSavePrompt}
+          />
+        );
+      })()}
     </div>
   );
 }
