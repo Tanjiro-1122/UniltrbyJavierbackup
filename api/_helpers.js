@@ -243,10 +243,41 @@ export function setCachedProfile(profileId, data) {
 }
 
 /**
- * Evict a profile from the cache after a write so stale data isn't served.
- *
- * @param {string} profileId
+ * Stable JSON key for deduplication of array items — ensures that two objects
+ * with the same properties in different key orders produce the same key.
+ * @param {*} x
+ * @returns {string}
  */
-export function invalidateCachedProfile(profileId) {
-  if (profileId) _profileCache.delete(profileId);
+function _stableKey(x) {
+  if (typeof x !== "object" || x === null) return JSON.stringify(x);
+  return JSON.stringify(
+    Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b)))
+  );
 }
+
+/**
+ * Deep-merge extracted user facts into an existing facts object.
+ * - Scalar fields: new value wins over existing when non-empty.
+ * - Array fields: entries are merged and deduplicated (stable-key comparison).
+ * - Arrays are capped at 20 items to prevent unbounded growth.
+ *
+ * @param {object} existing   — current facts stored in UserProfile
+ * @param {object} extracted  — newly extracted facts from AI
+ * @returns {object}           merged facts object
+ */
+export function mergeFacts(existing = {}, extracted = {}) {
+  const merged = { ...existing };
+  for (const [key, value] of Object.entries(extracted)) {
+    if (!value || value === "unknown" || value === "not mentioned") continue;
+    if (Array.isArray(value) && Array.isArray(merged[key])) {
+      const combined = [...merged[key], ...value];
+      merged[key] = [...new Map(combined.map(x => [_stableKey(x), x])).values()].slice(0, 20);
+    } else if (Array.isArray(value) && value.length > 0) {
+      merged[key] = value;
+    } else if (!Array.isArray(value)) {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete } from "lucide-react";
+import { storePin } from "@/lib/pinHash";
 
 const TRIQUETRA = () => (
   <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -30,12 +31,12 @@ export default function PinSetup() {
     setError("");
 
     if (next.length === 4) {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (step === "create") {
           setStep("confirm");
         } else {
           if (next === pin) {
-            localStorage.setItem("unfiltr_pin", pin);
+            await storePin(pin);
             localStorage.setItem("unfiltr_last_active", Date.now().toString());
             navigate("/onboarding/name", { replace: true });
           } else {

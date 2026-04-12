@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Lock, Delete } from "lucide-react";
+import { storePin } from "@/lib/pinHash";
 
 export default function OnboardingPin() {
   const navigate = useNavigate();
@@ -25,14 +26,14 @@ export default function OnboardingPin() {
     setCurrent(next);
 
     if (next.length === 4) {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (stage === "create") {
           setStage("confirm");
           setError("");
         } else {
           if (next.join("") === pin.join("")) {
-            // ✅ PIN confirmed — save and move on
-            localStorage.setItem("unfiltr_pin", pin.join(""));
+            // ✅ PIN confirmed — hash and save, then move on
+            await storePin(pin.join(""));
             navigate("/onboarding/name");
           } else {
             triggerShake();

@@ -7,6 +7,7 @@ import {
   invalidateCachedProfile,
   createRequestContext,
   checkRateLimit,
+  mergeFacts,
 } from "./_helpers.js";
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
@@ -26,29 +27,6 @@ async function b44Update(entity, id, data) {
     });
     return true;
   } catch { return false; }
-}
-
-// ── Merge extracted facts — new data wins, arrays merge+dedup ────────────────
-function _stableKey(x) {
-  if (typeof x !== "object" || x === null) return JSON.stringify(x);
-  // Sort keys for stable serialization so {"name":"A","role":"B"} and
-  // {"role":"B","name":"A"} are treated as the same entry.
-  return JSON.stringify(Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))));
-}
-
-function mergeFacts(existing = {}, extracted = {}) {
-  const merged = { ...existing };
-  for (const [key, value] of Object.entries(extracted)) {
-    if (value && value !== "unknown" && value !== "not mentioned") {
-      if (Array.isArray(value) && Array.isArray(merged[key])) {
-        const combined = [...merged[key], ...value];
-        merged[key] = [...new Map(combined.map(x => [_stableKey(x), x])).values()].slice(0, 20);
-      } else {
-        merged[key] = value;
-      }
-    }
-  }
-  return merged;
 }
 
 // ── #1: EMOTIONAL TIMELINE ───────────────────────────────────────────────────

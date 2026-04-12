@@ -5,7 +5,7 @@
 
 import OpenAI from "openai";
 import { B44_ENTITIES, b44Headers } from "./_b44.js";
-import { createRequestContext, safeLogError, checkRateLimit } from "./_helpers.js";
+import { createRequestContext, safeLogError, checkRateLimit, mergeFacts } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -24,22 +24,6 @@ async function b44Update(entity, id, data) {
     body: JSON.stringify(data),
   });
   return res.ok;
-}
-
-function mergeFacts(existing = {}, extracted = {}) {
-  const merged = { ...existing };
-  for (const [key, value] of Object.entries(extracted)) {
-    if (!value || value === "unknown" || value === "not mentioned") continue;
-    if (Array.isArray(value) && Array.isArray(merged[key])) {
-      const combined = [...merged[key], ...value];
-      merged[key] = [...new Map(combined.map(x => [JSON.stringify(x), x])).values()].slice(0, 20);
-    } else if (Array.isArray(value) && value.length > 0) {
-      merged[key] = value;
-    } else if (!Array.isArray(value) && value) {
-      merged[key] = value;
-    }
-  }
-  return merged;
 }
 
 // ── CORS — same allowlist as the rest of the API ─────────────────────────────

@@ -153,6 +153,20 @@ export default async function handler(req, res) {
     // ── ACTION: update — update a specific profile by ID ──────────────────────
     if (action === "update") {
       if (!profileId) return res.status(400).json({ error: "profileId required for update" });
+      // Verify the caller owns this profile by checking appleUserId matches the stored record.
+      // Without this, any client that knows a profileId can overwrite arbitrary fields.
+      if (appleUserId) {
+        let profile;
+        try {
+          const res2 = await fetch(`${B44_BASE}/UserProfile/${profileId}`, { headers: b44Headers() });
+          profile = res2.ok ? await res2.json() : null;
+        } catch { profile = null; }
+        if (!profile) return res.status(404).json({ error: "Profile not found" });
+        if (profile.apple_user_id && profile.apple_user_id !== appleUserId) {
+          console.warn(`[syncProfile] update rejected: appleUserId mismatch for profile ${profileId}`);
+          return res.status(403).json({ error: "Forbidden" });
+        }
+      }
       const updated = await updateProfile(profileId, updateData || {});
       return res.status(200).json({ ok: true, data: updated });
     }
