@@ -137,14 +137,20 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     localStorage.setItem("unfiltr_voice_personality", voicePersonality);
     window.dispatchEvent(new Event("unfiltr_voice_updated"));
 
-    // Persist to the Companion DB record so values survive page reloads
-    // (ChatPage reads voice settings from the Companion entity on init and
-    // after every message, which would otherwise override localStorage).
+    // Persist to the Companion DB record so values survive page reloads.
+    // Use the server-side /api/utils endpoint (not the SDK directly) because
+    // Apple Sign-In users are not authenticated through the base44 SDK,
+    // which would make base44.entities.Companion.update() fail silently.
     if (companionDbId && companionDbId !== "pending") {
       try {
-        await base44.entities.Companion.update(companionDbId, {
-          voice_gender:       voiceGender,
-          voice_personality:  voicePersonality,
+        await fetch('/api/utils', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'updateCompanion',
+            companionId: companionDbId,
+            updateData: { voice_gender: voiceGender, voice_personality: voicePersonality },
+          }),
         });
       } catch (e) {
         console.warn("[Customize] Voice DB save failed:", e);
@@ -172,9 +178,15 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
 
     // Persist to the Companion DB record — ChatPage reads personality from the
     // Companion entity on load so this is the authoritative source of truth.
+    // Use the server-side /api/utils endpoint (not the SDK directly) because
+    // Apple Sign-In users are not authenticated through the base44 SDK.
     if (companionDbId && companionDbId !== "pending") {
       try {
-        await base44.entities.Companion.update(companionDbId, personalityData);
+        await fetch('/api/utils', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'updateCompanion', companionId: companionDbId, updateData: personalityData }),
+        });
       } catch (e) {
         console.warn("[Customize] Personality DB save failed:", e);
       }
