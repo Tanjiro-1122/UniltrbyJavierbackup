@@ -8,10 +8,11 @@ import { B44_ENTITIES, b44Token } from "./_b44.js";
 
 // ── Admin / cron auth helpers ─────────────────────────────────────────────────
 // ADMIN_PASS must be set as a Vercel environment variable.
-const ADMIN_PASS   = process.env.ADMIN_PASS   || "";
+// Stored lowercase so comparisons are case-insensitive (codes are typed by humans).
+const ADMIN_PASS   = (process.env.ADMIN_PASS   || "").toLowerCase();
 // FAMILY_CODE must be set as a Vercel environment variable.
 // Both the canonical spelling and the common typo variant are accepted.
-const FAMILY_CODE  = (process.env.FAMILY_CODE || "").toLowerCase();
+const FAMILY_CODE  = (process.env.FAMILY_CODE  || "").toLowerCase();
 // CRON_SECRET is set automatically by Vercel for cron jobs.
 const CRON_SECRET  = process.env.CRON_SECRET  || "";
 
@@ -27,7 +28,7 @@ function safeCompare(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-function isAuthorizedAdmin(req) {
+function isAuthorizedRequest(req) {
   const cronSecret   = req.headers["x-vercel-cron-secret"] || "";
   const adminToken   = req.body?.adminToken || "";
   if (CRON_SECRET  && safeCompare(cronSecret, CRON_SECRET))  return true;
@@ -216,7 +217,7 @@ async function handleSavePushToken(req, res) {
 // Cron handler — called by the Base44 automation every hour
 // Checks who is due for a morning or night notification and sends it
 async function handleSendDailyNotifs(req, res) {
-  if (!isAuthorizedAdmin(req)) {
+  if (!isAuthorizedRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -440,7 +441,7 @@ async function handleVerifySpecialCode(req, res) {
   const code = (req.body?.code || "").trim().toLowerCase();
   if (!code) return res.status(400).json({ error: "Missing code" });
 
-  if (ADMIN_PASS && safeCompare(code, ADMIN_PASS.toLowerCase())) {
+  if (ADMIN_PASS && safeCompare(code, ADMIN_PASS)) {
     return res.status(200).json({ type: "admin" });
   }
 

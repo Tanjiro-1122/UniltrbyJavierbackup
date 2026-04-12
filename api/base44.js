@@ -316,7 +316,8 @@ async function handleDeleteChatHistory(req, res, body) {
         return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
       }
       const record = await checkRes.json();
-      if (record.apple_user_id && record.apple_user_id !== apple_user_id) {
+      // Deny deletion if the record has no owner OR is owned by a different user.
+      if (!record.apple_user_id || record.apple_user_id !== apple_user_id) {
         console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
         return res.status(403).json({ error: "Forbidden" });
       }
@@ -541,7 +542,8 @@ async function handleDeleteJournalEntry(req, res, body) {
       return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
     }
     const record = await checkRes.json();
-    if (record.apple_user_id !== apple_user_id) {
+    // Deny deletion if the record has no owner OR is owned by a different user.
+    if (!record.apple_user_id || record.apple_user_id !== apple_user_id) {
       console.warn(`[base44/deleteJournalEntry] Ownership mismatch — requested by ${apple_user_id}`);
       return res.status(403).json({ error: "Forbidden" });
     }
