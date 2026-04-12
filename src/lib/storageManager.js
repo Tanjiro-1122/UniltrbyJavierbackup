@@ -99,12 +99,15 @@ export function estimateStorageUsageKB() {
 
 /**
  * Run all cleanup routines. Safe to call on every app load.
+ * @param {string} [tier] — optional tier string to pass to pruneChatSessions.
+ *   Pass the current tier explicitly to avoid a race condition where localStorage
+ *   flags are being updated mid-sync and pruneChatSessions reads stale values.
  */
-export function runStorageCleanup() {
+export function runStorageCleanup(tier) {
   pruneMoodHistory();
   pruneJournalEntries();
   pruneChatHistory();
-  pruneChatSessions();
+  pruneChatSessions(tier);
   const usageKB = estimateStorageUsageKB();
   if (usageKB > 2048) {
     console.warn(`[StorageManager] localStorage usage is high: ~${usageKB} KB`);
@@ -149,26 +152,30 @@ function pruneChatHistory() {
 
 /**
  * Trim unfiltr_chat_sessions to the per-tier retention limit.
- * Reads the current tier from localStorage flags (same logic as getTier() in entitlements.js)
- * so this module stays self-contained with no circular imports.
+ * @param {string} [explicitTier] — when provided, use this instead of reading from
+ *   localStorage. Pass the current tier to avoid races with concurrent flag updates.
  */
-function pruneChatSessions() {
+function pruneChatSessions(explicitTier) {
   try {
     const raw = localStorage.getItem("unfiltr_chat_sessions");
     if (!raw) return;
     const sessions = JSON.parse(raw);
     if (!Array.isArray(sessions) || sessions.length === 0) return;
 
-    // Determine current tier from localStorage flags (mirrors getTier() in entitlements.js)
-    let tier = "free";
-    if (localStorage.getItem("unfiltr_family_unlimited") === "true") tier = "family";
-    else if (
-      localStorage.getItem("unfiltr_family_unlock") === "true" ||
-      localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
-      localStorage.getItem("unfiltr_is_annual") === "true"
-    ) tier = "annual";
-    else if (localStorage.getItem("unfiltr_is_pro")     === "true") tier = "pro";
-    else if (localStorage.getItem("unfiltr_is_premium") === "true") tier = "plus";
+    // Determine current tier — prefer the explicit parameter to avoid a race
+    // where localStorage flags are being updated concurrently (e.g. mid-subscription-sync).
+    let tier = explicitTier;
+    if (!tier) {
+      if (localStorage.getItem("unfiltr_family_unlimited") === "true") tier = "family";
+      else if (
+        localStorage.getItem("unfiltr_family_unlock") === "true" ||
+        localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+        localStorage.getItem("unfiltr_is_annual") === "true"
+      ) tier = "annual";
+      else if (localStorage.getItem("unfiltr_is_pro")     === "true") tier = "pro";
+      else if (localStorage.getItem("unfiltr_is_premium") === "true") tier = "plus";
+      else tier = "free";
+    }
 
     const limit = LIMITS.chat_sessions[tier] ?? 2;
     if (limit >= 9999) return; // no cap for unlimited tiers

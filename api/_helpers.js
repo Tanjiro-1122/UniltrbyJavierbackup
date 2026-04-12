@@ -26,17 +26,22 @@ import crypto from "crypto";
 // Guardrail constants (overrideable via Vercel environment variables)
 // ─────────────────────────────────────────────────────────────────────────────
 
+function _safeInt(value, fallback) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 /** Maximum total characters across all messages sent in a single chat request. */
-export const MAX_INPUT_CHARS = parseInt(process.env.AI_MAX_INPUT_CHARS || "8000", 10);
+export const MAX_INPUT_CHARS = _safeInt(process.env.AI_MAX_INPUT_CHARS, 8000);
 
 /** Hard cap on OpenAI completion tokens. Applied on top of per-tier defaults. */
-export const MAX_OUTPUT_TOKENS = parseInt(process.env.AI_MAX_OUTPUT_TOKENS || "800", 10);
+export const MAX_OUTPUT_TOKENS = _safeInt(process.env.AI_MAX_OUTPUT_TOKENS, 800);
 
 /** Milliseconds before an upstream OpenAI request is aborted. */
-export const AI_TIMEOUT_MS = parseInt(process.env.AI_REQUEST_TIMEOUT_MS || "25000", 10);
+export const AI_TIMEOUT_MS = _safeInt(process.env.AI_REQUEST_TIMEOUT_MS, 25000);
 
 /** Max AI/chat requests allowed per user per minute (best-effort, per-instance). */
-export const AI_MAX_RPM = parseInt(process.env.AI_MAX_RPM || "10", 10);
+export const AI_MAX_RPM = _safeInt(process.env.AI_MAX_RPM, 10);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Request context
@@ -46,7 +51,7 @@ export const AI_MAX_RPM = parseInt(process.env.AI_MAX_RPM || "10", 10);
  * Build a lightweight tracing context for a serverless request.
  *
  * @param {object} req  — Vercel/Node IncomingMessage with `body` already parsed
- * @returns {{ requestId: string, userId: string }}
+ * @returns {{ requestId: string, userId: string, clientIp: string }}
  */
 export function createRequestContext(req) {
   const requestId =
@@ -62,7 +67,16 @@ export function createRequestContext(req) {
     (req.headers && req.headers["x-user-id"]) ||
     "anonymous";
 
-  return { requestId, userId };
+  // Extract client IP — used as rate-limit key when userId is anonymous.
+  const clientIp =
+    (req.headers && (
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.headers["x-real-ip"]
+    )) ||
+    req.socket?.remoteAddress ||
+    "unknown";
+
+  return { requestId, userId, clientIp };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,17 +163,25 @@ const _RATE_WINDOW_MS = 60_000;   // 1-minute fixed window
  * same function can run in multiple isolated instances, so this will not catch
  * all excess requests but will stop sustained bursts within a single instance.
  *
+ * When userId is anonymous or missing, falls back to per-IP rate limiting so
+ * unauthenticated callers cannot bypass the limit by omitting a user ID.
+ *
  * @param {string} userId
+ * @param {string} [clientIp]  — used as rate-limit key when userId is anonymous
  * @returns {{ allowed: true } | { allowed: false, retryAfterSeconds: number }}
  */
-export function checkRateLimit(userId) {
-  if (!userId || userId === "anonymous") return { allowed: true };
+export function checkRateLimit(userId, clientIp) {
+  // Determine the key: prefer the stable userId; fall back to IP so anonymous
+  // requests are still rate-limited rather than allowed through unconditionally.
+  const key = (!userId || userId === "anonymous")
+    ? `ip:${clientIp || "unknown"}`
+    : userId;
 
   const now   = Date.now();
-  const entry = _rateLimitStore.get(userId);
+  const entry = _rateLimitStore.get(key);
 
   if (!entry || now - entry.windowStart > _RATE_WINDOW_MS) {
-    _rateLimitStore.set(userId, { count: 1, windowStart: now });
+    _rateLimitStore.set(key, { count: 1, windowStart: now });
     return { allowed: true };
   }
 

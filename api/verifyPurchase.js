@@ -13,6 +13,7 @@ import {
   mapSubscriberToFlags,
   fetchRCSubscriber,
   postReceiptToRC,
+  RCSubscriberNotFoundError,
 } from "./_rcMapping.js";
 
 /**
@@ -80,8 +81,12 @@ export default async function handler(req, res) {
       try {
         subscriberData = await fetchRCSubscriber(appUserId);
       } catch (err) {
-        console.error("[verifyPurchase/restore] RC fetch failed:", err.message);
-        return res.status(200).json({ data: { success: false, isPremium: false, message: "No purchases found" } });
+        if (err instanceof RCSubscriberNotFoundError) {
+          // User has genuinely never purchased — not a network error.
+          return res.status(200).json({ data: { success: false, isPremium: false, message: "No purchases found" } });
+        }
+        console.error("[verifyPurchase/restore] RC fetch failed (network/server error):", err.message);
+        return res.status(503).json({ data: { success: false, isPremium: false, message: "Could not reach purchase server. Please try again." } });
       }
 
       const { flags, plan, expiresDate, isActive } = mapSubscriberToFlags(subscriberData);
@@ -109,8 +114,13 @@ export default async function handler(req, res) {
       try {
         await postReceiptToRC(receiptData, appUserId, productId, platform);
       } catch (err) {
-        // Non-fatal: log and continue — we still check the subscriber status
-        console.warn("[verifyPurchase] receipt POST failed (continuing):", err.message);
+        // Receipt registration failed — do NOT fall through to subscriber fetch.
+        // Continuing after a failed receipt POST risks granting premium based on
+        // stale RevenueCat state that may not reflect the current purchase attempt.
+        console.error("[verifyPurchase] receipt POST failed — aborting verification:", err.message);
+        return res.status(200).json({
+          data: { success: false, isPremium: false, message: "Receipt validation failed. Please try again." },
+        });
       }
     }
 
@@ -118,8 +128,11 @@ export default async function handler(req, res) {
     try {
       subscriberData = await fetchRCSubscriber(appUserId);
     } catch (err) {
-      console.error("[verifyPurchase] RC subscriber fetch failed:", err.message);
-      return res.status(200).json({ data: { success: false, isPremium: false } });
+      if (err instanceof RCSubscriberNotFoundError) {
+        return res.status(200).json({ data: { success: false, isPremium: false } });
+      }
+      console.error("[verifyPurchase] RC subscriber fetch failed (network/server error):", err.message);
+      return res.status(503).json({ data: { success: false, isPremium: false, message: "Could not reach purchase server. Please try again." } });
     }
 
     const { flags, plan, expiresDate, isActive } = mapSubscriberToFlags(subscriberData);
@@ -127,6 +140,13 @@ export default async function handler(req, res) {
     if (isActive) {
       await b44FindAndUpdate(appUserId, {
         ...flags,
+        updated_date: new Date().toISOString(),
+      });
+    } else {
+      // Subscription found but not active — explicitly clear premium flags so the
+      // profile reflects the expired state rather than keeping stale grant flags.
+      await b44FindAndUpdate(appUserId, {
+        ...flags,           // mapSubscriberToFlags already sets all flags to false
         updated_date: new Date().toISOString(),
       });
     }

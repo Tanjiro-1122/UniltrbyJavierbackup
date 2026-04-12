@@ -28,10 +28,12 @@ export default function Journal() {
     if (selectedEntry?.id === id) setSelectedEntry(null);
   };
 
-  // Group entries by month
+  // Group entries by month — skip entries with invalid or missing dates
   const grouped = {};
   entries.forEach(entry => {
-    const d = new Date(entry.created_date);
+    const ts = Date.parse(entry.created_date);
+    if (!Number.isFinite(ts)) return; // skip NaN / invalid dates silently
+    const d = new Date(ts);
     const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
     const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     if (!grouped[key]) grouped[key] = { label, entries: [] };

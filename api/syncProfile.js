@@ -8,7 +8,12 @@ import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
 const B44_BASE = B44_ENTITIES;
 const getKey = b44Token;
 
-// Decode Apple's identityToken JWT to reliably extract email on every login
+// Decode Apple's identityToken JWT payload (base64 only — no signature verification).
+// SECURITY NOTE: The decoded payload is NOT cryptographically verified here.
+// Consequently it must NEVER be used to look up or link user accounts — an attacker
+// could craft a token with a victim's email to hijack their profile.
+// Use the payload only to backfill non-sensitive fields (e.g. email) on a profile
+// that has ALREADY been located by the trusted apple_user_id from the Apple SDK.
 function decodeAppleJwt(token) {
   try {
     if (!token) return {};
@@ -176,13 +181,12 @@ export default async function handler(req, res) {
     // 1. Search by apple_user_id
     let profile = await findByAppleId(appleUserId);
 
-    // 2. Fallback: search by email
-    if (!profile && email) {
-      profile = await findByEmail(email);
-      console.log(`[syncProfile] Found by email: ${profile?.id}`);
-    }
+    // NOTE: email-based fallback lookup has been intentionally removed.
+    // Using an unverified JWT email to locate accounts would allow an attacker
+    // to forge a token with a victim's email and take over their profile.
+    // findByEmail() must not be used as a profile-lookup step here.
 
-    // 3. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
+    // 2. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
     if (!profile && fullName && fullName.trim().length > 1) {
       profile = await findByDisplayName(fullName);
       if (profile) console.log(`[syncProfile] Found by display_name: ${profile?.id}`);

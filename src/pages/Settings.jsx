@@ -10,7 +10,6 @@ import ReferralSection from "@/components/ReferralSection";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import HowToGuide from "@/components/settings/HowToGuide";
-import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import MemoryEditor from "@/components/chat/MemoryEditor";
 import { getMoodWeek } from "@/components/utils/moodTracker";
@@ -20,6 +19,7 @@ import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
+import useProfileRecovery from "@/hooks/useProfileRecovery";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -265,62 +265,21 @@ export default function Settings() {
     if (created) setDaysSince(Math.max(1, Math.floor((Date.now() - new Date(created).getTime()) / 86400000)));
     setMoodHistory(getMoodWeek());
     if (localStorage.getItem("unfiltr_admin_unlocked") === "true") setIsAdmin(true);
-    (async () => {
-      try {
-        let profileId = localStorage.getItem("userProfileId");
-
-        // Recovery: if profileId missing, try to find profile by display_name
-        if (!profileId) {
-          const displayName = localStorage.getItem("unfiltr_display_name");
-          let profiles = [];
-          if (displayName) {
-            try { const r = await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sync', appleUserId: localStorage.getItem('unfiltr_apple_user_id') || 'lookup', fullName: displayName }) }); const rd = await r.json(); if (rd.data?.profileId) { localStorage.setItem('userProfileId', rd.data.profileId); profiles = [{ id: rd.data.profileId }]; } } catch(e) { profiles = []; }
-          }
-          if (!profiles || profiles.length === 0) {
-            profiles = []; // syncProfile lookup handles this case
-          }
-          if (profiles.length > 0) {
-            profileId = profiles[0].id;
-            localStorage.setItem("userProfileId", profileId);
-            localStorage.setItem("unfiltr_user_id", profileId);
-            localStorage.setItem("unfiltr_auth_token", profileId);
-            console.log("[Settings] Recovered profileId:", profileId);
-          }
-        }
-
-        if (!profileId) return;
-        const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
-        if (!profile) return;
-        setUserProfile(profile);
-        // Always keep display_name in localStorage as local backup
-        if (profile?.display_name) {
-          localStorage.setItem("unfiltr_display_name", profile.display_name);
-        }
-        // Backfill user_id + auth_token if missing (for users who onboarded before this fix)
-        if (profile?.id) {
-          if (!localStorage.getItem("unfiltr_user_id"))    localStorage.setItem("unfiltr_user_id", profile.id);
-          if (!localStorage.getItem("unfiltr_auth_token")) localStorage.setItem("unfiltr_auth_token", profile.id);
-        }
-        // Ensure companion_id is always persisted
-        if (profile?.companion_id && profile.companion_id !== "pending") {
-          localStorage.setItem("unfiltr_companion_id", profile.companion_id);
-          localStorage.setItem("companionId", profile.companion_id);
-        }
-        const resolvedCompanionId = profile?.companion_id || localStorage.getItem("unfiltr_companion_id") || localStorage.getItem("companionId");
-        if (resolvedCompanionId && resolvedCompanionId !== "pending") {
-          const comp = await base44.entities.Companion.get(resolvedCompanionId).catch(() => null);
-          if (comp) {
-            setCompanion(comp);
-            if (comp.personality_vibe)      { setPersonalityVibe(comp.personality_vibe);      localStorage.setItem("unfiltr_personality_vibe", comp.personality_vibe); }
-            if (comp.personality_empathy)   { setPersonalityEmpathy(comp.personality_empathy); localStorage.setItem("unfiltr_personality_empathy", comp.personality_empathy); }
-            if (comp.personality_humor)     { setPersonalityHumor(comp.personality_humor);     localStorage.setItem("unfiltr_personality_humor", comp.personality_humor); }
-            if (comp.personality_curiosity) { setPersonalityCuriosity(comp.personality_curiosity); localStorage.setItem("unfiltr_personality_curiosity", comp.personality_curiosity); }
-            if (comp.personality_style)     { setPersonalityStyle(comp.personality_style);     localStorage.setItem("unfiltr_personality_style", comp.personality_style); }
-          }
-        }
-      } catch (e) {}
-    })();
   }, []);
+
+  useProfileRecovery({
+    onProfile: (profile, comp) => {
+      setUserProfile(profile);
+      if (comp) setCompanion(comp);
+    },
+    onPersonality: ({ vibe, empathy, humor, curiosity, style }) => {
+      if (vibe)      setPersonalityVibe(vibe);
+      if (empathy)   setPersonalityEmpathy(empathy);
+      if (humor)     setPersonalityHumor(humor);
+      if (curiosity) setPersonalityCuriosity(curiosity);
+      if (style)     setPersonalityStyle(style);
+    },
+  });
 
   const handleTriquetraTap = () => {
     const next = tapCount + 1; setTapCount(next);

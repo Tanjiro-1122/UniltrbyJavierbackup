@@ -29,7 +29,9 @@ export const PLAN_LABELS = {
 export function isFamilyUnlimited() {
   if (localStorage.getItem("unfiltr_family_unlimited") !== "true") return false;
   const expiresAt = localStorage.getItem("unfiltr_family_unlimited_expires_at");
-  if (!expiresAt) return true; // no expiry set → treat as active
+  // Require an explicit expiry date — missing expiry means the flag was set
+  // incorrectly or was accidentally cleared; treat as inactive for safety.
+  if (!expiresAt) return false;
   return new Date(expiresAt).getTime() > Date.now();
 }
 
