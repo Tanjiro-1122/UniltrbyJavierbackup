@@ -303,13 +303,23 @@ export default function Pricing() {
   };
 
   const handleRestore = async () => {
-    const result = await restore();
-    if (result?.success || result?.isSuccess) {
-      const profileId = localStorage.getItem('userProfileId');
-      if (profileId) {
-        const profile = await base44.entities.UserProfile.get(profileId);
-        if (profile?.is_premium) navigate("/hub");
+    try {
+      const result = await restore();
+      if (result?.success || result?.isSuccess) {
+        try {
+          const profileId = localStorage.getItem('userProfileId');
+          if (profileId) {
+            const profile = await base44.entities.UserProfile.get(profileId);
+            if (profile?.is_premium) navigate("/hub");
+          }
+        } catch (dbErr) {
+          // DB check failed — still grant access if native restore said yes
+          navigate("/hub");
+        }
       }
+    } catch (e) {
+      // Handled by useAppleSubscriptions error state; log for debug
+      console.error('[Pricing] handleRestore error:', e.message);
     }
   };
 
