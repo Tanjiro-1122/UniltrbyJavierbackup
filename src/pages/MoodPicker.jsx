@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { hasPin } from "@/lib/pinHash";
 
 const NOTO = "https://fonts.gstatic.com/s/e/notoemoji/latest";
 
@@ -177,11 +178,11 @@ export default function MoodPicker() {
   const handleContinue = () => {
     localStorage.setItem("unfiltr_mood", mood.id);
     sessionStorage.setItem("unfiltr_mood_session", new Date().toDateString());
-    const hasPin = !!localStorage.getItem("unfiltr_pin");
+    const pinActive = hasPin();
     if (dest === "journal") {
-      navigate(hasPin ? "/pin-gate?dest=journal" : "/journal-enter");
+      navigate(pinActive ? "/pin-gate?dest=journal" : "/journal-enter");
     } else {
-      navigate(hasPin ? "/pin-gate?dest=chat" : "/chat-enter");
+      navigate(pinActive ? "/pin-gate?dest=chat" : "/chat-enter");
     }
   };
 

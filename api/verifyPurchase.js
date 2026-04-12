@@ -15,6 +15,7 @@ import {
   postReceiptToRC,
   RCSubscriberNotFoundError,
 } from "./_rcMapping.js";
+import { createRequestContext, checkRateLimit, safeLogError } from "./_helpers.js";
 
 /**
  * Find a UserProfile by apple_user_id (with fallback to user_id) and update it.
@@ -64,6 +65,16 @@ async function b44FindAndUpdate(appleUserId, data) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   if (!process.env.REVENUECAT_SECRET_KEY) {
     console.error("[verifyPurchase] REVENUECAT_SECRET_KEY env var not set");
@@ -156,7 +167,7 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("[verifyPurchase] error:", err);
-    return res.status(500).json({ error: err.message });
+    safeLogError(err, { ...ctx, tag: "verifyPurchase" });
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 }

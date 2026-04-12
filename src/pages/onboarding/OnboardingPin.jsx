@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Lock, Delete } from "lucide-react";
-import { storePin } from "@/lib/pinHash";
+import { storePin, clearPin } from "@/lib/pinHash";
 
 export default function OnboardingPin() {
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ export default function OnboardingPin() {
   };
 
   const handleSkip = () => {
-    localStorage.removeItem("unfiltr_pin");
+    clearPin();
     navigate("/onboarding/name");
   };
 

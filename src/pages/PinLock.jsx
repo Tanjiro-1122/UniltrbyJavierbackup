@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete } from "lucide-react";
-import { checkPin } from "@/lib/pinHash";
+import { checkPin, clearPin } from "@/lib/pinHash";
 
 const TRIQUETRA = () => (
   <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -52,7 +52,7 @@ export default function PinLock() {
   };
 
   const handleReset = () => {
-    localStorage.removeItem("unfiltr_pin");
+    clearPin();
     localStorage.removeItem("unfiltr_last_active");
     navigate("/PinSetup", { replace: true });
   };

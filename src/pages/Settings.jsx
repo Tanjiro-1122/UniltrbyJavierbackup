@@ -20,7 +20,7 @@ import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
-import { checkPin, storePin, clearPin } from "@/lib/pinHash";
+import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -250,7 +250,7 @@ export default function Settings() {
   const [pinError, setPinError]       = useState("");
   const [pinShake, setPinShake]       = useState(false);
   const [pinSaved, setPinSaved]       = useState(false);
-  const hasPin = !!localStorage.getItem("unfiltr_pin");
+  const hasActivePin = hasPin();
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
   const [currentBg, setCurrentBg] = useState(() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } });
@@ -881,7 +881,7 @@ export default function Settings() {
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
             Set a 4-digit PIN to lock the app. Every time you open Unfiltr, you'll need to enter it first.
           </p>
-          {!hasPin ? (
+          {!hasActivePin ? (
             <button onClick={() => openPinScreen("set")} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               🔒 Set a PIN
             </button>
@@ -1122,7 +1122,7 @@ export default function Settings() {
               <Row icon={<Eye size={15} color="white" />} iconBg="#1a3a2e" label="Privacy & Data" value={privateSession ? "Private Mode 🔕" : undefined} onPress={() => setScreen("privacy")} />
               <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
               <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
-              <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
+              <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasActivePin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
               <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
             </Section>
 

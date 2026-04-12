@@ -962,11 +962,10 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
-          systemPrompt, isPremium, isPro, isAnnual,
           profileId:        localStorage.getItem("userProfileId") || null,
-          sessionMemory:    (isPremium || isPro || isAnnual) ? sessionMemory : [],
-          memorySummary:    (isPremium || isPro || isAnnual) ? (localMemSummary || "") : "",
-          userFacts:        (isPremium || isPro || isAnnual) ? userFacts : {},
+          sessionMemory:    sessionMemory,
+          memorySummary:    localMemSummary || "",
+          userFacts:        userFacts,
           imageBase64:      imgBase64,
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
@@ -1120,7 +1119,7 @@ export default function ChatPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 messages: updatedMsgs.map(m => ({ role: m.role, content: m.content })),
-                profileId: profileId2, companionName: cName, isPremium, isPro, isAnnual,
+                profileId: profileId2, companionName: cName,
               }),
             });
             const sumData = await sumRes.json();

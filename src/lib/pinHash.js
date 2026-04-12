@@ -65,3 +65,12 @@ export async function storePin(pin) {
 export function clearPin() {
   localStorage.removeItem("unfiltr_pin");
 }
+
+/**
+ * Synchronously check whether a PIN is currently set.
+ * Safe to call during component initialisation (no async needed).
+ * @returns {boolean}
+ */
+export function hasPin() {
+  return !!localStorage.getItem("unfiltr_pin");
+}

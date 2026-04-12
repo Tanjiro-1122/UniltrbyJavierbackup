@@ -10,6 +10,7 @@
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 import { ENTITLEMENT_ID, mapSubscriberToFlags, fetchRCSubscriber, postReceiptToRC, RCSubscriberNotFoundError } from "./_rcMapping.js";
+import { createRequestContext, checkRateLimit, safeLogError } from "./_helpers.js";
 
 async function b44FindAndUpdate(appleUserId, data) {
   // Primary lookup: apple_user_id
@@ -42,6 +43,16 @@ async function b44FindAndUpdate(appleUserId, data) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   if (!process.env.REVENUECAT_SECRET_KEY) {
     console.error("[handleAppleIAP] REVENUECAT_SECRET_KEY env var not set");
@@ -82,7 +93,7 @@ export default async function handler(req, res) {
       data: { success: true, plan, expiresDate, productId: subscriberData?.subscriber?.entitlements?.[ENTITLEMENT_ID]?.product_identifier || productId },
     });
   } catch (err) {
-    console.error("[handleAppleIAP] error:", err);
-    return res.status(500).json({ error: err.message });
+    safeLogError(err, { ...ctx, tag: "handleAppleIAP" });
+    return res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 }
