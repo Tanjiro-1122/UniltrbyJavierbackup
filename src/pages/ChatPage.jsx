@@ -10,9 +10,7 @@ import { usePushNotifications } from "@/components/usePushNotifications";
 import { getMoodEmoji } from "@/lib/moodConfig";
 
 import ChatHeader from "@/components/chat/ChatHeader";
-import ChatMessages from "@/components/chat/ChatMessages";
 import ChatInputBar from "@/components/chat/ChatInputBar";
-import ConversationStarters from "@/components/chat/ConversationStarters";
 import MoodCheckIn from "@/components/chat/MoodCheckIn";
 import QuoteReply from "@/components/chat/QuoteReply";
 import LiveAvatar from "@/components/LiveAvatar";
@@ -22,9 +20,8 @@ import MiniGames from "@/components/games/MiniGames";
 import CompanionShareCard from "@/components/companion/CompanionShareCard";
 import ParallaxBackground from "@/components/chat/ParallaxBackground";
 import BackgroundEffect from "@/components/chat/BackgroundEffect";
-import { isAudioUnlocked, resumeAudioContext, playAudioFromBase64, stopCurrentAudio } from "@/components/utils/audioUnlock";
+import { resumeAudioContext, playAudioFromBase64, stopCurrentAudio } from "@/components/utils/audioUnlock";
 
-import ChatErrorMessage from "@/components/chat/ChatErrorMessage";
 import BreathingExercise from "@/components/chat/BreathingExercise";
 import SleepStory from "@/components/chat/SleepStory";
 import TimeCapsule, { getDeliverableCapsules } from "@/components/chat/TimeCapsule";
@@ -34,15 +31,10 @@ import DailyAffirmation from "@/components/chat/DailyAffirmation";
 import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
 import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion/companionPersonalities";
-import BookmarksModal, { addBookmark } from "@/components/chat/BookmarksModal";
+import BookmarksModal from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
-import StreakRewardBanner, { getStreakReward } from "@/components/chat/StreakRewardBanner";
 import { useStreak } from "@/components/useStreak";
-import StreakMilestoneModal from "@/components/StreakMilestoneModal";
-import MemoryCard from "@/components/chat/MemoryCard";
-import CompanionCheckIn from "@/components/chat/CompanionCheckIn";
 import MissYouBanner from "@/components/chat/MissYouBanner";
-import ChatWalkthrough from "@/components/chat/ChatWalkthrough";
 import { debugLog } from "@/components/DebugPanel";
 
 const VIBES_SUFFIX = {

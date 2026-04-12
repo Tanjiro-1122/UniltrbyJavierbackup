@@ -4,8 +4,7 @@
  * Drop into ChatPage — auto-shows when `milestone` prop is truthy.
  */
 
-import React, { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect } from "react";import { motion, AnimatePresence } from "framer-motion";
 
 const MILESTONE_CONFIG = {
   3:   { emoji: "🔥", title: "3-Day Streak!", msg: "You're on a roll — 3 days in a row!", color: "#f97316" },

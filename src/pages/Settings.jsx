@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
-  LogOut, Bell, Shield, Info, Heart, Mic, Palette, User, BookOpen, SlidersHorizontal, Lock, Brain, Eye, RefreshCw
+  LogOut, Shield, Info, Heart, Palette, SlidersHorizontal, Lock, Brain, Eye, RefreshCw
 } from "lucide-react"
 
 import ReferralSection from "@/components/ReferralSection";
@@ -19,7 +19,7 @@ import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, HISTORY_LIMITS, PLAN_LABELS, performFullReset, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
+import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {

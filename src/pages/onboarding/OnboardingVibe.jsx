@@ -1,8 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { getOnboardingStore, updateOnboardingStore, resetOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 
@@ -66,6 +65,10 @@ export default function OnboardingVibe() {
   const touchStartY = useRef(null);
   const isSwiping = useRef(false);
 
+  const goTo = useCallback((i) => {
+    setIdx(Math.max(0, Math.min(VIBES.length - 1, i)));
+  }, []);
+
   // Restore from localStorage if store was wiped (app restart mid-onboarding)
   const savedCompanionId = localStorage.getItem("unfiltr_selected_companion_id") ||
                            localStorage.getItem("unfiltr_quiz_companion_id");
@@ -77,10 +80,6 @@ export default function OnboardingVibe() {
   }
 
   const vibe = VIBES[idx];
-
-  const goTo = useCallback((i) => {
-    setIdx(Math.max(0, Math.min(VIBES.length - 1, i)));
-  }, []);
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;

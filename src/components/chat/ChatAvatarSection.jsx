@@ -1,5 +1,4 @@
 import React from "react";
-import { Brain } from "lucide-react";
 import LiveAvatar from "@/components/LiveAvatar";
 
 export default function ChatAvatarSection({

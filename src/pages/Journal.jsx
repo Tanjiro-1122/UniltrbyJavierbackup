@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Trash2, Sparkles, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 import JournalEntryDetail from "@/components/journal/JournalEntryDetail";
 import JournalEntryCard from "@/components/journal/JournalEntryCard";

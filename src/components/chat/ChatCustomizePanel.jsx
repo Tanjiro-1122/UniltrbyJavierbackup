@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SlidersHorizontal } from "lucide-react";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
 const VOICE_PERSONALITIES = [

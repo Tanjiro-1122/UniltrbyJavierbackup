@@ -20,6 +20,12 @@ export default function OnboardingNickname() {
   const [phIdx, setPhIdx] = useState(0);
   const [focused, setFocused] = useState(false);
 
+  useEffect(() => {
+    if (focused) return;
+    const t = setInterval(() => setPhIdx(i => (i + 1) % PLACEHOLDERS.length), 2500);
+    return () => clearInterval(t);
+  }, [focused]);
+
   if (!store.selectedCompanion) {
     navigate("/onboarding/companion", { replace: true });
     return null;
@@ -32,12 +38,6 @@ export default function OnboardingNickname() {
   const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id") &&
                    localStorage.getItem("unfiltr_quiz_companion_id") !== "manual";
   const backDest = fromQuiz ? "/onboarding/quiz" : "/onboarding/companion";
-
-  useEffect(() => {
-    if (focused) return;
-    const t = setInterval(() => setPhIdx(i => (i + 1) % PLACEHOLDERS.length), 2500);
-    return () => clearInterval(t);
-  }, [focused]);
 
   const handleNext = async () => {
     const trimmed = nickname.trim() || companion?.name || "";

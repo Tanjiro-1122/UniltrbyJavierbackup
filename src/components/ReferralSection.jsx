@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Copy, Check, Users } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 export default function ReferralSection({ profileId }) {
   const [code, setCode] = useState(null);
