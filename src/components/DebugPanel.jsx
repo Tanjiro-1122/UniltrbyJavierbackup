@@ -56,20 +56,34 @@ function _restoreConsole() {
 }
 
 // ── Patch global fetch to log failed API calls ───────────────────────────────
+// Only track our own /api/* endpoints and same-origin calls — skip external
+// base44 SDK calls (app.base44.com) because those are already caught and
+// handled internally by the SDK, and logging them here would double-count errors.
 const _origFetch = window.fetch.bind(window);
+function _isOwnApiUrl(url) {
+  if (!url || url === '?') return false;
+  if (url.startsWith('/api/')) return true;
+  try {
+    const u = new URL(url, window.location.href);
+    // Own origin but not external SDK calls
+    return u.origin === window.location.origin;
+  } catch { return false; }
+}
 function _patchFetch() {
   window.fetch = async function patchedFetch(input, init) {
     const url = typeof input === 'string' ? input : input?.url || '?';
     try {
       const res = await _origFetch(input, init);
-      if (!res.ok) {
+      if (!res.ok && _isOwnApiUrl(url)) {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false });
         _push(`[${time}] ❌ fetch ${res.status} ${url}`, true);
       }
       return res;
     } catch (err) {
-      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-      _push(`[${time}] ❌ fetch ERR ${url} — ${err.message}`, true);
+      if (_isOwnApiUrl(url)) {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        _push(`[${time}] ❌ fetch ERR ${url} — ${err.message}`, true);
+      }
       throw err;
     }
   };
@@ -79,11 +93,13 @@ function _restoreFetch() {
 }
 
 export function DebugPanel() {
-  const [visible, setVisible]     = useState(false);
-  const [logLines, setLogLines]   = useState([...logs]);
-  const [minimized, setMinimized] = useState(false);
-  const [errorCount, setErrorCount] = useState(pendingErrorCount);
-  const [copied, setCopied]       = useState(false);
+  const [visible, setVisible]         = useState(false);
+  const [logLines, setLogLines]       = useState([...logs]);
+  const [minimized, setMinimized]     = useState(false);
+  const [errorCount, setErrorCount]   = useState(pendingErrorCount);
+  const [copied, setCopied]           = useState(false);
+  // Bumped whenever auth state changes so QUICK SNAPSHOT re-reads localStorage
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
 
   useEffect(() => {
     setLogsExternal      = setLogLines;
@@ -99,12 +115,15 @@ export function DebugPanel() {
     // Auto-show if ?debug=1 in URL
     if (window.location.search.includes('debug=1')) setVisible(true);
 
+    // Refresh QUICK SNAPSHOT when auth state changes (sign-in, sign-out, storage update)
+    const bumpSnapshot = () => setSnapshotVersion(v => v + 1);
+
     // Listen for native debug messages
     const handleNativeDebug = (event) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data?.type === 'NATIVE_DEBUG')         debugLog(`🍎 ${data.message}`);
-        if (data?.type === 'APPLE_SIGN_IN_SUCCESS') debugLog(`✅ APPLE_SIGN_IN_SUCCESS: ${JSON.stringify(data.data)}`);
+        if (data?.type === 'APPLE_SIGN_IN_SUCCESS') { debugLog(`✅ APPLE_SIGN_IN_SUCCESS: ${JSON.stringify(data.data)}`); bumpSnapshot(); }
         if (data?.type === 'APPLE_SIGN_IN_CANCELLED') debugLog(`🚫 APPLE_SIGN_IN_CANCELLED`);
         if (data?.type === 'APPLE_SIGN_IN_ERROR')   debugLog(`❌ APPLE_SIGN_IN_ERROR: ${data.error}`);
       } catch (e) {}
@@ -126,6 +145,8 @@ export function DebugPanel() {
     window.addEventListener('message', handleNativeDebug);
     window.addEventListener('error', handleWindowError);
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('unfiltr_auth_updated', bumpSnapshot);
+    window.addEventListener('storage', bumpSnapshot);
 
     return () => {
       setLogsExternal       = null;
@@ -135,6 +156,8 @@ export function DebugPanel() {
       window.removeEventListener('message', handleNativeDebug);
       window.removeEventListener('error', handleWindowError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('unfiltr_auth_updated', bumpSnapshot);
+      window.removeEventListener('storage', bumpSnapshot);
     };
   }, []);
 
@@ -146,14 +169,17 @@ export function DebugPanel() {
   };
 
   const handleCopy = () => {
+    const subTier = localStorage.getItem('unfiltr_is_annual') === 'true' ? 'Annual'
+      : localStorage.getItem('unfiltr_is_pro') === 'true' ? 'Pro'
+      : localStorage.getItem('unfiltr_is_premium') === 'true' ? 'Premium'
+      : 'Free';
     const snapshot = [
       `=== UNFILTR DEBUG SNAPSHOT ${new Date().toISOString()} ===`,
       `User ID:      ${localStorage.getItem('unfiltr_user_id') || '—'}`,
       `Apple ID:     ${localStorage.getItem('unfiltr_apple_user_id') || '—'}`,
+      `Profile ID:   ${localStorage.getItem('userProfileId') || '—'}`,
       `Device ID:    ${localStorage.getItem('unfiltr_device_id') || '—'}`,
-      `Premium:      ${localStorage.getItem('unfiltr_is_premium') || '—'}`,
-      `Pro:          ${localStorage.getItem('unfiltr_is_pro') || '—'}`,
-      `Annual:       ${localStorage.getItem('unfiltr_is_annual') || '—'}`,
+      `Sub Tier:     ${subTier}`,
       `Display Name: ${localStorage.getItem('unfiltr_display_name') || '—'}`,
       `Native Bridge: ${window.ReactNativeWebView ? 'YES' : 'NO'}`,
       `UA: ${navigator.userAgent}`,
@@ -274,19 +300,24 @@ export function DebugPanel() {
           {/* Logs */}
           {!minimized && (
             <div style={{ overflowY: 'auto', padding: '6px 10px', flex: 1, color: '#e2e8f0' }}>
-              {/* Quick snapshot */}
-              <div style={{ marginBottom: 8, padding: '6px 8px', background: 'rgba(168,85,247,0.08)', borderRadius: 8, fontSize: 10 }}>
+                {/* Quick snapshot — snapshotVersion forces re-read of localStorage when auth changes */}
+              <div key={snapshotVersion} style={{ marginBottom: 8, padding: '6px 8px', background: 'rgba(168,85,247,0.08)', borderRadius: 8, fontSize: 10 }}>
                 <div style={{ color: '#a855f7', fontWeight: 'bold', marginBottom: 4 }}>QUICK SNAPSHOT</div>
-                {[
-                  ['User ID',       localStorage.getItem('unfiltr_user_id') || '—'],
-                  ['Apple ID',      localStorage.getItem('unfiltr_apple_user_id') || '—'],
-                  ['Device ID',     localStorage.getItem('unfiltr_device_id') || '—'],
-                  ['Premium',       localStorage.getItem('unfiltr_is_premium') || '—'],
-                  ['Pro',           localStorage.getItem('unfiltr_is_pro') || '—'],
-                  ['Annual',        localStorage.getItem('unfiltr_is_annual') || '—'],
-                  ['Display Name',  localStorage.getItem('unfiltr_display_name') || '—'],
-                  ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
-                ].map(([k, v]) => (
+                {(() => {
+                  const tier = localStorage.getItem('unfiltr_is_annual') === 'true' ? 'Annual'
+                    : localStorage.getItem('unfiltr_is_pro') === 'true' ? 'Pro'
+                    : localStorage.getItem('unfiltr_is_premium') === 'true' ? 'Premium'
+                    : 'Free';
+                  return [
+                    ['User ID',       localStorage.getItem('unfiltr_user_id') || '—'],
+                    ['Apple ID',      localStorage.getItem('unfiltr_apple_user_id') || '—'],
+                    ['Profile ID',    localStorage.getItem('userProfileId') || '—'],
+                    ['Device ID',     localStorage.getItem('unfiltr_device_id') || '—'],
+                    ['Sub Tier',      tier],
+                    ['Display Name',  localStorage.getItem('unfiltr_display_name') || '—'],
+                    ['Native Bridge', window.ReactNativeWebView ? '✅ YES' : '❌ NO'],
+                  ];
+                })().map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span style={{ color: 'rgba(255,255,255,0.4)' }}>{k}</span>
                     <span style={{ color: v === '—' ? '#f43f5e' : v.includes('✅') ? '#4ade80' : '#e2e8f0', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</span>

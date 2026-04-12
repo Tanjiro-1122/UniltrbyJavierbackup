@@ -20,6 +20,24 @@ export default function SettingsVoice({ profile, onUpdate }) {
     localStorage.setItem("unfiltr_voice_gender", voiceGender);
     localStorage.setItem("unfiltr_voice_personality", voicePersonality);
     onUpdate && onUpdate({ voice_gender: voiceGender, voice_personality: voicePersonality });
+
+    // Persist to the Companion DB record so ChatPage init doesn't override
+    // localStorage with stale DB values on next load.
+    const companionId = (profile?.companion_id && profile.companion_id !== "pending")
+      ? profile.companion_id
+      : localStorage.getItem("unfiltr_companion_id");
+    if (companionId && companionId !== "pending") {
+      fetch('/api/utils', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateCompanion',
+          companionId,
+          updateData: { voice_gender: voiceGender, voice_personality: voicePersonality },
+        }),
+      }).catch(() => {});
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

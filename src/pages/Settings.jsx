@@ -457,8 +457,11 @@ export default function Settings() {
     localStorage.setItem("unfiltr_personality_humor",     personalityHumor);
     localStorage.setItem("unfiltr_personality_curiosity", personalityCuriosity);
 
-    // Also persist to DB if we have a companion record
-    const companionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    // Also persist to DB if we have a valid Companion record ID.
+    // Guard against "pending" or avatar display IDs (e.g. "luna") which would
+    // silently fail the DB update — only the UUID from userProfile is reliable.
+    const rawCompanionId = userProfile?.companion_id || localStorage.getItem("unfiltr_companion_id");
+    const companionId = (rawCompanionId && rawCompanionId !== "pending") ? rawCompanionId : null;
     if (companionId) {
       try {
         await fetch('/api/utils', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'updateCompanion', companionId, updateData: { personality_vibe: personalityVibe, personality_empathy: personalityEmpathy, personality_humor: personalityHumor, personality_curiosity: personalityCuriosity, personality_style: personalityStyle } }) }).catch(() => {})
