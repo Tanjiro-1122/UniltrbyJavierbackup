@@ -172,6 +172,8 @@ function pruneChatSessions() {
 
     const limit = LIMITS.chat_sessions[tier] ?? 2;
     if (limit >= 9999) return; // no cap for unlimited tiers
+    // sessions are stored newest-first ([snapshot, ...existing]), so slice(0, limit)
+    // keeps the most recent N sessions — the same direction ChatPage uses when writing.
     if (sessions.length > limit) {
       localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(sessions.slice(0, limit)));
     }
