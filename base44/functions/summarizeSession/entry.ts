@@ -6,7 +6,7 @@ const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { messages, profileId, companionName, isPremium } = await req.json();
+    const { messages, profileId, companionName, isPremium, tier } = await req.json();
 
     if (!messages || !profileId) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
@@ -43,17 +43,21 @@ Be specific and personal — this will be used as memory for the companion in fu
     // Load current profile
     const profile = await base44.asServiceRole.entities.UserProfile.get(profileId);
 
-    if (isPremium) {
-      // Premium: append to session_memory array (keep last 10)
+    // Tier-aware memory depth: free=0 (summary only), plus=10, pro=30, annual/family=60
+    const resolvedTier = tier || (isPremium ? "plus" : "free");
+    const SESSION_DEPTH = { free: 0, plus: 10, pro: 30, annual: 60, family: 60 };
+    const depth = SESSION_DEPTH[resolvedTier] ?? 0;
+
+    if (depth > 0) {
       const existing = profile?.session_memory || [];
-      const updated = [...existing, { date, summary }].slice(-10);
-      await base44.asServiceRole.entities.UserProfile.update(profileId, { 
+      const updated = [...existing, { date, summary }].slice(-depth);
+      await base44.asServiceRole.entities.UserProfile.update(profileId, {
         session_memory: updated,
         memory_summary: summary,
       });
     } else {
       // Free: only store latest condensed summary (lightweight memory)
-      await base44.asServiceRole.entities.UserProfile.update(profileId, { 
+      await base44.asServiceRole.entities.UserProfile.update(profileId, {
         memory_summary: summary,
       });
     }

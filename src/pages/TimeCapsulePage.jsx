@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const B44_APP  = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-const DB_HDR   = { "Authorization": `Bearer ${DB_TOKEN}`, "Content-Type": "application/json" };
-
 const DURATIONS = [
   { label: "1 month",  days: 30  },
   { label: "3 months", days: 90  },
@@ -40,16 +35,24 @@ export default function TimeCapsulePage() {
     // Try by profileId first, fall back to apple_user_id lookup
     if (pid) {
       try {
-        const r = await fetch(`${B44_BASE}/UserProfile/${pid}`, { headers: { "Authorization": `Bearer ${DB_TOKEN}` } });
-        if (r.ok) profile = await r.json();
+        const r = await fetch("/api/base44", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getUserProfile", profile_id: pid }),
+        });
+        const d = await r.json();
+        if (d.profile) profile = d.profile;
       } catch {}
     }
     if (!profile && appleId) {
       try {
-        const r = await fetch(`${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleId)}&limit=1`, { headers: { "Authorization": `Bearer ${DB_TOKEN}` } });
-        const data = await r.json();
-        const records = Array.isArray(data) ? data : (data?.records || []);
-        if (records[0]) { profile = records[0]; localStorage.setItem("userProfileId", profile.id); }
+        const r = await fetch("/api/base44", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getUserProfile", apple_user_id: appleId }),
+        });
+        const d = await r.json();
+        if (d.profile) { profile = d.profile; localStorage.setItem("userProfileId", profile.id); }
       } catch {}
     }
 
@@ -75,10 +78,15 @@ export default function TimeCapsulePage() {
         delivered:  false,
       };
       const updated = [...capsules, newCapsule];
-      const r = await fetch(`${B44_BASE}/UserProfile/${profileId}`, {
-        method: "PUT",
-        headers: DB_HDR,
-        body: JSON.stringify({ time_capsules: updated }),
+      const r = await fetch("/api/base44", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateUserProfile",
+          profile_id: profileId,
+          apple_user_id: localStorage.getItem("unfiltr_apple_user_id"),
+          data: { time_capsules: updated },
+        }),
       });
       if (!r.ok) throw new Error("Save failed");
       setCapsules(updated);

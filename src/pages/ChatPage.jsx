@@ -8,6 +8,7 @@ import ShareCardModal from "@/components/ShareCardModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 import { getMoodEmoji } from "@/lib/moodConfig";
+import { isFamilyUnlimited } from "@/lib/entitlements";
 
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatInputBar from "@/components/chat/ChatInputBar";
@@ -48,7 +49,7 @@ const VIBES_SUFFIX = {
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
-const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
+const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
 /**
  * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
@@ -89,7 +90,7 @@ function doUpsertChatHistory(msgs, onError) {
   }
 
   const isFamilyOrAnnual =
-    localStorage.getItem("unfiltr_family_unlimited")   === "true" ||
+    isFamilyUnlimited() ||
     localStorage.getItem("unfiltr_family_unlock")      === "true" ||
     localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
     localStorage.getItem("unfiltr_is_annual")          === "true";
@@ -493,15 +494,13 @@ export default function ChatPage() {
       // Try DB first for real cross-device mood history
       if (appleIdMood) {
         try {
-          const B44_APP = "69b332a392004d139d4ba495";
-          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-          const moodRes = await fetch(
-            `${B44_BASE}/MoodEntry?apple_user_id=${encodeURIComponent(appleIdMood)}&limit=14&sort=-created_date`,
-            { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
-          );
-          const moodData = await moodRes.json();
-          const moodRecords = Array.isArray(moodData) ? moodData : (moodData?.records || []);
+          const moodRes = await fetch("/api/base44", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "getMoodEntries", apple_user_id: appleIdMood, limit: 14 }),
+          });
+          const moodJson = await moodRes.json();
+          const moodRecords = Array.isArray(moodJson.items) ? moodJson.items : [];
           // Only use last 7 days
           const cutoff = new Date();
           cutoff.setDate(cutoff.getDate() - 7);
@@ -608,15 +607,13 @@ export default function ChatPage() {
         debugLog(`[ChatPage] ⚠️ Skipping DB message restore — companion_id is "${compId || "not set"}"`);
       } else {
         try {
-          const B44_APP = "69b332a392004d139d4ba495";
-          const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-          const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-          const res = await fetch(
-            `${B44_BASE}/Message?apple_user_id=${encodeURIComponent(appleId)}&companion_id=${encodeURIComponent(compId)}&limit=20&sort=-created_date`,
-            { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
-          );
+          const res = await fetch("/api/base44", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "getRecentMessages", apple_user_id: appleId, companion_id: compId, limit: 20 }),
+          });
           const data = await res.json();
-          const records = (Array.isArray(data) ? data : (data?.records || [])).reverse();
+          const records = (Array.isArray(data.items) ? data.items : []).reverse();
           if (records.length >= 2) {
             // Restore last messages — skip greeting, go straight to history
             setMessages(records.map(m => ({ role: m.role, content: m.content })));

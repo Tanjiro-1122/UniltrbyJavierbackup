@@ -104,18 +104,16 @@ function useProfileRecovery() {
 
     (async () => {
       try {
-        const B44_APP = "69b332a392004d139d4ba495";
-        const TOKEN   = "1156284fb9144ad9ab95afc962e848d8";
-        const res = await fetch(
-          `https://app.base44.com/api/apps/${B44_APP}/entities/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-          { headers: { "Authorization": `Bearer ${TOKEN}` } }
-        );
+        const res = await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "sync", appleUserId }),
+        });
+        if (!res.ok) return;
         const data = await res.json();
-        const records = Array.isArray(data) ? data : (data?.records || []);
-        const p = records[0];
-        if (p) {
-          localStorage.setItem("userProfileId", p.id);
-          // Set unfiltr_user_id so AuthContext recognizes the restored session
+        const p = data?.data;
+        if (p?.profileId) {
+          localStorage.setItem("userProfileId", p.profileId);
           localStorage.setItem("unfiltr_user_id", appleUserId);
           if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
           if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
@@ -123,15 +121,14 @@ function useProfileRecovery() {
             localStorage.setItem("companionId", p.companion_id);
             localStorage.setItem("unfiltr_companion_id", p.companion_id);
           }
-          // Set all three canonical premium flags so every page is consistent
           const isAnnual  = !!(p.annual_plan);
           const isPro     = !!(p.pro_plan);
-          const isPremium = !!(p.is_premium || p.premium || isPro || isAnnual);
+          const isPremium = !!(p.is_premium || isPro || isAnnual);
           localStorage.setItem("unfiltr_is_premium", String(isPremium));
           localStorage.setItem("unfiltr_is_pro",     String(isPro));
           localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
           window.dispatchEvent(new Event("unfiltr_auth_updated"));
-          console.log("[Recovery] Profile restored via apple_user_id:", p.id, p.display_name);
+          console.log("[Recovery] Profile restored via syncProfile:", p.profileId);
         }
       } catch (e) {
         console.warn("[Recovery] Could not restore profile:", e.message);

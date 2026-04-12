@@ -18,10 +18,13 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { receipt, productId } = body;
+    const { receipt, productId, appleUserId } = body;
 
     if (!receipt) {
       return Response.json({ error: 'No receipt provided' }, { status: 400 });
+    }
+    if (!appleUserId) {
+      return Response.json({ error: 'appleUserId is required' }, { status: 400 });
     }
 
     const validationResult = await validateReceipt(receipt);
@@ -35,13 +38,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unknown product ID', productId: validationResult.productId }, { status: 400 });
     }
 
-    const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
+    // Lookup by apple_user_id (the device's Apple Sign-In ID set during onboarding)
+    const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: appleUserId });
     if (profiles.length > 0) {
       await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
         is_premium: true,
         annual_plan: subscriptionType === 'premium_annual',
         pro_plan: subscriptionType === 'premium_pro',
       });
+    } else {
+      console.warn('[handleAppleIAP] No UserProfile found for apple_user_id:', appleUserId);
     }
 
     return Response.json({

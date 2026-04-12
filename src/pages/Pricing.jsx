@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
-import { base44 } from '@/api/base44Client';
 import { Brain, MessageCircle, Mic, Zap, BookOpen, RotateCcw, Loader2, ChevronLeft } from 'lucide-react';
 import AppShell from '@/components/shell/AppShell';
 
@@ -184,30 +183,40 @@ function AdminPanel({ onClose, navigate }) {
   const [code, setCode] = useState('');
   const [err, setErr] = useState('');
 
-  const submit = () => {
-    if (code.trim().toLowerCase() === 'javier1122admin') {
-      localStorage.setItem('unfiltr_admin_unlocked', 'true');
-      sessionStorage.setItem('unfiltr_admin_session', 'true');
-      onClose();
-      window.location.href = 'https://unfiltrbyjavier2.vercel.app/AdminDashboard';
-    } else if (code.trim().toLowerCase() === 'huertasfam' || code.trim().toLowerCase() === 'huertsfam') {
-      const profileId = localStorage.getItem('userProfileId');
-      if (profileId) {
-        fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }) }).catch(() => {});
+  const submit = async () => {
+    try {
+      const res = await fetch('/api/utils', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verifySpecialCode', code }),
+      });
+      const data = await res.json();
+      if (data.type === 'admin') {
+        localStorage.setItem('unfiltr_admin_unlocked', 'true');
+        sessionStorage.setItem('unfiltr_admin_session', 'true');
+        onClose();
+        navigate('/AdminDashboard');
+      } else if (data.type === 'family') {
+        const profileId = localStorage.getItem('userProfileId');
+        if (profileId) {
+          fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }) }).catch(() => {});
+        }
+        const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+        localStorage.setItem('unfiltr_family_unlimited', 'true');
+        localStorage.setItem('unfiltr_family_unlimited_expires_at', oneYearFromNow);
+        localStorage.setItem('unfiltr_is_premium', 'true');
+        localStorage.setItem('unfiltr_is_annual', 'true');
+        localStorage.setItem('unfiltr_family_unlock', 'true');
+        localStorage.setItem('unfiltr_msg_limit_override', 'true');
+        localStorage.setItem('unfiltr_bonus_messages', '99999');
+        window.dispatchEvent(new Event('unfiltr_auth_updated'));
+        onClose();
+        alert('✅ Family access unlocked!');
+      } else {
+        setErr('Invalid code');
       }
-      const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-      localStorage.setItem('unfiltr_family_unlimited', 'true');
-      localStorage.setItem('unfiltr_family_unlimited_expires_at', oneYearFromNow);
-      localStorage.setItem('unfiltr_is_premium', 'true');
-      localStorage.setItem('unfiltr_is_annual', 'true');
-      localStorage.setItem('unfiltr_family_unlock', 'true');
-      localStorage.setItem('unfiltr_msg_limit_override', 'true');
-      localStorage.setItem('unfiltr_bonus_messages', '99999');
-      window.dispatchEvent(new Event('unfiltr_auth_updated'));
-      onClose();
-      alert('✅ Family access unlocked!');
-    } else {
-      setErr('Invalid code');
+    } catch {
+      setErr('Could not verify code. Please try again.');
     }
   };
 
@@ -313,16 +322,9 @@ export default function Pricing() {
     try {
       const result = await restore();
       if (result?.success || result?.isSuccess) {
-        try {
-          const profileId = localStorage.getItem('userProfileId');
-          if (profileId) {
-            const profile = await base44.entities.UserProfile.get(profileId);
-            if (profile?.is_premium) navigate("/hub");
-          }
-        } catch (dbErr) {
-          // DB check failed — still grant access if native restore said yes
-          navigate("/hub");
-        }
+        // useAppleSubscriptions.restorePurchases() already updated is_premium + is_annual/is_pro
+        // via /api/verifyPurchase. Navigate immediately — localStorage is already correct.
+        navigate("/hub");
       }
     } catch (e) {
       // Handled by useAppleSubscriptions error state; log for debug

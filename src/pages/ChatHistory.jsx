@@ -10,6 +10,7 @@ const HISTORY_LABELS = {
   plus:   `${PLAN_LABELS.plus} — last ${HISTORY_LIMITS.plus} conversations kept`,
   pro:    `${PLAN_LABELS.pro} — last ${HISTORY_LIMITS.pro} conversations kept`,
   annual: `${PLAN_LABELS.annual} — unlimited history`,
+  family: `${PLAN_LABELS.family} — unlimited history`,
 };
 
 function formatDate(iso) {
@@ -69,7 +70,7 @@ export default function ChatHistory() {
       await fetch("/api/base44", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deleteChatHistory", record_id: id }),
+        body: JSON.stringify({ action: "deleteChatHistory", record_id: id, apple_user_id: appleUserId }),
       });
       setSessions(prev => prev.filter(s => s.id !== id));
       if (expandedId === id) setExpandedId(null);
@@ -142,7 +143,7 @@ export default function ChatHistory() {
             }}>
               <Lock size={11} color={tier === "free" ? "#fbbf24" : "#a78bfa"} />
               <span style={{ color: tier === "free" ? "#fbbf24" : "#a78bfa", fontSize: 11, fontWeight: 700 }}>
-                {tier === "annual" ? "∞" : limit} saved
+                {(tier === "annual" || tier === "family") ? "∞" : limit} saved
               </span>
             </div>
           </div>

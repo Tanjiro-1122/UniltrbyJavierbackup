@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, X } from "lucide-react";
+import { APP_URL } from "@/lib/appConfig";
 
 const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
 
@@ -153,7 +154,7 @@ const TUTORIAL_SLIDES = [
           </div>
         ))}
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textAlign: "center", margin: "4px 0 0" }}>
-          Full policy at unfiltrbyjavier2.vercel.app/PrivacyPolicy
+          Full policy at {APP_URL}/PrivacyPolicy
         </p>
       </div>
     ),

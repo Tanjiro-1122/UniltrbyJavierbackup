@@ -43,8 +43,11 @@ Deno.serve(async (req) => {
         return Response.json({ valid: false, error: 'No active subscription found' });
       }
 
-      const isAnnual = activeReceipt.product_id?.includes('annual');
-      return Response.json({ valid: true, plan: isAnnual ? 'annual' : 'monthly', productId: activeReceipt.product_id });
+      const pid = activeReceipt.product_id || '';
+      const isAnnual = pid.includes('annual');
+      const isPro    = pid.includes('.pro') || pid.includes('_pro');
+      const plan = isAnnual ? 'annual' : isPro ? 'pro' : 'monthly';
+      return Response.json({ valid: true, plan, productId: pid });
 
     } else if (platform === 'android') {
       // Android: delegate to Google Play verification function

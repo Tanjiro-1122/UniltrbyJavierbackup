@@ -8,18 +8,29 @@
  *   BASE44_SERVICE_TOKEN — service-role token used by all serverless functions
  *                          that talk directly to Base44.
  *
- * Optional environment variables (override defaults):
- *   B44_APP_ID      — Base44 application ID  (default: production app ID)
- *   BASE44_BASE_URL — Base44 API root URL     (default: https://app.base44.com)
- *   B44_BASE_URL    — alias for BASE44_BASE_URL (legacy, lower precedence)
+ * Optional environment variables (override defaults, checked in priority order):
+ *   B44_APP_ID           — Base44 application ID
+ *   VITE_BASE44_APP_ID   — same as above (set by Vercel template, accessible to
+ *                          Node.js functions as process.env.VITE_BASE44_APP_ID)
+ *   BASE44_BASE_URL      — Base44 API root URL
+ *   B44_BASE_URL         — alias for BASE44_BASE_URL (legacy, lower precedence)
+ *   VITE_BASE44_APP_BASE_URL — same as above (set by Vercel template)
  */
 
-export const B44_APP_ID  = process.env.B44_APP_ID  || "69b332a392004d139d4ba495";
-/** Resolved Base44 API root URL (from BASE44_BASE_URL, B44_BASE_URL, or built-in default). */
-export const B44_BASE_URL =
+export const B44_APP_ID =
+  process.env.B44_APP_ID ||
+  process.env.VITE_BASE44_APP_ID ||
+  "69b332a392004d139d4ba495";
+
+// Strip any trailing slash so path concatenation never creates double-slashes
+const _rawBaseUrl =
   process.env.BASE44_BASE_URL ||
   process.env.B44_BASE_URL    ||
+  process.env.VITE_BASE44_APP_BASE_URL ||
   "https://app.base44.com";
+
+/** Resolved Base44 API root URL. */
+export const B44_BASE_URL = _rawBaseUrl.replace(/\/+$/, "");
 
 /** Full entities endpoint: https://app.base44.com/api/apps/<id>/entities */
 export const B44_ENTITIES = `${B44_BASE_URL}/api/apps/${B44_APP_ID}/entities`;

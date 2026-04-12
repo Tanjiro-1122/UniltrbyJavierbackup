@@ -2,9 +2,11 @@
 // Single source of truth for all UserProfile DB operations
 // Called from HomeScreen (sign-in) and onboarding steps
 
-const B44_APP = "69b332a392004d139d4ba495";
-const B44_BASE = `https://app.base44.com/api/apps/${B44_APP}/entities`;
-const getKey = () => process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
+
+// Alias so the rest of the file is unchanged
+const B44_BASE = B44_ENTITIES;
+const getKey = b44Token;
 
 // Decode Apple's identityToken JWT to reliably extract email on every login
 function decodeAppleJwt(token) {
@@ -20,11 +22,6 @@ function decodeAppleJwt(token) {
 }
 
 
-
-const b44Headers = () => ({
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${getKey()}`,
-});
 
 async function findByAppleId(appleUserId) {
   const res = await fetch(

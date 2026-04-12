@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Share2 } from "lucide-react";
+import { APP_URL } from "@/lib/appConfig";
 
 // Unfiltr logo — purple heart circle (inline SVG so it always works, no external deps)
 function UnfiltrLogo({ size = 28 }) {
@@ -38,7 +39,7 @@ export default function ShareCardModal({ visible, onClose, message, companionNam
   const gradient = moodGradients[mood] || moodGradients.neutral;
 
   const handleShare = async () => {
-    const text = `"${message}"\n\n— ${companionName || "Your companion"} on Unfiltr\n\nYour private AI companion 💜\nget it at: unfiltrbyjavier2.vercel.app`;
+    const text = `"${message}"\n\n— ${companionName || "Your companion"} on Unfiltr\n\nYour private AI companion 💜\nget it at: ${APP_URL}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: `${companionName || "Unfiltr"} says...`, text });

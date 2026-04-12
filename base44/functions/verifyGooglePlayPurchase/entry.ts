@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { purchaseToken, productId } = await req.json();
+    const { purchaseToken, productId, userId } = await req.json();
 
     if (!purchaseToken || !productId) {
       return Response.json({ valid: false, error: 'Missing purchaseToken or productId' });
@@ -25,21 +25,25 @@ Deno.serve(async (req) => {
       console.warn('[verifyGooglePlayPurchase] GOOGLE_PLAY_SERVICE_KEY not set — activating without server verification');
       
       const isAnnual = productId?.includes('annual');
+      const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
       
-      // Find and update the user's profile
-      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-      if (profiles.length > 0) {
-        await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
-          is_premium: true,
-          premium: true,
-          annual_plan: isAnnual,
-        });
+      // Find and update the user's profile by apple_user_id
+      if (userId) {
+        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: userId });
+        if (profiles.length > 0) {
+          await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
+            is_premium: true,
+            premium: true,
+            annual_plan: isAnnual,
+            pro_plan: isPro,
+          });
+        }
       }
 
       return Response.json({
         valid: true,
         verified: false,
-        plan: isAnnual ? 'annual' : 'monthly',
+        plan: isAnnual ? 'annual' : isPro ? 'pro' : 'monthly',
         message: 'Activated without server-side verification (service key not configured)',
       });
     }
@@ -122,21 +126,25 @@ Deno.serve(async (req) => {
     }
 
     const isAnnual = productId?.includes('annual');
+    const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
 
     // Update user profile
-    const profiles = await base44.asServiceRole.entities.UserProfile.filter({ created_by: user.email });
-    if (profiles.length > 0) {
-      await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
-        is_premium: true,
-        premium: true,
-        annual_plan: isAnnual,
-      });
+    if (userId) {
+      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: userId });
+      if (profiles.length > 0) {
+        await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
+          is_premium: true,
+          premium: true,
+          annual_plan: isAnnual,
+          pro_plan: isPro,
+        });
+      }
     }
 
     return Response.json({
       valid: true,
       verified: true,
-      plan: isAnnual ? 'annual' : 'monthly',
+      plan: isAnnual ? 'annual' : isPro ? 'pro' : 'monthly',
       expiresDate: new Date(expiryMs).toISOString(),
     });
 

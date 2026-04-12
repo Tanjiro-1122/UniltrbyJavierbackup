@@ -5,28 +5,27 @@ import {
   getCachedProfile,
   setCachedProfile,
   invalidateCachedProfile,
+  createRequestContext,
+  checkRateLimit,
 } from "./_helpers.js";
+import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
-const openai   = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const B44_APP     = "69b332a392004d139d4ba495";
-const B44_BASE    = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const B44_API_KEY = process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function b44Get(entity, id) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
-    headers: { "Authorization": `Bearer ${B44_API_KEY}` },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    return await b44Fetch(`${B44_ENTITIES}/${entity}/${id}`);
+  } catch { return null; }
 }
 
 async function b44Update(entity, id, data) {
-  const res = await fetch(`${B44_BASE}/${entity}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${B44_API_KEY}` },
-    body: JSON.stringify(data),
-  });
-  return res.ok;
+  try {
+    await b44Fetch(`${B44_ENTITIES}/${entity}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return true;
+  } catch { return false; }
 }
 
 // ── Merge extracted facts — new data wins, arrays merge+dedup ────────────────
@@ -136,6 +135,16 @@ function buildRichSummary(facts = {}, sessions = [], emotionalTimeline = []) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
 
   try {
     const { messages, profileId, companionName, isPremium, isPro, isAnnual } = req.body;

@@ -21,9 +21,6 @@ const MOOD_META = {
 };
 
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const B44_APP   = "69b332a392004d139d4ba495";
-const B44_BASE  = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const DB_TOKEN  = "1156284fb9144ad9ab95afc962e848d8";
 
 export default function MoodInsights() {
   const navigate = useNavigate();
@@ -53,12 +50,13 @@ export default function MoodInsights() {
     const appleId = localStorage.getItem("unfiltr_apple_user_id");
     if (appleId) {
       try {
-        const res = await fetch(
-          `${B44_BASE}/MoodEntry?apple_user_id=${encodeURIComponent(appleId)}&limit=60&sort=-created_date`,
-          { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
-        );
-        const data = await res.json();
-        const records = Array.isArray(data) ? data : (data?.records || []);
+        const res = await fetch("/api/base44", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getMoodEntries", apple_user_id: appleId, limit: 60 }),
+        });
+        const json = await res.json();
+        const records = Array.isArray(json.items) ? json.items : [];
         if (records.length > 0) {
           // DB has data — build map (one entry per day, most recent wins)
           records.forEach(r => {

@@ -3,10 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, PenLine, Trash2, RefreshCw } from "lucide-react";
 
-const B44_APP  = "69b332a392004d139d4ba495";
-const B44_BASE = `https://api.base44.com/api/apps/${B44_APP}/entities`;
-const DB_TOKEN = "1156284fb9144ad9ab95afc962e848d8";
-
 export default function JournalList() {
   const navigate = useNavigate();
   const [entries,    setEntries]    = useState([]);
@@ -25,12 +21,13 @@ export default function JournalList() {
     // ── DB first ─────────────────────────────────────────────────────────
     if (appleId) {
       try {
-        const res  = await fetch(
-          `${B44_BASE}/JournalEntry?apple_user_id=${encodeURIComponent(appleId)}&limit=200&sort=-created_date`,
-          { headers: { "Authorization": `Bearer ${DB_TOKEN}` } }
-        );
-        const data    = await res.json();
-        const records = Array.isArray(data) ? data : (data?.records || []);
+        const res = await fetch("/api/base44", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getJournalEntries", apple_user_id: appleId, limit: 200 }),
+        });
+        const json = await res.json();
+        const records = Array.isArray(json.items) ? json.items : [];
         dbEntries = records.map(r => ({ ...r, _dbId: r.id, _source: "db" }));
       } catch(e) {}
     }
@@ -75,9 +72,14 @@ export default function JournalList() {
     // Delete from DB if cloud entry
     if (entry._dbId) {
       try {
-        await fetch(`${B44_BASE}/JournalEntry/${entry._dbId}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${DB_TOKEN}` },
+        await fetch("/api/base44", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "deleteJournalEntry",
+            record_id: entry._dbId,
+            apple_user_id: localStorage.getItem("unfiltr_apple_user_id") || "",
+          }),
         });
       } catch(e) {}
     }
