@@ -8,6 +8,7 @@ import {
   createRequestContext,
   checkRateLimit,
   mergeFacts,
+  getProfileTier,
 } from "./_helpers.js";
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
@@ -132,11 +133,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, profileId, companionName, isPremium, isPro, isAnnual } = req.body;
+    const { messages, profileId, companionName } = req.body;
     if (!messages?.length || !profileId) return res.status(400).json({ error: "Missing required fields" });
 
     const userMsgCount = messages.filter(m => m.role === "user").length;
     if (userMsgCount < 3) return res.status(200).json({ ok: true, skipped: true, reason: "too_short" });
+
+    // ── Server-side tier verification ────────────────────────────────────────
+    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
 
     const transcript = messages
       .filter(m => m.role !== "system")

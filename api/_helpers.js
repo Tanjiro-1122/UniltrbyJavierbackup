@@ -12,12 +12,17 @@
  *  getCachedProfile(id)               — read from short-lived UserProfile cache
  *  setCachedProfile(id, data)         — write to UserProfile cache
  *  invalidateCachedProfile(id)        — evict a profile from cache after a write
+ *  getProfileTier(profileId)          — fetch verified subscription tier from DB
+ *  mergeFacts(existing, extracted)    — merge extracted user facts with dedup
  *
  * Constants (overrideable via env vars):
  *  MAX_INPUT_CHARS    — AI_MAX_INPUT_CHARS    (default 8000)
  *  MAX_OUTPUT_TOKENS  — AI_MAX_OUTPUT_TOKENS  (default 800)
  *  AI_TIMEOUT_MS      — AI_REQUEST_TIMEOUT_MS (default 25000 ms)
  *  AI_MAX_RPM         — AI_MAX_RPM            (default 10 req/min)
+ *
+ * Daily message limits by tier (server-enforced):
+ *  DAILY_MSG_LIMITS   — { free:20, plus:100, pro:200, annual:99999 }
  */
 
 import crypto from "crypto";
@@ -281,3 +286,50 @@ export function mergeFacts(existing = {}, extracted = {}) {
   return merged;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Server-verified subscription tier
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Daily message limits enforced server-side per tier.
+ * These must stay in sync with the client-side DAILY_MSG_LIMITS in
+ * src/components/useMessageLimit.jsx and src/lib/entitlements.js.
+ */
+export const DAILY_MSG_LIMITS = {
+  free:   20,
+  plus:   100,
+  pro:    200,
+  annual: 99999,
+};
+
+/**
+ * Fetch the subscription tier for a profile directly from Base44 (DB).
+ *
+ * Uses the in-memory profile cache so repeated calls within 30 s are free.
+ * On any fetch error the function returns free-tier flags so callers degrade
+ * gracefully instead of blocking the user — the rate limiter still applies.
+ *
+ * @param {string} profileId
+ * @returns {Promise<{ isPremium: boolean, isPro: boolean, isAnnual: boolean, profile: object|null }>}
+ */
+export async function getProfileTier(profileId) {
+  if (!profileId) return { isPremium: false, isPro: false, isAnnual: false, profile: null };
+
+  let profile = getCachedProfile(profileId);
+  if (!profile) {
+    try {
+      // Dynamic import avoids a circular dependency (_b44 ← _helpers).
+      const { b44Fetch, B44_ENTITIES } = await import("./_b44.js");
+      profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`);
+      if (profile) setCachedProfile(profileId, profile);
+    } catch (e) {
+      console.warn(`[getProfileTier] lookup failed for ${profileId}: ${e.message}`);
+      return { isPremium: false, isPro: false, isAnnual: false, profile: null };
+    }
+  }
+
+  const isAnnual  = !!(profile?.annual_plan);
+  const isPro     = !!(profile?.pro_plan);
+  const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual);
+  return { isPremium, isPro, isAnnual, profile };
+}

@@ -10,7 +10,7 @@
 
 import OpenAI from "openai";
 import { B44_APP_ID, B44_ENTITIES, b44Token } from "./_b44.js";
-import { createRequestContext, safeLogError, checkRateLimit } from "./_helpers.js";
+import { createRequestContext, safeLogError, checkRateLimit, getProfileTier } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -200,7 +200,10 @@ export default async function handler(req, res) {
     });
   }
 
-  const { action, profileId, facts, sessionNote, query, isPremium, isPro, isAnnual } = req.body || {};
+  const { action, profileId, facts, sessionNote, query } = req.body || {};
+
+  // ── Server-side tier verification ────────────────────────────────────────
+  const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
 
   try {
     if (action === "store") {

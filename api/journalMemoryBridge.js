@@ -5,7 +5,7 @@
 
 import OpenAI from "openai";
 import { B44_ENTITIES, b44Headers } from "./_b44.js";
-import { createRequestContext, safeLogError, checkRateLimit, mergeFacts } from "./_helpers.js";
+import { createRequestContext, safeLogError, checkRateLimit, mergeFacts, getProfileTier } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -59,14 +59,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { profileId, journalContent, journalTitle, isPremium, isPro, isAnnual } = req.body;
+    const { profileId, journalContent, journalTitle } = req.body;
+
+    if (!profileId || !journalContent?.trim()) {
+      return res.status(200).json({ ok: true, skipped: "missing_data" });
+    }
+
+    // ── Server-side tier verification ────────────────────────────────────────
+    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
 
     // Only run for premium users — free users don't get memory from journals
     if (!isPremium && !isPro && !isAnnual) {
       return res.status(200).json({ ok: true, skipped: "free_tier" });
-    }
-    if (!profileId || !journalContent?.trim()) {
-      return res.status(200).json({ ok: true, skipped: "missing_data" });
     }
 
     // Don't waste tokens on very short entries
