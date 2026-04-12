@@ -28,12 +28,19 @@ const MOOD_ANIM_NAME = {
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick, fullScreen = false }) {
   const companionData = COMPANIONS.find(c => c.id === companionId);
   const poseUrl = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
+  const fallbackUrl = companionData?.poses?.neutral || companionData?.avatar;
 
   // Crossfade state — keeps old image visible while new one loads
   const [displayUrl, setDisplayUrl] = useState(poseUrl);
   const [nextUrl, setNextUrl] = useState(null);
   const [fading, setFading] = useState(false);
   const prevKey = useRef(`${companionId}-${mood}`);
+
+  const handleImgError = (e) => {
+    if (fallbackUrl && e.target.src !== fallbackUrl) {
+      e.target.src = fallbackUrl;
+    }
+  };
 
   useEffect(() => {
     const newKey = `${companionId}-${mood}`;
@@ -57,11 +64,11 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
       }, 200);
     };
     img.onerror = () => {
-      setDisplayUrl(poseUrl);
+      setDisplayUrl(fallbackUrl || poseUrl);
       setNextUrl(null);
     };
     img.src = poseUrl;
-  }, [companionId, mood, poseUrl]);
+  }, [companionId, mood, poseUrl, fallbackUrl]);
 
   const baseStyle = {
     WebkitTouchCallout: "none",
@@ -116,6 +123,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           alt={companionId}
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}
+          onError={handleImgError}
           style={{
             ...baseStyle,
             animation: MOOD_ANIM_NAME[mood] || "none",

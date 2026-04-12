@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
 
@@ -7,6 +7,19 @@ export default function CompanionAvatar({ companionId, mood }) {
   if (!companion) return null;
 
   const poseUrl = companion.poses[mood] || companion.poses.neutral;
+  const fallbackUrl = companion.poses.neutral || companion.avatar;
+
+  const [imgSrc, setImgSrc] = useState(poseUrl);
+
+  useEffect(() => {
+    setImgSrc(poseUrl);
+  }, [poseUrl]);
+
+  const handleError = () => {
+    if (fallbackUrl && imgSrc !== fallbackUrl) {
+      setImgSrc(fallbackUrl);
+    }
+  };
 
   const animations = {
     happy: {
@@ -26,8 +39,9 @@ export default function CompanionAvatar({ companionId, mood }) {
   return (
     <motion.div className="relative w-56 h-56" {...animations[mood] || animations.neutral}>
       <img
-        src={poseUrl}
+        src={imgSrc}
         alt={companion.name}
+        onError={handleError}
         className="w-full h-full object-contain drop-shadow-2xl"
       />
 
