@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SlidersHorizontal } from "lucide-react";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 const VOICE_PERSONALITIES = [
   { id: "cheerful",     emoji: "😊", label: "Cheerful",      desc: "Bright & upbeat" },
@@ -44,7 +45,7 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion", relationshipMode: initRelMode = "friend", onRelationshipChange }) {
+export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion", relationshipMode: initRelMode = "friend", onRelationshipChange, companionDbId }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("Companion");
   const [relMode, setRelMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || initRelMode || "friend");
@@ -85,8 +86,10 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const handleChangeCompanion = async (c) => {
     setSavingCompanion(true);
     try {
+      // Clear the old companion's nickname so the new companion shows its own name
+      localStorage.removeItem("unfiltr_companion_nickname");
       // Update localStorage immediately so UI feels instant
-      const updated = { ...c, systemPrompt: companion?.systemPrompt };
+      const updated = { ...c, displayName: c.name, systemPrompt: companion?.systemPrompt };
       localStorage.setItem("unfiltr_companion", JSON.stringify(updated));
       localStorage.setItem("unfiltr_companion_id", c.id);
       localStorage.setItem("companionId", c.id);
@@ -126,10 +129,24 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     }
   };
 
-  const handleSaveVoice = () => {
+  const handleSaveVoice = async () => {
     localStorage.setItem("unfiltr_voice_gender", voiceGender);
     localStorage.setItem("unfiltr_voice_personality", voicePersonality);
     window.dispatchEvent(new Event("unfiltr_voice_updated"));
+
+    // Persist to the Companion DB record so values survive page reloads
+    // (ChatPage reads voice settings from the Companion entity on init and
+    // after every message, which would otherwise override localStorage).
+    if (companionDbId && companionDbId !== "pending") {
+      try {
+        await base44.entities.Companion.update(companionDbId, {
+          voice_gender:       voiceGender,
+          voice_personality:  voicePersonality,
+        });
+      } catch (e) {
+        console.warn("[Customize] Voice DB save failed:", e);
+      }
+    }
     toast.success("Voice updated ✨");
   };
 
@@ -142,7 +159,25 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     localStorage.setItem("unfiltr_personality_humor",     pHumor);
     localStorage.setItem("unfiltr_personality_curiosity", pCuriosity);
 
-    // Persist to DB via syncProfile (server-side — avoids SDK scope issue)
+    const personalityData = {
+      personality_vibe:      pVibe,
+      personality_empathy:   pEmpathy,
+      personality_humor:     pHumor,
+      personality_style:     pStyle,
+      personality_curiosity: pCuriosity,
+    };
+
+    // Persist to the Companion DB record — ChatPage reads personality from the
+    // Companion entity on load so this is the authoritative source of truth.
+    if (companionDbId && companionDbId !== "pending") {
+      try {
+        await base44.entities.Companion.update(companionDbId, personalityData);
+      } catch (e) {
+        console.warn("[Customize] Personality DB save failed:", e);
+      }
+    }
+
+    // Also sync to UserProfile so other pages can read the personality settings.
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
       try {
@@ -152,13 +187,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           body: JSON.stringify({
             action: "update",
             profileId,
-            updateData: {
-              personality_vibe:      pVibe,
-              personality_empathy:   pEmpathy,
-              personality_humor:     pHumor,
-              personality_style:     pStyle,
-              personality_curiosity: pCuriosity,
-            },
+            updateData: personalityData,
           }),
         });
       } catch (e) { /* localStorage fallback is fine */ }

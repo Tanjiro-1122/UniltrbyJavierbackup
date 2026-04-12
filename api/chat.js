@@ -162,6 +162,13 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  // Early guard — fail fast with a clear message rather than letting the OpenAI SDK
+  // throw a cryptic authentication error deep inside the request handler.
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("[chat] OPENAI_API_KEY is not set — cannot process chat requests");
+    return res.status(503).json({ error: "AI service is not configured. Please contact support." });
+  }
+
   const ctx = createRequestContext(req);
   res.setHeader("X-Request-Id", ctx.requestId);
 

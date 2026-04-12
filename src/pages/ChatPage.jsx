@@ -118,8 +118,18 @@ function doUpsertChatHistory(msgs, onError) {
       upsertKey:        window.__chatDayUpsertKey || null,
     }),
   })
-  .then(r => {
-    if (!r.ok) return r.text().then(t => Promise.reject(new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`)));
+  .then(async r => {
+    if (!r.ok) {
+      let body = {};
+      try { body = await r.json(); } catch {}
+      // Server configuration error (e.g. BASE44_SERVICE_TOKEN not set) is a
+      // deployment issue — log it but don't surface it as a user-facing error.
+      if (body?.error === "Server configuration error") {
+        console.error("[AutoSave] BASE44_SERVICE_TOKEN not configured — chat history saving unavailable");
+        return;
+      }
+      throw new Error(body?.error || `HTTP ${r.status}`);
+    }
     return r.json();
   })
   .then(data => {
@@ -831,7 +841,13 @@ export default function ChatPage() {
       const ttsRes = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleanText, companionId, voiceGender, voicePersonality }),
+        body: JSON.stringify({
+          text: cleanText,
+          companionId,
+          voiceGender,
+          voicePersonality,
+          profileId: localStorage.getItem("userProfileId") || null,
+        }),
       });
 
       if (!ttsRes.ok) {
@@ -1321,6 +1337,7 @@ export default function ChatPage() {
             navigate={navigate}
             setMessages={setMessages}
             vibe={vibe}
+            companionDbId={companionDbId}
             onNavigateToSettings={() => {
               // Flag so ChatPage knows to restore messages on return
               sessionStorage.setItem("unfiltr_returning_from_settings", "1");

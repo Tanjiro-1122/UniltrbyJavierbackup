@@ -21,6 +21,7 @@ export default function ChatHeader({
   onShowBreathing, onShowSleepStory,
   onShowTopics, onShowMoodInsights, onShowTimeCapsule, onShowBookmarks,
   streak,
+  companionDbId,
 }) {
   const [saving, setSaving] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
@@ -221,6 +222,7 @@ export default function ChatHeader({
             companionName={companion?.name || "Companion"}
             relationshipMode={relationshipMode}
             onRelationshipChange={setRelationshipMode}
+            companionDbId={companionDbId}
           />
 
           <IconBtn onClick={() => onNavigateToSettings ? onNavigateToSettings() : navigate("/settings")}>

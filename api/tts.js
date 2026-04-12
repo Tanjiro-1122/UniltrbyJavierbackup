@@ -4,8 +4,16 @@ import { createRequestContext, safeLogError, withAbortController, checkRateLimit
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const VOICE_MAP = {
-  female: { chill: "nova", hype: "shimmer", deep: "alloy", vent: "nova", journal: "nova" },
-  male:   { chill: "echo", hype: "onyx",    deep: "fable", vent: "echo", journal: "fable" },
+  female: {
+    // Vibe-based keys (legacy / ChatPage vibe selector)
+    chill: "nova", hype: "shimmer", deep: "alloy", vent: "nova", journal: "nova",
+    // Style-based keys (ChatCustomizePanel Voice tab)
+    cheerful: "shimmer", calm: "nova", energetic: "shimmer", professional: "alloy",
+  },
+  male: {
+    chill: "echo", hype: "onyx", deep: "fable", vent: "echo", journal: "fable",
+    cheerful: "onyx", calm: "fable", energetic: "onyx", professional: "echo",
+  },
 };
 
 export default async function handler(req, res) {
