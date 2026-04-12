@@ -31,7 +31,7 @@
 import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
 
 // Retention caps per tier
-const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999 };
+const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
 // CORS — only allow the production frontend and localhost dev servers
 const ALLOWED_ORIGINS = new Set([
@@ -62,12 +62,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "action is required" });
   }
 
-  if (action === "saveChatHistory")    return handleSaveChatHistory(req, res, body);
-  if (action === "saveMessages")       return handleSaveMessages(req, res, body);
-  if (action === "getChatHistory")     return handleGetChatHistory(req, res, body);
-  if (action === "deleteChatHistory")  return handleDeleteChatHistory(req, res, body);
-  if (action === "health")             return handleHealth(req, res);
-  if (action === "proxy")              return handleProxy(req, res, body);
+  if (action === "saveChatHistory")     return handleSaveChatHistory(req, res, body);
+  if (action === "saveMessages")        return handleSaveMessages(req, res, body);
+  if (action === "getChatHistory")      return handleGetChatHistory(req, res, body);
+  if (action === "deleteChatHistory")   return handleDeleteChatHistory(req, res, body);
+  if (action === "clearAllChatHistory") return handleClearAllChatHistory(req, res, body);
+  if (action === "getMoodEntries")      return handleGetMoodEntries(req, res, body);
+  if (action === "getRecentMessages")   return handleGetRecentMessages(req, res, body);
+  if (action === "getJournalEntries")   return handleGetJournalEntries(req, res, body);
+  if (action === "deleteJournalEntry")  return handleDeleteJournalEntry(req, res, body);
+  if (action === "getUserProfile")      return handleGetUserProfile(req, res, body);
+  if (action === "updateUserProfile")   return handleUpdateUserProfile(req, res, body);
+  if (action === "health")              return handleHealth(req, res);
+  if (action === "proxy")               return handleProxy(req, res, body);
 
   return res.status(400).json({ error: `Unknown action: ${action}` });
 }
@@ -135,6 +142,8 @@ async function handleSaveChatHistory(req, res, body) {
         return res.status(r.status).json({ error: `Base44 PUT failed: ${r.status}` });
       }
       console.log(`[base44/saveChatHistory] PUT (fast-path) id=${existingRecordId} ok`);
+      // Prune on update too so a downgraded user doesn't retain excess history indefinitely
+      pruneOldChatHistory(apple_user_id, resolvedTier, headers).catch(() => {});
       return res.status(200).json({ ok: true, id: existingRecordId, key: expectedKey });
     }
 
@@ -187,6 +196,8 @@ async function handleSaveChatHistory(req, res, body) {
           .json({ error: `Base44 PUT failed: ${putRes.status}` });
       }
       console.log(`[base44/saveChatHistory] PUT (query-found) id=${recordId} ok`);
+      // Prune on update too so a downgraded user doesn't retain excess history indefinitely
+      pruneOldChatHistory(apple_user_id, resolvedTier, headers).catch(() => {});
       return res.status(200).json({ ok: true, id: recordId, key: expectedKey });
     }
 
@@ -298,14 +309,27 @@ async function handleGetChatHistory(req, res, body) {
 // ── deleteChatHistory ──────────────────────────────────────────────────────────
 
 async function handleDeleteChatHistory(req, res, body) {
-  const { record_id } = body;
+  const { record_id, apple_user_id } = body;
   if (!record_id || typeof record_id !== "string") {
     return res.status(400).json({ error: "record_id is required" });
+  }
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
   }
   const envToken = b44Token();
   const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
   try {
+    // Verify the record belongs to the requesting user before deleting
+    const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
+    if (!checkRes.ok) {
+      return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
+    }
+    const record = await checkRes.json();
+    if (record.apple_user_id !== apple_user_id) {
+      console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
+      return res.status(403).json({ error: "Forbidden" });
+    }
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, {
       method: "DELETE",
       headers,
@@ -391,6 +415,243 @@ async function handleSaveMessages(req, res, body) {
     saved,
     ...(errors.length > 0 ? { errors } : {}),
   });
+}
+
+// ── clearAllChatHistory ────────────────────────────────────────────────────────
+
+async function handleClearAllChatHistory(req, res, body) {
+  const { apple_user_id } = body;
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  try {
+    const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        filters: [{ field: "apple_user_id", operator: "eq", value: apple_user_id }],
+        limit: 500,
+      }),
+    });
+    if (!r.ok) {
+      return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
+    }
+    const data = await r.json();
+    const all = Array.isArray(data) ? data : (data.items || []);
+    await Promise.all(
+      all.map(s =>
+        fetch(`${B44_ENTITIES}/ChatHistory/${s.id}`, { method: "DELETE", headers }).catch(() => {})
+      )
+    );
+    console.log(`[base44/clearAllChatHistory] Deleted ${all.length} records for ${apple_user_id}`);
+    return res.status(200).json({ ok: true, deleted: all.length });
+  } catch (err) {
+    console.error("[base44/clearAllChatHistory] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error clearing chat history" });
+  }
+}
+
+// ── getMoodEntries ─────────────────────────────────────────────────────────────
+
+async function handleGetMoodEntries(req, res, body) {
+  const { apple_user_id, limit: limitArg } = body;
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { Authorization: `Bearer ${token}` };
+  const limit = Math.min(parseInt(limitArg, 10) || 60, 200);
+  try {
+    const r = await fetch(
+      `${B44_ENTITIES}/MoodEntry?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=${limit}&sort=-created_date`,
+      { headers }
+    );
+    if (!r.ok) {
+      return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
+    }
+    const data = await r.json();
+    const records = Array.isArray(data) ? data : (data?.records || []);
+    return res.status(200).json({ ok: true, items: records });
+  } catch (err) {
+    console.error("[base44/getMoodEntries] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error fetching mood entries" });
+  }
+}
+
+// ── getRecentMessages ──────────────────────────────────────────────────────────
+
+async function handleGetRecentMessages(req, res, body) {
+  const { apple_user_id, companion_id, limit: limitArg } = body;
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  if (!companion_id || typeof companion_id !== "string") {
+    return res.status(400).json({ error: "companion_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { Authorization: `Bearer ${token}` };
+  const limit = Math.min(parseInt(limitArg, 10) || 20, 100);
+  try {
+    const r = await fetch(
+      `${B44_ENTITIES}/Message?apple_user_id=${encodeURIComponent(apple_user_id)}&companion_id=${encodeURIComponent(companion_id)}&limit=${limit}&sort=-created_date`,
+      { headers }
+    );
+    if (!r.ok) {
+      return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
+    }
+    const data = await r.json();
+    const records = Array.isArray(data) ? data : (data?.records || []);
+    return res.status(200).json({ ok: true, items: records });
+  } catch (err) {
+    console.error("[base44/getRecentMessages] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error fetching messages" });
+  }
+}
+
+// ── getJournalEntries ──────────────────────────────────────────────────────────
+
+async function handleGetJournalEntries(req, res, body) {
+  const { apple_user_id, limit: limitArg } = body;
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { Authorization: `Bearer ${token}` };
+  const limit = Math.min(parseInt(limitArg, 10) || 200, 500);
+  try {
+    const r = await fetch(
+      `${B44_ENTITIES}/JournalEntry?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=${limit}&sort=-created_date`,
+      { headers }
+    );
+    if (!r.ok) {
+      return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
+    }
+    const data = await r.json();
+    const records = Array.isArray(data) ? data : (data?.records || []);
+    return res.status(200).json({ ok: true, items: records });
+  } catch (err) {
+    console.error("[base44/getJournalEntries] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error fetching journal entries" });
+  }
+}
+
+// ── deleteJournalEntry ─────────────────────────────────────────────────────────
+
+async function handleDeleteJournalEntry(req, res, body) {
+  const { record_id, apple_user_id } = body;
+  if (!record_id || typeof record_id !== "string") {
+    return res.status(400).json({ error: "record_id is required" });
+  }
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  try {
+    // Verify ownership before deleting
+    const checkRes = await fetch(`${B44_ENTITIES}/JournalEntry/${record_id}`, { headers });
+    if (!checkRes.ok) {
+      return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
+    }
+    const record = await checkRes.json();
+    if (record.apple_user_id !== apple_user_id) {
+      console.warn(`[base44/deleteJournalEntry] Ownership mismatch — requested by ${apple_user_id}`);
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const r = await fetch(`${B44_ENTITIES}/JournalEntry/${record_id}`, { method: "DELETE", headers });
+    if (!r.ok) {
+      return res.status(r.status).json({ error: `Base44 delete failed: ${r.status}` });
+    }
+    return res.status(200).json({ ok: true, deleted: record_id });
+  } catch (err) {
+    console.error("[base44/deleteJournalEntry] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error deleting journal entry" });
+  }
+}
+
+// ── getUserProfile ─────────────────────────────────────────────────────────────
+
+async function handleGetUserProfile(req, res, body) {
+  const { apple_user_id, profile_id } = body;
+  if (!apple_user_id && !profile_id) {
+    return res.status(400).json({ error: "apple_user_id or profile_id is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { Authorization: `Bearer ${token}` };
+  try {
+    let profile = null;
+    if (profile_id) {
+      const r = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, { headers });
+      if (r.ok) profile = await r.json();
+    }
+    if (!profile && apple_user_id) {
+      const r = await fetch(
+        `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=1`,
+        { headers }
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const records = Array.isArray(data) ? data : (data?.records || []);
+        if (records[0]) profile = records[0];
+      }
+    }
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    return res.status(200).json({ ok: true, profile });
+  } catch (err) {
+    console.error("[base44/getUserProfile] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error fetching profile" });
+  }
+}
+
+// ── updateUserProfile ──────────────────────────────────────────────────────────
+
+async function handleUpdateUserProfile(req, res, body) {
+  const { profile_id, apple_user_id, data: updateData } = body;
+  if (!profile_id || typeof profile_id !== "string") {
+    return res.status(400).json({ error: "profile_id is required" });
+  }
+  if (!updateData || typeof updateData !== "object") {
+    return res.status(400).json({ error: "data object is required" });
+  }
+  const envToken = b44Token();
+  const token = envToken || "1156284fb9144ad9ab95afc962e848d8";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  try {
+    // Verify ownership when apple_user_id is provided
+    if (apple_user_id) {
+      const checkRes = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, { headers });
+      if (checkRes.ok) {
+        const record = await checkRes.json();
+        if (record.apple_user_id && record.apple_user_id !== apple_user_id) {
+          console.warn(`[base44/updateUserProfile] Ownership mismatch for profile ${profile_id}`);
+          return res.status(403).json({ error: "Forbidden" });
+        }
+      }
+    }
+    const r = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(updateData),
+    });
+    if (!r.ok) {
+      const bodyText = await r.text();
+      console.error(`[base44/updateUserProfile] PUT failed HTTP ${r.status} — ${bodyText.slice(0, 200)}`);
+      return res.status(r.status).json({ error: `Base44 PUT failed: ${r.status}` });
+    }
+    const updated = await r.json();
+    return res.status(200).json({ ok: true, profile: updated });
+  } catch (err) {
+    console.error("[base44/updateUserProfile] Unexpected error:", err.message);
+    return res.status(500).json({ error: "Internal error updating profile" });
+  }
 }
 
 // ── health ─────────────────────────────────────────────────────────────────────
