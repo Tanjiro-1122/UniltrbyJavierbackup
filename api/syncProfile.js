@@ -102,6 +102,7 @@ async function getCompanion(companionId) {
       personality_style:   comp.personality_style  || null,
       personality_humor:   comp.personality_humor  || null,
       personality_empathy: comp.personality_empathy|| null,
+      personality_curiosity: comp.personality_curiosity || null,
     };
   } catch { return null; }
 }
