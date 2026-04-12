@@ -5,9 +5,12 @@
  */
 
 const LIMITS = {
-  chat_messages: 100,   // per session key
+  chat_messages: 100,   // per session key (sessionStorage)
   journal_entries: 50,
   mood_history_days: 30, // keep 30 days of mood history
+  chat_history_messages: 50, // unfiltr_chat_history — last N messages kept
+  // chat_sessions retention per tier (mirrors CHAT_RETENTION_LIMITS in ChatPage)
+  chat_sessions: { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 },
 };
 
 /**
@@ -100,6 +103,8 @@ export function estimateStorageUsageKB() {
 export function runStorageCleanup() {
   pruneMoodHistory();
   pruneJournalEntries();
+  pruneChatHistory();
+  pruneChatSessions();
   const usageKB = estimateStorageUsageKB();
   if (usageKB > 2048) {
     console.warn(`[StorageManager] localStorage usage is high: ~${usageKB} KB`);
@@ -119,5 +124,58 @@ function pruneJournalEntries() {
     }
   } catch (e) {
     console.warn("[StorageManager] Failed to prune journal entries:", e?.message);
+  }
+}
+
+/**
+ * Trim unfiltr_chat_history to the last N messages to prevent unbounded growth.
+ * This key accumulates the running chat transcript across sends.
+ */
+function pruneChatHistory() {
+  try {
+    const raw = localStorage.getItem("unfiltr_chat_history");
+    if (!raw) return;
+    const messages = JSON.parse(raw);
+    if (Array.isArray(messages) && messages.length > LIMITS.chat_history_messages) {
+      localStorage.setItem(
+        "unfiltr_chat_history",
+        JSON.stringify(messages.slice(-LIMITS.chat_history_messages))
+      );
+    }
+  } catch (e) {
+    console.warn("[StorageManager] Failed to prune chat history:", e?.message);
+  }
+}
+
+/**
+ * Trim unfiltr_chat_sessions to the per-tier retention limit.
+ * Reads the current tier from localStorage flags (same logic as getTier() in entitlements.js)
+ * so this module stays self-contained with no circular imports.
+ */
+function pruneChatSessions() {
+  try {
+    const raw = localStorage.getItem("unfiltr_chat_sessions");
+    if (!raw) return;
+    const sessions = JSON.parse(raw);
+    if (!Array.isArray(sessions) || sessions.length === 0) return;
+
+    // Determine current tier from localStorage flags (mirrors getTier() in entitlements.js)
+    let tier = "free";
+    if (localStorage.getItem("unfiltr_family_unlimited") === "true") tier = "family";
+    else if (
+      localStorage.getItem("unfiltr_family_unlock") === "true" ||
+      localStorage.getItem("unfiltr_msg_limit_override") === "true" ||
+      localStorage.getItem("unfiltr_is_annual") === "true"
+    ) tier = "annual";
+    else if (localStorage.getItem("unfiltr_is_pro")     === "true") tier = "pro";
+    else if (localStorage.getItem("unfiltr_is_premium") === "true") tier = "plus";
+
+    const limit = LIMITS.chat_sessions[tier] ?? 2;
+    if (limit >= 9999) return; // no cap for unlimited tiers
+    if (sessions.length > limit) {
+      localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(sessions.slice(0, limit)));
+    }
+  } catch (e) {
+    console.warn("[StorageManager] Failed to prune chat sessions:", e?.message);
   }
 }

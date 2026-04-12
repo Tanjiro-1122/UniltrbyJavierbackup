@@ -178,7 +178,6 @@ export default async function handler(req, res) {
       isAnnual   = false,
       personality,
       userFacts,
-      sessionMemoryFull,
       relationshipMode = "friend",} = req.body;
 
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
@@ -217,15 +216,15 @@ export default async function handler(req, res) {
 
     // ── #3: Memory confirmation nudge ───────────────────────────────────
     const memoryConfirmCtx = buildMemoryConfirmationNudge(
-      userFacts || req.body.userFacts || {},
-      sessionMemoryFull || req.body.sessionMemory || [],
+      userFacts || {},
+      sessionMemory || [],
       isPremium || isPro || isAnnual
     );
 
     // ── #6: Proactive memory surfacing ──────────────────────────────────
     const proactiveCtx = buildProactiveMemoryInstruction(
       userFacts || {},
-      sessionMemoryFull || [],
+      sessionMemory || [],
       messages?.length || 0
     );
     // ── Vector memory retrieval (premium+ only) ─────────────────────────

@@ -42,6 +42,8 @@ function cosineSimilarity(a, b) {
     magA += a[i] * a[i];
     magB += b[i] * b[i];
   }
+  // Guard against zero-length vectors to prevent NaN corrupting scores
+  if (!magA || !magB) return 0;
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 

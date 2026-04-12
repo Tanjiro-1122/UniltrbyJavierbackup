@@ -358,6 +358,10 @@ export default function ChatPage() {
           } else if (!premium) {
             setShowMemoryBanner(true);
           }
+          // Seed memory state from the profile loaded at init so handleSend
+          // can use the already-cached values without an extra DB round-trip.
+          if (profile?.memory_summary) setMemorySummary(profile.memory_summary);
+          if (profile?.user_facts)     setUserFacts(profile.user_facts);
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
@@ -913,17 +917,7 @@ export default function ChatPage() {
 
     try {
       const name = companion.displayName || companion.name;
-      let localMemSummary = memorySummary; // use existing state value
-      try {
-        const pid2 = localStorage.getItem("userProfileId");
-        if (pid2) {
-        const prof = await base44.entities.UserProfile.get(pid2);
-        localMemSummary = prof?.memory_summary || "";
-        setMemorySummary(localMemSummary);
-        if (prof?.user_facts) setUserFacts(prof.user_facts);
-        if (prof?.session_memory) setSessionMemory(prof.session_memory);
-      }
-      } catch {}
+      const localMemSummary = memorySummary; // already seeded from DB during init and refreshed after each summarize
       // Use distinct companion personality if available
       const personality = COMPANION_PERSONALITIES[companion.id];
       const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
