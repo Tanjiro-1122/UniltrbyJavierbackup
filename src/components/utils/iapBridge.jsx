@@ -1,7 +1,11 @@
 /**
  * iapBridge — lightweight wrappers called from ChatPage / Settings
  * for one-line subscribe / restore without importing the full hook.
+ *
+ * Uses nativeBridge helpers so bridge detection and safe-send logic
+ * lives in exactly one place.
  */
+import { isNativeApp, postToNative, waitForNative } from '@/lib/nativeBridge';
 
 export const subscribeToPlan = async (plan = 'monthly') => {
   // ✅ All 3 plans mapped correctly
@@ -10,79 +14,44 @@ export const subscribeToPlan = async (plan = 'monthly') => {
     plan === 'pro'      ? 'com.huertas.unfiltr.tier.pro'    :
     /* monthly default */ 'com.huertas.unfiltr.pro.monthly';
 
-  return new Promise((resolve) => {
-    if (window.ReactNativeWebView) {
-      // Primary bridge — RNWV (iOS wrapper)
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PURCHASE', productId }));
-      resolve({ isSuccess: true, pendingNativeCallback: true, productId });
-    } else if (window.WTN?.inAppPurchase) {
-      window.WTN.inAppPurchase({ productId }, resolve);
-    } else if (window.webkit?.messageHandlers?.storekit) {
-      window.webkit.messageHandlers.storekit.postMessage({ action: 'purchase', productId });
-      resolve({ isSuccess: true, pendingNativeCallback: true });
-    } else {
-      // Web fallback — mock so UI doesn't freeze
-      resolve({ isSuccess: true, isMock: true, productId });
-    }
-  });
+  if (!isNativeApp()) {
+    // Web mode — purchases only available in the iOS app
+    return { isSuccess: false, webMode: true, productId };
+  }
+
+  const sent = postToNative({ type: 'PURCHASE', productId });
+  if (!sent) return { isSuccess: false, error: 'Bridge unavailable', productId };
+  // PURCHASE is user-driven — caller handles result via PURCHASE_SUCCESS event
+  return { isSuccess: true, pendingNativeCallback: true, productId };
 };
 
 /**
  * Restore purchases via the native bridge.
- * Properly awaits RESTORE_RESULT (up to 30 s) instead of fire-and-forget,
- * so callers always get a meaningful result and UI never gets stuck.
+ * Awaits RESTORE_RESULT (up to 30 s) so callers always get a result
+ * and the UI never gets stuck on a blank/black screen.
  */
 export const restorePurchases = async () => {
-  if (window.ReactNativeWebView) {
-    return new Promise((resolve) => {
-      let settled = false;
-      const TIMEOUT_MS = 30000;
+  if (!isNativeApp()) {
+    // Web mode — gracefully indicate restore is not available here
+    return { triggered: false, webMode: true };
+  }
 
-      const cleanup = () => {
-        if (window._rnMessageHandlers?.['RESTORE_RESULT']) {
-          window._rnMessageHandlers['RESTORE_RESULT'] =
-            window._rnMessageHandlers['RESTORE_RESULT'].filter(f => f !== handler);
-        }
-      };
+  try {
+    // Register listener before posting so we never miss the response
+    const waiter = waitForNative(['RESTORE_RESULT'], 30000);
+    const sent = postToNative({ type: 'RESTORE' });
+    if (!sent) return { isSuccess: false, triggered: false, error: 'Bridge unavailable' };
 
-      const settle = (result) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        resolve(result);
-      };
-
-      const handler = (data) => {
-        const payload = data.data !== undefined ? data.data : data;
-        const hasPremium = Object.keys(payload?.entitlements?.active || {}).length > 0;
-        if (hasPremium) {
-          localStorage.setItem('unfiltr_is_premium', 'true');
-        }
-        settle({ isSuccess: hasPremium, customerInfo: payload, triggered: true });
-      };
-
-      // Register handler before sending so we never miss the response
-      window._rnMessageHandlers = window._rnMessageHandlers || {};
-      window._rnMessageHandlers['RESTORE_RESULT'] = window._rnMessageHandlers['RESTORE_RESULT'] || [];
-      window._rnMessageHandlers['RESTORE_RESULT'].push(handler);
-
-      // Safety timeout — resolve gracefully so UI never stays in loading state
-      setTimeout(() => settle({ isSuccess: false, triggered: true, timedOut: true }), TIMEOUT_MS);
-
-      try {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'RESTORE' }));
-      } catch (e) {
-        settle({ isSuccess: false, triggered: false, error: e.message });
-      }
-    });
-  } else if (window.WTN?.restorePurchases) {
-    return new Promise((resolve) => {
-      window.WTN.restorePurchases(resolve);
-    });
-  } else if (window.webkit?.messageHandlers?.storekit) {
-    window.webkit.messageHandlers.storekit.postMessage({ action: 'restore' });
-    return { triggered: true };
-  } else {
-    return { triggered: false };
+    const data = await waiter;
+    const payload = data?.data !== undefined ? data.data : data;
+    const hasPremium = Object.keys(payload?.entitlements?.active || {}).length > 0;
+    if (hasPremium) {
+      localStorage.setItem('unfiltr_is_premium', 'true');
+    }
+    return { isSuccess: hasPremium, customerInfo: payload, triggered: true };
+  } catch (e) {
+    // Timeout or bridge error — resolve gracefully so UI never stays in loading state
+    const timedOut = e?.message === 'Bridge timeout';
+    return { isSuccess: false, triggered: true, timedOut, error: timedOut ? undefined : e?.message };
   }
 };

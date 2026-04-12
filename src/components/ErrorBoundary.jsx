@@ -1,13 +1,16 @@
 import React from "react";
 
+const SUPPORT_EMAIL = "support@sportswagerhelper.com";
+
 /**
  * ErrorBoundary — catches any unhandled render/lifecycle errors in its subtree.
- * Shows a user-friendly fallback UI with a retry option.
+ * Shows a user-friendly fallback UI with a retry option, support link, and
+ * optional diagnostics copy button.
  */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, copied: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -32,7 +35,27 @@ export default class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, copied: false });
+  };
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  handleCopyDiagnostics = () => {
+    try {
+      const diagnostics = {
+        route: window.location.pathname,
+        userProfileId: localStorage.getItem("userProfileId") || "(none)",
+        nativeBridge: !!(window.ReactNativeWebView || window.webkit?.messageHandlers?.ReactNativeWebView),
+        error: this.state.error?.message || String(this.state.error),
+        ts: new Date().toISOString(),
+      };
+      navigator.clipboard.writeText(JSON.stringify(diagnostics, null, 2)).then(() => {
+        this.setState({ copied: true });
+        setTimeout(() => this.setState({ copied: false }), 2000);
+      }).catch(() => {});
+    } catch {}
   };
 
   render() {
@@ -40,6 +63,7 @@ export default class ErrorBoundary extends React.Component {
       if (this.props.fallback) {
         return this.props.fallback(this.state.error, this.handleReset);
       }
+      const { copied } = this.state;
       return (
         <div style={{
           minHeight: "100vh",
@@ -66,7 +90,7 @@ export default class ErrorBoundary extends React.Component {
               The app ran into an unexpected error. Please try again.
             </p>
             <button
-              onClick={this.handleReset}
+              onClick={this.handleReload}
               style={{
                 background: "linear-gradient(135deg, #7c3aed, #db2777)",
                 border: "none",
@@ -76,14 +100,14 @@ export default class ErrorBoundary extends React.Component {
                 fontWeight: 700,
                 padding: "12px 32px",
                 cursor: "pointer",
-                marginBottom: 12,
+                marginBottom: 10,
                 width: "100%",
               }}
             >
-              Try Again
+              Reload App
             </button>
             <button
-              onClick={() => window.location.href = "/"}
+              onClick={this.handleReset}
               style={{
                 background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.1)",
@@ -93,10 +117,43 @@ export default class ErrorBoundary extends React.Component {
                 fontWeight: 600,
                 padding: "10px 24px",
                 cursor: "pointer",
+                marginBottom: 10,
                 width: "100%",
               }}
             >
-              Go Home
+              Try Again
+            </button>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=Unfiltr%20App%20Error&body=Route%3A%20${encodeURIComponent(window.location.pathname)}%0AError%3A%20${encodeURIComponent(this.state.error?.message || "")}`}
+              style={{
+                display: "block",
+                background: "rgba(168,85,247,0.08)",
+                border: "1px solid rgba(168,85,247,0.25)",
+                borderRadius: 12,
+                color: "#a855f7",
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "10px 24px",
+                cursor: "pointer",
+                marginBottom: 10,
+                textDecoration: "none",
+              }}
+            >
+              Contact Support
+            </a>
+            <button
+              onClick={this.handleCopyDiagnostics}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: copied ? "rgba(74,222,128,0.8)" : "rgba(255,255,255,0.2)",
+                fontSize: 12,
+                cursor: "pointer",
+                padding: "6px 0",
+                width: "100%",
+              }}
+            >
+              {copied ? "✓ Copied" : "Copy Diagnostics"}
             </button>
           </div>
         </div>
