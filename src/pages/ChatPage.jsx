@@ -228,6 +228,7 @@ export default function ChatPage() {
   const [memorySummary, setMemorySummary] = useState("");
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [autosaveToast, setAutosaveToast] = useState(null); // { type: "error"|"limit", msg: string }
+  const [relationshipMode, setRelationshipMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || "friend");
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -1279,6 +1280,11 @@ export default function ChatPage() {
             onShowTimeCapsule={() => setShowTimeCapsule(true)}
             onShowBookmarks={() => setShowBookmarks(true)}
             streak={streak}
+            relationshipMode={relationshipMode}
+            setRelationshipMode={(mode) => {
+              setRelationshipMode(mode);
+              localStorage.setItem("unfiltr_relationship_mode", mode);
+            }}
           />
 
           {/* ▓▓ 2. FULL-SCREEN AVATAR + FLOATING BUBBLES ▓▓ */}
