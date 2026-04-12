@@ -3,6 +3,7 @@
 // Called from HomeScreen (sign-in) and onboarding steps
 
 import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
+import { createRequestContext, checkRateLimit } from "./_helpers.js";
 
 // Alias so the rest of the file is unchanged
 const B44_BASE = B44_ENTITIES;
@@ -127,6 +128,16 @@ function buildProfileResponse(profile, companionData) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const ctx = createRequestContext(req);
+  res.setHeader("X-Request-Id", ctx.requestId);
+
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
+    });
+  }
+
   const {
     action = "sync",         // "sync" | "update" | "create"
     appleUserId,
@@ -181,6 +192,23 @@ export default async function handler(req, res) {
         if (found) deleteId = found.id;
       }
       if (deleteId) {
+        // Ownership check — verify the caller owns this profile before deleting.
+        // Without this guard, any client that knows a profileId could delete anyone's data.
+        if (appleUserId) {
+          let targetProfile;
+          try {
+            const r = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, { headers: b44Headers() });
+            targetProfile = r.ok ? await r.json() : null;
+          } catch { targetProfile = null; }
+          if (!targetProfile) return res.status(404).json({ error: "Profile not found" });
+          // Reject deletion when:
+          // 1. The target profile has no apple_user_id set (can't verify ownership of anonymous profiles)
+          // 2. The target profile's apple_user_id doesn't match the caller
+          if (!targetProfile.apple_user_id || targetProfile.apple_user_id !== appleUserId) {
+            console.warn(`[syncProfile] delete rejected: appleUserId mismatch for profile ${deleteId}`);
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
         const delRes = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, {
           method: "DELETE",
           headers: b44Headers(),

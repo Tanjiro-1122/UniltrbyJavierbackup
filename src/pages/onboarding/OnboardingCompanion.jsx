@@ -44,7 +44,7 @@ export default function OnboardingCompanion() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!store.displayName.trim()) {
+  if (!store.displayName.trim() && !localStorage.getItem("unfiltr_display_name")) {
     navigate("/onboarding", { replace: true });
     return null;
   }
@@ -52,6 +52,14 @@ export default function OnboardingCompanion() {
   const go = (d) => {
     setDir(d);
     setIdx(i => Math.min(Math.max(i + d, 0), VISIBLE.length - 1));
+  };
+
+  // Jump directly to any companion without triggering a large-delta animation that
+  // wipes all intermediate companions from the DOM and causes a brief blank flash.
+  const jumpTo = (i) => {
+    if (i === idx) return;
+    setDir(i < idx ? -1 : 1);
+    setIdx(i);
   };
 
   const handleSelect = () => {
@@ -88,7 +96,13 @@ export default function OnboardingCompanion() {
     <OnboardingLayout
       totalSteps={5} step={3} onBack={() => {
               const fromQuiz = localStorage.getItem("unfiltr_quiz_companion_id");
-              navigate(fromQuiz !== null ? "/onboarding/quiz" : "/onboarding/name");
+              // "manual" means the user previously skipped the quiz — send them back to
+              // the name step instead of restarting the quiz from scratch.
+              if (fromQuiz && fromQuiz !== "manual") {
+                navigate("/onboarding/quiz");
+              } else {
+                navigate("/onboarding/name");
+              }
             }} canAdvance={false}>
       {/* Title */}
       <div style={{ flexShrink: 0, padding: "0 24px 8px", textAlign: "center" }}>
@@ -137,7 +151,7 @@ export default function OnboardingCompanion() {
               animate={{ x: s.x, scale: s.scale, opacity: s.opacity }}
               transition={{ type: "spring", stiffness: 280, damping: 28 }}
               onClick={() => {
-                if (i !== idx) go(i - idx > 0 ? 1 : -1);
+                if (i !== idx) jumpTo(i);
               }}
             >
               {/* Emoji placeholder — visible until image loads */}
@@ -222,7 +236,7 @@ export default function OnboardingCompanion() {
         {VISIBLE.map((_, i) => (
           <button
             key={i}
-            onClick={() => go(i - idx)}
+            onClick={() => jumpTo(i)}
             style={{
               width: i === idx ? 20 : 6, height: 6, borderRadius: 999, border: "none", padding: 0,
               background: i === idx ? "#a855f7" : "rgba(255,255,255,0.2)",

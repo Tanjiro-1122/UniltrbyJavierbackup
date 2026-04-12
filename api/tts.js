@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { createRequestContext, safeLogError, withAbortController, checkRateLimit } from "./_helpers.js";
+import { createRequestContext, safeLogError, withAbortController, checkRateLimit, getProfileTier } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -23,8 +23,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text, voiceGender = "female", voicePersonality = "chill" } = req.body;
+    const { text, voiceGender = "female", voicePersonality = "chill", profileId } = req.body;
     if (!text) return res.status(400).json({ error: "No text provided" });
+
+    // ── Server-side tier verification ────────────────────────────────────────
+    // TTS uses OpenAI's paid API — gate it behind at least plus/premium tier so
+    // free users cannot consume TTS quota. profileId is required for the check.
+    // Note: profileId is supplied by the client — this matches the existing auth
+    // model across all API endpoints (no server-side session tokens). The check
+    // prevents accidental free-tier access; it relies on the same trust boundary
+    // as the rest of the API layer (e.g., chat.js, memoryEmbed.js).
+    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
+    if (!isPremium && !isPro && !isAnnual) {
+      return res.status(403).json({ error: "Voice playback requires a premium subscription." });
+    }
 
     const gender = voiceGender?.toLowerCase() === "male" ? "male" : "female";
     const voice = VOICE_MAP[gender][voicePersonality];

@@ -36,7 +36,11 @@ function safeCompare(a, b) {
   try {
     const bufA = Buffer.from(String(a));
     const bufB = Buffer.from(String(b));
-    if (bufA.length !== bufB.length) return false;
+    if (bufA.length !== bufB.length) {
+      // Run a dummy comparison to prevent early-exit timing oracle on length.
+      crypto.timingSafeEqual(bufA, Buffer.alloc(bufA.length));
+      return false;
+    }
     return crypto.timingSafeEqual(bufA, bufB);
   } catch {
     return false;
