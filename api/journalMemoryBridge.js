@@ -5,7 +5,7 @@
 
 import OpenAI from "openai";
 import { B44_ENTITIES, b44Headers } from "./_b44.js";
-import { createRequestContext, safeLogError, checkRateLimit } from "./_helpers.js";
+import { createRequestContext, safeLogError, checkRateLimit, mergeFacts, getProfileTier } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -26,26 +26,25 @@ async function b44Update(entity, id, data) {
   return res.ok;
 }
 
-function mergeFacts(existing = {}, extracted = {}) {
-  const merged = { ...existing };
-  for (const [key, value] of Object.entries(extracted)) {
-    if (!value || value === "unknown" || value === "not mentioned") continue;
-    if (Array.isArray(value) && Array.isArray(merged[key])) {
-      const combined = [...merged[key], ...value];
-      merged[key] = [...new Map(combined.map(x => [JSON.stringify(x), x])).values()].slice(0, 20);
-    } else if (Array.isArray(value) && value.length > 0) {
-      merged[key] = value;
-    } else if (!Array.isArray(value) && value) {
-      merged[key] = value;
-    }
+// ── CORS — same allowlist as the rest of the API ─────────────────────────────
+const ALLOWED_ORIGINS = new Set([
+  "https://unfiltrbyjavier2.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+]);
+
+function setCors(req, res) {
+  const origin = req.headers.origin || "";
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
   }
-  return merged;
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -60,14 +59,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { profileId, journalContent, journalTitle, isPremium, isPro, isAnnual } = req.body;
+    const { profileId, journalContent, journalTitle } = req.body;
+
+    if (!profileId || !journalContent?.trim()) {
+      return res.status(200).json({ ok: true, skipped: "missing_data" });
+    }
+
+    // ── Server-side tier verification ────────────────────────────────────────
+    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
 
     // Only run for premium users — free users don't get memory from journals
     if (!isPremium && !isPro && !isAnnual) {
       return res.status(200).json({ ok: true, skipped: "free_tier" });
-    }
-    if (!profileId || !journalContent?.trim()) {
-      return res.status(200).json({ ok: true, skipped: "missing_data" });
     }
 
     // Don't waste tokens on very short entries

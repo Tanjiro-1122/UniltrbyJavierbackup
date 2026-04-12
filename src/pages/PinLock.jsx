@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Delete } from "lucide-react";
+import { checkPin, clearPin } from "@/lib/pinHash";
 
 const TRIQUETRA = () => (
   <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,9 +29,9 @@ export default function PinLock() {
     setError("");
 
     if (next.length === 4) {
-      setTimeout(() => {
-        const savedPin = localStorage.getItem("unfiltr_pin");
-        if (next === savedPin) {
+      setTimeout(async () => {
+        const isMatch = await checkPin(next);
+        if (isMatch) {
           localStorage.setItem("unfiltr_last_active", Date.now().toString());
           navigate("/", { replace: true });
         } else {
@@ -51,7 +52,7 @@ export default function PinLock() {
   };
 
   const handleReset = () => {
-    localStorage.removeItem("unfiltr_pin");
+    clearPin();
     localStorage.removeItem("unfiltr_last_active");
     navigate("/PinSetup", { replace: true });
   };

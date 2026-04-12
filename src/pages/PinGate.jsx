@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, ChevronRight, X } from "lucide-react";
+import { checkPin, storePin, hasPin } from "@/lib/pinHash";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 
@@ -9,10 +10,9 @@ export default function PinGate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dest = searchParams.get("dest") || "chat";
-  const existingPin = localStorage.getItem("unfiltr_pin");
-  const [pin, setPin] = useState("");
+  const [pin, setPin]         = useState("");
   const [confirm, setConfirm] = useState("");
-  const [stage, setStage] = useState(existingPin ? "verify" : "create");
+  const [stage, setStage]     = useState(hasPin() ? "verify" : "create");
 
   // PIN gate: if PIN exists show verify screen, otherwise show create screen
 
@@ -20,13 +20,14 @@ export default function PinGate() {
     navigate(dest === "journal" ? "/journal-enter" : "/chat-enter");
   };
 
-  const handleDigit = (d) => {
+  const handleDigit = async (d) => {
     if (stage === "verify") {
       // User must enter existing PIN to proceed
       const next = pin + d;
       setPin(next);
       if (next.length === 4) {
-        if (next === existingPin) {
+        const isMatch = await checkPin(next);
+        if (isMatch) {
           navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
         } else {
           setPin(""); // wrong PIN — reset
@@ -42,7 +43,7 @@ export default function PinGate() {
       setConfirm(next);
       if (next.length === 4) {
         if (next === pin) {
-          localStorage.setItem("unfiltr_pin", pin);
+          await storePin(pin);
           navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
         } else {
           setConfirm("");

@@ -7,6 +7,8 @@ import {
   invalidateCachedProfile,
   createRequestContext,
   checkRateLimit,
+  mergeFacts,
+  getProfileTier,
 } from "./_helpers.js";
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
@@ -26,29 +28,6 @@ async function b44Update(entity, id, data) {
     });
     return true;
   } catch { return false; }
-}
-
-// ── Merge extracted facts — new data wins, arrays merge+dedup ────────────────
-function _stableKey(x) {
-  if (typeof x !== "object" || x === null) return JSON.stringify(x);
-  // Sort keys for stable serialization so {"name":"A","role":"B"} and
-  // {"role":"B","name":"A"} are treated as the same entry.
-  return JSON.stringify(Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))));
-}
-
-function mergeFacts(existing = {}, extracted = {}) {
-  const merged = { ...existing };
-  for (const [key, value] of Object.entries(extracted)) {
-    if (value && value !== "unknown" && value !== "not mentioned") {
-      if (Array.isArray(value) && Array.isArray(merged[key])) {
-        const combined = [...merged[key], ...value];
-        merged[key] = [...new Map(combined.map(x => [_stableKey(x), x])).values()].slice(0, 20);
-      } else {
-        merged[key] = value;
-      }
-    }
-  }
-  return merged;
 }
 
 // ── #1: EMOTIONAL TIMELINE ───────────────────────────────────────────────────
@@ -154,11 +133,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, profileId, companionName, isPremium, isPro, isAnnual } = req.body;
+    const { messages, profileId, companionName } = req.body;
     if (!messages?.length || !profileId) return res.status(400).json({ error: "Missing required fields" });
 
     const userMsgCount = messages.filter(m => m.role === "user").length;
     if (userMsgCount < 3) return res.status(200).json({ ok: true, skipped: true, reason: "too_short" });
+
+    // ── Server-side tier verification ────────────────────────────────────────
+    const { isPremium, isPro, isAnnual } = await getProfileTier(profileId);
 
     const transcript = messages
       .filter(m => m.role !== "system")

@@ -5,16 +5,10 @@ import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
 /**
  * ADMIN_PASS — the credential the AdminDashboard client sends for every admin
  * action.  Set the ADMIN_PASS environment variable in Vercel to a strong,
- * unique value.  The hardcoded fallback is intentionally short and well-known
- * so it never accidentally works in production once the env var is set.
- *
- * NOTE: because the admin dashboard is a client-side React app, this value is
- * visible to anyone who inspects the JS bundle.  It provides UI gating
- * (convenience) only — not true server-side secrecy.  For a higher security
- * posture, set a long random string in the ADMIN_PASS Vercel env var that is
- * NOT committed to the repository.
+ * unique value.  If the env var is not set the admin API refuses all requests
+ * rather than falling back to an insecure hardcoded credential.
  */
-const ADMIN_PASS = process.env.ADMIN_PASS || "javier1122admin";
+const ADMIN_PASS = process.env.ADMIN_PASS || "";
 
 const MS_PER_HOUR = 3600000;
 const MS_PER_DAY  = 86400000;
@@ -144,6 +138,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { adminToken, action, userId, type, query, subscription, reason } = req.body || {};
+  // Reject all requests when ADMIN_PASS is not configured in the environment.
+  if (!ADMIN_PASS) return res.status(503).json({ error: "Admin API not configured" });
   if (!safeCompare(adminToken, ADMIN_PASS)) return res.status(401).json({ error: "Unauthorized" });
 
   // ── ACTION HANDLERS ──────────────────────────────────────────────────────

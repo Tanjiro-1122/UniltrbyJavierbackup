@@ -20,6 +20,7 @@ import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
+import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -249,7 +250,7 @@ export default function Settings() {
   const [pinError, setPinError]       = useState("");
   const [pinShake, setPinShake]       = useState(false);
   const [pinSaved, setPinSaved]       = useState(false);
-  const hasPin = !!localStorage.getItem("unfiltr_pin");
+  const hasActivePin = hasPin();
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
   const [currentBg, setCurrentBg] = useState(() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } });
@@ -323,6 +324,16 @@ export default function Settings() {
       setAdminCode("");
     }
   };
+  // ── Convenience wrapper: fire-and-forget syncProfile update including owner proof ──
+  const syncProfileUpdate = (profileId, updateData) => {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || "";
+    fetch("/api/syncProfile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update", profileId, appleUserId, updateData }),
+    }).catch(() => {});
+  };
+
   const handleFamilyCodeSubmit = async () => {
     try {
       const res = await fetch("/api/utils", {
@@ -344,15 +355,7 @@ export default function Settings() {
         window.dispatchEvent(new Event("unfiltr_auth_updated"));
         const pid = localStorage.getItem("userProfileId");
         if (pid) {
-          fetch("/api/syncProfile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "update",
-              profileId: pid,
-              updateData: { is_premium: true, annual_plan: true, family_unlimited: true },
-            }),
-          }).catch(() => {});
+          syncProfileUpdate(pid, { is_premium: true, annual_plan: true, family_unlimited: true });
         }
         setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
         setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
@@ -381,7 +384,7 @@ export default function Settings() {
     }
     try {
       // Update DB record with new companion id and name
-      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId: localStorage.getItem('userProfileId'), updateData: { companion_name: c.name, companion_avatar: c.avatar } }) }).catch(() => {});
+      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId: localStorage.getItem('userProfileId'), appleUserId: localStorage.getItem('unfiltr_apple_user_id') || '', updateData: { companion_name: c.name, companion_avatar: c.avatar } }) }).catch(() => {});
       const newCompanion = { ...c, systemPrompt: companion?.systemPrompt };
       localStorage.setItem("unfiltr_companion", JSON.stringify(newCompanion));
       localStorage.setItem("unfiltr_companion_id", c.id || c.name);
@@ -402,7 +405,7 @@ export default function Settings() {
       if (pauseDuration === "1week") until.setDate(until.getDate() + 7);
       if (pauseDuration === "2weeks") until.setDate(until.getDate() + 14);
       if (pauseDuration === "1month") until.setMonth(until.getMonth() + 1);
-      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { account_paused: true, account_paused_at: now.toISOString(), account_pause_until: until.toISOString() } }) });
+      await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, appleUserId: localStorage.getItem('unfiltr_apple_user_id') || '', updateData: { account_paused: true, account_paused_at: now.toISOString(), account_pause_until: until.toISOString() } }) });
       setUserProfile(p => ({ ...p, account_paused: true }));
       setPausing(false); setPauseSuccess(true);
     } catch (e) { console.error(e); }
@@ -480,7 +483,7 @@ export default function Settings() {
         fetch('/api/syncProfile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'update', profileId, updateData: { relationship_mode: mode } }),
+          body: JSON.stringify({ action: 'update', profileId, appleUserId: localStorage.getItem('unfiltr_apple_user_id') || '', updateData: { relationship_mode: mode } }),
         }).catch(() => {});
       }
     } catch (e) { console.warn("Relationship mode DB sync failed (localStorage is fine):", e); }
@@ -503,12 +506,13 @@ export default function Settings() {
     const next = [...cur, d];
     set(next);
     if (next.length === 4) {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (pinStage === "verify") {
           // verifying existing PIN before change/disable
-          if (next.join("") === localStorage.getItem("unfiltr_pin")) {
+          const isMatch = await checkPin(next.join(""));
+          if (isMatch) {
             if (pinScreen === "disable") {
-              localStorage.removeItem("unfiltr_pin");
+              clearPin();
               setPinSaved(true);
               setTimeout(() => closePinScreen(), 1200);
             } else {
@@ -521,7 +525,7 @@ export default function Settings() {
         } else {
           // confirm stage
           if (next.join("") === pinInput.join("")) {
-            localStorage.setItem("unfiltr_pin", pinInput.join(""));
+            await storePin(pinInput.join(""));
             setPinSaved(true);
             setTimeout(() => closePinScreen(), 1200);
           } else { triggerPinShake(); setPinError("PINs don't match — try again"); setPinConfirm([]); }
@@ -572,15 +576,7 @@ export default function Settings() {
     try {
       const profileId = localStorage.getItem("userProfileId");
       if (profileId) {
-        await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "update",
-            profileId,
-            updateData: { memory_summary: "", user_facts: {}, session_memory: [], emotional_timeline: [] },
-          }),
-        }).catch(() => {});
+        syncProfileUpdate(profileId, { memory_summary: "", user_facts: {}, session_memory: [], emotional_timeline: [] });
       }
       // Also clear local caches
       setUserProfile(p => p ? { ...p, memory_summary: "", user_facts: {}, session_memory: [] } : p);
@@ -885,7 +881,7 @@ export default function Settings() {
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
             Set a 4-digit PIN to lock the app. Every time you open Unfiltr, you'll need to enter it first.
           </p>
-          {!hasPin ? (
+          {!hasActivePin ? (
             <button onClick={() => openPinScreen("set")} style={{ width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
               🔒 Set a PIN
             </button>
@@ -1126,7 +1122,7 @@ export default function Settings() {
               <Row icon={<Eye size={15} color="white" />} iconBg="#1a3a2e" label="Privacy & Data" value={privateSession ? "Private Mode 🔕" : undefined} onPress={() => setScreen("privacy")} />
               <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
               <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
-              <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasPin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
+              <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasActivePin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
               <Row icon={<Shield size={15} color="white" />} iconBg="#4a0a0a" label="Account" onPress={() => setScreen("account")} last />
             </Section>
 

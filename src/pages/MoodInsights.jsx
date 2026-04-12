@@ -151,8 +151,6 @@ export default function MoodInsights() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],
-          systemPrompt: `You are ${companionName}, a caring AI companion. Give a short, warm, real insight about the user's mood patterns. 2 sentences max. Conversational tone.`,
-          isPremium: localStorage.getItem("unfiltr_is_premium") === "true",
         }),
       });
       const data = await res.json();

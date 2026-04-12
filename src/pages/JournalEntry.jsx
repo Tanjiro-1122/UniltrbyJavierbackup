@@ -281,10 +281,7 @@ export default function JournalEntry() {
     // ── Journal → Memory bridge (premium+, fire-and-forget) ──────────────────
     try {
       const profileId = localStorage.getItem("userProfileId");
-      const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
-      const isPro = localStorage.getItem("unfiltr_pro") === "true";
-      const isAnnual = localStorage.getItem("unfiltr_annual") === "true";
-      if (profileId && (isPremium || isPro || isAnnual) && entry.trim().split(/\s+/).length >= 20) {
+      if (profileId && entry.trim().split(/\s+/).length >= 20) {
         fetch("/api/journalMemoryBridge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -292,7 +289,6 @@ export default function JournalEntry() {
             profileId,
             journalContent: entry.trim(),
             journalTitle: title?.trim() || "",
-            isPremium, isPro, isAnnual,
           }),
         }).catch(() => {}); // fire-and-forget — never blocks the user
       }
