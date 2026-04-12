@@ -349,6 +349,47 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── clearMemory ───────────────────────────────────────────────────────────
+  // Wipes memory_summary, memory_vectors, and memory_updated_at for a user so
+  // the AI companion starts building a fresh memory on the next session.
+  // Useful when a user reports stale, wrong, or confused memory.
+  if (action === "clearMemory") {
+    if (!userId) return res.status(400).json({ error: "userId required" });
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ error: "Reason required (minimum 3 characters)" });
+    }
+    try {
+      const clearData = {
+        memory_summary:   null,
+        memory_vectors:   [],
+        memory_updated_at: null,
+      };
+      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify(clearData),
+      });
+      try {
+        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
+          method: "POST",
+          body: JSON.stringify({
+            entity_type: "UserProfile",
+            entity_id:   userId,
+            action:      "clear_memory",
+            changes:     JSON.stringify(clearData),
+            reason:      reason.trim(),
+            timestamp:   new Date().toISOString(),
+          }),
+        });
+      } catch (logErr) {
+        console.warn("[adminStats/clearMemory] Audit log write failed (non-fatal):", logErr.message);
+      }
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      console.error("[adminStats/clearMemory] Error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // ── syncRevenueCat ────────────────────────────────────────────────────────
   // Fetches the latest subscriber state from RevenueCat and syncs it to
   // the given Base44 UserProfile record.
