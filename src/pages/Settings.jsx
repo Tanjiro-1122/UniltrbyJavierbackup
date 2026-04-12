@@ -20,7 +20,7 @@ import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
-import { checkPin, storePin } from "@/lib/pinHash";
+import { checkPin, storePin, clearPin } from "@/lib/pinHash";
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -502,7 +502,7 @@ export default function Settings() {
           const isMatch = await checkPin(next.join(""));
           if (isMatch) {
             if (pinScreen === "disable") {
-              localStorage.removeItem("unfiltr_pin");
+              clearPin();
               setPinSaved(true);
               setTimeout(() => closePinScreen(), 1200);
             } else {

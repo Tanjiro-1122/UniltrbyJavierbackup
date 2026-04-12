@@ -248,6 +248,15 @@ export function setCachedProfile(profileId, data) {
 }
 
 /**
+ * Evict a profile from the cache after a write so stale data isn't served.
+ *
+ * @param {string} profileId
+ */
+export function invalidateCachedProfile(profileId) {
+  if (profileId) _profileCache.delete(profileId);
+}
+
+/**
  * Stable JSON key for deduplication of array items — ensures that two objects
  * with the same properties in different key orders produce the same key.
  * @param {*} x
@@ -294,12 +303,15 @@ export function mergeFacts(existing = {}, extracted = {}) {
  * Daily message limits enforced server-side per tier.
  * These must stay in sync with the client-side DAILY_MSG_LIMITS in
  * src/components/useMessageLimit.jsx and src/lib/entitlements.js.
+ * UNLIMITED is used for annual subscribers — effectively no enforced cap.
  */
+export const UNLIMITED_MESSAGES = Number.MAX_SAFE_INTEGER;
+
 export const DAILY_MSG_LIMITS = {
   free:   20,
   plus:   100,
   pro:    200,
-  annual: 99999,
+  annual: UNLIMITED_MESSAGES,
 };
 
 /**

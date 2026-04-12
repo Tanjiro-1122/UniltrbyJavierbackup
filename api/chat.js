@@ -8,6 +8,7 @@ import {
   MAX_OUTPUT_TOKENS,
   getProfileTier,
   DAILY_MSG_LIMITS,
+  UNLIMITED_MESSAGES,
   getCachedProfile,
   setCachedProfile,
   invalidateCachedProfile,
@@ -191,7 +192,7 @@ export default async function handler(req, res) {
     // ── Server-side daily message limit ──────────────────────────────────────
     const tier = isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
     const dailyLimit = DAILY_MSG_LIMITS[tier] ?? DAILY_MSG_LIMITS.free;
-    if (dailyLimit < 99999 && profile) {
+    if (dailyLimit < UNLIMITED_MESSAGES && profile) {
       const todayKey = new Date().toISOString().slice(0, 10);
       const storedDate = profile.daily_msg_date;
       const msgCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
@@ -363,7 +364,7 @@ export default async function handler(req, res) {
 
     // ── Increment daily message counter (fire-and-forget) ────────────────────
     // Done after responding to keep chat latency minimal.
-    if (profileId && profile) {
+    if (profileId && profile && dailyLimit < UNLIMITED_MESSAGES) {
       const todayKey = new Date().toISOString().slice(0, 10);
       const storedDate = profile.daily_msg_date;
       const prevCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;

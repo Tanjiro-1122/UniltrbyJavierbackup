@@ -58,3 +58,10 @@ export async function checkPin(enteredPin) {
 export async function storePin(pin) {
   localStorage.setItem("unfiltr_pin", await hashPin(pin));
 }
+
+/**
+ * Remove the stored PIN, clearing all PIN protection.
+ */
+export function clearPin() {
+  localStorage.removeItem("unfiltr_pin");
+}
