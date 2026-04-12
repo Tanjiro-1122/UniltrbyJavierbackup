@@ -124,6 +124,8 @@ function doUpsertChatHistory(msgs, onError) {
       try { body = await r.json(); } catch {}
       // Server configuration error (e.g. BASE44_SERVICE_TOKEN not set) is a
       // deployment issue — log it but don't surface it as a user-facing error.
+      // NOTE: this string must match the message returned by api/base44.js
+      // handleSaveChatHistory when b44Token() is empty.
       if (body?.error === "Server configuration error") {
         console.error("[AutoSave] BASE44_SERVICE_TOKEN not configured — chat history saving unavailable");
         return;

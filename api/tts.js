@@ -8,11 +8,13 @@ const VOICE_MAP = {
     // Vibe-based keys (legacy / ChatPage vibe selector)
     chill: "nova", hype: "shimmer", deep: "alloy", vent: "nova", journal: "nova",
     // Style-based keys (ChatCustomizePanel Voice tab)
-    cheerful: "shimmer", calm: "nova", energetic: "shimmer", professional: "alloy",
+    // Using distinct voices per style so each personality sounds different:
+    //   shimmer = bright/cheerful, nova = warm/upbeat, alloy = neutral/professional, echo = balanced
+    cheerful: "shimmer", calm: "nova", energetic: "nova", professional: "alloy",
   },
   male: {
     chill: "echo", hype: "onyx", deep: "fable", vent: "echo", journal: "fable",
-    cheerful: "onyx", calm: "fable", energetic: "onyx", professional: "echo",
+    cheerful: "onyx", calm: "fable", energetic: "echo", professional: "echo",
   },
 };
 

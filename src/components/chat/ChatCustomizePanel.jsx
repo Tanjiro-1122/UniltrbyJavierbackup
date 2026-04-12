@@ -86,7 +86,10 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const handleChangeCompanion = async (c) => {
     setSavingCompanion(true);
     try {
-      // Clear the old companion's nickname so the new companion shows its own name
+      // Clear the old companion's nickname so the new companion uses its own
+      // base name. The nickname in localStorage is companion-agnostic — without
+      // clearing it, ChatPage's init effect re-applies it to every companion on
+      // next page load, making the new companion appear with the old name.
       localStorage.removeItem("unfiltr_companion_nickname");
       // Update localStorage immediately so UI feels instant
       const updated = { ...c, displayName: c.name, systemPrompt: companion?.systemPrompt };
