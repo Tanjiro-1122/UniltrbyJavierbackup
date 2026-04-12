@@ -8,7 +8,8 @@ import ShareCardModal from "@/components/ShareCardModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 import { getMoodEmoji } from "@/lib/moodConfig";
-import { isFamilyUnlimited } from "@/lib/entitlements";
+import { isFamilyUnlimited, getTier, PHOTO_DAILY_LIMITS } from "@/lib/entitlements";
+import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
 
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatInputBar from "@/components/chat/ChatInputBar";
@@ -229,6 +230,9 @@ export default function ChatPage() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [autosaveToast, setAutosaveToast] = useState(null); // { type: "error"|"limit", msg: string }
   const [relationshipMode, setRelationshipMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || "friend");
+  // ── Save progress prompt ──
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const consecutiveMsgRef = useRef(0); // counts user messages in this session
 
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
@@ -856,11 +860,19 @@ export default function ChatPage() {
 
   /* ─── PHOTO ─── */
   const handlePhotoClick = () => {
-    if (!isPremium) { navigate('/Pricing'); return; }
+    // Determine tier-based daily photo limit (free users get limited access, not a hard block)
+    const tier = getTier();
+    const photoLimit = PHOTO_DAILY_LIMITS[tier] ?? 2;
     const today = new Date().toDateString();
     const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
     const count = stored.date === today ? stored.count : 0;
-    if (count >= PHOTO_DAILY_LIMIT) { alert(`You've reached your ${PHOTO_DAILY_LIMIT} photos/day limit. Come back tomorrow! 📸`); return; }
+    if (count >= photoLimit) {
+      const upgradeMsg = tier === "free"
+        ? `Free plan allows ${photoLimit} photos/day. Upgrade to send more! 📸`
+        : `You've reached your ${photoLimit} photos/day limit. Come back tomorrow! 📸`;
+      alert(upgradeMsg);
+      return;
+    }
     const seen = localStorage.getItem("unfiltr_photo_disclaimer_seen");
     if (!seen) { setShowPhotoDisclaimer(true); return; }
     fileInputRef.current?.click();
@@ -1048,6 +1060,21 @@ export default function ChatPage() {
       incrementCount();
       spawnParticles();
 
+      // ── Track consecutive messages → show save progress prompt at 8 ──────
+      consecutiveMsgRef.current += 1;
+      const SAVE_PROMPT_THRESHOLD = 8;
+      if (consecutiveMsgRef.current === SAVE_PROMPT_THRESHOLD) {
+        const pref = getSavePreference();
+        if (pref === "auto") {
+          // Auto-save silently (doUpsertChatHistory already runs via the messages useEffect)
+          // Just reset the counter so the next group of 8 is tracked
+          consecutiveMsgRef.current = 0;
+        } else {
+          // "ask" preference or first time (no preference set) → show modal
+          setTimeout(() => setShowSavePrompt(true), 600);
+        }
+      }
+
       const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
@@ -1170,6 +1197,34 @@ export default function ChatPage() {
     localStorage.setItem("unfiltr_journal_context", chatSnippet);
     setShowJournalNudge(false);
     navigate("/journal/entry");
+  };
+
+  // ── Save progress modal handlers ──────────────────────────────────────────
+  const handleSavePromptSave = () => {
+    setShowSavePrompt(false);
+    consecutiveMsgRef.current = 0;
+    // Force an immediate DB upsert with current messages
+    const allMsgs = messages.slice(1);
+    if (allMsgs.length >= 2) doUpsertChatHistory(allMsgs, null);
+  };
+
+  const handleSavePromptAutoSave = () => {
+    setSavePreference("auto");
+    setShowSavePrompt(false);
+    consecutiveMsgRef.current = 0;
+    const allMsgs = messages.slice(1);
+    if (allMsgs.length >= 2) doUpsertChatHistory(allMsgs, null);
+  };
+
+  const handleSavePromptAlwaysAsk = () => {
+    setSavePreference("ask");
+    setShowSavePrompt(false);
+    consecutiveMsgRef.current = 0;
+  };
+
+  const handleSavePromptDismiss = () => {
+    setShowSavePrompt(false);
+    consecutiveMsgRef.current = 0;
   };
 
   const handleRetry = () => {
@@ -1600,6 +1655,7 @@ export default function ChatPage() {
             loading={loading}
             isListening={isListening}
             isPremium={isPremium}
+            photoEnabled={true}
             pendingImage={pendingImage}
             setPendingImage={setPendingImage}
             companionDisplayName={companionDisplayName}
@@ -1745,6 +1801,17 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+
+      {/* ── Save progress prompt (after 8 consecutive messages) ── */}
+      <SaveProgressModal
+        visible={showSavePrompt}
+        context="chat"
+        companionName={companion?.displayName || companion?.name || "your companion"}
+        onSave={handleSavePromptSave}
+        onAutoSave={handleSavePromptAutoSave}
+        onAlwaysAsk={handleSavePromptAlwaysAsk}
+        onDismiss={handleSavePromptDismiss}
+      />
 
     </>
   );

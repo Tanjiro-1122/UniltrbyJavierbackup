@@ -5,6 +5,7 @@ import { soundSend } from "@/components/utils/sounds";
 
 export default function ChatInputBar({
   input, setInput, loading, isListening, isPremium,
+  photoEnabled = true,
   pendingImage, setPendingImage, companionDisplayName,
   handleSend, startListening, stopListening, handlePhotoClick,
 }) {
@@ -44,14 +45,14 @@ export default function ChatInputBar({
         boxShadow: "0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
       }}>
 
-        {/* Photo button */}
+        {/* Photo button — available to all tiers, colour indicates active */}
         <button onClick={handlePhotoClick}
           style={{
             width: 32, height: 32, borderRadius: "50%", border: "none", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-            background: isPremium ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.06)",
+            background: photoEnabled ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.06)",
           }}>
-          <Camera size={15} color={isPremium ? "rgba(168,85,247,1)" : "rgba(255,255,255,0.28)"} />
+          <Camera size={15} color={photoEnabled ? "rgba(168,85,247,1)" : "rgba(255,255,255,0.28)"} />
         </button>
 
         {/* Text input */}

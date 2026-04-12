@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
+import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
 function getTier() {
@@ -191,6 +192,8 @@ export default function JournalEntry() {
   const fileInputRef = useRef(null);
   const stickerIdRef = useRef(0);
   const aiSuggestionShownRef = useRef(new Set());
+  const [showJournalSavePrompt, setShowJournalSavePrompt] = useState(false);
+  const journalWordCountRef = useRef(0); // tracks words typed since last prompt
 
   useEffect(() => {
     const now = new Date();
@@ -456,7 +459,20 @@ export default function JournalEntry() {
           <div className="flex-1 relative overflow-hidden min-h-0">
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.04) 31px, rgba(255,255,255,0.04) 32px)", backgroundPositionY: "48px" }} />
-            <textarea value={entry} onChange={(e) => setEntry(e.target.value)}
+            <textarea value={entry} onChange={(e) => {
+                setEntry(e.target.value);
+                // After ~80 words written, prompt to save (roughly 8 sentences)
+                const wordCount = e.target.value.trim().split(/\s+/).filter(Boolean).length;
+                if (wordCount >= 80 && journalWordCountRef.current < 80) {
+                  const pref = getSavePreference();
+                  if (pref === "auto") {
+                    // will save when user taps Save naturally; just track
+                  } else {
+                    setShowJournalSavePrompt(true);
+                  }
+                }
+                journalWordCountRef.current = wordCount;
+              }}
               placeholder={(() => {
                 const m = currentMood || "neutral";
                 const prompts = {
@@ -529,6 +545,17 @@ export default function JournalEntry() {
           <p className="text-white/20 text-xs">Write freely 🌙</p>
         </div>
       </div>
+
+      {/* ── Save progress prompt (after ~80 words written) ── */}
+      <SaveProgressModal
+        visible={showJournalSavePrompt}
+        context="journal"
+        companionName=""
+        onSave={() => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; handleSave(); }}
+        onAutoSave={() => { setSavePreference("auto"); setShowJournalSavePrompt(false); journalWordCountRef.current = 0; handleSave(); }}
+        onAlwaysAsk={() => { setSavePreference("ask"); setShowJournalSavePrompt(false); journalWordCountRef.current = 0; }}
+        onDismiss={() => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; }}
+      />
     </div>
   );
 }
