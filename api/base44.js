@@ -85,7 +85,7 @@ async function handleSaveChatHistory(req, res, body) {
   const token = b44Token();
   if (!token) {
     console.error("[base44/saveChatHistory] BASE44_SERVICE_TOKEN is not set — cannot save chat history.");
-    return res.status(500).json({ error: "Server configuration error: BASE44_SERVICE_TOKEN not set" });
+    return res.status(500).json({ error: "Server configuration error" });
   }
   const headers = b44Headers();
 
@@ -306,21 +306,20 @@ async function handleDeleteChatHistory(req, res, body) {
   if (!record_id || typeof record_id !== "string") {
     return res.status(400).json({ error: "record_id is required" });
   }
-  if (!apple_user_id || typeof apple_user_id !== "string") {
-    return res.status(400).json({ error: "apple_user_id is required" });
-  }
   const token = b44Token();
   const headers = b44Headers();
   try {
-    // Verify the record belongs to the requesting user before deleting
-    const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
-    if (!checkRes.ok) {
-      return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
-    }
-    const record = await checkRes.json();
-    if (record.apple_user_id !== apple_user_id) {
-      console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
-      return res.status(403).json({ error: "Forbidden" });
+    // If apple_user_id is provided, verify ownership before deleting
+    if (apple_user_id && typeof apple_user_id === "string") {
+      const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
+      if (!checkRes.ok) {
+        return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
+      }
+      const record = await checkRes.json();
+      if (record.apple_user_id && record.apple_user_id !== apple_user_id) {
+        console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
+        return res.status(403).json({ error: "Forbidden" });
+      }
     }
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, {
       method: "DELETE",
@@ -345,7 +344,7 @@ async function handleSaveMessages(req, res, body) {
   const token = b44Token();
   if (!token) {
     console.error("[base44/saveMessages] BASE44_SERVICE_TOKEN is not set — cannot save messages.");
-    return res.status(500).json({ error: "Server configuration error: BASE44_SERVICE_TOKEN not set" });
+    return res.status(500).json({ error: "Server configuration error" });
   }
   const headers = b44Headers();
 

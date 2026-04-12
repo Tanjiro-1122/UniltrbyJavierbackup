@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { purchaseToken, productId, appleUserId } = await req.json();
+    const { purchaseToken, productId, userId } = await req.json();
 
     if (!purchaseToken || !productId) {
       return Response.json({ valid: false, error: 'Missing purchaseToken or productId' });
@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
       const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
       
       // Find and update the user's profile by apple_user_id
-      if (appleUserId) {
-        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: appleUserId });
+      if (userId) {
+        const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: userId });
         if (profiles.length > 0) {
           await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
             is_premium: true,
@@ -129,8 +129,8 @@ Deno.serve(async (req) => {
     const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
 
     // Update user profile
-    if (appleUserId) {
-      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: appleUserId });
+    if (userId) {
+      const profiles = await base44.asServiceRole.entities.UserProfile.filter({ apple_user_id: userId });
       if (profiles.length > 0) {
         await base44.asServiceRole.entities.UserProfile.update(profiles[0].id, {
           is_premium: true,

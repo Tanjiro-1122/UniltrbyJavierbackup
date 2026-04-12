@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppleSubscriptions } from '@/components/hooks/useAppleSubscriptions';
-import { base44 } from '@/api/base44Client';
 import { Brain, MessageCircle, Mic, Zap, BookOpen, RotateCcw, Loader2, ChevronLeft } from 'lucide-react';
 import AppShell from '@/components/shell/AppShell';
 
@@ -313,16 +312,9 @@ export default function Pricing() {
     try {
       const result = await restore();
       if (result?.success || result?.isSuccess) {
-        try {
-          const profileId = localStorage.getItem('userProfileId');
-          if (profileId) {
-            const profile = await base44.entities.UserProfile.get(profileId);
-            if (profile?.is_premium) navigate("/hub");
-          }
-        } catch (dbErr) {
-          // DB check failed — still grant access if native restore said yes
-          navigate("/hub");
-        }
+        // useAppleSubscriptions.restorePurchases() already updated is_premium + is_annual/is_pro
+        // via /api/verifyPurchase. Navigate immediately — localStorage is already correct.
+        navigate("/hub");
       }
     } catch (e) {
       // Handled by useAppleSubscriptions error state; log for debug

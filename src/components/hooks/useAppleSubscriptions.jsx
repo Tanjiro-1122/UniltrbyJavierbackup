@@ -75,21 +75,34 @@ export class AppleStoreKitService {
       const hasPremium = entitlementKeys.length > 0;
 
       if (hasPremium) {
+        const isAnnual = productId?.includes('annual');
+        const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
+        // Set all three flags immediately — before any async DB call
         localStorage.setItem('unfiltr_is_premium', 'true');
+        localStorage.setItem('unfiltr_is_annual',  String(isAnnual));
+        localStorage.setItem('unfiltr_is_pro',     String(isPro));
+        // Immediate UI update with product-derived flags
+        window.dispatchEvent(new Event('unfiltr_auth_updated'));
         debugLog('✅ Premium granted! localStorage updated.');
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
-          const isAnnual  = productId?.includes('annual');
-          const isPro     = productId?.includes('tier.pro');
           if (profileId || userId) {
-            await fetch('/api/verifyPurchase', {
+            const resp = await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios', productId }),
             });
-            localStorage.setItem('unfiltr_is_annual', String(isAnnual));
-            localStorage.setItem('unfiltr_is_pro',    String(isPro));
+            // Use server-confirmed plan flags if available, then re-notify listeners
+            if (resp.ok) {
+              const respData = await resp.json();
+              const plan = respData?.data?.plan;
+              if (plan) {
+                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
+                localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
+                window.dispatchEvent(new Event('unfiltr_auth_updated'));
+              }
+            }
             debugLog('✅ UserProfile updated in database');
           }
         } catch(e) {
@@ -122,16 +135,26 @@ export class AppleStoreKitService {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
           if (profileId || userId) {
-            await fetch('/api/verifyPurchase', {
+            const resp = await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios' }),
+              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios', action: 'restore' }),
             });
+            // Use server-confirmed plan flags to update annual/pro localStorage keys
+            if (resp.ok) {
+              const respData = await resp.json();
+              const plan = respData?.data?.plan;
+              if (plan) {
+                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
+                localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
+              }
+            }
             debugLog('✅ UserProfile restore updated in database');
           }
         } catch(e) {
           debugLog(`⚠️ DB restore update failed (non-fatal): ${e.message}`);
         }
+        window.dispatchEvent(new Event('unfiltr_auth_updated'));
         return { isSuccess: true };
       }
       debugLog('⚠️ Restore: no active subscription found');
