@@ -19,14 +19,18 @@ export default async function handler(req, res) {
     if (!text) return res.status(400).json({ error: "No text provided" });
 
     const gender = voiceGender?.toLowerCase() === "male" ? "male" : "female";
-    const voice = VOICE_MAP[gender][voicePersonality] || VOICE_MAP[gender].chill;
+    const voice = VOICE_MAP[gender][voicePersonality];
+    if (!voice) {
+      console.warn(`[tts] Unknown voicePersonality "${voicePersonality}" — falling back to "chill"`);
+    }
+    const resolvedVoice = voice || VOICE_MAP[gender].chill;
 
     const { signal, cancel } = withAbortController();
     let mp3;
     try {
       mp3 = await openai.audio.speech.create({
         model: "tts-1",
-        voice,
+        voice: resolvedVoice,
         input: text.slice(0, 4096),
       }, { signal });
     } finally {
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
     const buffer = Buffer.from(await mp3.arrayBuffer());
     const base64 = buffer.toString("base64");
 
-    res.status(200).json({ data: { audio: base64, voice } });
+    res.status(200).json({ data: { audio: base64, voice: resolvedVoice } });
   } catch (err) {
     safeLogError(err, { ...ctx, tag: "tts" });
     if (err.name === "AbortError" || err.message?.includes("aborted") || err.message?.includes("timed out")) {

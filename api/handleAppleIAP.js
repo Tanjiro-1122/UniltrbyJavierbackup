@@ -9,7 +9,7 @@
  */
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
-import { ENTITLEMENT_ID, mapSubscriberToFlags, fetchRCSubscriber, postReceiptToRC } from "./_rcMapping.js";
+import { ENTITLEMENT_ID, mapSubscriberToFlags, fetchRCSubscriber, postReceiptToRC, RCSubscriberNotFoundError } from "./_rcMapping.js";
 
 async function b44FindAndUpdate(appleUserId, data) {
   // Primary lookup: apple_user_id
@@ -58,7 +58,15 @@ export default async function handler(req, res) {
 
     await postReceiptToRC(receipt, appleUserId, productId, "ios");
 
-    const subscriberData = await fetchRCSubscriber(appleUserId);
+    let subscriberData;
+    try {
+      subscriberData = await fetchRCSubscriber(appleUserId);
+    } catch (err) {
+      if (err instanceof RCSubscriberNotFoundError) {
+        return res.status(400).json({ error: "Entitlement not active after receipt validation" });
+      }
+      throw err; // re-throw network/server errors to outer catch
+    }
     const { flags, plan, expiresDate, isActive } = mapSubscriberToFlags(subscriberData);
 
     if (!isActive) {

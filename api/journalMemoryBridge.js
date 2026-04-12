@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   const ctx = createRequestContext(req);
   res.setHeader("X-Request-Id", ctx.requestId);
 
-  const rl = checkRateLimit(ctx.userId);
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
   if (!rl.allowed) {
     return res.status(429).json({
       error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
@@ -141,14 +141,16 @@ Use [] for empty arrays. Use null if not mentioned.`,
     });
 
     // Also store as vector memory if premium
+    let vectorWarn = null;
     try {
       const { storeMemoryVectors } = await import("./memoryEmbed.js");
       await storeMemoryVectors(profileId, updatedFacts, `Journal: ${(journalTitle || "entry").slice(0, 60)}`, isPremium, isPro, isAnnual);
     } catch(e) {
       console.warn("[journalBridge] vector store failed:", e.message);
+      vectorWarn = "vector_store_failed";
     }
 
-    return res.status(200).json({ ok: true, merged: true });
+    return res.status(200).json({ ok: true, merged: true, ...(vectorWarn ? { vectorWarn } : {}) });
   } catch (err) {
     safeLogError(err, { tag: "journalMemoryBridge" });
     return res.status(500).json({ error: "Journal memory processing failed. Please try again." });

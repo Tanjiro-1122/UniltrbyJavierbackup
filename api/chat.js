@@ -159,7 +159,7 @@ export default async function handler(req, res) {
   res.setHeader("X-Request-Id", ctx.requestId);
 
   // ── Rate limit ───────────────────────────────────────────────────────────
-  const rl = checkRateLimit(ctx.userId);
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
   if (!rl.allowed) {
     return res.status(429).json({
       error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
@@ -169,7 +169,6 @@ export default async function handler(req, res) {
   try {
     const {
       messages,
-      systemPrompt,
       memorySummary,
       sessionMemory,
       profileId,
@@ -178,7 +177,6 @@ export default async function handler(req, res) {
       isAnnual   = false,
       personality,
       userFacts,
-      sessionMemoryFull,
       relationshipMode = "friend",} = req.body;
 
     if (!messages?.length) return res.status(400).json({ error: "No messages provided" });
@@ -196,7 +194,10 @@ export default async function handler(req, res) {
     const maxTokens  = Math.min(getMaxTokens(isPremium, isPro, isAnnual), MAX_OUTPUT_TOKENS);
     const ctxWindow  = getContextWindow(isPremium, isPro, isAnnual);
 
-    const system         = systemPrompt || "You are a warm, supportive AI companion named Luna.";
+    // System prompt is always built server-side. Accepting one from the client
+    // would allow prompt-injection attacks where a malicious app rewrites the
+    // companion's instructions entirely.
+    const system         = "You are a warm, supportive AI companion.";
     const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
     const personalityCtx = buildPersonalityParagraph(personality);
 
@@ -217,15 +218,15 @@ export default async function handler(req, res) {
 
     // ── #3: Memory confirmation nudge ───────────────────────────────────
     const memoryConfirmCtx = buildMemoryConfirmationNudge(
-      userFacts || req.body.userFacts || {},
-      sessionMemoryFull || req.body.sessionMemory || [],
+      userFacts || {},
+      sessionMemory || [],
       isPremium || isPro || isAnnual
     );
 
     // ── #6: Proactive memory surfacing ──────────────────────────────────
     const proactiveCtx = buildProactiveMemoryInstruction(
       userFacts || {},
-      sessionMemoryFull || [],
+      sessionMemory || [],
       messages?.length || 0
     );
     // ── Vector memory retrieval (premium+ only) ─────────────────────────
@@ -301,8 +302,14 @@ export default async function handler(req, res) {
     const mood = validMoods.includes(detectedMood) ? detectedMood : "contentment";
     const reply = raw.replace(/\nMOOD:[^\n]*/i, "").trim();
 
-    // Crisis detection
-    const lower  = reply.toLowerCase() + " " + (messages[messages.length - 1]?.content || "").toLowerCase();
+    // Crisis detection — scan the last 5 user turns, not just the most recent,
+    // so distress signals earlier in the conversation aren't missed.
+    const recentUserTexts = messages
+      .filter(m => m.role === "user")
+      .slice(-5)
+      .map(m => (m.content || "").toLowerCase())
+      .join(" ");
+    const lower  = reply.toLowerCase() + " " + recentUserTexts;
     const crisis = CRISIS_KEYWORDS.some(kw => lower.includes(kw));
 
     // ── Token usage & cost ───────────────────────────────────────────────────

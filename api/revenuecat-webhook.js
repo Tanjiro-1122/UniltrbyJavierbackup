@@ -20,17 +20,10 @@ const GRANT_EVENTS  = ["INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCE
 const REVOKE_EVENTS = ["CANCELLATION", "EXPIRATION", "BILLING_ISSUE"];
 
 /**
- * Loose email-shaped heuristic used to detect whether an app_user_id looks like
- * an email address (including Apple private-relay addresses such as
- * xxxx@privaterelay.appleid.com). This is intentionally permissive — it is only
- * used to decide whether to attempt a secondary lookup by email field; it is not
- * used for validation.
- */
-const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/**
  * Find a UserProfile by apple_user_id.
- * If the lookup value looks like an email address, also try matching the email field.
+ * Email-based fallback has been intentionally removed: a permissive email
+ * regex match would allow a crafted app_user_id to overwrite any user whose
+ * email happens to match — a privilege-escalation vector.
  */
 async function findProfile(appleUserId) {
   // Primary lookup: apple_user_id field
@@ -42,23 +35,6 @@ async function findProfile(appleUserId) {
     if (records[0]) return records[0];
   } catch (err) {
     console.error(`[RC Webhook] findProfile (apple_user_id) failed for ${appleUserId}: ${err.message}`);
-  }
-
-  // Email fallback: if app_user_id looks like an email address (intentional heuristic —
-  // Apple private-relay addresses also match), search by email field as a last resort.
-  if (LOOKS_LIKE_EMAIL.test(appleUserId)) {
-    try {
-      const data = await b44Fetch(
-        `${B44_ENTITIES}/UserProfile?email=${encodeURIComponent(appleUserId)}&limit=1`
-      );
-      const records = Array.isArray(data) ? data : (data?.records || data?.data || []);
-      if (records[0]) {
-        console.log(`[RC Webhook] findProfile matched via email for ${appleUserId}`);
-        return records[0];
-      }
-    } catch (err) {
-      console.error(`[RC Webhook] findProfile (email fallback) failed for ${appleUserId}: ${err.message}`);
-    }
   }
 
   return null;
@@ -116,7 +92,9 @@ export default async function handler(req, res) {
   const event = rawBody?.event || rawBody;
   const eventType = event?.type;
   const appUserId = event?.app_user_id;
-  const aliases   = event?.aliases || [];
+  // Use Array.isArray to guard against aliases: null (|| [] only guards undefined/falsy,
+  // but null is falsy too — this is just more explicit and future-proof).
+  const aliases   = Array.isArray(event?.aliases) ? event.aliases : [];
   const productId = event?.product_id || "";
   const expiresDate = event?.expiration_at_ms
     ? new Date(event.expiration_at_ms).toISOString()

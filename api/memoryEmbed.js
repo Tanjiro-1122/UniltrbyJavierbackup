@@ -42,13 +42,19 @@ function cosineSimilarity(a, b) {
     magA += a[i] * a[i];
     magB += b[i] * b[i];
   }
+  // Guard against zero-length vectors to prevent NaN corrupting scores
+  if (!magA || !magB) return 0;
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 
 async function embed(text) {
+  const MAX_CHARS = 2000;
+  if (text.length > MAX_CHARS) {
+    console.warn(`[memoryEmbed] embed() truncating text from ${text.length} to ${MAX_CHARS} chars`);
+  }
   const res = await openai.embeddings.create({
     model: "text-embedding-3-small",
-    input: text.slice(0, 2000),
+    input: text.slice(0, MAX_CHARS),
   });
   return res.data[0].embedding;
 }
@@ -106,7 +112,9 @@ export async function storeMemoryVectors(profileId, facts, sessionNote, isPremiu
 
   if (!chunks.length) return { ok: true, skipped: "nothing_to_store" };
 
-  const vectors = await Promise.all(
+  // Use allSettled so a single failed embedding doesn't abort the whole batch —
+  // successful vectors are still stored; individual failures are logged and skipped.
+  const results = await Promise.allSettled(
     chunks.map(async (c) => ({
       text: c.text,
       type: c.type,
@@ -114,6 +122,17 @@ export async function storeMemoryVectors(profileId, facts, sessionNote, isPremiu
       vector: await embed(c.text),
     }))
   );
+
+  const vectors = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      vectors.push(result.value);
+    } else {
+      console.warn("[memoryEmbed] embed failed for chunk (skipping):", result.reason?.message);
+    }
+  }
+
+  if (vectors.length === 0) return { ok: true, skipped: "all_embeds_failed" };
 
   const profile = await b44Get("UserProfile", profileId);
   const existing = profile?.memory_vectors || [];
@@ -159,7 +178,7 @@ export default async function handler(req, res) {
   const ctx = createRequestContext(req);
   res.setHeader("X-Request-Id", ctx.requestId);
 
-  const rl = checkRateLimit(ctx.userId);
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
   if (!rl.allowed) {
     return res.status(429).json({
       error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,

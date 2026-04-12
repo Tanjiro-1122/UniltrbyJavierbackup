@@ -109,8 +109,22 @@ export function mapSubscriberToFlags(subscriberData) {
 }
 
 /**
+ * Thrown when a RevenueCat subscriber is not found (404).
+ * Callers can catch this specifically to distinguish "user has no subscription"
+ * from a general network/server error.
+ */
+export class RCSubscriberNotFoundError extends Error {
+  constructor(appUserId) {
+    super(`RevenueCat subscriber not found: ${appUserId}`);
+    this.name = "RCSubscriberNotFoundError";
+    this.statusCode = 404;
+  }
+}
+
+/**
  * Fetch a RevenueCat subscriber record by app_user_id.
- * Throws a descriptive Error on failure (status / body preview included).
+ * Throws RCSubscriberNotFoundError on 404 (user has no subscription).
+ * Throws a descriptive Error on any other failure (network / server error).
  * Never logs the secret key value.
  *
  * @param {string} appUserId - RevenueCat / Apple user ID.
@@ -124,6 +138,10 @@ export async function fetchRCSubscriber(appUserId) {
     `${RC_API_BASE}/subscribers/${encodeURIComponent(appUserId)}`,
     { headers: { Authorization: `Bearer ${key}` } }
   );
+
+  if (res.status === 404) {
+    throw new RCSubscriberNotFoundError(appUserId);
+  }
 
   if (!res.ok) {
     let preview = "";

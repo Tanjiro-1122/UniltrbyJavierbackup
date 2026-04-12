@@ -29,13 +29,20 @@ async function b44Update(entity, id, data) {
 }
 
 // ── Merge extracted facts — new data wins, arrays merge+dedup ────────────────
+function _stableKey(x) {
+  if (typeof x !== "object" || x === null) return JSON.stringify(x);
+  // Sort keys for stable serialization so {"name":"A","role":"B"} and
+  // {"role":"B","name":"A"} are treated as the same entry.
+  return JSON.stringify(Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))));
+}
+
 function mergeFacts(existing = {}, extracted = {}) {
   const merged = { ...existing };
   for (const [key, value] of Object.entries(extracted)) {
     if (value && value !== "unknown" && value !== "not mentioned") {
       if (Array.isArray(value) && Array.isArray(merged[key])) {
         const combined = [...merged[key], ...value];
-        merged[key] = [...new Map(combined.map(x => [JSON.stringify(x), x])).values()].slice(0, 20);
+        merged[key] = [...new Map(combined.map(x => [_stableKey(x), x])).values()].slice(0, 20);
       } else {
         merged[key] = value;
       }
@@ -139,7 +146,7 @@ export default async function handler(req, res) {
   const ctx = createRequestContext(req);
   res.setHeader("X-Request-Id", ctx.requestId);
 
-  const rl = checkRateLimit(ctx.userId);
+  const rl = checkRateLimit(ctx.userId, ctx.clientIp);
   if (!rl.allowed) {
     return res.status(429).json({
       error: `Too many requests. Please wait ${rl.retryAfterSeconds}s and try again.`,
@@ -262,14 +269,13 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
     // Evict stale cached profile after write
     invalidateCachedProfile(profileId);
 
-    // Vector memory store (premium+, fire-and-forget)
+    // Vector memory store (premium+, awaited but non-blocking on error)
     try {
       const { storeMemoryVectors } = await import("./memoryEmbed.js");
-      storeMemoryVectors(profileId, updatedFacts, sessionNote, isPremium, isPro, isAnnual)
-        .then(r  => console.log("[summarize] vectors stored:", r))
-        .catch(e => console.warn("[summarize] vector store failed:", e.message));
+      const vResult = await storeMemoryVectors(profileId, updatedFacts, sessionNote, isPremium, isPro, isAnnual);
+      console.log("[summarize] vectors stored:", vResult);
     } catch(e) {
-      console.warn("[summarize] memoryEmbed import failed:", e.message);
+      console.warn("[summarize] vector store failed (non-fatal):", e.message);
     }
 
     res.status(200).json({
