@@ -15,6 +15,7 @@ import { useStorageCleanup } from "@/hooks/useStorageCleanup";
 import { useEffect, useState } from "react";
 import { ensureBridgeInstalled } from "@/lib/nativeBridge";
 import { runConfigChecks } from "@/lib/configCheck";
+import useProfileRecovery from "@/hooks/useProfileRecovery";
 
 import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
@@ -71,7 +72,7 @@ const HIDE_TABS_ON = [
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
   "/TermsOfUse", "/support", "/Pricing", "/onboarding",
-  "/how-it-works", "/AdminDashboard", "/FeedbackAdmin", "/AdminAvatarProcessor",
+  "/how-it-works",
 ];
 
 function SafeAreaFix() {
@@ -86,55 +87,6 @@ function SafeAreaFix() {
     document.body.style.backgroundColor = color;
   }, []);
   return null;
-}
-
-// Session recovery: if userProfileId is missing but apple_user_id is in localStorage,
-// look up the profile by apple_user_id and restore the session.
-// Skipped when unfiltr_fresh_start=true (set by "Reset App") so a wiped device
-// does not silently re-hydrate the old identity before the user signs in.
-function useProfileRecovery() {
-  useEffect(() => {
-    // Do not auto-restore after an explicit reset — wait for the user to sign in.
-    if (localStorage.getItem("unfiltr_fresh_start") === "true") return;
-
-    const profileId   = localStorage.getItem("userProfileId");
-    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-    if (profileId) return; // already restored
-    if (!appleUserId) return; // no apple id — user needs to sign in
-
-    (async () => {
-      try {
-        const res = await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "sync", appleUserId }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const p = data?.data;
-        if (p?.profileId) {
-          localStorage.setItem("userProfileId", p.profileId);
-          localStorage.setItem("unfiltr_user_id", appleUserId);
-          if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
-          if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
-          if (p.companion_id && p.companion_id !== "pending") {
-            localStorage.setItem("companionId", p.companion_id);
-            localStorage.setItem("unfiltr_companion_id", p.companion_id);
-          }
-          const isAnnual  = !!(p.annual_plan);
-          const isPro     = !!(p.pro_plan);
-          const isPremium = !!(p.is_premium || isPro || isAnnual);
-          localStorage.setItem("unfiltr_is_premium", String(isPremium));
-          localStorage.setItem("unfiltr_is_pro",     String(isPro));
-          localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
-          window.dispatchEvent(new Event("unfiltr_auth_updated"));
-          console.log("[Recovery] Profile restored via syncProfile:", p.profileId);
-        }
-      } catch (e) {
-        console.warn("[Recovery] Could not restore profile:", e.message);
-      }
-    })();
-  }, []);
 }
 
 // ─── Global Native Bridge ────────────────────────────────────────────────────

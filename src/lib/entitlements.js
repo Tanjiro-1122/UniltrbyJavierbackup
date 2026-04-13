@@ -14,7 +14,7 @@
 
 export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
-export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: 99999, family: 99999 };
+export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: Number.MAX_SAFE_INTEGER, family: Number.MAX_SAFE_INTEGER };
 
 /** Daily photo limit per tier when sending images in chat */
 export const PHOTO_DAILY_LIMITS = { free: 2, plus: 5, pro: 10, annual: 99999, family: 99999 };

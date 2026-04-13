@@ -13,6 +13,7 @@
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 import { planFromProductId } from "./_rcMapping.js";
+import { invalidateCachedProfile } from "./_helpers.js";
 import crypto from "crypto";
 
 // Events that grant premium
@@ -159,6 +160,8 @@ export default async function handler(req, res) {
   }
 
   const ok = await updateProfile(profile.id, updates);
+  // Evict the in-memory cache so the next request sees the updated premium status.
+  invalidateCachedProfile(profile.id);
   console.log(`[RC Webhook] Profile update: ${ok ? "success" : "failed"}`);
 
   return res.status(200).json({ received: true, matched: true, updated: ok, plan });

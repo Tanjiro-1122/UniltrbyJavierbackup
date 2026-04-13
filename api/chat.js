@@ -188,6 +188,7 @@ export default async function handler(req, res) {
       profileId,
       personality,
       userFacts,
+      imageBase64,
       relationshipMode = "friend",
     } = req.body;
 
@@ -240,7 +241,10 @@ export default async function handler(req, res) {
       });
     }
 
-    const model      = getModel(isPremium, isPro, isAnnual);
+    // When the client sends an image, use gpt-4o which supports vision.
+    // Free users are not gated on the model itself — the daily limit already applies.
+    const hasImage   = typeof imageBase64 === "string" && imageBase64.length > 0;
+    const model      = hasImage ? "gpt-4o" : getModel(isPremium, isPro, isAnnual);
     // Respect per-tier defaults but never exceed the hard server-side cap.
     const maxTokens  = Math.min(getMaxTokens(isPremium, isPro, isAnnual), MAX_OUTPUT_TOKENS);
     const ctxWindow  = getContextWindow(isPremium, isPro, isAnnual);
@@ -302,6 +306,23 @@ export default async function handler(req, res) {
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
+    // If an image was supplied, replace the last user message's content with the
+    // multi-modal content array required by GPT-4o Vision.
+    const finalMessages = hasImage
+      ? trimmedMessages.map((msg, idx) => {
+          if (idx === trimmedMessages.length - 1 && msg.role === "user") {
+            return {
+              role: "user",
+              content: [
+                { type: "text",      text: msg.content || "What do you think of this?" },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}`, detail: "auto" } },
+              ],
+            };
+          }
+          return msg;
+        })
+      : trimmedMessages;
+
     // Detect mood check-in — when user shares how they're feeling at the start of chat
     const lastMsg = messages[messages.length - 1];
     const isMoodCheckIn = lastMsg?.role === "user" && /^I'?m feeling .+ today$/iu.test(lastMsg?.content || "");
@@ -320,7 +341,7 @@ export default async function handler(req, res) {
             content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
               `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
           },
-          ...trimmedMessages,
+          ...finalMessages,
         ],
         max_tokens: maxTokens,
         temperature: 0.85,
