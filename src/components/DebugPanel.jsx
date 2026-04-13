@@ -7,6 +7,9 @@ import { useState, useEffect, useRef } from 'react';
 const logs = [];
 let setLogsExternal = null;
 let setErrorCountExternal = null;
+// Module-level ref so the window.__unfiltrDebug API can open/close the panel
+// without needing a UI button.
+let setVisibleExternal = null;
 
 // Tracks how many error-level entries exist so the badge stays accurate
 // even when the panel hasn't mounted yet.
@@ -104,6 +107,7 @@ export function DebugPanel() {
   useEffect(() => {
     setLogsExternal      = setLogLines;
     setErrorCountExternal = setErrorCount;
+    setVisibleExternal    = setVisible;
     // Sync any logs that were captured before this component mounted
     setLogLines([...logs]);
     setErrorCount(pendingErrorCount);
@@ -114,6 +118,47 @@ export function DebugPanel() {
 
     // Auto-show if ?debug=1 in URL
     if (window.location.search.includes('debug=1')) setVisible(true);
+
+    // ── Expose programmatic API for external agent monitoring ────────────────
+    // Access from any WebView / browser devtools / injected JS:
+    //   window.__unfiltrDebug.logs          → live array of log strings
+    //   window.__unfiltrDebug.errorCount    → number of captured errors
+    //   window.__unfiltrDebug.snapshot()    → full debug snapshot string (same as "Copy")
+    //   window.__unfiltrDebug.open()        → show the debug panel
+    //   window.__unfiltrDebug.close()       → hide the debug panel
+    //   window.__unfiltrDebug.clear()       → clear all logs
+    window.__unfiltrDebug = {
+      get logs()       { return [...logs]; },
+      get errorCount() { return pendingErrorCount; },
+      snapshot() {
+        const subTier = localStorage.getItem('unfiltr_is_annual') === 'true' ? 'Annual'
+          : localStorage.getItem('unfiltr_is_pro') === 'true' ? 'Pro'
+          : localStorage.getItem('unfiltr_is_premium') === 'true' ? 'Premium'
+          : 'Free';
+        return [
+          `=== UNFILTR DEBUG SNAPSHOT ${new Date().toISOString()} ===`,
+          `User ID:      ${localStorage.getItem('unfiltr_user_id') || '—'}`,
+          `Apple ID:     ${localStorage.getItem('unfiltr_apple_user_id') || '—'}`,
+          `Profile ID:   ${localStorage.getItem('userProfileId') || '—'}`,
+          `Device ID:    ${localStorage.getItem('unfiltr_device_id') || '—'}`,
+          `Sub Tier:     ${subTier}`,
+          `Display Name: ${localStorage.getItem('unfiltr_display_name') || '—'}`,
+          `Native Bridge: ${window.ReactNativeWebView ? 'YES' : 'NO'}`,
+          `UA: ${navigator.userAgent}`,
+          '',
+          '=== LOGS ===',
+          ...logs,
+        ].join('\n');
+      },
+      open()  { if (setVisibleExternal) { setVisibleExternal(true);  pendingErrorCount = 0; if (setErrorCountExternal) setErrorCountExternal(0); } },
+      close() { if (setVisibleExternal) setVisibleExternal(false); },
+      clear() {
+        logs.length = 0;
+        pendingErrorCount = 0;
+        if (setLogsExternal)       setLogsExternal([]);
+        if (setErrorCountExternal) setErrorCountExternal(0);
+      },
+    };
 
     // Refresh QUICK SNAPSHOT when auth state changes (sign-in, sign-out, storage update)
     const bumpSnapshot = () => setSnapshotVersion(v => v + 1);
@@ -151,6 +196,8 @@ export function DebugPanel() {
     return () => {
       setLogsExternal       = null;
       setErrorCountExternal = null;
+      setVisibleExternal    = null;
+      delete window.__unfiltrDebug;
       _restoreConsole();
       _restoreFetch();
       window.removeEventListener('message', handleNativeDebug);
@@ -204,7 +251,7 @@ export function DebugPanel() {
 
   return (
     <>
-      {/* Floating toggle button — single tap to open/close */}
+      {/* Floating toggle button — hidden from UI; use ?debug=1 or window.__unfiltrDebug.open() */}
       <div
         onClick={() => setVisible(v => {
           // Clear the error badge when opening the panel
@@ -212,51 +259,9 @@ export function DebugPanel() {
           return !v;
         })}
         style={{
-          position: 'fixed',
-          bottom: 90,
-          right: 12,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          background: visible ? '#a855f7' : 'rgba(168,85,247,0.25)',
-          border: `1px solid ${errorCount > 0 ? '#f87171' : 'rgba(168,85,247,0.6)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 16,
-          zIndex: 99999,
-          cursor: 'pointer',
-          boxShadow: errorCount > 0
-            ? '0 0 12px rgba(248,113,113,0.7)'
-            : visible ? '0 0 12px rgba(168,85,247,0.6)' : 'none',
-          transition: 'all 0.2s',
+          display: 'none',
         }}
-      >
-        🔍
-        {/* Error badge */}
-        {errorCount > 0 && (
-          <span style={{
-            position: 'absolute',
-            top: -4,
-            right: -4,
-            background: '#f43f5e',
-            color: '#fff',
-            fontSize: 9,
-            fontWeight: 'bold',
-            borderRadius: 8,
-            minWidth: 16,
-            height: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 3px',
-            fontFamily: 'monospace',
-            lineHeight: 1,
-          }}>
-            {errorCount > 99 ? '99+' : errorCount}
-          </span>
-        )}
-      </div>
+      />
 
       {/* Debug panel — floating overlay */}
       {visible && (
