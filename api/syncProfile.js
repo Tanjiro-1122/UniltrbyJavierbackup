@@ -183,6 +183,23 @@ export default async function handler(req, res) {
   console.log(`[syncProfile] action=${action} appleUserId=${appleUserId?.slice(0,12)} profileId=${profileId}`);
 
   try {
+    // ── ACTION: get — fetch a profile by ID (e.g. for MemoryEditor) ──────────
+    if (action === "get") {
+      if (!profileId) return res.status(400).json({ error: "profileId required for get" });
+      try {
+        const r = await fetch(`${B44_BASE}/UserProfile/${profileId}`, { headers: b44Headers() });
+        if (!r.ok) return res.status(404).json({ error: "Profile not found" });
+        const profile = await r.json();
+        return res.status(200).json({
+          user_facts:     profile.user_facts     || {},
+          memory_summary: profile.memory_summary || "",
+          display_name:   profile.display_name   || "",
+        });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     // ── ACTION: update — update a specific profile by ID ──────────────────────
     if (action === "update") {
       if (!profileId) return res.status(400).json({ error: "profileId required for update" });
