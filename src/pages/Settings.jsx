@@ -310,6 +310,7 @@ export default function Settings() {
       if (data.type === "admin") {
         localStorage.setItem("unfiltr_admin_unlocked", "true");
         sessionStorage.setItem("unfiltr_admin_session", "true");
+        sessionStorage.setItem("unfiltr_admin_token", adminCode.trim());
         setIsAdmin(true);
         setShowCodeModal(false);
         setAdminCode("");
