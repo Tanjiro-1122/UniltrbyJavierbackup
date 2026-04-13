@@ -90,6 +90,8 @@ function SafeAreaFix() {
 
 // Session recovery: if userProfileId is missing but apple_user_id is in localStorage,
 // look up the profile by apple_user_id and restore the session.
+// Falls back to device_id via a lookup-only call so anonymous users don't get
+// a phantom profile created on their behalf.
 // Skipped when unfiltr_fresh_start=true (set by "Reset App") so a wiped device
 // does not silently re-hydrate the old identity before the user signs in.
 function useProfileRecovery() {
@@ -99,22 +101,26 @@ function useProfileRecovery() {
 
     const profileId   = localStorage.getItem("userProfileId");
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    const deviceId    = localStorage.getItem("unfiltr_device_id");
     if (profileId) return; // already restored
-    if (!appleUserId) return; // no apple id — user needs to sign in
+    // Try real Apple user ID first; fall back to device_id using lookup-only
+    const lookupId     = appleUserId || deviceId;
+    const lookupAction = appleUserId ? "sync" : "lookup";
+    if (!lookupId) return; // no identifier — user needs to sign in
 
     (async () => {
       try {
         const res = await fetch("/api/syncProfile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "sync", appleUserId }),
+          body: JSON.stringify({ action: lookupAction, appleUserId: lookupId }),
         });
         if (!res.ok) return;
         const data = await res.json();
         const p = data?.data;
         if (p?.profileId) {
           localStorage.setItem("userProfileId", p.profileId);
-          localStorage.setItem("unfiltr_user_id", appleUserId);
+          if (appleUserId) localStorage.setItem("unfiltr_user_id", appleUserId);
           if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
           if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
           if (p.companion_id && p.companion_id !== "pending") {

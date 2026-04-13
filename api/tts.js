@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { createRequestContext, safeLogError, withAbortController, checkRateLimit, getProfileTier } from "./_helpers.js";
+import { createRequestContext, safeLogError, withAbortController, checkRateLimit, getProfileTier, getProfileTierByAppleId } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -33,22 +33,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text, voiceGender = "female", voicePersonality = "chill", profileId } = req.body;
+    const { text, voiceGender = "female", voicePersonality = "chill", profileId, appleUserId } = req.body;
     if (!text) return res.status(400).json({ error: "No text provided" });
 
     // ── Server-side tier verification ────────────────────────────────────────
     // TTS uses OpenAI's paid API — gate it behind at least plus/premium tier so
-    // free users cannot consume TTS quota. profileId is required for the check.
-    // Note: profileId is supplied by the client — this matches the existing auth
-    // model across all API endpoints (no server-side session tokens). The check
+    // free users cannot consume TTS quota. profileId is the primary lookup key;
+    // appleUserId is accepted as a fallback for users whose profileId was lost
+    // (e.g. localStorage partially cleared) but who still have Apple Sign-In.
+    // Note: both identifiers are supplied by the client — this matches the existing
+    // auth model across all API endpoints (no server-side session tokens). The check
     // prevents accidental free-tier access; it relies on the same trust boundary
     // as the rest of the API layer (e.g., chat.js, memoryEmbed.js).
-    const { isPremium, isPro, isAnnual, fetchFailed } = await getProfileTier(profileId);
+    let tierResult = await getProfileTier(profileId);
+
+    // If profileId lookup failed or profileId is absent, try appleUserId as fallback
+    if ((!tierResult.isPremium && !tierResult.isPro && !tierResult.isAnnual) && appleUserId && appleUserId !== profileId) {
+      const fallback = await getProfileTierByAppleId(appleUserId);
+      if (fallback.isPremium || fallback.isPro || fallback.isAnnual) {
+        tierResult = fallback;
+      }
+    }
+
+    const { isPremium, isPro, isAnnual, fetchFailed } = tierResult;
     // Block only when the tier is definitively verified as free. If the profile
     // lookup failed (e.g., Base44 temporarily unavailable) and a profileId was
     // provided, give the benefit of the doubt so registered premium users are
     // not silently blocked during outages.
-    const isDefinitelyFree = !isPremium && !isPro && !isAnnual && !(fetchFailed && profileId);
+    const isDefinitelyFree = !isPremium && !isPro && !isAnnual && !(fetchFailed && (profileId || appleUserId));
     if (isDefinitelyFree) {
       return res.status(403).json({ error: "Voice playback requires a premium subscription." });
     }

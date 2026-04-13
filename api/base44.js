@@ -158,18 +158,26 @@ async function handleSaveChatHistory(req, res, body) {
       { headers }
     );
 
+    let records = [];
     if (!queryRes.ok) {
       const bodyText = await queryRes.text();
       console.error(
         `[base44/saveChatHistory] Query failed HTTP ${queryRes.status} — ${bodyText.slice(0, 200)}`
       );
-      return res
-        .status(queryRes.status)
-        .json({ error: `Base44 query failed: ${queryRes.status}` });
+      // Auth errors (401/403) indicate a configuration problem — propagate them.
+      // Any other failure (e.g. 405 Method Not Allowed from a schema/query issue)
+      // is treated as "no existing record found today" so we fall through to POST
+      // and create a new record rather than losing the conversation entirely.
+      if (queryRes.status === 401 || queryRes.status === 403) {
+        return res
+          .status(queryRes.status)
+          .json({ error: `Base44 query failed: ${queryRes.status}` });
+      }
+      console.warn(`[base44/saveChatHistory] Falling through to POST after query error ${queryRes.status}`);
+    } else {
+      const queryData = await queryRes.json();
+      records = Array.isArray(queryData) ? queryData : (queryData.items || queryData.records || []);
     }
-
-    const queryData = await queryRes.json();
-    const records = Array.isArray(queryData) ? queryData : (queryData.items || queryData.records || []);
 
     if (records.length > 0) {
       // ── Update existing record ──────────────────────────────────────────

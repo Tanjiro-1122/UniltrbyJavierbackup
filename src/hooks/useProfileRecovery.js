@@ -19,17 +19,24 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
         // Recovery: profileId missing — try to re-link via Apple user ID
         if (!profileId) {
           const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+          const deviceId    = localStorage.getItem("unfiltr_device_id");
           const displayName = localStorage.getItem("unfiltr_display_name");
-          // Only attempt recovery when we have a real Apple user ID.
-          // Never send "lookup" or a blank string — that could match an unrelated profile.
-          if (appleUserId) {
+          // Prefer the real Apple user ID (sync creates profile if needed).
+          // Fall back to device_id via a lookup-only action so we don't
+          // accidentally create a new profile for anonymous/device-only users.
+          const recoveryId     = appleUserId || null;
+          const fallbackId     = !appleUserId && deviceId ? deviceId : null;
+          const recoveryAction = appleUserId ? "sync" : "lookup";
+          const lookupId       = recoveryId || fallbackId;
+
+          if (lookupId) {
             try {
               const r = await fetch("/api/syncProfile", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  action: "sync",
-                  appleUserId,
+                  action: recoveryAction,
+                  appleUserId: lookupId,
                   fullName: displayName,
                 }),
               });

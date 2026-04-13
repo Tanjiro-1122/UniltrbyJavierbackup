@@ -183,6 +183,19 @@ export default async function handler(req, res) {
   console.log(`[syncProfile] action=${action} appleUserId=${appleUserId?.slice(0,12)} profileId=${profileId}`);
 
   try {
+    // ── ACTION: lookup — find a profile without creating it ───────────────────
+    // Used by client-side recovery hooks to check if a profile exists for a
+    // given identifier (appleUserId or deviceId) without risking creation of a
+    // ghost profile for anonymous/device-only users.
+    if (action === "lookup") {
+      if (!appleUserId) return res.status(400).json({ error: "appleUserId required for lookup" });
+      const found = await findByAppleId(appleUserId);
+      if (!found) return res.status(200).json({ found: false, data: null });
+      const companion = await getCompanion(found.companion_id);
+      console.log(`[syncProfile] lookup found profile ${found.id} for ${appleUserId?.slice(0,12)}`);
+      return res.status(200).json({ found: true, data: buildProfileResponse(found, companion) });
+    }
+
     // ── ACTION: update — update a specific profile by ID ──────────────────────
     if (action === "update") {
       if (!profileId) return res.status(400).json({ error: "profileId required for update" });

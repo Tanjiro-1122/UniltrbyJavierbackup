@@ -851,7 +851,8 @@ export default function ChatPage() {
           companionId,
           voiceGender,
           voicePersonality,
-          profileId: localStorage.getItem("userProfileId") || null,
+          profileId:   localStorage.getItem("userProfileId") || null,
+          appleUserId: localStorage.getItem("unfiltr_apple_user_id") || null,
         }),
       });
 
