@@ -26,7 +26,7 @@ export default function SettingsCompanion({ profile, companion, onCompanionChang
     setSavingCompanion(false);
   };
 
-  const getCompanionDbId = () => {
+  const resolveCompanionId = () => {
     const fromComp = companion?.id;
     const fromProfile = profile?.companion_id;
     const fromStorage = localStorage.getItem("unfiltr_companion_id");
@@ -40,13 +40,13 @@ export default function SettingsCompanion({ profile, companion, onCompanionChang
     if (trimmed.length > 30) { setNickError("Max 30 characters."); return; }
     setNickError("");
     localStorage.setItem("unfiltr_companion_nickname", trimmed);
-    const companionId = getCompanionDbId();
+    const companionId = resolveCompanionId();
     if (companionId) {
       fetch("/api/utils", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "updateCompanion", companionId, updateData: { nickname: trimmed } }),
-      }).catch(() => {});
+      }).catch(e => console.warn("[SettingsCompanion] Nickname DB save failed:", e));
     }
     setNickSaved(true);
     setTimeout(() => setNickSaved(false), 2000);
@@ -55,13 +55,13 @@ export default function SettingsCompanion({ profile, companion, onCompanionChang
   const saveVibe = () => {
     localStorage.setItem("unfiltr_personality_vibe", personalityVibe);
     onUpdate && onUpdate({ personality_vibe: personalityVibe });
-    const companionId = getCompanionDbId();
+    const companionId = resolveCompanionId();
     if (companionId) {
       fetch("/api/utils", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "updateCompanion", companionId, updateData: { personality_vibe: personalityVibe } }),
-      }).catch(() => {});
+      }).catch(e => console.warn("[SettingsCompanion] Vibe DB save failed:", e));
     }
   };
 
