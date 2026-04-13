@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SlidersHorizontal } from "lucide-react";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
 
 const VOICE_PERSONALITIES = [
   { id: "cheerful",     emoji: "😊", label: "Cheerful",      desc: "Bright & upbeat" },

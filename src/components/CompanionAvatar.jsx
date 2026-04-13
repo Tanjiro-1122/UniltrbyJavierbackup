@@ -4,16 +4,17 @@ import { COMPANIONS } from "@/components/companionData";
 
 export default function CompanionAvatar({ companionId, mood }) {
   const companion = COMPANIONS.find((c) => c.id === companionId);
-  if (!companion) return null;
 
-  const poseUrl = companion.poses[mood] || companion.poses.neutral;
-  const fallbackUrl = companion.poses.neutral || companion.avatar;
+  const poseUrl = companion ? (companion.poses[mood] || companion.poses.neutral) : null;
+  const fallbackUrl = companion ? (companion.poses.neutral || companion.avatar) : null;
 
   const [imgSrc, setImgSrc] = useState(poseUrl);
 
   useEffect(() => {
     setImgSrc(poseUrl);
   }, [poseUrl]);
+
+  if (!companion) return null;
 
   const handleError = () => {
     if (fallbackUrl && imgSrc !== fallbackUrl) {
