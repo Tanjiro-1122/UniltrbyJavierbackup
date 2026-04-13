@@ -111,11 +111,17 @@ function OnboardingResume() {
     } else if (!companionId) {
       navigate("/onboarding/companion", { replace: true });
     } else {
-      // They picked a companion — restore to store then send to nickname/vibe
+      // They picked a companion — restore to store then send to nickname or mode
       import("@/components/onboarding/useOnboardingStore").then(({ updateOnboardingStore }) => {
         updateOnboardingStore({ selectedCompanion: companionId });
       });
-      navigate("/onboarding/nickname", { replace: true });
+      // If nickname is already saved, skip to the mode step
+      const nicknameDone = !!localStorage.getItem("unfiltr_companion_nickname");
+      if (nicknameDone) {
+        navigate("/onboarding/mode", { replace: true });
+      } else {
+        navigate("/onboarding/nickname", { replace: true });
+      }
     }
   }, []);
   return null;

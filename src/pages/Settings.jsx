@@ -15,7 +15,6 @@ import MemoryEditor from "@/components/chat/MemoryEditor";
 import { getMoodWeek } from "@/components/utils/moodTracker";
 import SettingsProfile from "@/components/settings/SettingsProfile";
 import SettingsCompanion from "@/components/settings/SettingsCompanion";
-import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
@@ -721,99 +720,17 @@ export default function Settings() {
 
     personality: (
       <SubScreen title="Personality" onBack={() => setScreen(null)}>
-        {/* Vibe */}
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Overall Vibe</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }}>
-          {[
-            { id: "chill",      emoji: "😌", label: "Chill",      desc: "Low-key, easy" },
-            { id: "playful",    emoji: "😄", label: "Playful",    desc: "Light & fun" },
-            { id: "deep",       emoji: "🌌", label: "Deep",       desc: "Thoughtful" },
-            { id: "motivating", emoji: "🔥", label: "Motivating", desc: "Hype you up" },
-            { id: "sarcastic",  emoji: "😏", label: "Sarcastic",  desc: "Witty edge" },
-          ].map(o => (
-            <button key={o.id} onClick={() => setPersonalityVibe(o.id)}
-              style={{ padding: "12px 8px", borderRadius: 13, border: personalityVibe === o.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)", background: personalityVibe === o.id ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
-              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
-              <span style={{ color: personalityVibe === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityVibe === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
-            </button>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🎨</div>
+          <h3 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: "0 0 10px" }}>Voice &amp; Personality</h3>
+          <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
+            Customize your companion's voice and personality directly from the chat screen using the options panel.
+          </p>
+          <button onClick={() => { setScreen(null); navigate("/chat"); }}
+            style={{ padding: "14px 28px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+            Go to Chat →
+          </button>
         </div>
-
-        {/* Empathy */}
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Empathy Level</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {[
-            { id: "listener", emoji: "👂", label: "Listener",  desc: "Just vibes" },
-            { id: "balanced", emoji: "⚖️",  label: "Balanced",  desc: "Both worlds" },
-            { id: "advisor",  emoji: "💡", label: "Advisor",   desc: "Real input" },
-          ].map(o => (
-            <button key={o.id} onClick={() => setPersonalityEmpathy(o.id)}
-              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityEmpathy === o.id ? "2px solid #db2777" : "1px solid rgba(255,255,255,0.08)", background: personalityEmpathy === o.id ? "rgba(219,39,119,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
-              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
-              <span style={{ color: personalityEmpathy === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityEmpathy === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Humor */}
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Humor</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {[
-            { id: "none",     emoji: "🧊", label: "None",      desc: "Straight up" },
-            { id: "subtle",   emoji: "😏", label: "Subtle",    desc: "Dry wit" },
-            { id: "fullsend", emoji: "😂", label: "Full Send", desc: "All in" },
-          ].map(o => (
-            <button key={o.id} onClick={() => setPersonalityHumor(o.id)}
-              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityHumor === o.id ? "2px solid #f59e0b" : "1px solid rgba(255,255,255,0.08)", background: personalityHumor === o.id ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
-              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
-              <span style={{ color: personalityHumor === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityHumor === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Curiosity */}
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Curiosity</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {[
-            { id: "quiet",    emoji: "🤫", label: "Quiet",    desc: "Let you talk" },
-            { id: "moderate", emoji: "🙂", label: "Moderate", desc: "Some questions" },
-            { id: "curious",  emoji: "🔍", label: "Curious",  desc: "Digs deeper" },
-          ].map(o => (
-            <button key={o.id} onClick={() => setPersonalityCuriosity(o.id)}
-              style={{ flex: 1, padding: "13px 8px", borderRadius: 13, border: personalityCuriosity === o.id ? "2px solid #06b6d4" : "1px solid rgba(255,255,255,0.08)", background: personalityCuriosity === o.id ? "rgba(6,182,212,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
-              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
-              <span style={{ color: personalityCuriosity === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityCuriosity === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Style */}
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Conversational Style</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 28 }}>
-          {[
-            { id: "casual",        emoji: "👟", label: "Casual",        desc: "Everyday chat" },
-            { id: "thoughtful",    emoji: "💭", label: "Thoughtful",    desc: "Reflective" },
-            { id: "philosophical", emoji: "🦉", label: "Philosophical", desc: "Big picture" },
-            { id: "hype",          emoji: "🚀", label: "Hype",          desc: "Energy boost" },
-          ].map(o => (
-            <button key={o.id} onClick={() => setPersonalityStyle(o.id)}
-              style={{ padding: "13px 10px", borderRadius: 13, border: personalityStyle === o.id ? "2px solid #10b981" : "1px solid rgba(255,255,255,0.08)", background: personalityStyle === o.id ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
-              <span style={{ fontSize: 22, display: "block", marginBottom: 3 }}>{o.emoji}</span>
-              <span style={{ color: personalityStyle === o.id ? "white" : "rgba(255,255,255,0.55)", fontWeight: personalityStyle === o.id ? 700 : 500, fontSize: 12, display: "block" }}>{o.label}</span>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>{o.desc}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Save Button */}
-        <button onClick={handleSavePersonality} disabled={savingPersonality}
-          style={{ width: "100%", padding: "15px", background: personalitySaved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#7c3aed,#db2777)", border: personalitySaved ? "1px solid rgba(34,197,94,0.5)" : "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: savingPersonality ? "default" : "pointer", opacity: savingPersonality ? 0.6 : 1, transition: "all 0.3s" }}>
-          {personalitySaved ? "✓ Saved — takes effect next chat" : savingPersonality ? "Saving..." : "Save Personality"}
-        </button>
       </SubScreen>
     ),
 
@@ -1167,13 +1084,17 @@ export default function Settings() {
 
         {/* ── VOICE TAB ── */}
         {activeTab === "voice" && (
-          <SettingsVoice
-            profile={userProfile}
-            onUpdate={updates => {
-              if (updates.voice_gender) setVoiceGender(updates.voice_gender);
-              if (updates.voice_personality) setVoicePersonality(updates.voice_personality);
-            }}
-          />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 16px", textAlign: "center" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎤</div>
+            <h3 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: "0 0 10px" }}>Voice &amp; Personality</h3>
+            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
+              Customize your companion's voice and personality directly from the chat screen using the options panel.
+            </p>
+            <button onClick={() => navigate("/chat")}
+              style={{ padding: "14px 28px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+              Customize in Chat →
+            </button>
+          </div>
         )}
 
         {/* ── NOTIFICATIONS TAB ── */}
