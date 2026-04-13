@@ -29,24 +29,45 @@ function decodeAppleJwt(token) {
 
 
 
+// Parse a Base44 list response — handles both plain array and wrapped formats:
+// { items: [...] }, { records: [...] }, or just [...]
+function _toRecords(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.items))   return data.items;
+  if (data && Array.isArray(data.records)) return data.records;
+  return [];
+}
+
 async function findByAppleId(appleUserId) {
-  const res = await fetch(
-    `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-    { headers: b44Headers() }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return Array.isArray(data) && data.length > 0 ? data[0] : null;
+  try {
+    const res = await fetch(
+      `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
+      { headers: b44Headers() }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const records = _toRecords(data);
+    return records.length > 0 ? records[0] : null;
+  } catch (e) {
+    console.warn(`[syncProfile] findByAppleId failed: ${e.message}`);
+    return null;
+  }
 }
 
 async function findByEmail(email) {
-  const res = await fetch(
-    `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
-    { headers: b44Headers() }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return Array.isArray(data) && data.length > 0 ? data[0] : null;
+  try {
+    const res = await fetch(
+      `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
+      { headers: b44Headers() }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const records = _toRecords(data);
+    return records.length > 0 ? records[0] : null;
+  } catch (e) {
+    console.warn(`[syncProfile] findByEmail failed: ${e.message}`);
+    return null;
+  }
 }
 
 async function findByDisplayName(name) {
@@ -58,9 +79,10 @@ async function findByDisplayName(name) {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
+    const records = _toRecords(data);
+    if (records.length === 0) return null;
     // Prefer profiles with no apple_user_id (migrating old users)
-    const noApple = data.find(p => !p.apple_user_id);
+    const noApple = records.find(p => !p.apple_user_id);
     return noApple || null;
   } catch { return null; }
 }

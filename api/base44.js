@@ -153,18 +153,10 @@ async function handleSaveChatHistory(req, res, body) {
     }
 
     // ── Query for an existing record for today ────────────────────────────
-    const queryRes = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        filters: [
-          { field: "apple_user_id", operator: "eq", value: apple_user_id },
-          { field: "companion_id", operator: "eq", value: companion_id },
-          { field: "local_date", operator: "eq", value: localDate },
-        ],
-        limit: 1,
-      }),
-    });
+    const queryRes = await fetch(
+      `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&companion_id=${encodeURIComponent(companion_id)}&local_date=${encodeURIComponent(localDate)}&limit=1`,
+      { headers }
+    );
 
     if (!queryRes.ok) {
       const bodyText = await queryRes.text();
@@ -177,7 +169,7 @@ async function handleSaveChatHistory(req, res, body) {
     }
 
     const queryData = await queryRes.json();
-    const records = Array.isArray(queryData) ? queryData : queryData.items || [];
+    const records = Array.isArray(queryData) ? queryData : (queryData.items || queryData.records || []);
 
     if (records.length > 0) {
       // ── Update existing record ──────────────────────────────────────────
@@ -255,18 +247,14 @@ async function pruneOldChatHistory(appleId, tier, headers) {
   const retainLimit = CHAT_RETENTION_LIMITS[tier] ?? 2;
   if (retainLimit >= 9999) return; // annual: unlimited
 
-  const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      filters: [{ field: "apple_user_id", operator: "eq", value: appleId }],
-      sort: [{ field: "saved_at", direction: "desc" }],
-      limit: 500,
-    }),
-  });
+  const r = await fetch(
+    `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(appleId)}&limit=500&sort=-saved_at`,
+    { headers }
+  );
   if (!r.ok) return;
   const data = await r.json();
-  const all = Array.isArray(data) ? data : data.items || [];
+  const all = Array.isArray(data) ? data : (data.items || data.records || []);
+  // API returns records sorted by saved_at desc; keep the newest N, delete the rest
   const toDelete = all.slice(retainLimit);
   for (const session of toDelete) {
     fetch(`${B44_ENTITIES}/ChatHistory/${session.id}`, {
@@ -287,22 +275,17 @@ async function handleGetChatHistory(req, res, body) {
   const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 9999, 9999);
   try {
-    const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        filters: [{ field: "apple_user_id", operator: "eq", value: apple_user_id }],
-        sort: [{ field: "saved_at", direction: "desc" }],
-        limit,
-      }),
-    });
+    const r = await fetch(
+      `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=${limit}&sort=-saved_at`,
+      { headers }
+    );
     if (!r.ok) {
       const bodyText = await r.text();
       console.error(`[base44/getChatHistory] Query failed HTTP ${r.status} — ${bodyText.slice(0, 200)}`);
       return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
     }
     const data = await r.json();
-    const records = Array.isArray(data) ? data : (data.items || []);
+    const records = Array.isArray(data) ? data : (data.items || data.records || []);
     return res.status(200).json({ ok: true, items: records });
   } catch (err) {
     console.error("[base44/getChatHistory] Unexpected error:", err.message);
@@ -424,19 +407,15 @@ async function handleClearAllChatHistory(req, res, body) {
   const token = b44Token();
   const headers = b44Headers();
   try {
-    const r = await fetch(`${B44_ENTITIES}/ChatHistory/query`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        filters: [{ field: "apple_user_id", operator: "eq", value: apple_user_id }],
-        limit: 500,
-      }),
-    });
+    const r = await fetch(
+      `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=500`,
+      { headers }
+    );
     if (!r.ok) {
       return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
     }
     const data = await r.json();
-    const all = Array.isArray(data) ? data : (data.items || []);
+    const all = Array.isArray(data) ? data : (data.items || data.records || []);
     await Promise.all(
       all.map(s =>
         fetch(`${B44_ENTITIES}/ChatHistory/${s.id}`, { method: "DELETE", headers }).catch(() => {})
