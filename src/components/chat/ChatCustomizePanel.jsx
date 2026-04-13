@@ -311,10 +311,10 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           ))}
         </div>
 
-        <button onClick={handleSaveVoice} style={{
+        <button onClick={handleSaveVoice} onTouchEnd={(e) => { e.preventDefault(); handleSaveVoice(); }} style={{
           width: "100%", padding: "13px", borderRadius: 14, border: "none",
           background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white",
-          fontSize: 15, fontWeight: 700, cursor: "pointer",
+          fontSize: 15, fontWeight: 700, cursor: "pointer", touchAction: "manipulation",
         }}>Save Voice Settings</button>
       </div>
     ),
@@ -368,10 +368,11 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           ))}
         </div>
 
-        <button onClick={handleSavePersonality} disabled={saving} style={{
+        <button onClick={handleSavePersonality} onTouchEnd={(e) => { e.preventDefault(); handleSavePersonality(); }} disabled={saving} style={{
           width: "100%", padding: "13px", borderRadius: 14, border: "none",
           background: saving ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#7c3aed,#db2777)",
           color: "white", fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+          touchAction: "manipulation",
         }}>{saving ? "Saving..." : "Save Personality"}</button>
       </div>
     ),

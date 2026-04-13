@@ -9,6 +9,7 @@ import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 import { getMoodEmoji } from "@/lib/moodConfig";
 import { isFamilyUnlimited, getTier, PHOTO_DAILY_LIMITS } from "@/lib/entitlements";
+import { isNativeApp, postToNative, waitForNative } from "@/lib/nativeBridge";
 import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
 
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -692,12 +693,7 @@ export default function ChatPage() {
     if (now - lastChatHistorySaveRef.current < 15000) return;
     lastChatHistorySaveRef.current = now;
 
-    doUpsertChatHistory(allMsgs, errMsg => {
-      if (saveErrorShownRef.current) return;
-      saveErrorShownRef.current = true;
-      setAutosaveToast({ type: "error", msg: errMsg });
-      setTimeout(() => setAutosaveToast(null), 4000);
-    });
+    doUpsertChatHistory(allMsgs, null);
   }, [messages]);
 
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
@@ -1158,6 +1154,25 @@ export default function ChatPage() {
   const startListening = () => {
     // Resume AudioContext on mic tap (user gesture)
     resumeAudioContext().catch(() => {});
+
+    // If running inside the iOS native wrapper, route through the native speech bridge
+    if (isNativeApp()) {
+      setIsListening(true);
+      postToNative({ type: "START_SPEECH_RECOGNITION" });
+      waitForNative(["SPEECH_RECOGNITION_RESULT", "SPEECH_RECOGNITION_ERROR"], 15000)
+        .then(data => {
+          const transcript = data?.transcript || data?.text || (typeof data === "string" ? data : "");
+          if (transcript) handleSend(transcript);
+        })
+        .catch(err => {
+          console.warn("[Speech] Native bridge error:", err?.message);
+        })
+        .finally(() => {
+          setIsListening(false);
+        });
+      return;
+    }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       setAutosaveToast({ type: "error", msg: "Voice input isn't supported on this device. Try typing instead!" });
