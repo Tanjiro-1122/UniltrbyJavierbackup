@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 // Global floating debug panel — persists across all pages
 // Activate: tap the 🔍 floating button (bottom-right, above nav)
