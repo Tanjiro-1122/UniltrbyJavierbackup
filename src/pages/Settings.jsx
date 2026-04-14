@@ -303,8 +303,17 @@ export default function Settings() {
       const res = await fetch("/api/utils", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verifySpecialCode", code: adminCode }),
+        body: JSON.stringify({ action: "verifySpecialCode", code: adminCode.trim() }),
       });
+      if (!res.ok) {
+        setCodeError(
+          res.status === 403
+            ? "Access blocked (403). Check your connection and try again."
+            : `Server error (${res.status}). Please try again.`
+        );
+        setAdminCode("");
+        return;
+      }
       const data = await res.json();
       if (data.type === "admin") {
         localStorage.setItem("unfiltr_admin_unlocked", "true");
@@ -320,7 +329,7 @@ export default function Settings() {
         setAdminCode("");
       }
     } catch {
-      setCodeError("Could not verify code. Please try again.");
+      setCodeError("Network error — could not reach the server. Please try again.");
       setAdminCode("");
     }
   };
@@ -339,8 +348,17 @@ export default function Settings() {
       const res = await fetch("/api/utils", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verifySpecialCode", code: familyCode }),
+        body: JSON.stringify({ action: "verifySpecialCode", code: familyCode.trim() }),
       });
+      if (!res.ok) {
+        setFamilyCodeError(
+          res.status === 403
+            ? "Access blocked (403). Check your connection and try again."
+            : `Server error (${res.status}). Please try again.`
+        );
+        setFamilyCode("");
+        return;
+      }
       const data = await res.json();
       if (data.type === "family") {
         const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
@@ -360,11 +378,11 @@ export default function Settings() {
         setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
         setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
       } else {
-        setFamilyCodeError("Invalid code.");
+        setFamilyCodeError("Invalid code. Check your code and try again.");
         setFamilyCode("");
       }
     } catch {
-      setFamilyCodeError("Could not verify code. Please try again.");
+      setFamilyCodeError("Network error — could not reach the server. Please try again.");
       setFamilyCode("");
     }
   };

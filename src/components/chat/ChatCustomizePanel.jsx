@@ -153,6 +153,8 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
         });
       } catch (e) {
         console.warn("[Customize] Voice DB save failed:", e);
+        toast.error("Voice saved locally, but could not sync to server.");
+        return;
       }
     }
     toast.success("Voice updated ✨");
@@ -161,53 +163,59 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const handleSavePersonality = async () => {
     if (saving) return;
     setSaving(true);
-    localStorage.setItem("unfiltr_personality_vibe",      pVibe);
-    localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
-    localStorage.setItem("unfiltr_personality_style",     pStyle);
-    localStorage.setItem("unfiltr_personality_humor",     pHumor);
-    localStorage.setItem("unfiltr_personality_curiosity", pCuriosity);
+    try {
+      localStorage.setItem("unfiltr_personality_vibe",      pVibe);
+      localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
+      localStorage.setItem("unfiltr_personality_style",     pStyle);
+      localStorage.setItem("unfiltr_personality_humor",     pHumor);
+      localStorage.setItem("unfiltr_personality_curiosity", pCuriosity);
 
-    const personalityData = {
-      personality_vibe:      pVibe,
-      personality_empathy:   pEmpathy,
-      personality_humor:     pHumor,
-      personality_style:     pStyle,
-      personality_curiosity: pCuriosity,
-    };
+      const personalityData = {
+        personality_vibe:      pVibe,
+        personality_empathy:   pEmpathy,
+        personality_humor:     pHumor,
+        personality_style:     pStyle,
+        personality_curiosity: pCuriosity,
+      };
 
-    // Persist to the Companion DB record — ChatPage reads personality from the
-    // Companion entity on load so this is the authoritative source of truth.
-    // Use the server-side /api/utils endpoint (not the SDK directly) because
-    // Apple Sign-In users are not authenticated through the base44 SDK.
-    if (companionDbId && companionDbId !== "pending") {
-      try {
-        await fetch('/api/utils', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'updateCompanion', companionId: companionDbId, updateData: personalityData }),
-        });
-      } catch (e) {
-        console.warn("[Customize] Personality DB save failed:", e);
+      // Persist to the Companion DB record — ChatPage reads personality from the
+      // Companion entity on load so this is the authoritative source of truth.
+      // Use the server-side /api/utils endpoint (not the SDK directly) because
+      // Apple Sign-In users are not authenticated through the base44 SDK.
+      if (companionDbId && companionDbId !== "pending") {
+        try {
+          await fetch('/api/utils', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'updateCompanion', companionId: companionDbId, updateData: personalityData }),
+          });
+        } catch (e) {
+          console.warn("[Customize] Personality DB save failed:", e);
+        }
       }
-    }
 
-    // Also sync to UserProfile so other pages can read the personality settings.
-    const profileId = localStorage.getItem("userProfileId");
-    if (profileId) {
-      try {
-        await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "update",
-            profileId,
-            updateData: personalityData,
-          }),
-        });
-      } catch (e) { /* localStorage fallback is fine */ }
+      // Also sync to UserProfile so other pages can read the personality settings.
+      const profileId = localStorage.getItem("userProfileId");
+      if (profileId) {
+        try {
+          await fetch("/api/syncProfile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "update",
+              profileId,
+              updateData: personalityData,
+            }),
+          });
+        } catch (e) { /* localStorage fallback is fine */ }
+      }
+      toast.success("Personality saved ✨");
+    } catch (e) {
+      console.warn("[Customize] Personality save error:", e);
+      toast.error("Could not save personality. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    toast.success("Personality saved ✨");
   };
 
   // ── Tab content ───────────────────────────────────────────────────────────
@@ -311,7 +319,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           ))}
         </div>
 
-        <button onClick={handleSaveVoice} onTouchEnd={(e) => { e.preventDefault(); handleSaveVoice(); }} style={{
+        <button onClick={handleSaveVoice} style={{
           width: "100%", padding: "13px", borderRadius: 14, border: "none",
           background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white",
           fontSize: 15, fontWeight: 700, cursor: "pointer", touchAction: "manipulation",
@@ -368,7 +376,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           ))}
         </div>
 
-        <button onClick={handleSavePersonality} onTouchEnd={(e) => { e.preventDefault(); handleSavePersonality(); }} disabled={saving} style={{
+        <button onClick={handleSavePersonality} disabled={saving} style={{
           width: "100%", padding: "13px", borderRadius: 14, border: "none",
           background: saving ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#7c3aed,#db2777)",
           color: "white", fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
