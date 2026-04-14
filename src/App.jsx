@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { ensureBridgeInstalled } from "@/lib/nativeBridge";
 import { runConfigChecks } from "@/lib/configCheck";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
+import { motion, AnimatePresence } from "framer-motion";
 
 import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
@@ -74,6 +75,86 @@ const PUBLIC_PATHS = [
   "/TermsOfUse", "/support", "/Pricing", "/onboarding",
   "/how-it-works",
 ];
+
+// Admin routes bypass ALL auth/onboarding/age-gate redirects.
+// They are guarded only by the AdminRoute component (admin code check).
+const ADMIN_PATHS = ["/AdminDashboard", "/FeedbackAdmin", "/AdminAvatarProcessor"];
+
+// ─── AdminRoute ───────────────────────────────────────────────────────────────
+// Standalone admin gate: checks localStorage/sessionStorage for admin unlock.
+// If not authenticated, renders an inline password prompt (same style as
+// Settings.jsx handleAdminTap / handleCodeSubmit flow).
+function AdminRoute({ children }) {
+  const isUnlocked =
+    localStorage.getItem("unfiltr_admin_unlocked") === "true" ||
+    sessionStorage.getItem("unfiltr_admin_session") === "true";
+
+  const [unlocked, setUnlocked]   = useState(isUnlocked);
+  const [code, setCode]           = useState("");
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+
+  const handleSubmit = async () => {
+    if (!code.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verifySpecialCode", code: code.trim() }),
+      });
+      if (!res.ok) {
+        setError(res.status === 403 ? "Access blocked (403). Check your connection." : `Server error (${res.status}).`);
+        setCode("");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      if (data.type === "admin") {
+        localStorage.setItem("unfiltr_admin_unlocked", "true");
+        sessionStorage.setItem("unfiltr_admin_session", "true");
+        sessionStorage.setItem("unfiltr_admin_token", code.trim());
+        setUnlocked(true);
+      } else {
+        setError("Invalid code.");
+        setCode("");
+      }
+    } catch {
+      setError("Network error — could not reach the server.");
+      setCode("");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (unlocked) return children;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#06020f", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        style={{ background: "#0d0520", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 20, padding: 32, width: "100%", maxWidth: 320 }}>
+        <p style={{ color: "white", fontWeight: 700, fontSize: 18, textAlign: "center", margin: "0 0 8px" }}>🛡️ Admin Access</p>
+        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, textAlign: "center", margin: "0 0 20px" }}>Enter the admin code to unlock.</p>
+        <input
+          type="password"
+          value={code}
+          onChange={e => { setCode(e.target.value); setError(""); }}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+          placeholder="Admin code..."
+          autoFocus
+          style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+        />
+        {error && <p style={{ color: "#f87171", fontSize: 12, margin: "0 0 8px", textAlign: "center" }}>{error}</p>}
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg,#7c3aed,#db2777)", border: "none", borderRadius: 12, color: "white", fontWeight: 700, fontSize: 15, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}
+        >{loading ? "Verifying…" : "Unlock"}</button>
+      </motion.div>
+    </div>
+  );
+}
 
 function SafeAreaFix() {
   useEffect(() => {
@@ -145,11 +226,12 @@ const AuthenticatedApp = ({ splashDone }) => {
   const navigate = useNavigate();
   const showTabs = !HIDE_TABS_ON.some(p => location.pathname.startsWith(p));
   const isPublicPath = PUBLIC_PATHS.some(p => location.pathname.startsWith(p));
+  const isAdminPath = ADMIN_PATHS.some(p => location.pathname.startsWith(p));
 
   // Step 1: Age gate — always first
   useEffect(() => {
     if (!splashDone) return;
-    if (isPublicPath) return;
+    if (isPublicPath || isAdminPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) {
       navigate("/age-verification", { replace: true });
@@ -159,7 +241,7 @@ const AuthenticatedApp = ({ splashDone }) => {
   // Step 2: Route based on auth + onboarding state
   useEffect(() => {
     if (!splashDone || isLoadingAuth) return;
-    if (isPublicPath) return;
+    if (isPublicPath || isAdminPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) return;
 
@@ -266,9 +348,9 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/journal/world"         element={<JournalWorldPicker />} />
         <Route path="/journal/immersive"     element={<FeatureErrorBoundary feature="Journal"><JournalImmersive /></FeatureErrorBoundary>} />
         <Route path="/journal/entry/:id"     element={<JournalEntry />} />
-        <Route path="/AdminAvatarProcessor"  element={<AdminAvatarProcessor />} />
-        <Route path="/AdminDashboard"        element={<AdminDashboard />} />
-        <Route path="/FeedbackAdmin"         element={<FeedbackAdmin />} />
+        <Route path="/AdminAvatarProcessor"  element={<AdminRoute><AdminAvatarProcessor /></AdminRoute>} />
+        <Route path="/AdminDashboard"        element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/FeedbackAdmin"         element={<AdminRoute><FeedbackAdmin /></AdminRoute>} />
         <Route path="*"                      element={<PageNotFound />} />
       </Routes>
       {showTabs && <BottomTabs />}

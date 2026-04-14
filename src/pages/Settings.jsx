@@ -344,6 +344,13 @@ export default function Settings() {
   };
 
   const handleFamilyCodeSubmit = async () => {
+    // Guard: must be signed in with Apple first
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    const profileId = localStorage.getItem("userProfileId");
+    if (!appleUserId || !profileId) {
+      setFamilyCodeError("You must sign in with Apple and have an account saved before activating a family plan. Please sign in first.");
+      return;
+    }
     try {
       const res = await fetch("/api/utils", {
         method: "POST",
@@ -1301,7 +1308,8 @@ export default function Settings() {
               ) : (
                 <>
                   <p style={{ color: "white", fontWeight: 700, fontSize: 17, margin: "0 0 6px", textAlign: "center" }}>Family Access</p>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 16px", textAlign: "center" }}>Enter your access code</p>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 10px", textAlign: "center" }}>Enter your access code</p>
+                  <p style={{ color: "#fbbf24", fontSize: 12, margin: "0 0 14px", textAlign: "center" }}>⚠️ You must be signed in with Apple to activate a family plan.</p>
                   <input type="password" value={familyCode} onChange={e => { setFamilyCode(e.target.value); setFamilyCodeError(""); }}
                     onKeyDown={e => e.key === "Enter" && handleFamilyCodeSubmit()} placeholder="Enter code..." autoFocus
                     style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "white", fontSize: 16, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />

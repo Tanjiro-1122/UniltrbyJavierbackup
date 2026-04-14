@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const VOICE_PERSONALITIES = [
   { id: "cheerful", emoji: "😊", label: "Cheerful", desc: "Bright & upbeat" },
@@ -14,33 +14,33 @@ export default function SettingsVoice({ profile, onUpdate }) {
   const [voicePersonality, setVoicePersonality] = useState(
     localStorage.getItem("unfiltr_voice_personality") || "cheerful"
   );
-  const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    localStorage.setItem("unfiltr_voice_gender", voiceGender);
-    localStorage.setItem("unfiltr_voice_personality", voicePersonality);
-    onUpdate && onUpdate({ voice_gender: voiceGender, voice_personality: voicePersonality });
+  // Auto-save whenever gender or personality changes (debounced 300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem("unfiltr_voice_gender", voiceGender);
+      localStorage.setItem("unfiltr_voice_personality", voicePersonality);
+      onUpdate && onUpdate({ voice_gender: voiceGender, voice_personality: voicePersonality });
 
-    // Persist to the Companion DB record so ChatPage init doesn't override
-    // localStorage with stale DB values on next load.
-    const companionId = (profile?.companion_id && profile.companion_id !== "pending")
-      ? profile.companion_id
-      : localStorage.getItem("unfiltr_companion_id");
-    if (companionId && companionId !== "pending") {
-      fetch('/api/utils', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'updateCompanion',
-          companionId,
-          updateData: { voice_gender: voiceGender, voice_personality: voicePersonality },
-        }),
-      }).catch(() => {});
-    }
-
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+      // Persist to the Companion DB record so ChatPage init doesn't override
+      // localStorage with stale DB values on next load.
+      const companionId = (profile?.companion_id && profile.companion_id !== "pending")
+        ? profile.companion_id
+        : localStorage.getItem("unfiltr_companion_id");
+      if (companionId && companionId !== "pending") {
+        fetch('/api/utils', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'updateCompanion',
+            companionId,
+            updateData: { voice_gender: voiceGender, voice_personality: voicePersonality },
+          }),
+        }).catch(() => {});
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [voiceGender, voicePersonality]);
 
   const previewVoice = () => {
     const msg = "Hey! This is how I sound. Pretty cool, right?";
@@ -106,15 +106,6 @@ export default function SettingsVoice({ profile, onUpdate }) {
         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
       }}>
         🔊 Preview Voice
-      </button>
-
-      <button onClick={handleSave} style={{
-        width: "100%", padding: "13px",
-        background: saved ? "rgba(34,197,94,0.3)" : "linear-gradient(135deg,#7c3aed,#db2777)",
-        border: saved ? "1px solid rgba(34,197,94,0.5)" : "none",
-        borderRadius: 14, color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", transition: "all 0.3s",
-      }}>
-        {saved ? "✓ Saved" : "Save Voice Settings"}
       </button>
     </div>
   );
