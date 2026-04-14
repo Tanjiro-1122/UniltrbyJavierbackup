@@ -1,10 +1,13 @@
 import { createClient } from "@base44/sdk";
 
 // Base44 SDK client for entities + auth
-// Uses VITE_BASE44_APP_ID injected at build time; falls back to the legacy
-// hardcoded ID so local dev without the env var still works.
+// Uses VITE_BASE44_APP_ID / VITE_BASE44_API_KEY injected at build time;
+// falls back to the hardcoded values so local dev without env vars still works.
 const _sdk = createClient({
   appId: import.meta.env.VITE_BASE44_APP_ID || "69b332a392004d139d4ba495",
+  headers: {
+    "api_key": import.meta.env.VITE_BASE44_API_KEY || "1156284fb9144ad9ab95afc962e848d8",
+  },
 });
 
 // Custom functions layer — routes to our Vercel /api/* serverless functions
