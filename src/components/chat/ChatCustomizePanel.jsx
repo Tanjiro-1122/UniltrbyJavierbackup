@@ -65,7 +65,6 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const [pHumor,     setPHumor]     = useState(() => localStorage.getItem("unfiltr_personality_humor")     || "subtle");
   const [pEmpathy,   setPEmpathy]   = useState(() => localStorage.getItem("unfiltr_personality_empathy")   || "balanced");
   const [pCuriosity, setPCuriosity] = useState(() => localStorage.getItem("unfiltr_personality_curiosity") || "moderate");
-  const [saving,   setSaving]   = useState(false);
 
   // Sync from localStorage on open
   useEffect(() => {
@@ -80,6 +79,24 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
       setPCuriosity(localStorage.getItem("unfiltr_personality_curiosity") || "moderate");
     }
   }, [open]);
+
+  // ── Auto-save voice on change (debounced 300ms) ────────────────────────────
+  useEffect(() => {
+    if (!open) return; // don't fire on initial mount when panel is closed
+    const timer = setTimeout(() => {
+      handleSaveVoice(voiceGender, voicePersonality);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [open, voiceGender, voicePersonality]);
+
+  // ── Auto-save personality on change (debounced 300ms) ─────────────────────
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      handleSavePersonality(pVibe, pStyle, pHumor, pEmpathy, pCuriosity);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [open, pVibe, pStyle, pHumor, pEmpathy, pCuriosity]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChangeCompanion = async (c) => {
@@ -131,9 +148,9 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     }
   };
 
-  const handleSaveVoice = async () => {
-    localStorage.setItem("unfiltr_voice_gender", voiceGender);
-    localStorage.setItem("unfiltr_voice_personality", voicePersonality);
+  const handleSaveVoice = async (gender = voiceGender, personality = voicePersonality) => {
+    localStorage.setItem("unfiltr_voice_gender", gender);
+    localStorage.setItem("unfiltr_voice_personality", personality);
     window.dispatchEvent(new Event("unfiltr_voice_updated"));
 
     // Persist to the Companion DB record so values survive page reloads.
@@ -148,34 +165,31 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           body: JSON.stringify({
             action: 'updateCompanion',
             companionId: companionDbId,
-            updateData: { voice_gender: voiceGender, voice_personality: voicePersonality },
+            updateData: { voice_gender: gender, voice_personality: personality },
           }),
         });
       } catch (e) {
         console.warn("[Customize] Voice DB save failed:", e);
-        toast.error("Voice saved locally, but could not sync to server.");
-        return;
       }
     }
-    toast.success("Voice updated ✨");
   };
 
-  const handleSavePersonality = async () => {
-    if (saving) return;
-    setSaving(true);
+  const handleSavePersonality = async (
+    vibe = pVibe, style = pStyle, humor = pHumor, empathy = pEmpathy, curiosity = pCuriosity
+  ) => {
     try {
-      localStorage.setItem("unfiltr_personality_vibe",      pVibe);
-      localStorage.setItem("unfiltr_personality_empathy",   pEmpathy);
-      localStorage.setItem("unfiltr_personality_style",     pStyle);
-      localStorage.setItem("unfiltr_personality_humor",     pHumor);
-      localStorage.setItem("unfiltr_personality_curiosity", pCuriosity);
+      localStorage.setItem("unfiltr_personality_vibe",      vibe);
+      localStorage.setItem("unfiltr_personality_empathy",   empathy);
+      localStorage.setItem("unfiltr_personality_style",     style);
+      localStorage.setItem("unfiltr_personality_humor",     humor);
+      localStorage.setItem("unfiltr_personality_curiosity", curiosity);
 
       const personalityData = {
-        personality_vibe:      pVibe,
-        personality_empathy:   pEmpathy,
-        personality_humor:     pHumor,
-        personality_style:     pStyle,
-        personality_curiosity: pCuriosity,
+        personality_vibe:      vibe,
+        personality_empathy:   empathy,
+        personality_humor:     humor,
+        personality_style:     style,
+        personality_curiosity: curiosity,
       };
 
       // Persist to the Companion DB record — ChatPage reads personality from the
@@ -209,12 +223,8 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           });
         } catch (e) { /* localStorage fallback is fine */ }
       }
-      toast.success("Personality saved ✨");
     } catch (e) {
       console.warn("[Customize] Personality save error:", e);
-      toast.error("Could not save personality. Please try again.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -318,12 +328,6 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
             </button>
           ))}
         </div>
-
-        <button onClick={handleSaveVoice} style={{
-          width: "100%", padding: "13px", borderRadius: 14, border: "none",
-          background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white",
-          fontSize: 15, fontWeight: 700, cursor: "pointer", touchAction: "manipulation",
-        }}>Save Voice Settings</button>
       </div>
     ),
 
@@ -375,13 +379,6 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
             <Chip key={c.id} active={pCuriosity === c.id} onClick={() => setPCuriosity(c.id)}>{c.label}</Chip>
           ))}
         </div>
-
-        <button onClick={handleSavePersonality} disabled={saving} style={{
-          width: "100%", padding: "13px", borderRadius: 14, border: "none",
-          background: saving ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#7c3aed,#db2777)",
-          color: "white", fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
-          touchAction: "manipulation",
-        }}>{saving ? "Saving..." : "Save Personality"}</button>
       </div>
     ),
 
