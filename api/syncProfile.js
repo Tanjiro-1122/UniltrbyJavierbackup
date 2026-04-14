@@ -196,6 +196,23 @@ export default async function handler(req, res) {
       return res.status(200).json({ found: true, data: buildProfileResponse(found, companion) });
     }
 
+    // ── ACTION: get — fetch a profile by ID (e.g. for MemoryEditor) ──────────
+    if (action === "get") {
+      if (!profileId) return res.status(400).json({ error: "profileId required for get" });
+      try {
+        const r = await fetch(`${B44_BASE}/UserProfile/${profileId}`, { headers: b44Headers() });
+        if (!r.ok) return res.status(404).json({ error: "Profile not found" });
+        const profile = await r.json();
+        return res.status(200).json({
+          user_facts:     profile.user_facts     || {},
+          memory_summary: profile.memory_summary || "",
+          display_name:   profile.display_name   || "",
+        });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     // ── ACTION: update — update a specific profile by ID ──────────────────────
     if (action === "update") {
       if (!profileId) return res.status(400).json({ error: "profileId required for update" });
@@ -220,6 +237,12 @@ export default async function handler(req, res) {
     // ── ACTION: delete — permanently remove profile from DB ───────────────────
     if (action === "delete") {
       if (!profileId && !appleUserId) return res.status(400).json({ error: "profileId or appleUserId required" });
+      // Require appleUserId for all delete requests so ownership can always be verified.
+      // A caller that only knows the profileId (a DB record ID) cannot prove they own it.
+      if (!appleUserId) {
+        console.warn(`[syncProfile] delete rejected: appleUserId required for ownership verification`);
+        return res.status(403).json({ error: "appleUserId required to verify ownership before deletion" });
+      }
       let deleteId = profileId;
       // If only appleUserId provided, look up the profile first
       if (!deleteId && appleUserId) {
@@ -228,21 +251,18 @@ export default async function handler(req, res) {
       }
       if (deleteId) {
         // Ownership check — verify the caller owns this profile before deleting.
-        // Without this guard, any client that knows a profileId could delete anyone's data.
-        if (appleUserId) {
-          let targetProfile;
-          try {
-            const r = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, { headers: b44Headers() });
-            targetProfile = r.ok ? await r.json() : null;
-          } catch { targetProfile = null; }
-          if (!targetProfile) return res.status(404).json({ error: "Profile not found" });
-          // Reject deletion when:
-          // 1. The target profile has no apple_user_id set (can't verify ownership of anonymous profiles)
-          // 2. The target profile's apple_user_id doesn't match the caller
-          if (!targetProfile.apple_user_id || targetProfile.apple_user_id !== appleUserId) {
-            console.warn(`[syncProfile] delete rejected: appleUserId mismatch for profile ${deleteId}`);
-            return res.status(403).json({ error: "Forbidden" });
-          }
+        let targetProfile;
+        try {
+          const r = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, { headers: b44Headers() });
+          targetProfile = r.ok ? await r.json() : null;
+        } catch { targetProfile = null; }
+        if (!targetProfile) return res.status(404).json({ error: "Profile not found" });
+        // Reject deletion when:
+        // 1. The target profile has no apple_user_id set (can't verify ownership of anonymous profiles)
+        // 2. The target profile's apple_user_id doesn't match the caller
+        if (!targetProfile.apple_user_id || targetProfile.apple_user_id !== appleUserId) {
+          console.warn(`[syncProfile] delete rejected: appleUserId mismatch for profile ${deleteId}`);
+          return res.status(403).json({ error: "Forbidden" });
         }
         const delRes = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, {
           method: "DELETE",

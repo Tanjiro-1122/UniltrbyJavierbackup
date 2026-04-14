@@ -244,7 +244,12 @@ export default function PaywallModal({ visible, onClose, onSubscribe, onRestore,
                       <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
                       Processing...
                     </span>
-                  ) : `Subscribe — ${selectedPlan.label.split(" / ")[0]}/mo`}
+                  ) : (() => {
+                      // Build button label: use period unit that matches the plan
+                      const [price, period] = selectedPlan.label.split(" / ");
+                      const unit = period?.trim() === "year" ? "yr" : "mo";
+                      return `Subscribe — ${price}/${unit}`;
+                    })()}
                 </button>
 
                 <button onClick={handleRestore} className="w-full py-2 text-white/30 text-sm flex items-center justify-center gap-1">
