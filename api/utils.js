@@ -432,8 +432,9 @@ const { action } = req.body;
  * The codes are stored only in Vercel environment variables (ADMIN_PASS and
  * FAMILY_CODE) and are never exposed to the client.
  *
- * Comparison is case-sensitive — set ADMIN_PASS and FAMILY_CODE in Vercel env
- * exactly as users will type them.
+ * ADMIN_PASS comparison is case-sensitive (it's a password).
+ * FAMILY_CODE comparison is case-insensitive so capitalization differences
+ * ("HuertasFam" vs "huertasfam") don't block real family members.
  *
  * Response:
  *   { type: "admin" }  — valid admin code
@@ -449,14 +450,9 @@ async function handleVerifySpecialCode(req, res) {
   }
 
   if (FAMILY_CODE) {
-    // Accept the canonical spelling and the common typo variant (trailing 's' before 'fam').
-    const typoVariant = FAMILY_CODE.endsWith("fam")
-      ? FAMILY_CODE.slice(0, -3) + "sfam"
-      : null;
-    if (
-      safeCompare(code, FAMILY_CODE) ||
-      (typoVariant && safeCompare(code, typoVariant))
-    ) {
+    // Case-insensitive comparison for family code so capitalization differences
+    // ("HuertasFam" vs "huertasfam") don't block real family members.
+    if (safeCompare(code.toLowerCase(), FAMILY_CODE.toLowerCase())) {
       return res.status(200).json({ type: "family" });
     }
   }

@@ -5,8 +5,9 @@
  * Import this module instead of hard-coding the app ID or base URL.
  *
  * Required environment variable:
- *   BASE44_SERVICE_TOKEN — service-role token used by all serverless functions
- *                          that talk directly to Base44.
+ *   BASE44_API_KEY       — API key used by all serverless functions that talk
+ *                          directly to Base44 (sent as the "api_key" header).
+ *                          Also accepted as BASE44_SERVICE_TOKEN (legacy alias).
  *
  * Optional environment variables (override defaults, checked in priority order):
  *   B44_APP_ID           — Base44 application ID
@@ -35,14 +36,14 @@ export const B44_BASE_URL = _rawBaseUrl.replace(/\/+$/, "");
 /** Full entities endpoint: https://app.base44.com/api/apps/<id>/entities */
 export const B44_ENTITIES = `${B44_BASE_URL}/api/apps/${B44_APP_ID}/entities`;
 
-/** Returns the service-role Authorization header value. */
+/** Returns the API key for Base44 API calls. */
 export const b44Token = () =>
-  process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY || "";
+  process.env.BASE44_API_KEY || process.env.BASE44_SERVICE_TOKEN || "";
 
 /** Common request headers for Base44 API calls. */
 export const b44Headers = () => ({
   "Content-Type": "application/json",
-  Authorization: `Bearer ${b44Token()}`,
+  "api_key": b44Token(),
 });
 
 /**
