@@ -34,16 +34,28 @@ import { createRequestContext, checkRateLimit } from "./_helpers.js";
 // Retention caps per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
-// CORS — only allow the production frontend and localhost dev servers
+// CORS — only allow the production frontend, localhost dev servers, and Vercel preview deployments
 const ALLOWED_ORIGINS = new Set([
   "https://unfiltrbyjavier2.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
 ]);
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  // Allow all Vercel preview deployments for this project
+  // Pattern: https://<project>-<hash>-<org>.vercel.app
+  try {
+    const url = new URL(origin);
+    if (url.protocol === "https:" && url.hostname.endsWith(".vercel.app")) return true;
+  } catch {}
+  return false;
+}
+
 function setCors(req, res) {
   const origin = req.headers.origin || "";
-  if (ALLOWED_ORIGINS.has(origin)) {
+  if (isAllowedOrigin(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }

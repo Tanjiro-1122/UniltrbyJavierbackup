@@ -15,6 +15,7 @@ import { useStorageCleanup } from "@/hooks/useStorageCleanup";
 import { useEffect, useState } from "react";
 import { ensureBridgeInstalled } from "@/lib/nativeBridge";
 import { runConfigChecks } from "@/lib/configCheck";
+import useProfileRecovery from "@/hooks/useProfileRecovery";
 
 import HomePage               from "./pages/HomePage";
 import VibePage               from "./pages/VibePage";
@@ -71,7 +72,7 @@ const HIDE_TABS_ON = [
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
   "/TermsOfUse", "/support", "/Pricing", "/onboarding",
-  "/how-it-works", "/AdminDashboard", "/FeedbackAdmin", "/AdminAvatarProcessor",
+  "/how-it-works",
 ];
 
 function SafeAreaFix() {
@@ -88,60 +89,6 @@ function SafeAreaFix() {
   return null;
 }
 
-// Session recovery: if userProfileId is missing but apple_user_id is in localStorage,
-// look up the profile by apple_user_id and restore the session.
-// Falls back to device_id via a lookup-only call so anonymous users don't get
-// a phantom profile created on their behalf.
-// Skipped when unfiltr_fresh_start=true (set by "Reset App") so a wiped device
-// does not silently re-hydrate the old identity before the user signs in.
-function useProfileRecovery() {
-  useEffect(() => {
-    // Do not auto-restore after an explicit reset — wait for the user to sign in.
-    if (localStorage.getItem("unfiltr_fresh_start") === "true") return;
-
-    const profileId   = localStorage.getItem("userProfileId");
-    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-    const deviceId    = localStorage.getItem("unfiltr_device_id");
-    if (profileId) return; // already restored
-    // Try real Apple user ID first; fall back to device_id using lookup-only
-    const lookupId     = appleUserId || deviceId;
-    const lookupAction = appleUserId ? "sync" : "lookup";
-    if (!lookupId) return; // no identifier — user needs to sign in
-
-    (async () => {
-      try {
-        const res = await fetch("/api/syncProfile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: lookupAction, appleUserId: lookupId }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const p = data?.data;
-        if (p?.profileId) {
-          localStorage.setItem("userProfileId", p.profileId);
-          if (appleUserId) localStorage.setItem("unfiltr_user_id", appleUserId);
-          if (p.display_name) localStorage.setItem("unfiltr_display_name", p.display_name);
-          if (p.onboarding_complete) localStorage.setItem("unfiltr_onboarding_complete", "true");
-          if (p.companion_id && p.companion_id !== "pending") {
-            localStorage.setItem("companionId", p.companion_id);
-            localStorage.setItem("unfiltr_companion_id", p.companion_id);
-          }
-          const isAnnual  = !!(p.annual_plan);
-          const isPro     = !!(p.pro_plan);
-          const isPremium = !!(p.is_premium || isPro || isAnnual);
-          localStorage.setItem("unfiltr_is_premium", String(isPremium));
-          localStorage.setItem("unfiltr_is_pro",     String(isPro));
-          localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
-          window.dispatchEvent(new Event("unfiltr_auth_updated"));
-          console.log("[Recovery] Profile restored via syncProfile:", p.profileId);
-        }
-      } catch (e) {
-        console.warn("[Recovery] Could not restore profile:", e.message);
-      }
-    })();
-  }, []);
-}
 
 // ─── Global Native Bridge ────────────────────────────────────────────────────
 // Must be in App.jsx so it's always alive before any page component mounts.
@@ -165,11 +112,17 @@ function OnboardingResume() {
     } else if (!companionId) {
       navigate("/onboarding/companion", { replace: true });
     } else {
-      // They picked a companion — restore to store then send to nickname/vibe
+      // They picked a companion — restore to store then send to nickname or mode
       import("@/components/onboarding/useOnboardingStore").then(({ updateOnboardingStore }) => {
         updateOnboardingStore({ selectedCompanion: companionId });
       });
-      navigate("/onboarding/nickname", { replace: true });
+      // If nickname is already saved, skip to the mode step
+      const nicknameDone = !!localStorage.getItem("unfiltr_companion_nickname");
+      if (nicknameDone) {
+        navigate("/onboarding/mode", { replace: true });
+      } else {
+        navigate("/onboarding/nickname", { replace: true });
+      }
     }
   }, []);
   return null;

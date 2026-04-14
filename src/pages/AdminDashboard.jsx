@@ -452,6 +452,15 @@ export default function AdminDashboard() {
     onCancel:  ()       => { setConfirmDialog(null); cfg.onCancel?.(); },
   });
 
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem("unfiltr_admin_token");
+    if (savedToken) {
+      sessionStorage.removeItem("unfiltr_admin_token");
+      setAdminToken(savedToken);
+      setUnlocked(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => { if (unlocked) loadData(); }, [unlocked]);
 
   // Debounced user search — fires on search input change or when Support tab is opened

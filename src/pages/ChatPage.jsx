@@ -9,6 +9,7 @@ import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
 import { getMoodEmoji } from "@/lib/moodConfig";
 import { isFamilyUnlimited, getTier, PHOTO_DAILY_LIMITS } from "@/lib/entitlements";
+import { isNativeApp, postToNative, waitForNative } from "@/lib/nativeBridge";
 import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
 
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -253,35 +254,9 @@ export default function ChatPage() {
   usePushNotifications(profileId);
 
   /* ─── NATIVE PURCHASE LISTENER ─── */
-  useEffect(() => {
-    const handleNativeMessage = async (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.action === 'purchase_success' || data.action === 'restore_success') {
-          const { platform, receiptData, productId, purchaseToken } = data;
-          const res = await base44.functions.invoke('verifyPurchase', { platform, receiptData, productId, purchaseToken });
-          const result = res.data;
-          if (result.isPremium || result.valid) {
-            const isAnnualPurchase = result.plan === 'annual';
-            const isProPurchase    = result.plan === 'pro';
-            // Use profileId (DB record ID) if available, else fallback to apple_user_id lookup happens server-side
-            if (profileId) {
-              await base44.entities.UserProfile.update(profileId, { is_premium: true, annual_plan: isAnnualPurchase, pro_plan: isProPurchase });
-            }
-            setIsPremium(true);
-            if (isAnnualPurchase) setIsAnnual(true);
-            if (isProPurchase)   setIsPro(true);
-            localStorage.setItem('unfiltr_is_premium', 'true');
-            localStorage.setItem('unfiltr_is_annual', String(isAnnualPurchase));
-            localStorage.setItem('unfiltr_is_pro',    String(isProPurchase));
-            () => {};
-          }
-        }
-      } catch (e) { console.error('Native message error:', e); }
-    };
-    window.addEventListener('message', handleNativeMessage);
-    return () => window.removeEventListener('message', handleNativeMessage);
-  }, [profileId]);
+  // Handled by useAppleSubscriptions (via the centralised nativeBridge dispatcher).
+  // The old raw window.addEventListener('message') handler has been removed to prevent
+  // duplicate DB writes when PURCHASE_SUCCESS fires through the bridge.
 
   const particleId             = useRef(0);
   const stateTimeout           = useRef(null);
@@ -296,7 +271,7 @@ export default function ChatPage() {
   const [pendingImage, setPendingImage]               = useState(null);
   const [photoCount, setPhotoCount]                   = useState(0);
   const [showPhotoDisclaimer, setShowPhotoDisclaimer] = useState(false);
-  const PHOTO_DAILY_LIMIT = 10;
+  const [photoLimitToast, setPhotoLimitToast]         = useState(null); // { msg: string }
 
   /* ─── INIT ─── */
   useEffect(() => {
@@ -696,7 +671,10 @@ export default function ChatPage() {
     if (messages.length > 1) {
       // Skip localStorage save in private session mode
       if (localStorage.getItem("unfiltr_private_session") === "true") return;
-      const toSave = messages.slice(1).slice(-50).map(m => ({ role: m.role, content: m.content }));
+      // Never persist the error sentinel — it only exists transiently in state
+      const toSave = messages.slice(1).slice(-50)
+        .filter(m => m.content !== "__ERROR__")
+        .map(m => ({ role: m.role, content: m.content }));
       localStorage.setItem("unfiltr_chat_history", JSON.stringify(toSave));
     }
   }, [messages]);
@@ -715,12 +693,7 @@ export default function ChatPage() {
     if (now - lastChatHistorySaveRef.current < 15000) return;
     lastChatHistorySaveRef.current = now;
 
-    doUpsertChatHistory(allMsgs, errMsg => {
-      if (saveErrorShownRef.current) return;
-      saveErrorShownRef.current = true;
-      setAutosaveToast({ type: "error", msg: errMsg });
-      setTimeout(() => setAutosaveToast(null), 4000);
-    });
+    doUpsertChatHistory(allMsgs, null);
   }, [messages]);
 
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
@@ -892,7 +865,8 @@ export default function ChatPage() {
       const upgradeMsg = tier === "free"
         ? `Free plan allows ${photoLimit} photos/day. Upgrade to send more! 📸`
         : `You've reached your ${photoLimit} photos/day limit. Come back tomorrow! 📸`;
-      alert(upgradeMsg);
+      setPhotoLimitToast({ msg: upgradeMsg });
+      setTimeout(() => setPhotoLimitToast(null), 3500);
       return;
     }
     const seen = localStorage.getItem("unfiltr_photo_disclaimer_seen");
@@ -1130,8 +1104,10 @@ export default function ChatPage() {
       const profileId2 = localStorage.getItem("userProfileId");
       const updatedMsgs = [...messages, { role: "user", content: userContent }, { role: "assistant", content: replyText }];
       const userMsgCount = updatedMsgs.filter(m => m.role === "user").length;
-      // Save memory after every N user messages
-      const summarizeInterval = isPremium ? 6 : isPro || isAnnual ? 4 : 8;
+      // Save memory after every N user messages.
+      // Tier priority: Annual/Pro > Plus > Free (check most specific first so
+      // isPremium, which is true for all paid plans, doesn't mask Pro/Annual).
+      const summarizeInterval = isAnnual || isPro ? 4 : isPremium ? 6 : 8;
       if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         // Retry helper with exponential backoff
@@ -1179,9 +1155,29 @@ export default function ChatPage() {
   const startListening = () => {
     // Resume AudioContext on mic tap (user gesture)
     resumeAudioContext().catch(() => {});
+
+    // If running inside the iOS native wrapper, route through the native speech bridge
+    if (isNativeApp()) {
+      setIsListening(true);
+      postToNative({ type: "START_SPEECH_RECOGNITION" });
+      waitForNative(["SPEECH_RECOGNITION_RESULT", "SPEECH_RECOGNITION_ERROR"], 15000)
+        .then(data => {
+          const transcript = data?.transcript || data?.text || (typeof data === "string" ? data : "");
+          if (transcript) handleSend(transcript);
+        })
+        .catch(err => {
+          console.warn("[Speech] Native bridge error:", err?.message);
+        })
+        .finally(() => {
+          setIsListening(false);
+        });
+      return;
+    }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      alert("Voice input isn't supported on this device. Try typing instead!");
+      setAutosaveToast({ type: "error", msg: "Voice input isn't supported on this device. Try typing instead!" });
+      setTimeout(() => setAutosaveToast(null), 3500);
       return;
     }
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
@@ -1320,6 +1316,21 @@ export default function ChatPage() {
             animation: "bannerSlide 0.3s ease-out",
           }}>
             {autosaveToast.type === "limit" ? "⚠️" : "❌"} {autosaveToast.msg}
+          </div>
+        )}
+
+        {/* ── Photo / voice limit toast ── */}
+        {photoLimitToast && (
+          <div style={{
+            position: "absolute", top: 70, left: "50%", transform: "translateX(-50%)",
+            zIndex: 9999, maxWidth: 340, width: "90%",
+            background: "rgba(251,191,36,0.95)",
+            color: "#1a1a1a", borderRadius: 12, padding: "10px 16px",
+            fontSize: 13, fontWeight: 600, textAlign: "center",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            animation: "bannerSlide 0.3s ease-out",
+          }}>
+            ⚠️ {photoLimitToast.msg}
           </div>
         )}
 

@@ -18,6 +18,24 @@ import {
 import { createRequestContext, checkRateLimit, safeLogError } from "./_helpers.js";
 
 /**
+ * Normalise a Base44 list response into a plain array.
+ * Base44 can return either a bare array, or a wrapped object with an
+ * `items`, `records`, or `data` key. We also handle the case where the
+ * response is a single object (not a list).
+ */
+function _toRecords(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === "object") {
+    if (Array.isArray(raw.items))   return raw.items;
+    if (Array.isArray(raw.records)) return raw.records;
+    if (Array.isArray(raw.data))    return raw.data;
+    // Single object returned directly (some Base44 entity endpoints)
+    if (raw.id) return [raw];
+  }
+  return [];
+}
+
+/**
  * Find a UserProfile by apple_user_id (with fallback to user_id) and update it.
  * Returns true on success, false if no profile was found.
  */
@@ -31,21 +49,21 @@ async function b44FindAndUpdate(appleUserId, data) {
       `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (r1.ok) profiles = await r1.json();
+    if (r1.ok) profiles = _toRecords(await r1.json());
   } catch {}
 
   // Fallback: user_id field
-  if (!Array.isArray(profiles) || profiles.length === 0) {
+  if (profiles.length === 0) {
     try {
       const r2 = await fetch(
         `${B44_ENTITIES}/UserProfile?user_id=${encodeURIComponent(appleUserId)}&limit=1`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (r2.ok) profiles = await r2.json();
+      if (r2.ok) profiles = _toRecords(await r2.json());
     } catch {}
   }
 
-  if (!Array.isArray(profiles) || profiles.length === 0) {
+  if (profiles.length === 0) {
     console.warn("[verifyPurchase] No profile found for", appleUserId);
     return false;
   }

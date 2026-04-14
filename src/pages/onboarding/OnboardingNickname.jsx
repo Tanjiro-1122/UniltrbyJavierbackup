@@ -44,9 +44,6 @@ export default function OnboardingNickname() {
     updateOnboardingStore({ companionNickname: trimmed });
     localStorage.setItem("unfiltr_companion_nickname", trimmed);
 
-    // Mark onboarding complete
-    localStorage.setItem("unfiltr_onboarding_complete", "true");
-
     // Set companion in localStorage
     const companionId = store.selectedCompanion || localStorage.getItem("unfiltr_selected_companion_id") || localStorage.getItem("unfiltr_quiz_companion_id") || "luna";
     localStorage.setItem("unfiltr_companion_id", companionId);
@@ -84,14 +81,13 @@ export default function OnboardingNickname() {
             display_name: store.displayName || localStorage.getItem("unfiltr_display_name") || "",
             companion_id: companionId,
             nickname: trimmed,
-            onboarding_complete: true,
             last_active: new Date().toISOString(),
           },
         }),
       }).catch(e => console.warn("[Nickname] DB save failed:", e));
     }
 
-    navigate("/hub", { replace: true });
+    navigate("/onboarding/mode", { replace: true });
   };
 
   return (
