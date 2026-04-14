@@ -20,7 +20,7 @@
 export const B44_APP_ID =
   process.env.B44_APP_ID ||
   process.env.VITE_BASE44_APP_ID ||
-  "69b332a392004d139d4ba495";
+  "69b22f8b58e45d23cafd78d2";
 
 // Strip any trailing slash so path concatenation never creates double-slashes
 const _rawBaseUrl =
