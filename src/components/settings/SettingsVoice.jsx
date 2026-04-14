@@ -40,7 +40,7 @@ export default function SettingsVoice({ profile, onUpdate }) {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [voiceGender, voicePersonality]);
+  }, [voiceGender, voicePersonality, onUpdate, profile]);
 
   const previewVoice = () => {
     const msg = "Hey! This is how I sound. Pretty cool, right?";

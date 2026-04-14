@@ -87,7 +87,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
       handleSaveVoice(voiceGender, voicePersonality);
     }, 300);
     return () => clearTimeout(timer);
-  }, [voiceGender, voicePersonality]);
+  }, [open, voiceGender, voicePersonality]);
 
   // ── Auto-save personality on change (debounced 300ms) ─────────────────────
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
       handleSavePersonality(pVibe, pStyle, pHumor, pEmpathy, pCuriosity);
     }, 300);
     return () => clearTimeout(timer);
-  }, [pVibe, pStyle, pHumor, pEmpathy, pCuriosity]);
+  }, [open, pVibe, pStyle, pHumor, pEmpathy, pCuriosity]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleChangeCompanion = async (c) => {
