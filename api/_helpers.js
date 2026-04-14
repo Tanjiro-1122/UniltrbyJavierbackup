@@ -345,3 +345,30 @@ export async function getProfileTier(profileId) {
   const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual);
   return { isPremium, isPro, isAnnual, profile, fetchFailed: false };
 }
+
+/**
+ * Look up tier by Apple user ID (e.g. "001234.abcdef…") when a profileId is
+ * unavailable. Queries the UserProfile entity list filtered by apple_user_id.
+ * Returns the same shape as getProfileTier().
+ */
+export async function getProfileTierByAppleId(appleUserId) {
+  if (!appleUserId) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
+
+  try {
+    const { b44Fetch, B44_ENTITIES } = await import("./_b44.js");
+    const data = await b44Fetch(
+      `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`
+    );
+    const records = Array.isArray(data) ? data : (data?.items || data?.records || []);
+    const profile = records.length > 0 ? records[0] : null;
+    if (!profile) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
+    if (profile.id) setCachedProfile(profile.id, profile);
+    const isAnnual  = !!(profile.annual_plan);
+    const isPro     = !!(profile.pro_plan);
+    const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual);
+    return { isPremium, isPro, isAnnual, profile, fetchFailed: false };
+  } catch (e) {
+    console.warn(`[getProfileTierByAppleId] lookup failed for ${appleUserId?.slice(0, 12)}: ${e.message}`);
+    return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: true };
+  }
+}
