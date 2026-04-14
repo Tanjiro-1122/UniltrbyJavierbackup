@@ -89,7 +89,6 @@ function SafeAreaFix() {
   return null;
 }
 
-
 // ─── Global Native Bridge ────────────────────────────────────────────────────
 // Must be in App.jsx so it's always alive before any page component mounts.
 // HomeScreen/ReturningScreen/IAP components chain onto window.__nativeBus.
