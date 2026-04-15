@@ -929,10 +929,6 @@ export default function ChatPage() {
     try {
       const name = companion.displayName || companion.name;
       const localMemSummary = memorySummary; // already seeded from DB during init and refreshed after each summarize
-      // Use distinct companion personality if available
-      const personality = COMPANION_PERSONALITIES[companion.id];
-      const basePrompt = personality?.systemPrompt || companion.systemPrompt || "You are a supportive AI companion.";
-      const systemPrompt = `${basePrompt}\nYour name is ${name}.\nCurrent vibe: ${vibe}. ${VIBES_SUFFIX[vibe]}\nKeep responses concise — 1–3 sentences max.${localMemSummary ? `\n\nWhat you remember about this user from past conversations:\n${localMemSummary}` : ""}`;
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
 

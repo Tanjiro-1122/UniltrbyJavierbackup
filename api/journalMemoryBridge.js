@@ -59,10 +59,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { profileId, journalContent, journalTitle } = req.body;
+    const { profileId, journalContent, journalTitle, apple_user_id } = req.body;
 
     if (!profileId || !journalContent?.trim()) {
       return res.status(200).json({ ok: true, skipped: "missing_data" });
+    }
+
+    // Ownership check — require the caller to prove they own this profile
+    if (!apple_user_id) {
+      return res.status(400).json({ error: "apple_user_id is required" });
     }
 
     // ── Server-side tier verification ────────────────────────────────────────
@@ -119,9 +124,15 @@ Use [] for empty arrays. Use null if not mentioned.`,
       return res.status(200).json({ ok: true, skipped: "nothing_extracted" });
     }
 
-    // Fetch existing profile and merge
+    // Fetch existing profile, verify ownership, and merge
     const profile = await b44Get("UserProfile", profileId);
     if (!profile) return res.status(200).json({ ok: true, skipped: "profile_not_found" });
+
+    // Reject if the stored apple_user_id doesn't match the caller's
+    if (profile.apple_user_id && profile.apple_user_id !== apple_user_id) {
+      console.warn(`[journalBridge] Ownership mismatch — profileId=${profileId}`);
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const updatedFacts = mergeFacts(profile.user_facts || {}, extracted);
 

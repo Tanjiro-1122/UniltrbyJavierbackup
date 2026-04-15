@@ -4,7 +4,7 @@
 import crypto from "crypto";
 import OpenAI from "openai";
 import { safeLogError, withAbortController } from "./_helpers.js";
-import { B44_ENTITIES, b44Token } from "./_b44.js";
+import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
 
 // ── Admin / cron auth helpers ─────────────────────────────────────────────────
 // ADMIN_PASS must be set as a Vercel environment variable.
@@ -351,27 +351,26 @@ async function handleUpdateNotifPrefs(req, res) {
 
 async function handleDeleteAccount(req, res) {
   const { profileId, appleUserId } = req.body;
-  const token = process.env.BASE44_SERVICE_TOKEN;
+
+  // appleUserId is required so we can verify ownership before deletion.
+  if (!appleUserId) return res.status(400).json({ error: "appleUserId is required" });
 
   try {
-    let id = profileId;
+    // Look up the profile by appleUserId — this is the ownership anchor.
+    const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    if (!profile?.id) return res.status(404).json({ error: "Profile not found" });
 
-    // If no profileId, look up by appleUserId
-    if (!id && appleUserId) {
-      const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
-      const profile = Array.isArray(profiles) ? profiles[0] : profiles;
-      id = profile?.id;
+    // If the caller also supplied a profileId, verify it matches what the DB says.
+    if (profileId && profileId !== profile.id) {
+      console.warn(`[deleteAccount] profileId mismatch — requested ${profileId}, actual ${profile.id}`);
+      return res.status(403).json({ error: "Forbidden" });
     }
 
-    if (!id) return res.status(404).json({ error: "Profile not found" });
-
-    // Delete the UserProfile record
-    const delRes = await fetch(`${B44_BASE}/UserProfile/${id}`, {
+    const id = profile.id;
+    const delRes = await fetch(`${B44_ENTITIES}/UserProfile/${id}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-      },
+      headers: b44Headers(),
     });
 
     if (!delRes.ok) {
@@ -388,15 +387,26 @@ async function handleDeleteAccount(req, res) {
   }
 }
 
-// ── Router ────────────────────────────────────────────────────────────────────
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+// ── updateCompanion ───────────────────────────────────────────────────────────
+// Requires the caller's appleUserId to verify the companion belongs to them.
 
-  
 async function handleUpdateCompanion(req, res) {
-  const { companionId, updateData } = req.body;
+  const { companionId, updateData, appleUserId } = req.body;
   if (!companionId || !updateData) return res.status(400).json({ error: "companionId and updateData required" });
+  if (!appleUserId) return res.status(400).json({ error: "appleUserId is required" });
+
   try {
+    // Verify the companion belongs to this user via their profile's companion_id.
+    const profiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+    const profile = Array.isArray(profiles) ? profiles[0] : profiles;
+    if (!profile) {
+      console.warn(`[updateCompanion] Profile not found for appleUserId`);
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    if (profile.companion_id !== companionId) {
+      console.warn(`[updateCompanion] Ownership mismatch — profile.companion_id=${profile.companion_id} requested=${companionId}`);
+      return res.status(403).json({ error: "Forbidden" });
+    }
     const updated = await b44Update("Companion", companionId, updateData);
     return res.status(200).json({ ok: true, data: updated });
   } catch (err) {
@@ -405,7 +415,11 @@ async function handleUpdateCompanion(req, res) {
   }
 }
 
-const { action } = req.body;
+// ── Router ────────────────────────────────────────────────────────────────────
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { action } = req.body;
 
   try {
     if (action === "generateReferralCode") return await handleGenerateReferralCode(req, res);
@@ -414,13 +428,12 @@ const { action } = req.body;
     if (action === "savePushToken")        return await handleSavePushToken(req, res);
     if (action === "sendDailyNotifs")      return await handleSendDailyNotifs(req, res);
     if (action === "updateNotifPrefs")     return await handleUpdateNotifPrefs(req, res);
-    if (action === "deleteAccount")       return await handleDeleteAccount(req, res);
-    if (action === "updateCompanion")     return await handleUpdateCompanion(req, res);
-    if (action === "journalFeedback")     return await handleJournalFeedback(req, res);
-    if (action === "saveJournalEntry")    return await handleSaveJournalEntry(req, res);
-    if (action === "saveChatHistory")     return await handleSaveChatHistory(req, res);
-    if (action === "verifySpecialCode")   return await handleVerifySpecialCode(req, res);
-        return res.status(400).json({ error: "Unknown action" });
+    if (action === "deleteAccount")        return await handleDeleteAccount(req, res);
+    if (action === "updateCompanion")      return await handleUpdateCompanion(req, res);
+    if (action === "journalFeedback")      return await handleJournalFeedback(req, res);
+    if (action === "saveJournalEntry")     return await handleSaveJournalEntry(req, res);
+    if (action === "verifySpecialCode")    return await handleVerifySpecialCode(req, res);
+    return res.status(400).json({ error: "Unknown action" });
   } catch (err) {
     safeLogError(err, { tag: "utils" });
     return res.status(500).json({ error: "An unexpected error occurred. Please try again." });
@@ -511,11 +524,21 @@ async function handleJournalFeedback(req, res) {
 }
 
 // ── Save Journal Entry ────────────────────────────────────────────────────────
-const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 30, annual: 999999 };
+// Limits aligned with src/lib/entitlements.js JOURNAL_MONTHLY_LIMITS
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 999999, family: 999999 };
 
 async function handleSaveJournalEntry(req, res) {
-  const { appleUserId, entry, tier = "free" } = req.body || {};
+  const { appleUserId, entry } = req.body || {};
   if (!appleUserId || !entry?.content) return res.status(400).json({ error: "appleUserId and entry.content required" });
+
+  // Determine tier server-side — never trust a client-supplied tier field.
+  // Look up the user's profile to read the canonical subscription flags.
+  const userProfiles = await b44Filter("UserProfile", { apple_user_id: appleUserId });
+  const userProfile = Array.isArray(userProfiles) ? userProfiles[0] : userProfiles;
+  let tier = "free";
+  if (userProfile?.annual_plan) tier = "annual";
+  else if (userProfile?.pro_plan) tier = "pro";
+  else if (userProfile?.is_premium) tier = "plus";
 
   const limit = JOURNAL_LIMITS[tier] ?? JOURNAL_LIMITS.free;
 
@@ -524,17 +547,15 @@ async function handleSaveJournalEntry(req, res) {
   if (existing.length >= limit) {
     // Sliding window — delete oldest to make room
     const sorted = existing.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-    const token = process.env.BASE44_SERVICE_TOKEN;
-    await fetch(`${B44_BASE}/JournalEntry/${sorted[0].id}`, {
+    await fetch(`${B44_ENTITIES}/JournalEntry/${sorted[0].id}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: b44Headers(),
     });
   }
 
-  const token = process.env.BASE44_SERVICE_TOKEN;
-  const saveRes = await fetch(`${B44_BASE}/JournalEntry`, {
+  const saveRes = await fetch(`${B44_ENTITIES}/JournalEntry`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: b44Headers(),
     body: JSON.stringify({
       apple_user_id: appleUserId,
       title:        entry.title || entry.content.slice(0, 50),
@@ -549,30 +570,3 @@ async function handleSaveJournalEntry(req, res) {
   return res.status(200).json({ ok: true });
 }
 
-// ── Save Chat History ─────────────────────────────────────────────────────────
-async function handleSaveChatHistory(req, res) {
-  const { appleUserId, messages, tier = "free" } = req.body || {};
-  if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
-  if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: "messages required" });
-
-  const limit = tier === "annual" ? 999999 : 50;
-  const toSave = messages.slice(-limit);
-  const token  = process.env.BASE44_SERVICE_TOKEN;
-
-  const existing = await b44Filter("ChatHistory", { apple_user_id: appleUserId });
-  if (existing.length > 0) {
-    await fetch(`${B44_BASE}/ChatHistory/${existing[0].id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ messages: JSON.stringify(toSave), saved_at: new Date().toISOString(), tier, message_count: toSave.length }),
-    });
-  } else {
-    await fetch(`${B44_BASE}/ChatHistory`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ apple_user_id: appleUserId, messages: JSON.stringify(toSave), saved_at: new Date().toISOString(), tier, message_count: toSave.length }),
-    });
-  }
-
-  return res.status(200).json({ ok: true, saved: toSave.length });
-}

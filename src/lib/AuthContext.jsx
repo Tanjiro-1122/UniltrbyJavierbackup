@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { clearEntitlements } from "@/lib/entitlements";
 
 const AuthContext = createContext();
 
@@ -82,11 +83,15 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try { await base44.auth.logout(); } catch (e) {}
     profileCache.current = null;
+    // Clear all identity tokens
     localStorage.removeItem("unfiltr_auth_token");
     localStorage.removeItem("unfiltr_user_id");
     localStorage.removeItem("unfiltr_user_email");
     localStorage.removeItem("unfiltr_apple_user_id");
     localStorage.removeItem("unfiltr_apple_email");
+    // Clear premium/subscription flags so they don't survive to the next user on
+    // a shared device.  clearEntitlements() removes all canonical tier keys.
+    clearEntitlements();
     setUser(null);
     setIsAuthenticated(false);
     setAuthError({ type: "logged_out" });

@@ -30,6 +30,7 @@
 
 import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
 import { createRequestContext, checkRateLimit } from "./_helpers.js";
+import crypto from "crypto";
 
 // Retention caps per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
@@ -424,9 +425,24 @@ async function handleClearAllChatHistory(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
   const headers = b44Headers();
   try {
+    // Verify the apple_user_id corresponds to a real registered profile before
+    // deleting anything.  This prevents a caller from wiping data for an
+    // apple_user_id they don't own (or that doesn't exist).
+    const profileRes = await fetch(
+      `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=1`,
+      { headers }
+    );
+    if (profileRes.ok) {
+      const profileData = await profileRes.json();
+      const profileRecords = Array.isArray(profileData)
+        ? profileData
+        : (profileData.items || profileData.records || []);
+      if (!profileRecords.length) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+    }
     const r = await fetch(
       `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=500`,
       { headers }
@@ -612,19 +628,22 @@ async function handleUpdateUserProfile(req, res, body) {
   if (!updateData || typeof updateData !== "object") {
     return res.status(400).json({ error: "data object is required" });
   }
-  const token = b44Token();
+  // Require apple_user_id so that every update is ownership-verified.
+  // Anonymous writes are not permitted — the caller must prove they own the profile.
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
   const headers = b44Headers();
   try {
-    // Verify ownership when apple_user_id is provided
-    if (apple_user_id) {
-      const checkRes = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, { headers });
-      if (checkRes.ok) {
-        const record = await checkRes.json();
-        if (record.apple_user_id && record.apple_user_id !== apple_user_id) {
-          console.warn(`[base44/updateUserProfile] Ownership mismatch for profile ${profile_id}`);
-          return res.status(403).json({ error: "Forbidden" });
-        }
-      }
+    // Always verify ownership before writing
+    const checkRes = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, { headers });
+    if (!checkRes.ok) {
+      return res.status(checkRes.status).json({ error: `Profile not found: ${checkRes.status}` });
+    }
+    const record = await checkRes.json();
+    if (record.apple_user_id && record.apple_user_id !== apple_user_id) {
+      console.warn(`[base44/updateUserProfile] Ownership mismatch for profile ${profile_id}`);
+      return res.status(403).json({ error: "Forbidden" });
     }
     const r = await fetch(`${B44_ENTITIES}/UserProfile/${profile_id}`, {
       method: "PUT",
@@ -655,7 +674,7 @@ async function handleHealth(req, res) {
     openai:             !!process.env.OPENAI_API_KEY,
     base44ServiceToken: !!(process.env.BASE44_SERVICE_TOKEN || process.env.BASE44_API_KEY),
     b44ProxySecret:     !!process.env.B44_PROXY_SECRET,
-    adminToken:         !!process.env.ADMIN_TOKEN,
+    adminPass:          !!process.env.ADMIN_PASS,
     revenueCat:         !!process.env.REVENUECAT_SECRET_KEY,
   };
 
@@ -703,14 +722,14 @@ const PROXY_ALLOWED_ENTITIES = new Set([
 
 function timingSafeEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
-  if (a.length !== b.length) {
-    let diff = 0;
-    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i % b.length) || 0);
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) {
+    // Run a dummy comparison to prevent early-exit timing oracle on length.
+    crypto.timingSafeEqual(ba, Buffer.alloc(ba.length));
     return false;
   }
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+  return crypto.timingSafeEqual(ba, bb);
 }
 
 async function handleProxy(req, res, body) {
