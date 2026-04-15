@@ -805,7 +805,7 @@ export default function ChatPage() {
   };
 
   /* ─── TTS (iOS-safe Web Audio API playback) ─── */
-  const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "cheerful") => {
+  const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "warm") => {
     if (!voiceEnabled) return;
     try {
       setIsSpeaking(true);
@@ -1077,23 +1077,11 @@ export default function ChatPage() {
       const pid3 = localStorage.getItem("userProfileId");
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
 
-      // Voice — use cached settings from DB, fall back to localStorage, then defaults
-      const vg = companion._voiceGender || localStorage.getItem("unfiltr_voice_gender") || "female";
-      const vp = companion._voicePersonality || localStorage.getItem("unfiltr_voice_personality") || "cheerful";
+      // Voice — always read fresh from localStorage at call time so the user's
+      // latest selection is used without any stale in-memory cache override.
+      const vg = localStorage.getItem("unfiltr_voice_gender") || "female";
+      const vp = localStorage.getItem("unfiltr_voice_personality") || "warm";
       speakText(replyText, companion.id, vg, vp);
-
-      // Background tasks — all fire-and-forget, no awaits
-      if (companionDbId && companionDbId !== "pending") {
-        base44.entities.Companion.get(companionDbId).then(dbComp => {
-          if (dbComp) {
-            // Update in-memory cache only — do NOT overwrite localStorage here.
-            // Voice settings saved by the user in ChatCustomizePanel must not be
-            // silently undone by this background DB read after every message.
-            companion._voiceGender = dbComp.voice_gender || "female";
-            companion._voicePersonality = dbComp.voice_personality || "cheerful";
-          }
-        }).catch(() => {});
-      }
 
       const totalMsgs = messages.filter(m => m.role === "user").length + 1;
       if (totalMsgs === 10) {
