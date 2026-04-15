@@ -10,9 +10,9 @@ import { B44_ENTITIES, b44Token } from "./_b44.js";
 // ADMIN_PASS must be set as a Vercel environment variable.
 // Stored as-is (case-sensitive) to preserve full entropy.
 const ADMIN_PASS   = process.env.ADMIN_PASS   || "";
-// FAMILY_CODE must be set as a Vercel environment variable.
-// When not set the family-unlock feature is disabled (no fallback code).
-const FAMILY_CODE  = process.env.FAMILY_CODE  || "";
+// FAMILY_CODE / FAMILY_PASS must be set as a Vercel environment variable.
+// Both names are accepted so either works (FAMILY_PASS takes priority).
+const FAMILY_CODE  = process.env.FAMILY_PASS  || process.env.FAMILY_CODE  || "";
 // CRON_SECRET is set automatically by Vercel for cron jobs.
 const CRON_SECRET  = process.env.CRON_SECRET  || "";
 
