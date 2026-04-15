@@ -9,14 +9,14 @@
 // Annual: store 200 vectors, retrieve top 8
 
 import OpenAI from "openai";
-import { B44_APP_ID, B44_ENTITIES, b44Token } from "./_b44.js";
+import { B44_ENTITIES, b44Headers } from "./_b44.js";
 import { createRequestContext, safeLogError, checkRateLimit, getProfileTier } from "./_helpers.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function b44Get(entity, id) {
   const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
-    headers: { "Authorization": `Bearer ${b44Token()}`, "X-App-Id": B44_APP_ID },
+    headers: b44Headers(),
   });
   if (!res.ok) return null;
   return res.json();
@@ -25,11 +25,7 @@ async function b44Get(entity, id) {
 async function b44Patch(entity, id, data) {
   const res = await fetch(`${B44_ENTITIES}/${entity}/${id}`, {
     method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${b44Token()}`,
-      "X-App-Id": B44_APP_ID,
-      "Content-Type": "application/json",
-    },
+    headers: b44Headers(),
     body: JSON.stringify(data),
   });
   return res.ok;

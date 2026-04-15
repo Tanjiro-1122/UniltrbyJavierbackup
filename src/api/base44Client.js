@@ -1,12 +1,14 @@
 import { createClient } from "@base44/sdk";
 
 // Base44 SDK client for entities + auth
-// Uses VITE_BASE44_APP_ID / VITE_BASE44_API_KEY injected at build time;
-// falls back to the hardcoded values so local dev without env vars still works.
+// Uses VITE_BASE44_APP_ID / VITE_BASE44_API_KEY injected at build time.
+// Both env vars must be configured in Vercel → Settings → Environment Variables.
+// Do NOT add hardcoded fallback values here — missing variables surface as
+// a clear build/runtime error rather than silently exposing a production key.
 const _sdk = createClient({
-  appId: import.meta.env.VITE_BASE44_APP_ID || "69b332a392004d139d4ba495",
+  appId: import.meta.env.VITE_BASE44_APP_ID,
   headers: {
-    "api_key": import.meta.env.VITE_BASE44_API_KEY || "1156284fb9144ad9ab95afc962e848d8",
+    "api_key": import.meta.env.VITE_BASE44_API_KEY,
   },
 });
 
