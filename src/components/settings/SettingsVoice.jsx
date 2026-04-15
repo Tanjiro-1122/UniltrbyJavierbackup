@@ -1,19 +1,43 @@
 import React, { useState, useEffect } from "react";
 
-const VOICE_PERSONALITIES = [
-  { id: "cheerful", emoji: "😊", label: "Cheerful", desc: "Bright & upbeat" },
-  { id: "calm", emoji: "🧘", label: "Calm", desc: "Slow & soothing" },
-  { id: "energetic", emoji: "⚡", label: "Energetic", desc: "Fast & lively" },
-  { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & steady" },
-];
+const VOICE_OPTIONS = {
+  female: [
+    { id: "warm",         emoji: "🌸", label: "Warm",         desc: "Friendly & inviting" },
+    { id: "bright",       emoji: "✨", label: "Bright",       desc: "Cheerful & expressive" },
+    { id: "natural",      emoji: "🍃", label: "Natural",      desc: "Conversational & real" },
+    { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & composed" },
+    { id: "neutral",      emoji: "🎙️", label: "Neutral",      desc: "Calm & balanced" },
+  ],
+  male: [
+    { id: "american",  emoji: "🎤", label: "American",  desc: "Warm & approachable" },
+    { id: "british",   emoji: "🫖", label: "British",   desc: "Refined & smooth" },
+    { id: "deep",      emoji: "🌊", label: "Deep",      desc: "Rich & resonant" },
+    { id: "modern",    emoji: "⚡", label: "Modern",    desc: "Crisp & confident" },
+    { id: "natural",   emoji: "🍃", label: "Natural",   desc: "Relaxed & real" },
+  ],
+  neutral: [
+    { id: "balanced", emoji: "⚖️", label: "Balanced", desc: "Clear & ungendered" },
+  ],
+};
+
+const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
 
 export default function SettingsVoice({ profile, onUpdate }) {
   const [voiceGender, setVoiceGender] = useState(
     localStorage.getItem("unfiltr_voice_gender") || "female"
   );
   const [voicePersonality, setVoicePersonality] = useState(
-    localStorage.getItem("unfiltr_voice_personality") || "cheerful"
+    localStorage.getItem("unfiltr_voice_personality") || "warm"
   );
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const handleGenderChange = (g) => {
+    setVoiceGender(g);
+    const opts = VOICE_OPTIONS[g] || VOICE_OPTIONS.female;
+    if (!opts.find(o => o.id === voicePersonality)) {
+      setVoicePersonality(DEFAULT_VOICE_STYLE[g] || opts[0].id);
+    }
+  };
 
   // Auto-save whenever gender or personality changes (debounced 300ms)
   useEffect(() => {
@@ -42,21 +66,51 @@ export default function SettingsVoice({ profile, onUpdate }) {
     return () => clearTimeout(timer);
   }, [voiceGender, voicePersonality, onUpdate, profile]);
 
-  const previewVoice = () => {
-    const msg = "Hey! This is how I sound. Pretty cool, right?";
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(msg);
-    const voices = window.speechSynthesis.getVoices();
-    const match = voices.find(v =>
-      voiceGender === "male" ? v.name.toLowerCase().includes("male") || v.name.includes("Alex") :
-      voiceGender === "female" ? v.name.toLowerCase().includes("female") || v.name.includes("Samantha") :
-      true
-    );
-    if (match) utterance.voice = match;
-    utterance.rate = voicePersonality === "energetic" ? 1.3 : voicePersonality === "calm" ? 0.85 : 1;
-    utterance.pitch = voicePersonality === "cheerful" ? 1.2 : voicePersonality === "calm" ? 0.9 : 1;
-    window.speechSynthesis.speak(utterance);
+  const previewVoice = async () => {
+    if (isPreviewing) return;
+    setIsPreviewing(true);
+    const previewText = "Hey! This is how I sound. Pretty cool, right?";
+    try {
+      const profileId = localStorage.getItem("userProfileId") || null;
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || null;
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: previewText,
+          voiceGender,
+          voicePersonality,
+          profileId,
+          appleUserId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const base64 = data?.data?.audio || data?.audio;
+        if (base64) {
+          const audio = new Audio("data:audio/mpeg;base64," + base64);
+          audio.play().catch(() => {});
+          return;
+        }
+      }
+      // Fallback to browser speech synthesis (e.g. for free users or API errors)
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(previewText);
+        const voices = window.speechSynthesis.getVoices();
+        const match = voices.find(v =>
+          voiceGender === "male" ? v.name.toLowerCase().includes("male") || v.name.includes("Alex") :
+          voiceGender === "female" ? v.name.toLowerCase().includes("female") || v.name.includes("Samantha") :
+          true
+        );
+        if (match) utterance.voice = match;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsPreviewing(false);
+    }
   };
 
   return (
@@ -67,7 +121,7 @@ export default function SettingsVoice({ profile, onUpdate }) {
       </p>
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         {["male", "female", "neutral"].map(g => (
-          <button key={g} onClick={() => setVoiceGender(g)} style={{
+          <button key={g} onClick={() => handleGenderChange(g)} style={{
             flex: 1, padding: "11px 8px", borderRadius: 12,
             border: voiceGender === g ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)",
             background: voiceGender === g ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)",
@@ -79,12 +133,12 @@ export default function SettingsVoice({ profile, onUpdate }) {
         ))}
       </div>
 
-      {/* Voice Personality */}
+      {/* Voice Style */}
       <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
-        Voice Personality
+        Voice Style
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
-        {VOICE_PERSONALITIES.map(p => (
+        {(VOICE_OPTIONS[voiceGender] || VOICE_OPTIONS.female).map(p => (
           <button key={p.id} onClick={() => setVoicePersonality(p.id)} style={{
             padding: "12px 10px", borderRadius: 13,
             border: voicePersonality === p.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)",
@@ -99,13 +153,13 @@ export default function SettingsVoice({ profile, onUpdate }) {
       </div>
 
       {/* TTS Preview */}
-      <button onClick={previewVoice} style={{
+      <button onClick={previewVoice} disabled={isPreviewing} style={{
         width: "100%", padding: "12px", marginBottom: 12,
         background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 14, color: "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 14, cursor: "pointer",
+        borderRadius: 14, color: isPreviewing ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.7)", fontWeight: 600, fontSize: 14, cursor: isPreviewing ? "default" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
       }}>
-        🔊 Preview Voice
+        {isPreviewing ? "⏳ Loading…" : "🔊 Preview Voice"}
       </button>
     </div>
   );

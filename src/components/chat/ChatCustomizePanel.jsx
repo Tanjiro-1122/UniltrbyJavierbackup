@@ -4,12 +4,27 @@ import { X, Check, SlidersHorizontal } from "lucide-react";
 import { COMPANIONS, BACKGROUNDS } from "@/components/companionData";
 import { toast } from "sonner";
 
-const VOICE_PERSONALITIES = [
-  { id: "cheerful",     emoji: "😊", label: "Cheerful",      desc: "Bright & upbeat" },
-  { id: "calm",         emoji: "🧘", label: "Calm",          desc: "Slow & soothing" },
-  { id: "energetic",    emoji: "⚡", label: "Energetic",     desc: "Fast & lively" },
-  { id: "professional", emoji: "💼", label: "Professional",  desc: "Clear & steady" },
-];
+const VOICE_OPTIONS = {
+  female: [
+    { id: "warm",         emoji: "🌸", label: "Warm",         desc: "Friendly & inviting" },
+    { id: "bright",       emoji: "✨", label: "Bright",       desc: "Cheerful & expressive" },
+    { id: "natural",      emoji: "🍃", label: "Natural",      desc: "Conversational & real" },
+    { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & composed" },
+    { id: "neutral",      emoji: "🎙️", label: "Neutral",      desc: "Calm & balanced" },
+  ],
+  male: [
+    { id: "american",  emoji: "🎤", label: "American",  desc: "Warm & approachable" },
+    { id: "british",   emoji: "🫖", label: "British",   desc: "Refined & smooth" },
+    { id: "deep",      emoji: "🌊", label: "Deep",      desc: "Rich & resonant" },
+    { id: "modern",    emoji: "⚡", label: "Modern",    desc: "Crisp & confident" },
+    { id: "natural",   emoji: "🍃", label: "Natural",   desc: "Relaxed & real" },
+  ],
+  neutral: [
+    { id: "balanced", emoji: "⚖️", label: "Balanced", desc: "Clear & ungendered" },
+  ],
+};
+
+const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
 
 const PERSONALITY_VIBES = [
   { id: "chill",      emoji: "😎", label: "Chill" },
@@ -57,7 +72,13 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
 
   // ── Voice ──
   const [voiceGender, setVoiceGender]           = useState(() => localStorage.getItem("unfiltr_voice_gender") || "female");
-  const [voicePersonality, setVoicePersonality] = useState(() => localStorage.getItem("unfiltr_voice_personality") || "cheerful");
+  const [voicePersonality, setVoicePersonality] = useState(() => localStorage.getItem("unfiltr_voice_personality") || "warm");
+
+  const handleGenderChange = (g) => {
+    setVoiceGender(g);
+    const opts = VOICE_OPTIONS[g] || VOICE_OPTIONS.female;
+    setVoicePersonality(prev => opts.find(o => o.id === prev) ? prev : (DEFAULT_VOICE_STYLE[g] || opts[0].id));
+  };
 
   // ── Personality ──
   const [pVibe,      setPVibe]      = useState(() => localStorage.getItem("unfiltr_personality_vibe")      || "chill");
@@ -71,7 +92,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     if (open) {
       setCurrentBg(localStorage.getItem("unfiltr_background") || "living_room");
       setVoiceGender(localStorage.getItem("unfiltr_voice_gender") || "female");
-      setVoicePersonality(localStorage.getItem("unfiltr_voice_personality") || "cheerful");
+      setVoicePersonality(localStorage.getItem("unfiltr_voice_personality") || "warm");
       setPVibe(localStorage.getItem("unfiltr_personality_vibe")      || "chill");
       setPStyle(localStorage.getItem("unfiltr_personality_style")    || "casual");
       setPHumor(localStorage.getItem("unfiltr_personality_humor")    || "subtle");
@@ -303,7 +324,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Gender</p>
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           {["male","female","neutral"].map(g => (
-            <button key={g} onClick={() => setVoiceGender(g)} style={{
+            <button key={g} onClick={() => handleGenderChange(g)} style={{
               flex: 1, padding: "11px 8px", borderRadius: 12,
               border: voiceGender === g ? "1.5px solid #a855f7" : "1.5px solid rgba(255,255,255,0.08)",
               background: voiceGender === g ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",
@@ -315,7 +336,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
 
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Style</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
-          {VOICE_PERSONALITIES.map(vp => (
+          {(VOICE_OPTIONS[voiceGender] || VOICE_OPTIONS.female).map(vp => (
             <button key={vp.id} onClick={() => setVoicePersonality(vp.id)} style={{
               padding: "12px 10px", borderRadius: 12, textAlign: "left",
               border: voicePersonality === vp.id ? "1.5px solid #a855f7" : "1.5px solid rgba(255,255,255,0.08)",
