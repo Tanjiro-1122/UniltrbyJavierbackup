@@ -58,7 +58,7 @@ export default function ChatHistory() {
   const filtered = sessions.filter(s => {
     if (!search) return true;
     try {
-      const msgs = JSON.parse(s.messages || "[]");
+      const msgs = Array.isArray(s.messages) ? s.messages : JSON.parse(s.messages || "[]");
       return msgs.some(m => m.content?.toLowerCase().includes(search.toLowerCase()));
     } catch { return false; }
   });
@@ -80,14 +80,19 @@ export default function ChatHistory() {
 
   const getMsgPreview = (session) => {
     try {
-      const msgs = JSON.parse(session.messages || "[]");
+      const msgs = Array.isArray(session.messages) ? session.messages : JSON.parse(session.messages || "[]");
       const last = [...msgs].reverse().find(m => m.role === "assistant");
       return last?.content?.slice(0, 90) || "No messages";
     } catch { return ""; }
   };
 
   const getMsgCount = (session) => {
-    try { return JSON.parse(session.messages || "[]").length; } catch { return 0; }
+    try {
+      const msgs = Array.isArray(session.messages) ? session.messages : JSON.parse(session.messages || "[]");
+      return session.message_count ?? msgs?.length ?? 0;
+    } catch {
+      return session.message_count ?? 0;
+    }
   };
 
   return (
@@ -220,7 +225,7 @@ export default function ChatHistory() {
                 const preview = getMsgPreview(session);
                 const count = getMsgCount(session);
                 let msgs = [];
-                try { msgs = JSON.parse(session.messages || "[]"); } catch {}
+                try { msgs = Array.isArray(session.messages) ? session.messages : JSON.parse(session.messages || "[]"); } catch {}
 
                 return (
                   <motion.div
@@ -263,10 +268,10 @@ export default function ChatHistory() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                           <span style={{ color: isExpanded ? "#c4b5fd" : "rgba(255,255,255,0.8)", fontWeight: 700, fontSize: 14 }}>
-                            {formatDate(session.saved_at)}
+                            {formatDate(session.saved_at || session.savedAt || session.date)}
                           </span>
                           <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 12 }}>
-                            {formatTime(session.saved_at)}
+                            {formatTime(session.saved_at || session.savedAt || session.date)}
                           </span>
                           <span style={{
                             padding: "2px 8px", borderRadius: 99, fontSize: 10, fontWeight: 700,

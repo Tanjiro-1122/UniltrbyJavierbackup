@@ -1084,7 +1084,14 @@ export default function Settings() {
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "max(14px, env(safe-area-inset-top)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#06020f", flexShrink: 0 }}>
-        <button onClick={() => navigate("/hub")} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <button onClick={() => {
+          const fromChat = sessionStorage.getItem("unfiltr_returning_from_settings");
+          if (fromChat) {
+            navigate("/chat");
+          } else {
+            navigate("/hub");
+          }
+        }} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
         <div onClick={handleTriquetraTap} style={{ cursor: "default", userSelect: "none" }}>

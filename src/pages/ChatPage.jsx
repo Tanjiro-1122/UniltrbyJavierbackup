@@ -149,6 +149,68 @@ function doUpsertChatHistory(msgs, onError) {
   });
 }
 
+function syncChatSessionsToLocalStorage(msgs) {
+  if (localStorage.getItem("unfiltr_private_session") === "true") return;
+  if (!Array.isArray(msgs) || msgs.length === 0) return;
+
+  try {
+    let history = [];
+    try {
+      const parsed = JSON.parse(localStorage.getItem("unfiltr_chat_sessions") || "[]");
+      history = Array.isArray(parsed) ? parsed : [];
+    } catch {}
+
+    const companionRaw = localStorage.getItem("unfiltr_companion");
+    let parsedComp = null;
+    try { parsedComp = companionRaw ? JSON.parse(companionRaw) : null; } catch {}
+    const companionId = parsedComp?.id || localStorage.getItem("unfiltr_companion_id") || "";
+    const companionName = parsedComp?.displayName || parsedComp?.name || "Companion";
+
+    const now = new Date();
+    const localDate = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const savedAt = now.toISOString();
+    const normalizedMsgs = msgs
+      .filter(m => m?.content && m.content !== "__ERROR__")
+      .map(m => ({ role: m.role, content: m.content }))
+      .slice(-50);
+
+    const session = {
+      id: Date.now(),
+      companionId,
+      companionName,
+      companion_id: companionId,
+      companion_name: companionName,
+      local_date: localDate,
+      messages: normalizedMsgs,
+      savedAt,
+      saved_at: savedAt,
+      date: savedAt,
+    };
+
+    const getSessionLocalDate = (s) => {
+      if (s?.local_date) return String(s.local_date);
+      const stamp = s?.savedAt || s?.saved_at || s?.date;
+      if (!stamp) return "";
+      const d = new Date(stamp);
+      if (Number.isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const existingIndex = history.findIndex((s) => {
+      const sCompanionId = s?.companionId || s?.companion_id || "";
+      return sCompanionId === companionId && getSessionLocalDate(s) === localDate;
+    });
+
+    if (existingIndex >= 0) {
+      history[existingIndex] = session;
+    } else {
+      history.unshift(session);
+    }
+
+    localStorage.setItem("unfiltr_chat_sessions", JSON.stringify(history.slice(0, 50)));
+  } catch {}
+}
+
 const JOURNAL_MOMENT_KEYWORDS = [
   "i feel","i'm feeling","feeling so","feeling really","i realized","i've been thinking",
   "i can't stop thinking","i need to talk","going through","hard time","struggling with",
@@ -694,6 +756,7 @@ export default function ChatPage() {
     lastChatHistorySaveRef.current = now;
 
     doUpsertChatHistory(allMsgs, null);
+    syncChatSessionsToLocalStorage(allMsgs);
   }, [messages]);
 
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
@@ -1185,17 +1248,35 @@ export default function ChatPage() {
 
   const handleMoodSelect = (mood) => {
     localStorage.setItem("unfiltr_mood_checkin_date", new Date().toDateString());
-    localStorage.setItem("unfiltr_mood", mood.value);
     setShowMoodCheckIn(false);
     // Immediately switch avatar to match the user's selected mood
     const moodToAvatarMap = {
-      happy: "happy", calm: "contentment", neutral: "neutral",
-      sad: "sad", frustrated: "anger", anxious: "fear",
-      loved: "happy", motivated: "happy",
-      hopeful: "happy", lonely: "sad", excited: "happy",
+      good: "happy",
+      calm: "contentment",
+      low: "sad",
+      stressed: "fear",
+      tired: "fatigue",
+      hyped: "happy",
+      happy: "happy",
+      sad: "sad",
+      anxious: "fear",
+      frustrated: "anger",
+      motivated: "happy",
+      loved: "happy",
+      hopeful: "happy",
+      lonely: "sad",
+      excited: "happy",
+      disgust: "disgust",
+      surprise: "surprise",
+      fatigue: "fatigue",
+      fear: "fear",
+      anger: "anger",
+      neutral: "neutral",
     };
-    const avatarMood = moodToAvatarMap[mood.value] || "neutral";
+    const moodKey = (mood?.value || mood?.label || "").toLowerCase();
+    const avatarMood = moodToAvatarMap[moodKey] || "neutral";
     setCompanionMood(avatarMood);
+    localStorage.setItem("unfiltr_mood", avatarMood);
     // Send mood as first message context
     const moodText = `I'm feeling ${mood.label.toLowerCase()} ${mood.emoji} today`;
     handleSend(moodText);
@@ -1216,7 +1297,10 @@ export default function ChatPage() {
     consecutiveMsgRef.current = 0;
     // Force an immediate DB upsert with current messages
     const allMsgs = messages.slice(1);
-    if (allMsgs.length >= 2) doUpsertChatHistory(allMsgs, null);
+    if (allMsgs.length >= 2) {
+      doUpsertChatHistory(allMsgs, null);
+      syncChatSessionsToLocalStorage(allMsgs);
+    }
   };
 
   const handleSavePromptAutoSave = () => {
@@ -1224,7 +1308,10 @@ export default function ChatPage() {
     setShowSavePrompt(false);
     consecutiveMsgRef.current = 0;
     const allMsgs = messages.slice(1);
-    if (allMsgs.length >= 2) doUpsertChatHistory(allMsgs, null);
+    if (allMsgs.length >= 2) {
+      doUpsertChatHistory(allMsgs, null);
+      syncChatSessionsToLocalStorage(allMsgs);
+    }
   };
 
   const handleSavePromptAlwaysAsk = () => {
@@ -1843,5 +1930,4 @@ export default function ChatPage() {
     </>
   );
 }
-
 
