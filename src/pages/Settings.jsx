@@ -375,7 +375,13 @@ export default function Settings() {
   const handleFamilyCodeSubmit = async () => {
     const profileId   = localStorage.getItem("userProfileId");
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
-    if (!profileId && !appleUserId) {
+    const appleEmail  = localStorage.getItem("unfiltr_apple_email");
+    const userEmail   = localStorage.getItem("unfiltr_user_email");
+    const userId      = localStorage.getItem("unfiltr_user_id");
+
+    // Require at least ONE identity signal before proceeding
+    const hasIdentity = profileId || appleUserId || appleEmail || userEmail || userId;
+    if (!hasIdentity) {
       setFamilyCodeError("You must have an account saved before activating a family plan. Please sign in first.");
       return;
     }
@@ -408,12 +414,14 @@ export default function Settings() {
         window.dispatchEvent(new Event("unfiltr_auth_updated"));
         if (profileId) {
           syncProfileUpdate(profileId, { is_premium: true, annual_plan: true, family_unlimited: true });
-        } else if (appleUserId) {
-          // profileId not in localStorage — syncProfile can look up the record by apple_user_id
+        } else {
+          // Use whatever identity signal we have — server will look up by apple_user_id or email
+          const resolvedAppleId = appleUserId || userId || null;
+          const resolvedEmail   = appleEmail || userEmail || null;
           fetch("/api/syncProfile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "update", profileId: null, appleUserId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }),
+            body: JSON.stringify({ action: "update", profileId: null, appleUserId: resolvedAppleId, email: resolvedEmail, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }),
           }).catch(() => {});
         }
         setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
@@ -1348,8 +1356,12 @@ export default function Settings() {
                 <>
                   <p style={{ color: "white", fontWeight: 700, fontSize: 17, margin: "0 0 6px", textAlign: "center" }}>Family Access</p>
                   <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 10px", textAlign: "center" }}>Enter your access code</p>
-                  {!localStorage.getItem("unfiltr_apple_user_id") && (
-                    <p style={{ color: "#fbbf24", fontSize: 12, margin: "0 0 14px", textAlign: "center" }}>⚠️ You must be signed in with Apple to activate a family plan.</p>
+                  {!localStorage.getItem("unfiltr_apple_user_id") &&
+                   !localStorage.getItem("unfiltr_apple_email") &&
+                   !localStorage.getItem("unfiltr_user_email") &&
+                   !localStorage.getItem("unfiltr_user_id") &&
+                   !localStorage.getItem("userProfileId") && (
+                    <p style={{ color: "#fbbf24", fontSize: 12, margin: "0 0 14px", textAlign: "center" }}>⚠️ You must be signed in to activate a family plan.</p>
                   )}
                   <input type="password" value={familyCode} onChange={e => { setFamilyCode(e.target.value); setFamilyCodeError(""); }}
                     onKeyDown={e => e.key === "Enter" && handleFamilyCodeSubmit()} placeholder="Enter code..." autoFocus
