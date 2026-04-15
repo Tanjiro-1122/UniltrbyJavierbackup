@@ -602,7 +602,7 @@ export default function Settings() {
     try {
       const profileId = localStorage.getItem("userProfileId");
       if (profileId) {
-        syncProfileUpdate(profileId, { memory_summary: "", user_facts: {}, session_memory: [], emotional_timeline: [] });
+        syncProfileUpdate(profileId, { memory_summary: "", user_facts: {}, session_memory: [], emotional_timeline: [], memory_vectors: [] });
       }
       // Also clear local caches
       setUserProfile(p => p ? { ...p, memory_summary: "", user_facts: {}, session_memory: [] } : p);
@@ -1002,6 +1002,9 @@ export default function Settings() {
                 {clearingChat ? "Clearing…" : clearChatDone ? "✓ Chat history cleared" : "Clear Chat History"}
               </span>
             </button>
+            <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, margin: "0 16px 0", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.05)", lineHeight: 1.5 }}>
+              ⚠️ This removes your messages only. Your AI memory (what your companion knows about you — your name, goals, struggles, and history) is kept. Use "Delete AI Memory" below to erase that too.
+            </p>
             <button
               onClick={handleDeleteMemory}
               disabled={deletingMemory}
@@ -1016,7 +1019,7 @@ export default function Settings() {
             </button>
           </Section>
           <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, marginTop: 8, lineHeight: 1.5, padding: "0 4px" }}>
-            Clearing AI memory removes summaries and facts. Your companion will start fresh but can rebuild over time.
+            Deleting AI memory removes all summaries, stored facts, and semantic memory. Your companion will start fresh but can rebuild over time.
           </p>
         </SubScreen>
       );
