@@ -124,7 +124,7 @@ export default function ChatHistory() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-            <button onClick={() => navigate("/hub")} style={{
+            <button onClick={() => navigate(-1)} style={{
               width: 40, height: 40, borderRadius: "50%", border: "none", flexShrink: 0,
               background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)",
               display: "flex", alignItems: "center", justifyContent: "center",

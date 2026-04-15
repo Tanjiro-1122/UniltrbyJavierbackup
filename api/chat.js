@@ -190,7 +190,13 @@ export default async function handler(req, res) {
       userFacts,
       imageBase64,
       relationshipMode = "friend",
+      userName,
     } = req.body;
+
+    // Sanitize userName — strip control chars and limit length to prevent prompt injection
+    const safeUserName = typeof userName === "string"
+      ? userName.replace(/[\r\n\t<>{}|\\^`]/g, "").trim().slice(0, 50)
+      : "";
 
     // ── Server-side tier verification ────────────────────────────────────────
     // Never trust isPremium/isPro/isAnnual sent by the client — a free user
@@ -252,7 +258,9 @@ export default async function handler(req, res) {
     // System prompt is always built server-side. Accepting one from the client
     // would allow prompt-injection attacks where a malicious app rewrites the
     // companion's instructions entirely.
-    const system         = "You are a warm, supportive AI companion.";
+    const system = safeUserName
+      ? `You are a warm, supportive AI companion. The user's name is ${safeUserName} — use their name occasionally in conversation to make it feel personal and genuine, but don't overdo it.`
+      : "You are a warm, supportive AI companion.";
     const memCtx         = memorySummary ? `\n\nWhat you remember about this user: ${memorySummary}` : "";
     const personalityCtx = buildPersonalityParagraph(personality);
 
@@ -415,5 +423,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 }
-
 
