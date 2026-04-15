@@ -71,13 +71,27 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   const [currentBg, setCurrentBg] = useState(() => localStorage.getItem("unfiltr_background") || "living_room");
 
   // ── Voice ──
-  const [voiceGender, setVoiceGender]           = useState(() => localStorage.getItem("unfiltr_voice_gender") || "female");
-  const [voicePersonality, setVoicePersonality] = useState(() => localStorage.getItem("unfiltr_voice_personality") || "warm");
+  const [voiceGender, setVoiceGender] = useState(() => {
+    return localStorage.getItem("unfiltr_voice_gender") || "female";
+  });
+  const [voicePersonality, setVoicePersonality] = useState(() => {
+    const savedGender = localStorage.getItem("unfiltr_voice_gender") || "female";
+    const savedPersonality = localStorage.getItem("unfiltr_voice_personality") || "warm";
+    const validOpts = VOICE_OPTIONS[savedGender] || VOICE_OPTIONS.female;
+    return validOpts.find(o => o.id === savedPersonality)
+      ? savedPersonality
+      : (DEFAULT_VOICE_STYLE[savedGender] || validOpts[0].id);
+  });
 
   const handleGenderChange = (g) => {
     setVoiceGender(g);
+    localStorage.setItem("unfiltr_voice_gender", g);
     const opts = VOICE_OPTIONS[g] || VOICE_OPTIONS.female;
-    setVoicePersonality(prev => opts.find(o => o.id === prev) ? prev : (DEFAULT_VOICE_STYLE[g] || opts[0].id));
+    const newPersonality = opts.find(o => o.id === voicePersonality)
+      ? voicePersonality
+      : (DEFAULT_VOICE_STYLE[g] || opts[0].id);
+    setVoicePersonality(newPersonality);
+    localStorage.setItem("unfiltr_voice_personality", newPersonality);
   };
 
   // ── Personality ──
@@ -91,8 +105,14 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
   useEffect(() => {
     if (open) {
       setCurrentBg(localStorage.getItem("unfiltr_background") || "living_room");
-      setVoiceGender(localStorage.getItem("unfiltr_voice_gender") || "female");
-      setVoicePersonality(localStorage.getItem("unfiltr_voice_personality") || "warm");
+      const syncGender = localStorage.getItem("unfiltr_voice_gender") || "female";
+      const syncPersonalityRaw = localStorage.getItem("unfiltr_voice_personality") || "warm";
+      const syncOpts = VOICE_OPTIONS[syncGender] || VOICE_OPTIONS.female;
+      const syncPersonality = syncOpts.find(o => o.id === syncPersonalityRaw)
+        ? syncPersonalityRaw
+        : (DEFAULT_VOICE_STYLE[syncGender] || syncOpts[0].id);
+      setVoiceGender(syncGender);
+      setVoicePersonality(syncPersonality);
       setPVibe(localStorage.getItem("unfiltr_personality_vibe")      || "chill");
       setPStyle(localStorage.getItem("unfiltr_personality_style")    || "casual");
       setPHumor(localStorage.getItem("unfiltr_personality_humor")    || "subtle");
@@ -337,7 +357,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
         <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Style</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
           {(VOICE_OPTIONS[voiceGender] || VOICE_OPTIONS.female).map(vp => (
-            <button key={vp.id} onClick={() => setVoicePersonality(vp.id)} style={{
+            <button key={vp.id} onClick={() => { setVoicePersonality(vp.id); localStorage.setItem("unfiltr_voice_personality", vp.id); }} style={{
               padding: "12px 10px", borderRadius: 12, textAlign: "left",
               border: voicePersonality === vp.id ? "1.5px solid #a855f7" : "1.5px solid rgba(255,255,255,0.08)",
               background: voicePersonality === vp.id ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",

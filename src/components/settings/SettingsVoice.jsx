@@ -26,9 +26,14 @@ export default function SettingsVoice({ profile, onUpdate }) {
   const [voiceGender, setVoiceGender] = useState(
     localStorage.getItem("unfiltr_voice_gender") || "female"
   );
-  const [voicePersonality, setVoicePersonality] = useState(
-    localStorage.getItem("unfiltr_voice_personality") || "warm"
-  );
+  const [voicePersonality, setVoicePersonality] = useState(() => {
+    const savedGender = localStorage.getItem("unfiltr_voice_gender") || "female";
+    const savedPersonality = localStorage.getItem("unfiltr_voice_personality") || "warm";
+    const validOpts = VOICE_OPTIONS[savedGender] || VOICE_OPTIONS.female;
+    return validOpts.find(o => o.id === savedPersonality)
+      ? savedPersonality
+      : (DEFAULT_VOICE_STYLE[savedGender] || validOpts[0].id);
+  });
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const handleGenderChange = (g) => {
