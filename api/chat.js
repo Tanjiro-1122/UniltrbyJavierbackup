@@ -195,7 +195,7 @@ export default async function handler(req, res) {
 
     // Sanitize userName — strip control chars and limit length to prevent prompt injection
     const safeUserName = typeof userName === "string"
-      ? userName.replace(/[\r\n\t<>{}|\\^`'"]/g, "").trim().slice(0, 50)
+      ? userName.replace(/[^\p{L}\p{N} .,_-]/gu, "").trim().slice(0, 50)
       : "";
 
     // ── Server-side tier verification ────────────────────────────────────────
