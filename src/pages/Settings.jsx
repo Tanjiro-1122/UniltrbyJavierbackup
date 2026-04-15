@@ -15,6 +15,7 @@ import MemoryEditor from "@/components/chat/MemoryEditor";
 import { getMoodWeek } from "@/components/utils/moodTracker";
 import SettingsProfile from "@/components/settings/SettingsProfile";
 import SettingsCompanion from "@/components/settings/SettingsCompanion";
+import SettingsVoice from "@/components/settings/SettingsVoice";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
@@ -1199,17 +1200,10 @@ export default function Settings() {
 
         {/* ── VOICE TAB ── */}
         {activeTab === "voice" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 16px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎤</div>
-            <h3 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: "0 0 10px" }}>Voice &amp; Personality</h3>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.6, margin: "0 0 24px" }}>
-              Customize your companion's voice and personality directly from the chat screen using the options panel.
-            </p>
-            <button onClick={() => navigate("/chat")}
-              style={{ padding: "14px 28px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-              Customize in Chat →
-            </button>
-          </div>
+          <SettingsVoice
+            profile={userProfile}
+            onUpdate={() => {}}
+          />
         )}
 
         {/* ── NOTIFICATIONS TAB ── */}
