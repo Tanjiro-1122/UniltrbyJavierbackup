@@ -344,11 +344,9 @@ export default function Settings() {
   };
 
   const handleFamilyCodeSubmit = async () => {
-    // Guard: must be signed in with Apple first
-    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     const profileId = localStorage.getItem("userProfileId");
-    if (!appleUserId || !profileId) {
-      setFamilyCodeError("You must sign in with Apple and have an account saved before activating a family plan. Please sign in first.");
+    if (!profileId) {
+      setFamilyCodeError("You must have an account saved before activating a family plan. Please sign in first.");
       return;
     }
     try {

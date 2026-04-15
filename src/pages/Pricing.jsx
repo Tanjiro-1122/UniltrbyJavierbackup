@@ -193,7 +193,7 @@ function AdminPanel({ onClose, navigate }) {
       const data = await res.json();
       if (data.type === 'admin') {
         localStorage.setItem('unfiltr_admin_unlocked', 'true');
-        sessionStorage.setItem('unfiltr_admin_session', 'true');
+        sessionStorage.setItem('unfiltr_admin_token', code);
         onClose();
         navigate('/AdminDashboard');
       } else if (data.type === 'family') {

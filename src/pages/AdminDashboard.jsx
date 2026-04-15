@@ -455,7 +455,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     const savedToken = sessionStorage.getItem("unfiltr_admin_token");
     if (savedToken) {
-      sessionStorage.removeItem("unfiltr_admin_token");
       setAdminToken(savedToken);
       setUnlocked(true);
     }
@@ -485,6 +484,7 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.type === "admin") {
+        sessionStorage.setItem("unfiltr_admin_token", pwInput.trim());
         setAdminToken(pwInput.trim());
         setUnlocked(true); setPwError(false);
       } else {
@@ -497,6 +497,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("unfiltr_admin_unlocked");
+    sessionStorage.removeItem("unfiltr_admin_token");
     setUnlocked(false); setAdminToken(""); setStats(null); setPwInput("");
   };
 
