@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, X, Edit3, Trash2, Check, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { Brain, X, Edit3, Trash2, Check, Lock, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 
 // ── MemoryEditor ──────────────────────────────────────────────────────────────
 // Lets users see and correct what the companion remembers about them.
@@ -95,7 +95,9 @@ function ArraySection({ label, emoji, items = [], onAdd, onDelete }) {
         cursor: "pointer", padding: "4px 0", width: "100%",
       }}>
         <span style={{ fontSize: 14 }}>{emoji}</span>
-        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, flex: 1, textAlign: "left" }}>{label}</span>
+        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, flex: 1, textAlign: "left" }}>
+          {label}{items.length > 0 && <span style={{ color: "rgba(168,85,247,0.6)", fontWeight: 400, marginLeft: 6 }}>({items.length} {items.length === 1 ? "item" : "items"})</span>}
+        </span>
         {collapsed ? <ChevronDown size={13} color="rgba(255,255,255,0.3)" /> : <ChevronUp size={13} color="rgba(255,255,255,0.3)" />}
       </button>
 
@@ -161,32 +163,49 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
   const [facts, setFacts] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const hasFacts = facts && Object.keys(facts).some(k => facts[k] && (!Array.isArray(facts[k]) || facts[k].length > 0));
+  const factsCount = hasFacts ? Object.values(facts).flat().filter(Boolean).length : 0;
 
   useEffect(() => {
     if (open && isPremium) {
-      // Load from localStorage first (fast), then sync from DB
+      // Load from localStorage first (fast)
       try {
         const cached = localStorage.getItem("unfiltr_user_facts");
         if (cached) setFacts(JSON.parse(cached));
       } catch {}
-      // Fetch from DB
-      if (profileId) {
+
+      // Fetch from DB — use profileId OR apple_user_id as fallback
+      const resolvedProfileId = profileId || null;
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || null;
+
+      if (resolvedProfileId || appleUserId) {
+        setLoading(true);
         fetch("/api/syncProfile", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "get", profileId }),
+          body: JSON.stringify({ action: "get", profileId: resolvedProfileId, appleUserId }),
         })
           .then(r => r.json())
           .then(data => {
-            if (data?.user_facts) {
+            if (data?.user_facts && Object.keys(data.user_facts).length > 0) {
               setFacts(data.user_facts);
               localStorage.setItem("unfiltr_user_facts", JSON.stringify(data.user_facts));
+            } else if (!profileId) {
+              // No facts found with fallback either — show empty state gracefully
+              setFacts({});
             }
           })
-          .catch(() => {});
+          .catch(() => setFacts(prev => prev || {}))
+          .finally(() => setLoading(false));
+      } else {
+        // No identity at all — set empty so empty state shows
+        setFacts({});
       }
     }
-  }, [open, isPremium, profileId]);
+  }, [open, isPremium, profileId, refreshKey]);
 
   const saveToDb = async (updatedFacts) => {
     if (!profileId) return;
@@ -249,7 +268,9 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
             What {isPremium ? "I" : "I'd"} Remember About You
           </div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>
-            {isPremium ? "View & edit your companion's memory" : "Unlock to see & control your memory"}
+            {isPremium
+              ? (hasFacts ? `${factsCount} things remembered` : "Chat more to build your memory")
+              : "Unlock to see & control your memory"}
           </div>
         </div>
         {!isPremium && <Lock size={14} color="rgba(255,255,255,0.3)" />}
@@ -282,6 +303,11 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
                   <span style={{ color: "white", fontWeight: 700, fontSize: 16 }}>Memory Editor</span>
                   {saved && <span style={{ color: "#4ade80", fontSize: 11 }}>✓ Saved</span>}
                   {saving && <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Saving…</span>}
+                  <button onClick={() => setRefreshKey(k => k + 1)} style={{
+                    background: "none", border: "none", cursor: "pointer", padding: 4, color: "rgba(255,255,255,0.4)",
+                  }} title="Refresh memory">
+                    <RefreshCw size={15} />
+                  </button>
                 </div>
                 <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
                   <X size={18} color="rgba(255,255,255,0.5)" />
@@ -313,12 +339,56 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
                     Unlock Memory ✨
                   </button>
                 </div>
+              ) : loading && !facts ? (
+                /* Loading spinner */
+                <div style={{ textAlign: "center", padding: 40 }}>
+                  <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(168,85,247,0.2)", borderTop: "3px solid #a855f7", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+                  <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Loading your memories…</div>
+                </div>
+              ) : facts && Object.values(facts).every(v => !v || (Array.isArray(v) && v.length === 0)) ? (
+                /* Empty state */
+                <div style={{ textAlign: "center", padding: "32px 16px" }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>🧠</div>
+                  <p style={{ color: "white", fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>No memories yet</p>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, lineHeight: 1.6, margin: "0 0 20px" }}>
+                    Your companion will start remembering things about you as you chat. After a few conversations, you'll see your name, goals, struggles, and more appear here.
+                  </p>
+                  <p style={{ color: "rgba(168,85,247,0.7)", fontSize: 12, lineHeight: 1.5 }}>
+                    💡 Tip: Talk to your companion about yourself — your job, what's been stressing you out, your goals. The more you share, the more they remember.
+                  </p>
+                </div>
               ) : facts ? (
                 /* Premium — full editor */
                 <div>
                   <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 16 }}>
                     Everything here is what your companion knows about you. Edit or remove anything anytime.
                   </p>
+
+                  {/* Memory narrative card */}
+                  {(facts.name || facts.occupation || facts.recurring_struggles?.length > 0 || facts.goals?.length > 0) && (
+                    <div style={{
+                      background: "linear-gradient(135deg, rgba(168,85,247,0.1), rgba(219,39,119,0.07))",
+                      border: "1px solid rgba(168,85,247,0.2)",
+                      borderRadius: 14, padding: "14px 16px", marginBottom: 20,
+                    }}>
+                      <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                        🧠 What I Know About You
+                      </div>
+                      <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 1.65, margin: 0 }}>
+                        {[
+                          facts.name && `Your name is ${facts.name}`,
+                          facts.age && `you're ${facts.age}`,
+                          facts.occupation && `you work as ${facts.occupation}`,
+                          facts.location && `you're based in ${facts.location}`,
+                          facts.relationship_status && `your relationship status is ${facts.relationship_status}`,
+                          facts.recurring_struggles?.length && `you've been dealing with ${facts.recurring_struggles.slice(0, 2).join(" and ")}`,
+                          facts.goals?.length && `one of your goals is ${facts.goals[0]}`,
+                          facts.core_values?.length && `you value ${facts.core_values.slice(0, 2).join(" and ")}`,
+                        ].filter(Boolean).join(", ") + "."}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Scalar facts */}
                   {Object.entries(SECTION_LABELS).map(([key, label]) => (
