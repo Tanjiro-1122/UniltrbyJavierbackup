@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
+import { isFamilyUnlimited, getTier } from "@/lib/entitlements";
 
 function NicknameField() {
   const [nick, setNick] = useState(localStorage.getItem("unfiltr_companion_nickname") || "");
@@ -54,6 +55,34 @@ function NicknameField() {
 }
 
 export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
+  // Messages — DB first, fall back to localStorage counter
+  const msgCount = profile?.message_count
+    || parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10)
+    || 0;
+
+  // Member Since — DB first, fall back to localStorage keys
+  const memberSince = (() => {
+    const raw = profile?.created_date
+      || localStorage.getItem("unfiltr_joined_date")
+      || localStorage.getItem("unfiltr_first_launch");
+    if (!raw) return "—";
+    try {
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    } catch {
+      return "—";
+    }
+  })();
+
+  // Plan label — use entitlements helper so it matches the header badge
+  const planLabel = (() => {
+    if (isFamilyUnlimited()) return "👨‍👩‍👧 Family";
+    const t = getTier();
+    const labels = { free: "Free", plus: "Premium", pro: "Pro", annual: "Annual", family: "Family" };
+    return labels[t] || "Free";
+  })();
+
   return (
     <div style={{ padding: "16px 0" }}>
       {/* Display Name */}
@@ -66,22 +95,6 @@ export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
           onSave={n => onUpdate && onUpdate({ display_name: n })}
         />
       </div>
-
-      {/* Apple ID Email */}
-      {(() => {
-        const em = profile?.email || localStorage.getItem("unfiltr_apple_email") || localStorage.getItem("unfiltr_user_email") || null;
-        if (!em) return null;
-        return (
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
-              Apple ID Email
-            </p>
-            <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>{em}</p>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Companion Nickname */}
       <div style={{ marginBottom: 24 }}>
@@ -101,9 +114,9 @@ export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
           borderRadius: 16, padding: "12px 16px", display: "flex",
         }}>
           {[
-            { label: "Messages", value: profile?.message_count || 0, sub: "total sent" },
-            { label: "Member Since", value: profile?.created_date ? new Date(profile.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—", sub: "joined" },
-            { label: "Premium", value: profile?.is_premium ? "✨ Yes" : "Free", sub: "plan" },
+            { label: "Messages", value: msgCount, sub: "total sent" },
+            { label: "Member Since", value: memberSince, sub: "joined" },
+            { label: "Plan", value: planLabel, sub: "current plan" },
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
               <p style={{ color: "#a855f7", fontWeight: 800, fontSize: 16, margin: 0 }}>{s.value}</p>
