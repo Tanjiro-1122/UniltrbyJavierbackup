@@ -10,7 +10,7 @@ const VOICE_MAP = {
     // Legacy style-based keys (kept for backward compatibility)
     cheerful: "shimmer", calm: "nova", energetic: "nova",
     // New gender-aware style keys
-    warm: "nova", bright: "shimmer", natural: "coral", professional: "sage", neutral: "alloy",
+    warm: "nova", bright: "shimmer", natural: "nova", professional: "alloy", neutral: "alloy",
   },
   male: {
     // Legacy vibe-based keys
@@ -18,7 +18,7 @@ const VOICE_MAP = {
     // Legacy style-based keys (kept for backward compatibility)
     cheerful: "onyx", calm: "fable", energetic: "echo",
     // New gender-aware style keys
-    american: "echo", british: "fable", deep: "onyx", modern: "ash", natural: "verse",
+    american: "echo", british: "fable", deep: "onyx", modern: "echo", natural: "fable",
   },
   neutral: {
     // Legacy keys — all map to alloy (the only ungendered OpenAI voice)

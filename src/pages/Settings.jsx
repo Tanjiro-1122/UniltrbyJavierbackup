@@ -21,6 +21,28 @@ import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimite
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
 
+// ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
+const VOICE_OPTIONS = {
+  female: [
+    { id: "warm",         emoji: "🌸", label: "Warm",         desc: "Friendly & inviting" },
+    { id: "bright",       emoji: "✨", label: "Bright",       desc: "Cheerful & expressive" },
+    { id: "natural",      emoji: "🍃", label: "Natural",      desc: "Conversational & real" },
+    { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & composed" },
+    { id: "neutral",      emoji: "🎙️", label: "Neutral",      desc: "Calm & balanced" },
+  ],
+  male: [
+    { id: "american",  emoji: "🎤", label: "American",  desc: "Warm & approachable" },
+    { id: "british",   emoji: "🫖", label: "British",   desc: "Refined & smooth" },
+    { id: "deep",      emoji: "🌊", label: "Deep",      desc: "Rich & resonant" },
+    { id: "modern",    emoji: "⚡", label: "Modern",    desc: "Crisp & confident" },
+    { id: "natural",   emoji: "🍃", label: "Natural",   desc: "Relaxed & real" },
+  ],
+  neutral: [
+    { id: "balanced", emoji: "⚖️", label: "Balanced", desc: "Clear & ungendered" },
+  ],
+};
+const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
+
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
   return (
@@ -105,7 +127,14 @@ export default function Settings() {
   const [pauseSuccess, setPauseSuccess]       = useState(false);
   const [savingCompanion, setSavingCompanion] = useState(false);
   const [voiceGender, setVoiceGender]         = useState(localStorage.getItem("unfiltr_voice_gender") || "female");
-  const [voicePersonality, setVoicePersonality] = useState(localStorage.getItem("unfiltr_voice_personality") || "cheerful");
+  const [voicePersonality, setVoicePersonality] = useState(() => {
+    const savedGender = localStorage.getItem("unfiltr_voice_gender") || "female";
+    const savedPersonality = localStorage.getItem("unfiltr_voice_personality") || "warm";
+    const validOpts = VOICE_OPTIONS[savedGender] || VOICE_OPTIONS.female;
+    return validOpts.find(o => o.id === savedPersonality)
+      ? savedPersonality
+      : (DEFAULT_VOICE_STYLE[savedGender] || validOpts[0].id);
+  });
   const [streak, setStreak]                   = useState(0);
   const [daysSince, setDaysSince]             = useState(0);
   const [moodHistory, setMoodHistory]         = useState([]);
@@ -461,13 +490,6 @@ export default function Settings() {
     navigate("/age-verification", { replace: true });
   };
 
-  const VOICE_PERSONALITIES = [
-    { id: "cheerful", emoji: "😊", label: "Cheerful", desc: "Bright & upbeat" },
-    { id: "calm", emoji: "🧘", label: "Calm", desc: "Slow & soothing" },
-    { id: "energetic", emoji: "⚡", label: "Energetic", desc: "Fast & lively" },
-    { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & steady" },
-  ];
-
   // ── Save personality to DB ────────────────────────────────────────────────
   const handleSavePersonality = async () => {
     if (savingPersonality) return;
@@ -675,7 +697,16 @@ export default function Settings() {
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Voice</p>
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
           {["male","female","neutral"].map(g => (
-            <button key={g} onClick={() => { setVoiceGender(g); localStorage.setItem("unfiltr_voice_gender", g); }}
+            <button key={g} onClick={() => {
+                setVoiceGender(g);
+                localStorage.setItem("unfiltr_voice_gender", g);
+                const opts = VOICE_OPTIONS[g] || VOICE_OPTIONS.female;
+                const newPersonality = opts.find(o => o.id === voicePersonality)
+                  ? voicePersonality
+                  : (DEFAULT_VOICE_STYLE[g] || opts[0].id);
+                setVoicePersonality(newPersonality);
+                localStorage.setItem("unfiltr_voice_personality", newPersonality);
+              }}
               style={{ flex: 1, padding: "11px 8px", borderRadius: 12, border: voiceGender === g ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)", background: voiceGender === g ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)", color: voiceGender === g ? "white" : "rgba(255,255,255,0.45)", fontWeight: voiceGender === g ? 700 : 500, fontSize: 12, cursor: "pointer", textTransform: "capitalize" }}>
               {g === "male" ? "🎤 Male" : g === "female" ? "✨ Female" : "🤖 Neutral"}
             </button>
@@ -684,7 +715,7 @@ export default function Settings() {
 
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Voice Personality</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {VOICE_PERSONALITIES.map(p => (
+          {(VOICE_OPTIONS[voiceGender] || VOICE_OPTIONS.female).map(p => (
             <button key={p.id} onClick={() => { setVoicePersonality(p.id); localStorage.setItem("unfiltr_voice_personality", p.id); }}
               style={{ padding: "12px 10px", borderRadius: 13, border: voicePersonality === p.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)", background: voicePersonality === p.id ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.04)", cursor: "pointer", textAlign: "center" }}>
               <span style={{ fontSize: 20, display: "block", marginBottom: 3 }}>{p.emoji}</span>
