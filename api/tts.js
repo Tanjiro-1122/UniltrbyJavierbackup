@@ -5,16 +5,27 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const VOICE_MAP = {
   female: {
-    // Vibe-based keys (legacy / ChatPage vibe selector)
+    // Legacy vibe-based keys (ChatPage vibe selector)
     chill: "nova", hype: "shimmer", deep: "alloy", vent: "nova", journal: "nova",
-    // Style-based keys (ChatCustomizePanel Voice tab)
-    // Using distinct voices per style so each personality sounds different:
-    //   shimmer = bright/cheerful, nova = warm/upbeat, alloy = neutral/professional, echo = balanced
-    cheerful: "shimmer", calm: "nova", energetic: "nova", professional: "alloy",
+    // Legacy style-based keys (kept for backward compatibility)
+    cheerful: "shimmer", calm: "nova", energetic: "nova",
+    // New gender-aware style keys
+    warm: "nova", bright: "shimmer", natural: "coral", professional: "sage", neutral: "alloy",
   },
   male: {
-    chill: "echo", hype: "onyx", deep: "fable", vent: "echo", journal: "fable",
-    cheerful: "onyx", calm: "fable", energetic: "echo", professional: "echo",
+    // Legacy vibe-based keys
+    chill: "echo", hype: "onyx", vent: "echo", journal: "fable",
+    // Legacy style-based keys (kept for backward compatibility)
+    cheerful: "onyx", calm: "fable", energetic: "echo",
+    // New gender-aware style keys
+    american: "echo", british: "fable", deep: "onyx", modern: "ash", natural: "verse",
+  },
+  neutral: {
+    // Legacy keys — all map to alloy (the only ungendered OpenAI voice)
+    chill: "alloy", hype: "alloy", deep: "alloy", vent: "alloy", journal: "alloy",
+    cheerful: "alloy", calm: "alloy", energetic: "alloy", professional: "alloy",
+    // New key
+    balanced: "alloy",
   },
 };
 
@@ -65,12 +76,14 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Voice playback requires a premium subscription." });
     }
 
-    const gender = voiceGender?.toLowerCase() === "male" ? "male" : "female";
-    const voice = VOICE_MAP[gender][voicePersonality];
+    const genderRaw = voiceGender?.toLowerCase();
+    const gender = genderRaw === "male" ? "male" : genderRaw === "neutral" ? "neutral" : "female";
+    const voiceMap = VOICE_MAP[gender];
+    const voice = voiceMap[voicePersonality];
     if (!voice) {
-      console.warn(`[tts] Unknown voicePersonality "${voicePersonality}" — falling back to "chill"`);
+      console.warn(`[tts] Unknown voicePersonality "${voicePersonality}" for gender "${gender}" — falling back`);
     }
-    const resolvedVoice = voice || VOICE_MAP[gender].chill;
+    const resolvedVoice = voice || voiceMap.chill || VOICE_MAP.female.chill;
 
     const { signal, cancel } = withAbortController();
     let mp3;
