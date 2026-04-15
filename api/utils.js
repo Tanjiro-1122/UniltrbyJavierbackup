@@ -525,7 +525,7 @@ async function handleJournalFeedback(req, res) {
 
 // ── Save Journal Entry ────────────────────────────────────────────────────────
 // Limits aligned with src/lib/entitlements.js JOURNAL_MONTHLY_LIMITS
-const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 999999, family: 999999 };
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999, family: 99999 };
 
 async function handleSaveJournalEntry(req, res) {
   const { appleUserId, entry } = req.body || {};
