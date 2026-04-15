@@ -951,6 +951,11 @@ export default function ChatPage() {
         style:     localStorage.getItem("unfiltr_personality_style")     || "casual",
       };
 
+      let cachedUserFacts = userFacts && Object.keys(userFacts).length > 0 ? userFacts : {};
+      if (!Object.keys(cachedUserFacts).length) {
+        try { cachedUserFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { cachedUserFacts = {}; }
+      }
+
       const chatRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -959,9 +964,7 @@ export default function ChatPage() {
           profileId:        localStorage.getItem("userProfileId") || null,
           sessionMemory:    sessionMemory,
           memorySummary:    localMemSummary || "",
-          userFacts:        (userFacts && Object.keys(userFacts).length > 0)
-            ? userFacts
-            : (() => { try { return JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { return {}; } })(),
+          userFacts:        cachedUserFacts,
           imageBase64:      imgBase64,
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",

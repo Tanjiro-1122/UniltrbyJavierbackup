@@ -166,6 +166,9 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const hasFacts = facts && Object.keys(facts).some(k => facts[k] && (!Array.isArray(facts[k]) || facts[k].length > 0));
+  const factsCount = hasFacts ? Object.values(facts).flat().filter(Boolean).length : 0;
+
   useEffect(() => {
     if (open && isPremium) {
       // Load from localStorage first (fast)
@@ -195,7 +198,7 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
               setFacts({});
             }
           })
-          .catch(() => setFacts(facts || {}))
+          .catch(() => setFacts(prev => prev || {}))
           .finally(() => setLoading(false));
       } else {
         // No identity at all — set empty so empty state shows
@@ -266,9 +269,7 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
           </div>
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>
             {isPremium
-              ? (facts && Object.keys(facts).some(k => facts[k] && (!Array.isArray(facts[k]) || facts[k].length > 0))
-                  ? `${Object.values(facts).flat().filter(Boolean).length} things remembered`
-                  : "Chat more to build your memory")
+              ? (hasFacts ? `${factsCount} things remembered` : "Chat more to build your memory")
               : "Unlock to see & control your memory"}
           </div>
         </div>
