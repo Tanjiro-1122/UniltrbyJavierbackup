@@ -959,7 +959,9 @@ export default function ChatPage() {
           profileId:        localStorage.getItem("userProfileId") || null,
           sessionMemory:    sessionMemory,
           memorySummary:    localMemSummary || "",
-          userFacts:        userFacts,
+          userFacts:        (userFacts && Object.keys(userFacts).length > 0)
+            ? userFacts
+            : (() => { try { return JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { return {}; } })(),
           imageBase64:      imgBase64,
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
