@@ -21,6 +21,28 @@ import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimite
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
 
+// ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
+const VOICE_OPTIONS = {
+  female: [
+    { id: "warm",         emoji: "🌸", label: "Warm",         desc: "Friendly & inviting" },
+    { id: "bright",       emoji: "✨", label: "Bright",       desc: "Cheerful & expressive" },
+    { id: "natural",      emoji: "🍃", label: "Natural",      desc: "Conversational & real" },
+    { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & composed" },
+    { id: "neutral",      emoji: "🎙️", label: "Neutral",      desc: "Calm & balanced" },
+  ],
+  male: [
+    { id: "american",  emoji: "🎤", label: "American",  desc: "Warm & approachable" },
+    { id: "british",   emoji: "🫖", label: "British",   desc: "Refined & smooth" },
+    { id: "deep",      emoji: "🌊", label: "Deep",      desc: "Rich & resonant" },
+    { id: "modern",    emoji: "⚡", label: "Modern",    desc: "Crisp & confident" },
+    { id: "natural",   emoji: "🍃", label: "Natural",   desc: "Relaxed & real" },
+  ],
+  neutral: [
+    { id: "balanced", emoji: "⚖️", label: "Balanced", desc: "Clear & ungendered" },
+  ],
+};
+const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
+
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
   return (
@@ -108,13 +130,10 @@ export default function Settings() {
   const [voicePersonality, setVoicePersonality] = useState(() => {
     const savedGender = localStorage.getItem("unfiltr_voice_gender") || "female";
     const savedPersonality = localStorage.getItem("unfiltr_voice_personality") || "warm";
-    const VOICE_OPTS = {
-      female:  ["warm", "bright", "natural", "professional", "neutral"],
-      male:    ["american", "british", "deep", "modern", "natural"],
-      neutral: ["balanced"],
-    };
-    const valid = VOICE_OPTS[savedGender] || VOICE_OPTS.female;
-    return valid.includes(savedPersonality) ? savedPersonality : (valid[0] || "warm");
+    const validOpts = VOICE_OPTIONS[savedGender] || VOICE_OPTIONS.female;
+    return validOpts.find(o => o.id === savedPersonality)
+      ? savedPersonality
+      : (DEFAULT_VOICE_STYLE[savedGender] || validOpts[0].id);
   });
   const [streak, setStreak]                   = useState(0);
   const [daysSince, setDaysSince]             = useState(0);
@@ -470,27 +489,6 @@ export default function Settings() {
     setShowDeleteConfirm(false);
     navigate("/age-verification", { replace: true });
   };
-
-  const VOICE_OPTIONS = {
-    female: [
-      { id: "warm",         emoji: "🌸", label: "Warm",         desc: "Friendly & inviting" },
-      { id: "bright",       emoji: "✨", label: "Bright",       desc: "Cheerful & expressive" },
-      { id: "natural",      emoji: "🍃", label: "Natural",      desc: "Conversational & real" },
-      { id: "professional", emoji: "💼", label: "Professional", desc: "Clear & composed" },
-      { id: "neutral",      emoji: "🎙️", label: "Neutral",      desc: "Calm & balanced" },
-    ],
-    male: [
-      { id: "american",  emoji: "🎤", label: "American",  desc: "Warm & approachable" },
-      { id: "british",   emoji: "🫖", label: "British",   desc: "Refined & smooth" },
-      { id: "deep",      emoji: "🌊", label: "Deep",      desc: "Rich & resonant" },
-      { id: "modern",    emoji: "⚡", label: "Modern",    desc: "Crisp & confident" },
-      { id: "natural",   emoji: "🍃", label: "Natural",   desc: "Relaxed & real" },
-    ],
-    neutral: [
-      { id: "balanced", emoji: "⚖️", label: "Balanced", desc: "Clear & ungendered" },
-    ],
-  };
-  const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
 
   // ── Save personality to DB ────────────────────────────────────────────────
   const handleSavePersonality = async () => {

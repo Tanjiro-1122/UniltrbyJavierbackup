@@ -3,6 +3,8 @@ import { X, Moon, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { playAudioFromBase64, resumeAudioContext, stopCurrentAudio } from "@/components/utils/audioUnlock";
 
+const MAX_TTS_INPUT_CHARS = 4096;
+
 const THEMES = [
   { id: "forest", emoji: "🌲", label: "Enchanted Forest" },
   { id: "ocean", emoji: "🌊", label: "Ocean Waves" },
@@ -47,7 +49,7 @@ export default function SleepStory({ visible, onClose, companionName }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: story.text.slice(0, 4096),
+          text: story.text.slice(0, MAX_TTS_INPUT_CHARS),
           voiceGender: localStorage.getItem("unfiltr_voice_gender") || "female",
           voicePersonality: localStorage.getItem("unfiltr_voice_personality") || "warm",
           profileId,
