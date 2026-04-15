@@ -830,7 +830,9 @@ export default function ChatPage() {
       });
 
       if (!ttsRes.ok) {
-        console.warn("[TTS] API error:", ttsRes.status);
+        let errBody = {};
+        try { errBody = await ttsRes.json(); } catch { console.warn("[TTS] Could not parse error response body"); }
+        console.warn("[TTS] API error:", ttsRes.status, errBody?.error || "");
         setIsSpeaking(false); setAvatarState("idle"); return;
       }
 
