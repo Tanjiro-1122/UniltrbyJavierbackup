@@ -38,14 +38,37 @@ export default function SleepStory({ visible, onClose, companionName }) {
   const playStory = async () => {
     if (!story) return;
     setPlaying(true);
-    await resumeAudioContext().catch(() => {});
-    const res = await base44.functions.invoke("tts", {
-      text: story.text.slice(0, 400),
-      voiceGender: localStorage.getItem("unfiltr_voice_gender") || "female",
-      voicePersonality: "calm",
-    });
-    if (res.data?.audio) await playAudioFromBase64(res.data.audio);
-    setPlaying(false);
+    setError(null);
+    try {
+      await resumeAudioContext().catch(() => {});
+      const profileId = localStorage.getItem("userProfileId") || null;
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || null;
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: story.text.slice(0, 4096),
+          voiceGender: localStorage.getItem("unfiltr_voice_gender") || "female",
+          voicePersonality: localStorage.getItem("unfiltr_voice_personality") || "warm",
+          profileId,
+          appleUserId,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData?.error || "Couldn't play the story right now.");
+        setPlaying(false);
+        return;
+      }
+      const data = await res.json();
+      const base64 = data?.data?.audio || data?.audio;
+      if (base64) await playAudioFromBase64(base64);
+    } catch (e) {
+      console.error("SleepStory playStory error:", e);
+      setError("Couldn't play the story right now. Please try again.");
+    } finally {
+      setPlaying(false);
+    }
   };
 
   const stopStory = () => {

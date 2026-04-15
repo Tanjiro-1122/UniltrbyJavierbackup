@@ -10,12 +10,27 @@ const VOICE_BY_GENDER = {
   neutral: ["fable"],
 };
 
-// Voice personality → speed + voice variant adjustments
-const PERSONALITY_CONFIG = {
+// Voice personality → speed + voice variant adjustments.
+// Covers both the legacy keys (cheerful / calm / energetic / professional) and the
+// new gender-aware style keys added in the Vercel API (warm, bright, natural, etc.).
+const PERSONALITY_CONFIG: Record<string, { speed: number; voiceIndex: number }> = {
+  // Legacy keys
   cheerful:     { speed: 1.15, voiceIndex: 0 },
   calm:         { speed: 0.95, voiceIndex: 0 },
   energetic:    { speed: 1.25, voiceIndex: 1 },
   professional: { speed: 1.0,  voiceIndex: 0 },
+  // New female gender-aware style keys
+  warm:         { speed: 1.0,  voiceIndex: 0 },
+  bright:       { speed: 1.15, voiceIndex: 1 },
+  natural:      { speed: 1.0,  voiceIndex: 0 },
+  neutral:      { speed: 1.0,  voiceIndex: 0 },
+  // New male gender-aware style keys
+  american:     { speed: 1.0,  voiceIndex: 0 },
+  british:      { speed: 1.0,  voiceIndex: 1 },
+  deep:         { speed: 0.9,  voiceIndex: 2 },
+  modern:       { speed: 1.1,  voiceIndex: 0 },
+  // New neutral key
+  balanced:     { speed: 1.0,  voiceIndex: 0 },
 };
 
 Deno.serve(async (req) => {
@@ -53,6 +68,6 @@ Deno.serve(async (req) => {
     return Response.json({ audio: base64 });
   } catch (error) {
     console.error("TTS error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "TTS generation failed. Please try again." }, { status: 500 });
   }
 });
