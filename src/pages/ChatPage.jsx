@@ -1031,6 +1031,7 @@ export default function ChatPage() {
           imageBase64:      imgBase64,
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
+          userName:         localStorage.getItem("unfiltr_display_name") || "",
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
@@ -1930,4 +1931,3 @@ export default function ChatPage() {
     </>
   );
 }
-
