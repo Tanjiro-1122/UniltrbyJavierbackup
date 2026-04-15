@@ -373,8 +373,9 @@ export default function Settings() {
   };
 
   const handleFamilyCodeSubmit = async () => {
-    const profileId = localStorage.getItem("userProfileId");
-    if (!profileId) {
+    const profileId   = localStorage.getItem("userProfileId");
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
+    if (!profileId && !appleUserId) {
       setFamilyCodeError("You must have an account saved before activating a family plan. Please sign in first.");
       return;
     }
@@ -405,9 +406,15 @@ export default function Settings() {
         localStorage.setItem("unfiltr_msg_limit_override", "true");
         localStorage.setItem("unfiltr_bonus_messages", "99999");
         window.dispatchEvent(new Event("unfiltr_auth_updated"));
-        const pid = localStorage.getItem("userProfileId");
-        if (pid) {
-          syncProfileUpdate(pid, { is_premium: true, annual_plan: true, family_unlimited: true });
+        if (profileId) {
+          syncProfileUpdate(profileId, { is_premium: true, annual_plan: true, family_unlimited: true });
+        } else if (appleUserId) {
+          // profileId not in localStorage — syncProfile can look up the record by apple_user_id
+          fetch("/api/syncProfile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "update", profileId: null, appleUserId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }),
+          }).catch(() => {});
         }
         setFamilySuccess(true); setFamilyCode(""); setFamilyCodeError("");
         setTimeout(() => { setFamilySuccess(false); setShowFamilyModal(false); setUserProfile(p => p ? { ...p, is_premium: true, annual_plan: true } : p); }, 2500);
