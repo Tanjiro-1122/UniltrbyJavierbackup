@@ -32,8 +32,8 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
 
   // Crossfade state — keeps old image visible while new one loads
   const [displayUrl, setDisplayUrl] = useState(poseUrl);
-  const [nextUrl, setNextUrl] = useState(null);
-  const [fading, setFading] = useState(false);
+  const [nextUrl, setNextUrl]       = useState(null);
+  const [crossfading, setCrossfading] = useState(false);
   const prevKey = useRef(`${companionId}-${mood}`);
 
   const handleImgError = (e) => {
@@ -44,31 +44,33 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
 
   useEffect(() => {
     const newKey = `${companionId}-${mood}`;
+    // Always act on key change — do NOT bail based on URL equality
+    // (fallback URLs can be the same even when mood changed)
     if (newKey === prevKey.current) return;
     prevKey.current = newKey;
 
-    if (!poseUrl || poseUrl === displayUrl) {
-      setDisplayUrl(poseUrl);
-      return;
-    }
+    const targetUrl = poseUrl || fallbackUrl;
+    if (!targetUrl) return;
 
-    // Preload new image before swapping
-    setNextUrl(poseUrl);
+    // Preload new image, then crossfade in on top
     const img = new window.Image();
     img.onload = () => {
-      setDisplayUrl(poseUrl);
-      setFading(true);
+      setNextUrl(targetUrl);       // show new image on top (opacity 0 → 1)
+      setCrossfading(true);
       setTimeout(() => {
-        setNextUrl(null);
-        setFading(false);
-      }, 200);
+        setDisplayUrl(targetUrl);  // swap base image
+        setNextUrl(null);          // remove overlay
+        setCrossfading(false);
+      }, 250);
     };
     img.onerror = () => {
-      if (fallbackUrl) setDisplayUrl(fallbackUrl);
+      // If pose fails, fall back gracefully — still update displayUrl
+      setDisplayUrl(fallbackUrl || displayUrl);
       setNextUrl(null);
+      setCrossfading(false);
     };
-    img.src = poseUrl;
-  }, [companionId, mood, poseUrl, fallbackUrl]);
+    img.src = targetUrl;
+  }, [companionId, mood]);
 
   const baseStyle = {
     WebkitTouchCallout: "none",
@@ -117,7 +119,7 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           }} />
         )}
 
-        {/* Main avatar — stays mounted, no remount flicker */}
+        {/* Base avatar — always visible, stays mounted (no flicker) */}
         <img
           src={displayUrl}
           alt={companionId}
@@ -127,12 +129,12 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
           style={{
             ...baseStyle,
             animation: MOOD_ANIM_NAME[mood] || "none",
-            opacity: fading ? 0 : 1,
-            transition: "opacity 0.2s ease, filter 0.2s",
+            opacity: 1,
+            transition: "filter 0.2s",
           }}
         />
 
-        {/* Next image preloads invisibly, then swaps in */}
+        {/* New mood image crossfades IN on top of old one */}
         {nextUrl && (
           <img
             src={nextUrl}
@@ -142,7 +144,8 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
               ...baseStyle,
               position: "absolute",
               bottom: 0,
-              opacity: 0,
+              opacity: crossfading ? 1 : 0,
+              transition: "opacity 0.25s ease",
               pointerEvents: "none",
             }}
           />
@@ -151,3 +154,4 @@ export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, 
     </>
   );
 }
+
