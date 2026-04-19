@@ -6,15 +6,18 @@ export const COMPANIONS = [
     tagline: "Calm & Nurturing",
     avatar: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/943f2fb6c_luna_happy_nobg.png",
     poses: {
-      happy:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/943f2fb6c_luna_happy_nobg.png",
-      neutral:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/0fbbf7962_luna_neutral_nobg.png",
-      sad:         "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/14aec99fd_luna_sad_nobg.png",
-      fear:        "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/b29e7c3b5_luna_fear_nobg.png",
-      disgust:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/226553803_luna_disgust_nobg.png",
-      surprise:    "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/696f1d9f5_luna_surprise_nobg.png",
-      anger:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/d6750eedf_luna_anger_nobg.png",
-      contentment: "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/10ff870a3_luna_contentment_nobg.png",
-      fatigue:     "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/13f44d73e_luna_fatigue_nobg.png",
+      happy:        "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/943f2fb6c_luna_happy_nobg.png",
+      content:      "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/10ff870a3_luna_contentment_nobg.png",
+      neutral:      "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/0fbbf7962_luna_neutral_nobg.png",
+      sad:          "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/14aec99fd_luna_sad_nobg.png",
+      anxious:      "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/b29e7c3b5_luna_fear_nobg.png",
+      angry:        "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/d6750eedf_luna_anger_nobg.png",
+      surprised:    "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/696f1d9f5_luna_surprise_nobg.png",
+      grossed_out:  "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/226553803_luna_disgust_nobg.png",
+      tired:        "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/13f44d73e_luna_fatigue_nobg.png",
+      hopeful:      "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/ac58a9d25_luna_hopeful_nobg.png",
+      lonely:       "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/5240ad16f_luna_lonely_nobg.png",
+      excited:      "https://base44.app/api/apps/69b22f8b58e45d23cafd78d2/files/mp/public/69b22f8b58e45d23cafd78d2/b0e0b26e2_luna_excited_nobg.png",
     },
   },
   {
@@ -370,3 +373,4 @@ export const BACKGROUNDS = [
     style: "realistic",
   },
 ];
+
