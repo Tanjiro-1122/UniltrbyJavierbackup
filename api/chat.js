@@ -377,7 +377,7 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
-              `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited>`,
+              `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited,hopeful,lonely>`,
           },
           ...finalMessages,
         ],
@@ -393,8 +393,8 @@ export default async function handler(req, res) {
     // Extract mood tag from end of response
     // Try bracket format [MOOD:x] first, then bare MOOD:x
     const moodMatch = raw.match(/\[MOOD:\s*(\w+)\s*\]/i)
-                   || raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue|excited)/i);
-    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited"];
+                   || raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue|excited|hopeful|lonely)/i);
+    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited","hopeful","lonely"];
     let detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     
     // Fallback: infer mood from reply text if tag missing or invalid
@@ -409,6 +409,8 @@ export default async function handler(req, res) {
       else if (/wow|whoa|no way|shocked|surprised|unbelievable|can't believe/i.test(r)) detectedMood = "surprise";
       else if (/disgust|gross|nasty|vile|repuls|eww|yuck/i.test(r))                     detectedMood = "disgust";
       else if (/tired|exhausted|sleepy|drained|burnt out|long day/i.test(r))             detectedMood = "fatigue";
+      else if (/hopeful|looking forward|things will|optimist|better days|believing/i.test(r)) detectedMood = "hopeful";
+      else if (/lonely|alone|no one|miss you|isolated|empty|disconnected/i.test(r))         detectedMood = "lonely";
       else detectedMood = "contentment";
     }
     const mood = validMoods.includes(detectedMood) ? detectedMood : "contentment";
