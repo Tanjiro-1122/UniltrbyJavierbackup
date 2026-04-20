@@ -835,7 +835,7 @@ export default function ChatPage() {
   /* ─── SET INITIAL AVATAR MOOD from MoodPicker selection ─── */
   useEffect(() => {
     const savedMood = localStorage.getItem("unfiltr_mood");
-    const validAvatarMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+    const validAvatarMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited"];
     if (savedMood && validAvatarMoods.includes(savedMood)) {
       setCompanionMood(savedMood);
     }
@@ -1114,7 +1114,7 @@ export default function ChatPage() {
 
       if (isCrisis) setShowCrisisBanner(true);
 
-      const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+      const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
       if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});

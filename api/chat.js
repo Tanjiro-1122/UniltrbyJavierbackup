@@ -377,7 +377,7 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
-              `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue>`,
+              `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited>`,
           },
           ...finalMessages,
         ],
@@ -393,14 +393,15 @@ export default async function handler(req, res) {
     // Extract mood tag from end of response
     // Try bracket format [MOOD:x] first, then bare MOOD:x
     const moodMatch = raw.match(/\[MOOD:\s*(\w+)\s*\]/i)
-                   || raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue)/i);
-    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue"];
+                   || raw.match(/MOOD:(happy|neutral|sad|fear|disgust|surprise|anger|contentment|fatigue|excited)/i);
+    const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited"];
     let detectedMood = moodMatch ? moodMatch[1].toLowerCase() : "neutral";
     
     // Fallback: infer mood from reply text if tag missing or invalid
     if (!validMoods.includes(detectedMood)) {
       const r = raw.toLowerCase();
-      if (/happy|excited|amazing|awesome|love that|thrilled|yay|wooo/i.test(r))         detectedMood = "happy";
+      if (/\bexcited\b|can't contain it|so pumped|so hyped/i.test(r))                detectedMood = "excited";
+      else if (/happy|amazing|awesome|love that|thrilled|yay|wooo/i.test(r))             detectedMood = "happy";
       else if (/calm|peaceful|cozy|relax|serene|warm|gentle|at ease/i.test(r))          detectedMood = "contentment";
       else if (/sorry|tough|hard time|difficult|loss|grief|that sucks/i.test(r))         detectedMood = "sad";
       else if (/anxious|worried|nervous|scared|stress|overwhelm|panic/i.test(r))         detectedMood = "fear";
