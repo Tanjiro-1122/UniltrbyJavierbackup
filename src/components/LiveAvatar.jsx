@@ -27,7 +27,23 @@ const MOOD_ANIM_NAME = {
 
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick, fullScreen = false }) {
   const companionData = COMPANIONS.find(c => c.id === companionId);
-  const poseUrl = companionData?.poses?.[mood] || companionData?.poses?.neutral || companionData?.avatar;
+  // Translate AI mood state names → companionData pose keys
+  const MOOD_TO_POSE = {
+    happy:       'happy',
+    neutral:     'neutral',
+    sad:         'sad',
+    excited:     'excited',
+    hopeful:     'hopeful',
+    lonely:      'lonely',
+    fear:        'anxious',
+    anger:       'angry',
+    surprise:    'surprised',
+    contentment: 'content',
+    fatigue:     'tired',
+    disgust:     'grossed_out',
+  };
+  const poseKey = MOOD_TO_POSE[mood] || mood;
+  const poseUrl = companionData?.poses?.[poseKey] || companionData?.poses?.neutral || companionData?.avatar;
   const fallbackUrl = companionData?.poses?.neutral || companionData?.avatar;
 
   // Crossfade state — keeps old image visible while new one loads
