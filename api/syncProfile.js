@@ -163,10 +163,12 @@ export default async function handler(req, res) {
   const {
     action = "sync",         // "sync" | "update" | "create"
     appleUserId,
+    googleUserId,            // Android Google Sign-In — used as the canonical user ID
     email: clientEmail,
     fullName,
     isPremium,
     plan,
+    platform,                // "ios" | "android" — passed by Android wrapper
     profileId,               // for direct update by ID
     updateData,              // fields to update (for action="update")
     displayName,             // for onboarding name step
@@ -180,7 +182,18 @@ export default async function handler(req, res) {
   const jwtPayload = decodeAppleJwt(identityToken);
   const email = jwtPayload.email || clientEmail || "";
 
-  console.log(`[syncProfile] action=${action} appleUserId=${appleUserId?.slice(0,12)} profileId=${profileId}`);
+  // For Android users, googleUserId IS the canonical user ID.
+  // We store it in apple_user_id so all existing lookup/auth code works unchanged.
+  const canonicalUserId = appleUserId || googleUserId || null;
+  // Alias so all downstream code can use appleUserId regardless of platform
+  if (!appleUserId && googleUserId) {
+    // eslint-disable-next-line no-param-reassign
+    Object.assign(req.body, { appleUserId: googleUserId });
+  }
+  // Re-bind local variable for all downstream logic
+  const _appleUserId = canonicalUserId;
+
+  console.log(`[syncProfile] action=${action} userId=${_appleUserId?.slice(0,12)} platform=${platform||"ios"} profileId=${profileId}`);
 
   try {
     // ── ACTION: lookup — find a profile without creating it ───────────────────
@@ -273,11 +286,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, deleted: deleteId || null });
     }
 
-    // ── ACTION: sync — find or create profile for Apple Sign-In ───────────────
-    if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
+    // ── ACTION: sync — find or create profile (Apple on iOS, Google on Android) ──
+    if (!_appleUserId) return res.status(400).json({ error: "appleUserId or googleUserId required" });
 
-    // 1. Search by apple_user_id
-    let profile = await findByAppleId(appleUserId);
+    // 1. Search by canonical user ID (stored in apple_user_id field for both platforms)
+    let profile = await findByAppleId(_appleUserId);
 
     // NOTE: email-based fallback lookup has been intentionally removed.
     // Using an unverified JWT email to locate accounts would allow an attacker
@@ -285,7 +298,7 @@ export default async function handler(req, res) {
     // findByEmail() must not be used as a profile-lookup step here.
 
     // 2. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
-    if (!profile && fullName && fullName.trim().length > 1) {
+    if (!profile && fullName && fullName.trim().length > 1 && platform !== "android") {
       profile = await findByDisplayName(fullName);
       if (profile) console.log(`[syncProfile] Found by display_name: ${profile?.id}`);
     }
@@ -312,7 +325,7 @@ export default async function handler(req, res) {
     if (profile) {
       // ── RETURNING USER: update apple_user_id + last_seen ──────────────────
       const patch = {
-        apple_user_id: appleUserId,
+        apple_user_id: _appleUserId,
         last_seen: now,
         last_active: now,
       };
@@ -342,7 +355,7 @@ export default async function handler(req, res) {
       // ── NEW USER: dedup guard — wait 300ms and re-check before creating ──
       // This prevents race conditions where two simultaneous calls both see no profile
       await new Promise(r => setTimeout(r, 300));
-      const recheck = await findByAppleId(appleUserId);
+      const recheck = await findByAppleId(_appleUserId);
       if (recheck) {
         // Another call already created it — treat as returning user
         const companion = await getCompanion(recheck.companion_id);
@@ -354,7 +367,7 @@ export default async function handler(req, res) {
       }
       // ── NEW USER: create minimal profile ─────────────────────────────────
       const newProfile = await createProfile({
-        apple_user_id: appleUserId,
+        apple_user_id: _appleUserId,
         email:              email    || "",
       push_token:         (pushToken && pushToken.startsWith("ExponentPushToken")) ? pushToken : null,
       push_enabled:       !!(pushToken && pushToken.startsWith("ExponentPushToken")),
