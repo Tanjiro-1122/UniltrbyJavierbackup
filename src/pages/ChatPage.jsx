@@ -1266,7 +1266,7 @@ export default function ChatPage() {
       loved: "happy",
       hopeful: "happy",
       lonely: "sad",
-      excited: "happy",
+      excited: "excited",
       disgust: "disgust",
       surprise: "surprise",
       fatigue: "fatigue",
