@@ -73,7 +73,7 @@ const HIDE_TABS_ON = [
 
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
-  "/TermsOfUse", "/support", "/Pricing", "/onboarding",
+  "/TermsOfUse", "/DeleteAccount", "/support", "/Pricing", "/onboarding",
   "/how-it-works",
 ];
 
