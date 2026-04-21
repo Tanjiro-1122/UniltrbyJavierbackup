@@ -11,6 +11,9 @@ const MOOD_ANIMATIONS = {
   anger:       `@keyframes avatarRumble    { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-4px)} }`,
   contentment: `@keyframes avatarGlow      { 0%,100%{transform:scale(1) translateY(0px)} 50%{transform:scale(1.01) translateY(-3px)} }`,
   fatigue:     `@keyframes avatarDroop     { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(4px)} }`,
+  excited:     `@keyframes avatarBounce    { 0%,100%{transform:translateY(0px)} 40%{transform:translateY(-8px)} 60%{transform:translateY(-4px)} }`,
+  hopeful:     `@keyframes avatarRise      { 0%,100%{transform:translateY(0px) scale(1)} 50%{transform:translateY(-5px) scale(1.02)} }`,
+  lonely:      `@keyframes avatarSigh      { 0%,100%{transform:translateY(0px)} 60%{transform:translateY(3px)} }`,
 };
 
 const MOOD_ANIM_NAME = {
@@ -23,6 +26,9 @@ const MOOD_ANIM_NAME = {
   anger:       "avatarRumble    3s ease-in-out infinite",
   contentment: "avatarGlow      4s ease-in-out infinite",
   fatigue:     "avatarDroop     5s ease-in-out infinite",
+  excited:     "avatarBounce    2.5s ease-in-out infinite",
+  hopeful:     "avatarRise      3.5s ease-in-out infinite",
+  lonely:      "avatarSigh      4.5s ease-in-out infinite",
 };
 
 export default function LiveAvatar({ companionId, mood = "neutral", isSpeaking, onClick, fullScreen = false }) {

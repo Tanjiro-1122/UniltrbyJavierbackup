@@ -1264,8 +1264,8 @@ export default function ChatPage() {
       frustrated: "anger",
       motivated: "happy",
       loved: "happy",
-      hopeful: "happy",
-      lonely: "sad",
+      hopeful: "hopeful",
+      lonely: "lonely",
       excited: "excited",
       disgust: "disgust",
       surprise: "surprise",
@@ -1556,6 +1556,9 @@ export default function ChatPage() {
                   disgust:     { scale: 1.1,  yOffset: "-4%"  },
                   contentment: { scale: 1.05, yOffset: "-2%"  },
                   fatigue:     { scale: 1.18, yOffset: "-8%"  },
+                  excited:     { scale: 1.05, yOffset: "-4%"  },
+                  hopeful:     { scale: 1.02, yOffset: "-2%"  },
+                  lonely:      { scale: 1.12, yOffset: "-6%"  },
                 };
                 const frame = MOOD_FRAME[companionMood] || MOOD_FRAME.neutral;
                 return (
