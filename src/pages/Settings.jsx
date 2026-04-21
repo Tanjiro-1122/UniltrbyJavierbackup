@@ -120,6 +120,7 @@ export default function Settings() {
   const [userProfile, setUserProfile]         = useState(null);
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmed, setDeleteConfirmed]         = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
@@ -1436,19 +1437,34 @@ export default function Settings() {
       <AnimatePresence>
         {showDeleteConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-            onClick={() => setShowDeleteConfirm(false)}>
-            <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmed(false); }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: "100%", background: "#1a0a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "24px 24px 0 0", padding: "24px 24px max(2rem,env(safe-area-inset-bottom,2rem))" }}>
-              <div style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 99, margin: "0 auto 20px" }} />
-              <h3 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: "0 0 8px" }}>Delete Account?</h3>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, marginBottom: 20 }}>This permanently deletes your profile, companion, and all messages. Cannot be undone.</p>
-              <button onClick={handleDeleteAccount} disabled={deleting}
-                style={{ width: "100%", padding: "13px", background: "#dc2626", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: deleting ? 0.5 : 1, marginBottom: 10 }}>
-                {deleting ? "Processing…" : "Yes, delete everything"}
+              style={{ width: "100%", maxWidth: 360, background: "#1a0a2e", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 20, padding: 28 }}>
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div style={{ fontSize: 44, marginBottom: 8 }}>⚠️</div>
+                <h3 style={{ color: "#f87171", fontWeight: 800, fontSize: 21, margin: "0 0 8px" }}>Delete Account?</h3>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  This will permanently erase your profile, companion bond, all chat history, and journal entries.<br /><br />
+                  <strong style={{ color: "#fca5a5" }}>This cannot be undone. Ever.</strong>
+                </p>
+              </div>
+              <div
+                onClick={() => setDeleteConfirmed(v => !v)}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(220,38,38,0.08)", border: `1px solid ${deleteConfirmed ? "rgba(220,38,38,0.6)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer", marginBottom: 20, userSelect: "none" }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${deleteConfirmed ? "#dc2626" : "rgba(255,255,255,0.3)"}`, background: deleteConfirmed ? "#dc2626" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                  {deleteConfirmed && <span style={{ color: "white", fontSize: 14, fontWeight: 900 }}>✓</span>}
+                </div>
+                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, lineHeight: 1.5 }}>
+                  Yes, I understand this will erase all my data and I cannot recover it.
+                </span>
+              </div>
+              <button onClick={handleDeleteAccount} disabled={deleting || !deleteConfirmed}
+                style={{ width: "100%", padding: "14px", background: deleteConfirmed ? "#dc2626" : "rgba(220,38,38,0.2)", border: "none", borderRadius: 14, color: deleteConfirmed ? "white" : "rgba(255,255,255,0.3)", fontWeight: 700, fontSize: 15, cursor: deleteConfirmed ? "pointer" : "not-allowed", marginBottom: 10, transition: "all 0.2s" }}>
+                {deleting ? "Deleting…" : "Delete My Account"}
               </button>
-              <button onClick={() => setShowDeleteConfirm(false)} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmed(false); }} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel — Keep My Account</button>
             </motion.div>
           </motion.div>
         )}
