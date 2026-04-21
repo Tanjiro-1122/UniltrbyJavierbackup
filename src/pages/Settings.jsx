@@ -121,6 +121,9 @@ export default function Settings() {
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed]         = useState(false);
+  const [showSuspendModal, setShowSuspendModal]       = useState(false);
+  const [suspending, setSuspending]                   = useState(false);
+  const [suspendSuccess, setSuspendSuccess]           = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
@@ -465,6 +468,25 @@ export default function Settings() {
     localStorage.setItem("unfiltr_env", JSON.stringify(env));
     setCurrentBg(env);
   };
+  const handleSuspendAccount = async () => {
+    setSuspending(true);
+    try {
+      const profileId = localStorage.getItem("userProfileId");
+      const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || "";
+      await fetch('/api/syncProfile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update', profileId, appleUserId,
+          updateData: { account_suspended: true, account_suspended_at: new Date().toISOString() }
+        })
+      });
+      setUserProfile(p => ({ ...p, account_suspended: true }));
+      setSuspendSuccess(true);
+    } catch (e) { console.error("Suspend error:", e); }
+    setSuspending(false);
+  };
+
   const handlePauseAccount = async () => {
     try {
       setPausing(true);
@@ -1064,7 +1086,10 @@ export default function Settings() {
           <Row icon={<LogOut size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)" label="Sign Out" onPress={handleSignOut} />
           <Row icon={<PauseCircle size={15} color="rgba(255,255,255,0.7)" />} iconBg="rgba(255,255,255,0.08)"
             label={userProfile?.account_paused ? "Account Paused 💙" : "Pause My Account"}
-            onPress={() => setShowPauseModal(true)} last />
+            onPress={() => setShowPauseModal(true)} />
+          <Row icon={<PauseCircle size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
+            label={userProfile?.account_suspended ? "Account Suspended" : "Suspend My Account"}
+            onPress={() => { setSuspendSuccess(false); setShowSuspendModal(true); }} last />
         </Section>
         <Section>
           <Row icon={<RefreshCw size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
@@ -1426,6 +1451,50 @@ export default function Settings() {
                     {pausing ? "Pausing…" : "Confirm Pause"}
                   </button>
                   <button onClick={() => setShowPauseModal(false)} style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Cancel</button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Suspend Modal ── */}
+      <AnimatePresence>
+        {showSuspendModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+            onClick={() => { if (!suspendSuccess) setShowSuspendModal(false); }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              style={{ width: "100%", maxWidth: 360, background: "#1a0a2e", border: "1px solid rgba(251,146,60,0.4)", borderRadius: 20, padding: 28 }}>
+              {suspendSuccess ? (
+                <div style={{ textAlign: "center", padding: "8px 0" }}>
+                  <div style={{ fontSize: 44, marginBottom: 12 }}>🔒</div>
+                  <p style={{ color: "white", fontWeight: 700, fontSize: 18, margin: "0 0 8px" }}>Account Suspended</p>
+                  <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.6 }}>Your account has been suspended. Contact us at huertasfam@gmail.com to reactivate it.</p>
+                  <button onClick={() => { setShowSuspendModal(false); handleSignOut(); }}
+                    style={{ marginTop: 20, width: "100%", padding: "13px", background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ textAlign: "center", marginBottom: 16 }}>
+                    <div style={{ fontSize: 44, marginBottom: 8 }}>🔒</div>
+                    <h3 style={{ color: "#fb923c", fontWeight: 800, fontSize: 21, margin: "0 0 8px" }}>Suspend Account?</h3>
+                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                      Suspending will lock your account. You won't be able to access Unfiltr until you contact us to reactivate.<br /><br />
+                      <strong style={{ color: "#fed7aa" }}>Your data will be kept safe.</strong>
+                    </p>
+                  </div>
+                  <button onClick={handleSuspendAccount} disabled={suspending}
+                    style={{ width: "100%", padding: "14px", background: "#c2410c", border: "none", borderRadius: 14, color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: suspending ? 0.5 : 1, marginBottom: 10 }}>
+                    {suspending ? "Suspending…" : "Yes, Suspend My Account"}
+                  </button>
+                  <button onClick={() => setShowSuspendModal(false)}
+                    style={{ width: "100%", padding: "12px", background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 14, color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+                    Cancel — Keep Access
+                  </button>
                 </>
               )}
             </motion.div>
