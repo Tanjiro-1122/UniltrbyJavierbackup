@@ -33,6 +33,7 @@ import PersonalityQuiz        from "./pages/PersonalityQuiz";
 import BackgroundSelect       from "./pages/BackgroundSelect";
 import PrivacyPolicy          from "./pages/PrivacyPolicy";
 import TermsOfUse             from "./pages/TermsOfUse";
+import DeleteAccount         from "./pages/DeleteAccount";
 import AdminAvatarProcessor   from "./pages/AdminAvatarProcessor";
 import AdminDashboard         from "./pages/AdminDashboard";
 import FeedbackAdmin          from "./pages/admin/FeedbackAdmin";
@@ -61,7 +62,7 @@ import PinGate               from "./pages/PinGate";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
-  "/PrivacyPolicy", "/TermsOfUse", "/home-screen", "/returning-screen", "/age-verification",
+  "/PrivacyPolicy", "/TermsOfUse", "/DeleteAccount", "/home-screen", "/returning-screen", "/age-verification",
   "/support", "/BackgroundSelect",
   "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
@@ -306,6 +307,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/home-screen"           element={<HomeScreen />} />
         <Route path="/returning-screen"      element={<ReturningScreen />} />
         <Route path="/PrivacyPolicy"         element={<PrivacyPolicy />} />
+        <Route path="/DeleteAccount"         element={<DeleteAccount />} />
         <Route path="/TermsOfUse"            element={<TermsOfUse />} />
         <Route path="/support"               element={<Support />} />
 
