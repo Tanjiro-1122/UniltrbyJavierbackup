@@ -1162,7 +1162,7 @@ export default function ChatPage() {
       // Save memory after every N user messages.
       // Tier priority: Annual/Pro > Plus > Free (check most specific first so
       // isPremium, which is true for all paid plans, doesn't mask Pro/Annual).
-      const summarizeInterval = isAnnual || isPro ? 4 : isPremium ? 6 : 8;
+      const summarizeInterval = isAnnual || isPro ? 10 : isPremium ? 14 : 20;
       if (profileId2 && userMsgCount >= 3 && userMsgCount % summarizeInterval === 0) {
         const cName = companion.displayName || companion.name;
         // Retry helper with exponential backoff
