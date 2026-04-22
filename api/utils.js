@@ -221,8 +221,6 @@ async function handleSendDailyNotifs(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
   // Get current UTC hour
   const nowUTC = new Date();
   const utcHour = nowUTC.getUTCHours();
@@ -242,6 +240,13 @@ async function handleSendDailyNotifs(req, res) {
   }
 
   const results = { sent: 0, skipped: 0, errors: 0 };
+
+  // Early exit — no push tokens at all, skip everything including OpenAI
+  const actionableProfiles = profiles.filter(p => p.push_token && p.notif_enabled);
+  if (!actionableProfiles.length) {
+    console.log("[dailyNotifs] No actionable profiles, skipping.");
+    return res.status(200).json({ ok: true, results, skipped_reason: "no_push_tokens" });
+  }
 
   for (const profile of profiles) {
     if (!profile.push_token) { results.skipped++; continue; }
@@ -303,6 +308,7 @@ async function handleSendDailyNotifs(req, res) {
     if (lastSentKey === todayKey) { results.skipped++; continue; }
 
     try {
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const message = await generateCheckinMessage(openai, companionName, timeOfDay, userName);
       const title   = isMorningTime
         ? `Good morning from ${companionName} ☀️`
