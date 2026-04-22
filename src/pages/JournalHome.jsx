@@ -87,6 +87,17 @@ export default function JournalHome() {
       fontFamily: "'SF Pro Display', system-ui, -apple-system, sans-serif",
       background: "#06020f",
     }}>
+      <button
+        onClick={() => navigate("/hub")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
       {/* Full-screen ambient background from beach world */}
       <div style={{
         position: "absolute", inset: 0, zIndex: 0,
