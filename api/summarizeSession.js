@@ -147,7 +147,7 @@ export default async function handler(req, res) {
       .map(m => `${m.role === "user" ? "User" : companionName || "Companion"}: ${m.content}`)
       .join("\n");
 
-    const summaryModel = (isPremium || isPro || isAnnual) ? "gpt-4o-mini" : "gpt-3.5-turbo";
+    const summaryModel = (isPremium || isPro || isAnnual) ? "gpt-4o-mini" : "gpt-4o-mini";
 
     // ── Step 1: Extract structured facts + emotion data in one call ──────────
     const extractionPrompt = `You are analyzing a conversation to extract memorable facts about the USER (not the AI companion).
