@@ -20,12 +20,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const CRISIS_KEYWORDS = ["suicide","kill myself","end my life","self harm","cutting myself","want to die","hurt myself","don't want to live"];
 
 // ── Tier-based model selection ──────────────────────────────────────────────
-// FREE:   gpt-3.5-turbo  — fast, cheap, good enough
+// FREE:   gpt-4o-mini    — same as paid tiers (gpt-3.5-turbo deprecated Oct 2026)
 // PLUS:   gpt-4o-mini    — noticeably better, default paid experience
 // PRO:    gpt-4o-mini    — same model but higher limits + more context
 // ANNUAL: gpt-4o-mini    — same model, full context, no restrictions
 function getModel(isPremium, isPro, isAnnual) {
-  if (!isPremium && !isPro && !isAnnual) return "gpt-3.5-turbo";
+  if (!isPremium && !isPro && !isAnnual) return "gpt-4o-mini";
   return "gpt-4o-mini";
 }
 
@@ -44,13 +44,10 @@ function getContextWindow(isPremium, isPro, isAnnual) {
 }
 
 // ── Cost estimate (USD) ─────────────────────────────────────────────────────
-// gpt-3.5-turbo:  $0.50 / 1M input,  $1.50 / 1M output
+// gpt-3.5-turbo:  DEPRECATED Oct 2026 — now using gpt-4o-mini for all tiers
 // gpt-4o-mini:    $0.15 / 1M input,  $0.60 / 1M output
 function estimateCost(model, promptTokens, completionTokens) {
-  if (model === "gpt-3.5-turbo") {
-    return (promptTokens * 0.0000005) + (completionTokens * 0.0000015);
-  }
-  // gpt-4o-mini
+  // All tiers now use gpt-4o-mini (gpt-3.5-turbo deprecated Oct 2026)
   return (promptTokens * 0.00000015) + (completionTokens * 0.0000006);
 }
 
