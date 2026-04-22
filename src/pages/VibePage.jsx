@@ -96,6 +96,17 @@ export default function VibePage() {
         transition: "background 0.6s ease",
       }}
     >
+      <button
+        onClick={() => navigate("/hub")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
       {/* Glow orb */}
       <AnimatePresence mode="wait">
         <motion.div key={vibe.id}
