@@ -143,6 +143,17 @@ export default function JournalWorldPicker() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      <button
+        onClick={() => navigate("/journal")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
       {/* Hidden preload triggers */}
       <div style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0, overflow: "hidden" }}>
         {WORLDS.map(w => <img key={w.id} src={w.bgImage} alt="" />)}
