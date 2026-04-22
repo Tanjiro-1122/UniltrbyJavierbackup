@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
 export default function DeleteAccount() {
+  const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
   const [email, setEmail] = useState("");
 
@@ -18,6 +20,17 @@ export default function DeleteAccount() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       padding: "40px 20px",
     }}>
+      <button
+        onClick={() => navigate("/settings")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
       <div style={{ maxWidth: 680, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
