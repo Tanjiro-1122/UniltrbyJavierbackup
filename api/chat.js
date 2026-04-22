@@ -32,15 +32,15 @@ function getModel(isPremium, isPro, isAnnual) {
 // Max tokens by tier
 function getMaxTokens(isPremium, isPro, isAnnual) {
   if (!isPremium && !isPro && !isAnnual) return 250;  // Free — short, snappy replies
-  if (isPro || isAnnual)                return 800;   // Pro/Annual — fuller replies
-  return 600;                                          // Plus — standard
+  if (isPro || isAnnual)                return 650;   // Pro/Annual — full replies (was 800)
+  return 450;                                          // Plus — standard
 }
 
 // Context window (how many past messages to include)
 function getContextWindow(isPremium, isPro, isAnnual) {
-  if (!isPremium && !isPro && !isAnnual) return 4;   // Free — last 4 messages only
-  if (isPro || isAnnual)                return 20;   // Pro/Annual — rich context
-  return 10;                                          // Plus — standard
+  if (!isPremium && !isPro && !isAnnual) return 3;   // Free — last 3 messages only (saves ~100 tokens/msg)
+  if (isPro || isAnnual)                return 12;   // Pro/Annual — rich context (was 20, still plenty)
+  return 8;                                           // Plus — standard (was 10)
 }
 
 // ── Cost estimate (USD) ─────────────────────────────────────────────────────
