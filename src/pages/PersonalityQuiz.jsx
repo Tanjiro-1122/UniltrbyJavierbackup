@@ -96,6 +96,17 @@ export default function PersonalityQuiz() {
   return (
     <AppShell tabs={false} bg="linear-gradient(180deg, #1a0533 0%, #0d0220 100%)">
       <div style={{ flexShrink: 0, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <button
+        onClick={() => navigate("/onboarding")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
         <button onClick={() => navigate('/onboarding/name')}
           style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <ChevronLeft size={18} color="white" />
