@@ -62,6 +62,17 @@ export default function PinSetup() {
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{ background: "linear-gradient(160deg, #060210 0%, #0f0525 60%, #060210 100%)" }}
     >
+      <button
+        onClick={() => navigate("/settings")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
       <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="mb-6">
         <TRIQUETRA />
       </motion.div>
