@@ -337,6 +337,17 @@ export default function JournalEntry() {
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: "linear-gradient(160deg, #0d0520 0%, #1a0a35 60%, #0a1020 100%)" }}>
+      <button
+        onClick={() => navigate("/journal-list")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 pb-3 shrink-0"
