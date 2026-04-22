@@ -99,6 +99,17 @@ export default function JournalList() {
   return (
     <div className="fixed inset-0 flex flex-col"
       style={{ background: "linear-gradient(160deg, #060210 0%, #0f0525 50%, #0a1a10 100%)" }}>
+      <button
+        onClick={() => navigate("/hub")}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          background: "none", border: "none", cursor: "pointer",
+          color: "#888", fontSize: 14, padding: "12px 16px 4px",
+          fontWeight: 500
+        }}
+      >
+        ← Back
+      </button>
 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pb-4 shrink-0"
