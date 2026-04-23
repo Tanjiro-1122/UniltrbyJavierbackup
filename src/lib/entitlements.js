@@ -12,23 +12,24 @@
 
 // ─── Plan constants ───────────────────────────────────────────────────────────
 
-export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
+export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, ultimate_friend: 9999, family: 9999 };
 
-export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: Number.MAX_SAFE_INTEGER, family: Number.MAX_SAFE_INTEGER };
+export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: Number.MAX_SAFE_INTEGER, ultimate_friend: Number.MAX_SAFE_INTEGER, family: Number.MAX_SAFE_INTEGER };
 
 /** Daily photo limit per tier when sending images in chat */
-export const PHOTO_DAILY_LIMITS = { free: 2, plus: 5, pro: 10, annual: 99999, family: 99999 };
+export const PHOTO_DAILY_LIMITS = { free: 2, plus: 5, pro: 10, annual: 99999, ultimate_friend: 99999, family: 99999 };
 
 /** Monthly journal entry limit per tier */
-export const JOURNAL_MONTHLY_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999, family: 99999 };
+export const JOURNAL_MONTHLY_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999, ultimate_friend: 99999, family: 99999 };
 
 /** Human-readable label shown in UI (e.g. badge in Settings header) */
 export const PLAN_LABELS = {
-  free:   "Free",
-  plus:   "Premium (Monthly)",
-  pro:    "Pro",
-  annual: "Annual",
-  family: "Family Unlimited",
+  free:            "Free",
+  plus:            "Premium (Monthly)",
+  pro:             "Pro",
+  annual:          "Annual",
+  ultimate_friend: "Ultimate Friend ⭐",
+  family:          "Family Unlimited",
 };
 
 /** Returns true if the device has an active (non-expired) Family Unlimited unlock. */
@@ -52,6 +53,7 @@ export function isFamilyUnlimited() {
  */
 export function getTier() {
   if (isFamilyUnlimited()) return "family";
+  if (localStorage.getItem("unfiltr_ultimate_friend") === "true") return "ultimate_friend";
   if (
     localStorage.getItem("unfiltr_family_unlock") === "true" ||
     localStorage.getItem("unfiltr_msg_limit_override") === "true"
@@ -81,13 +83,15 @@ export function getPlanLabel() {
  */
 export function refreshEntitlements(profile) {
   if (!profile) return;
-  const isAnnual  = !!(profile.annual_plan);
-  const isPro     = !!(profile.pro_plan);
-  const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual);
+  const isAnnual        = !!(profile.annual_plan);
+  const isPro           = !!(profile.pro_plan);
+  const isUltimateFriend = !!(profile.ultimate_friend);
+  const isPremium       = !!(profile.is_premium || profile.premium || isPro || isAnnual || isUltimateFriend);
 
-  localStorage.setItem("unfiltr_is_premium", String(isPremium));
-  localStorage.setItem("unfiltr_is_pro",     String(isPro));
-  localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
+  localStorage.setItem("unfiltr_is_premium",       String(isPremium));
+  localStorage.setItem("unfiltr_is_pro",           String(isPro));
+  localStorage.setItem("unfiltr_is_annual",        String(isAnnual));
+  localStorage.setItem("unfiltr_ultimate_friend",  String(isUltimateFriend));
 
   // Dispatch a single event so all mounted components can react
   window.dispatchEvent(new Event("unfiltr_auth_updated"));

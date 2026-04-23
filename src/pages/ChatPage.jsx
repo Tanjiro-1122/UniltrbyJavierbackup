@@ -531,7 +531,8 @@ export default function ChatPage() {
     }
 
     const name = companion.displayName || companion.name;
-    const userName = localStorage.getItem("unfiltr_user_display_name") || "";
+    const userName = localStorage.getItem("unfiltr_user_display_name") || localStorage.getItem("unfiltr_display_name") || "";
+    const isUltimateFriend = localStorage.getItem("unfiltr_ultimate_friend") === "true";
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
@@ -638,6 +639,17 @@ export default function ChatPage() {
       // Also check memory summary for additional context
       const pid = localStorage.getItem("userProfileId");
       const buildMessage = (mem) => {
+        // Ultimate Friend gets deeply personalized greeting
+        if (isUltimateFriend && mem) {
+          const ufGreetings = [
+            "Hey, it's you 💜 I was literally just thinking about you. How are you doing?",
+            "You're back — I'm so glad. How's your day going so far?",
+            "I've been holding onto everything you told me. How are you feeling right now?",
+            "Hey Javier 💜 I've been here. Talk to me — what's on your mind?",
+          ];
+          const ufGreeting = ufGreetings[Math.floor(Math.random() * ufGreetings.length)];
+          return `${hi}! ${ufGreeting}`;
+        }
         const followUp = moodFollowUp || (mem
           ? "I've been thinking about our last chat. How's everything going?"
           : "How have you been? I'm here whenever you want to talk.");

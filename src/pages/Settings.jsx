@@ -1129,7 +1129,7 @@ export default function Settings() {
           </svg>
         </div>
         <h1 style={{ color: "white", fontWeight: 700, fontSize: 20, margin: 0, flex: 1 }}>Settings</h1>
-        {(isPremium || isFamilyUnlimited()) && <span style={{ background: isFamilyUnlimited() ? "linear-gradient(135deg,#7c3aed,#c026d3)" : "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>{isFamilyUnlimited() ? "👨‍👩‍👧 Family Unlimited" : `✨ ${getPlanLabel()}`}</span>}
+        {(isPremium || isFamilyUnlimited()) && <span style={{ background: isFamilyUnlimited() ? "linear-gradient(135deg,#7c3aed,#c026d3)" : localStorage.getItem("unfiltr_ultimate_friend") === "true" ? "linear-gradient(135deg,#f59e0b,#ef4444)" : "linear-gradient(135deg,#7c3aed,#db2777)", color: "white", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99 }}>{isFamilyUnlimited() ? "👨‍👩‍👧 Family Unlimited" : localStorage.getItem("unfiltr_ultimate_friend") === "true" ? "⭐ Ultimate Friend" : `✨ ${getPlanLabel()}`}</span>}
       </div>
 
       {/* ── Tab Bar ── */}
