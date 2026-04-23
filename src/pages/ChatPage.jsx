@@ -1698,16 +1698,24 @@ export default function ChatPage() {
                         <path d="M2 0 L18 0 Q2 11 10 22 Z" fill="rgba(35,5,75,0.98)" />
                         <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
-                      <p style={{
-                        color: "rgba(240,230,255,0.95)",
-                        fontSize: 15,
-                        lineHeight: 1.55,
-                        margin: 0,
-                        fontWeight: 500,
-                        letterSpacing: "0.01em",
+                      <div style={{
+                        maxHeight: "38vh",
+                        overflowY: "auto",
+                        WebkitOverflowScrolling: "touch",
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
                       }}>
-                        {lastComp.content}
-                      </p>
+                        <p style={{
+                          color: "rgba(240,230,255,0.95)",
+                          fontSize: 15,
+                          lineHeight: 1.55,
+                          margin: 0,
+                          fontWeight: 500,
+                          letterSpacing: "0.01em",
+                        }}>
+                          {lastComp.content}
+                        </p>
+                      </div>
                       {/* Mood emoji pill */}
                       {companionMood && companionMood !== "neutral" && (
                         <div style={{
