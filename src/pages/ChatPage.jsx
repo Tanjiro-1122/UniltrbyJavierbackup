@@ -1044,9 +1044,9 @@ export default function ChatPage() {
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
           userName:         localStorage.getItem("unfiltr_display_name") || "",
-          appleUserId:      localStorage.getItem("unfiltr_user_id") || "",
+          appleUserId:      localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "",
           companionName:    localStorage.getItem("unfiltr_companion_name") || "",
-          ultimateFriend:   localStorage.getItem("unfiltr_is_annual") === "true",
+          ultimateFriend:   localStorage.getItem("unfiltr_ultimate_friend") === "true" || localStorage.getItem("unfiltr_is_annual") === "true",
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
