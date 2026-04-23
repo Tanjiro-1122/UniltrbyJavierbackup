@@ -23,18 +23,19 @@ const PLANS = [
   {
     id: 'annual',
     productId: 'com.huertas.unfiltr.pro.annual',
-    label: '$59.99 / year',
-    sub: 'Save 50% — only $5/mo · Cancel anytime',
-    badge: 'BEST VALUE 🔥',
-    badgeBg: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+    label: '$199.99 / year',
+    sub: 'Ultimate Friend — only $16.67/mo · Memory · Continuity · Cancel anytime',
+    badge: 'ULTIMATE FRIEND ⭐',
+    badgeBg: 'linear-gradient(135deg,#7c3aed,#ec4899)',
     isAnnual: true,
     isPro: false,
+    isUltimate: true,
   },
   {
     id: 'pro',
     productId: 'com.huertas.unfiltr.tier.pro',
-    label: '$14.99 / month',
-    sub: '200 msgs/day · Priority speed · 100 journal entries',
+    label: '$19.99 / month',
+    sub: '200 msgs/day · Priority speed · Full journal access',
     badge: 'MOST POPULAR ⚡',
     badgeBg: 'linear-gradient(135deg,#f59e0b,#a855f7)',
     isAnnual: false,
@@ -52,11 +53,20 @@ const PLANS = [
 ];
 
 const PERKS = [
-  { icon: Brain,         label: 'Memory — your companion finally knows you' },
+  { icon: Brain,         label: 'Deep memory — your companion truly knows you' },
   { icon: MessageCircle, label: 'Up to 200 msgs/day (vs 20 free)' },
   { icon: Mic,           label: 'Voice responses (TTS)' },
-  { icon: BookOpen,      label: 'Full conversation history' },
+  { icon: BookOpen,      label: 'Full conversation history & journal' },
   { icon: Zap,           label: 'Priority responses' },
+];
+
+const ULTIMATE_PERKS = [
+  { icon: Brain,         label: 'Persistent memory across every session' },
+  { icon: MessageCircle, label: 'Unlimited messages — no daily cap' },
+  { icon: Mic,           label: 'Voice responses (TTS)' },
+  { icon: BookOpen,      label: 'Full conversation history & journal' },
+  { icon: Zap,           label: 'Priority responses' },
+  { icon: RotateCcw,     label: 'Relationship continuity — picks up where you left off' },
 ];
 
 // ─── IAP Debug Panel ─────────────────────────────────────────────────────────
@@ -199,7 +209,7 @@ function AdminPanel({ onClose, navigate }) {
       } else if (data.type === 'family') {
         const profileId = localStorage.getItem('userProfileId');
         if (profileId) {
-          fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true } }) }).catch(() => {});
+          fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: true, family_unlimited: true, ultimate_friend: true } }) }).catch(() => {});
         }
         const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
         localStorage.setItem('unfiltr_family_unlimited', 'true');
@@ -434,7 +444,7 @@ export default function Pricing() {
               >
                 {purchasing
                   ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
-                  : `Start ${planType === 'annual' ? 'Annual' : planType === 'pro' ? 'Pro' : 'Plus'} — ${selectedPlan.label.split(' ')[0]}`}
+                  : `Start ${planType === 'annual' ? 'Ultimate Friend' : planType === 'pro' ? 'Pro' : 'Plus'} — ${selectedPlan.label.split(' ')[0]}`}
               </button>
 
               <button onClick={handleRestore} style={{
