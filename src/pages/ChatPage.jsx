@@ -323,6 +323,7 @@ export default function ChatPage() {
   const particleId             = useRef(0);
   const stateTimeout           = useRef(null);
   const messagesEndRef         = useRef(null);
+  const bubbleScrollRef         = useRef(null);
   const recognitionRef         = useRef(null);
   // audioRef removed — using shared AudioContext via audioUnlock module
   const fileInputRef           = useRef(null);
@@ -739,6 +740,13 @@ export default function ChatPage() {
 
   /* ─── AUTO-SCROLL ─── */
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  /* ─── BUBBLE SCROLL TO BOTTOM when new companion message arrives ─── */
+  useEffect(() => {
+    if (bubbleScrollRef.current) {
+      bubbleScrollRef.current.scrollTop = bubbleScrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   /* ─── AUTO-SAVE chat history on every message update ─── */
   useEffect(() => {
@@ -1698,7 +1706,7 @@ export default function ChatPage() {
                         <path d="M2 0 L18 0 Q2 11 10 22 Z" fill="rgba(35,5,75,0.98)" />
                         <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
-                      <div ref={el => { if (el) el.scrollTop = el.scrollHeight; }} style={{
+                      <div ref={bubbleScrollRef} style={{
                         maxHeight: "55vh",
                         overflowY: "auto",
                         WebkitOverflowScrolling: "touch",
