@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Play, StopCircle, X, Moon, Sun, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, Play, StopCircle, X } from "lucide-react";
 
 // ── Meditation avatar map ─────────────────────────────────────────────────────
 const MEDITATION_AVATARS = {
@@ -19,24 +19,42 @@ const MEDITATION_AVATARS = {
   juan:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/609a3c0d7_juan_meditation.png",
 };
 
-const DEFAULT_AVATAR = MEDITATION_AVATARS.luna;
+// Regular (non-meditation) avatars for the picker thumbnails
+const COMPANION_THUMBS = {
+  luna:   "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/luna_neutral.png",
+  river:  "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/public-files/river_neutral.png",
+  kai:    "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/kai_neutral.png",
+  nova:   "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/nova_neutral.png",
+  ash:    "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/ash_neutral.png",
+  sakura: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/sakura_neutral.png",
+  ryuu:   "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/ryuu_neutral.png",
+  sage:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/public-files/sage_neutral.png",
+  zara:   "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/public-files/zara_neutral.png",
+  echo:   "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/echo_neutral.png",
+  soleil: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/soleil_neutral.png",
+  juan:   "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/juan_neutral.png",
+};
 
-function getCompanionName() {
+const COMPANIONS = ["luna","kai","nova","river","ash","sakura","ryuu","sage","zara","echo","soleil","juan"];
+const DEFAULT_ID = "luna";
+
+// Read the companion id from localStorage — uses same key as ChatPage
+function getSavedCompanionId() {
   try {
-    const profile = localStorage.getItem("unfiltr_profile");
-    if (profile) {
-      const parsed = JSON.parse(profile);
-      const name = (parsed.companion_name || "").toLowerCase().trim();
-      if (name) return name;
+    // Primary: unfiltr_companion JSON object (same as ChatPage)
+    const raw = localStorage.getItem("unfiltr_companion");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.id) return parsed.id.toLowerCase().trim();
     }
-    return (localStorage.getItem("companion_name") || "").toLowerCase().trim();
+    // Fallback: unfiltr_companion_id string
+    const id = localStorage.getItem("unfiltr_companion_id");
+    if (id) return id.toLowerCase().trim();
+    // Fallback: companionId
+    const cid = localStorage.getItem("companionId");
+    if (cid) return cid.toLowerCase().trim();
   } catch {}
-  return "";
-}
-
-function getCompanionAvatar() {
-  const name = getCompanionName();
-  return MEDITATION_AVATARS[name] || DEFAULT_AVATAR;
+  return DEFAULT_ID;
 }
 
 // ── Audio URLs ────────────────────────────────────────────────────────────────
@@ -93,7 +111,6 @@ function makePinkBuf(ctx, secs = 2) {
   return buf;
 }
 
-// ── Audio engine ──────────────────────────────────────────────────────────────
 function createAmbientSound(type, ctx) {
   if (type === "silence") return null;
   const master = ctx.createGain();
@@ -101,53 +118,31 @@ function createAmbientSound(type, ctx) {
   master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
   master.connect(ctx.destination);
 
-  if (type === "rain" || type === "fire" || type === "ocean") {
+  if (["rain","fire","ocean"].includes(type)) {
     const url = AUDIO_URLS[type];
-    let sourceNode = null;
-    let stopped = false;
-    fetch(url)
-      .then(r => r.arrayBuffer())
-      .then(ab => ctx.decodeAudioData(ab))
-      .then(decoded => {
-        if (stopped) return;
-        sourceNode = ctx.createBufferSource();
-        sourceNode.buffer = decoded;
-        sourceNode.loop = true;
-        sourceNode.connect(master);
-        sourceNode.start(0);
-      })
-      .catch(e => console.warn("Audio load failed:", e));
-    return {
-      stop: () => {
-        stopped = true;
-        try {
-          master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-          setTimeout(() => { try { if (sourceNode) sourceNode.stop(); } catch {} try { ctx.close(); } catch {} }, 1600);
-        } catch {}
-      }
-    };
+    let sourceNode = null, stopped = false;
+    fetch(url).then(r=>r.arrayBuffer()).then(ab=>ctx.decodeAudioData(ab)).then(decoded=>{
+      if (stopped) return;
+      sourceNode = ctx.createBufferSource();
+      sourceNode.buffer = decoded; sourceNode.loop = true;
+      sourceNode.connect(master); sourceNode.start(0);
+    }).catch(e=>console.warn("Audio:",e));
+    return { stop: () => { stopped=true; try { master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{if(sourceNode)sourceNode.stop()}catch{}try{ctx.close()}catch{}},1600); }catch{} } };
   }
 
   if (type === "brown") {
-    const buf = makeBrownBuf(ctx, 6);
-    const src = ctx.createBufferSource();
-    src.buffer = buf; src.loop = true;
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = "lowpass"; lpf.frequency.value = 700;
-    src.connect(lpf); lpf.connect(master);
-    src.start();
-    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); } };
+    const buf=makeBrownBuf(ctx,6), src=ctx.createBufferSource();
+    src.buffer=buf; src.loop=true;
+    const lpf=ctx.createBiquadFilter(); lpf.type="lowpass"; lpf.frequency.value=700;
+    src.connect(lpf); lpf.connect(master); src.start();
+    return { stop:()=>{ master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{src.stop();ctx.close()}catch{}},1600); } };
   }
 
   if (type === "pink") {
-    const buf = makePinkBuf(ctx, 4);
-    const src = ctx.createBufferSource();
-    src.buffer = buf; src.loop = true;
-    src.connect(master);
-    src.start();
-    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); } };
+    const buf=makePinkBuf(ctx,4), src=ctx.createBufferSource();
+    src.buffer=buf; src.loop=true; src.connect(master); src.start();
+    return { stop:()=>{ master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{src.stop();ctx.close()}catch{}},1600); } };
   }
-
   return null;
 }
 
@@ -162,28 +157,32 @@ export default function MeditatePage() {
   const [breathPhaseIdx, setBreathPhaseIdx] = useState(0);
   const [breathCount,    setBreathCount]    = useState(0);
   const [loading,        setLoading]        = useState(false);
-  const [avatarUrl,      setAvatarUrl]      = useState(DEFAULT_AVATAR);
-  const [companionName,  setCompanionName]  = useState("");
-  const [optionsOpen,    setOptionsOpen]    = useState(false);
+  const [companionId,    setCompanionId]    = useState(DEFAULT_ID);
+  const [pickerOpen,     setPickerOpen]     = useState(false);
 
   const audioCtxRef = useRef(null);
   const soundRef    = useRef(null);
   const timerRef    = useRef(null);
   const breathRef   = useRef(null);
 
+  // Load companion from localStorage on mount
   useEffect(() => {
-    const url = getCompanionAvatar();
-    const name = getCompanionName();
-    setAvatarUrl(url);
-    setCompanionName(name);
+    const id = getSavedCompanionId();
+    setCompanionId(MEDITATION_AVATARS[id] ? id : DEFAULT_ID);
   }, []);
 
+  const avatarUrl  = MEDITATION_AVATARS[companionId] || MEDITATION_AVATARS[DEFAULT_ID];
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
   const sound      = SOUNDS.find(s => s.id === selectedSound);
 
+  const handlePickCompanion = (id) => {
+    setCompanionId(id);
+    setPickerOpen(false);
+  };
+
   const handleStart = () => {
     setLoading(true);
-    setOptionsOpen(false);
+    setPickerOpen(false);
     try {
       audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       soundRef.current    = createAmbientSound(sound.id, audioCtxRef.current);
@@ -193,9 +192,7 @@ export default function MeditatePage() {
       setLoading(false);
       setPhase("active");
       setTimer(0); setBreathPhaseIdx(0); setBreathCount(0);
-
       timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-
       if (breathwork.pattern.length > 0) {
         let pI = 0, cI = 0;
         breathRef.current = setInterval(() => {
@@ -215,8 +212,7 @@ export default function MeditatePage() {
     clearInterval(breathRef.current);
     try { if (soundRef.current) soundRef.current.stop(); } catch {}
     localStorage.setItem("unfiltr_just_meditated", JSON.stringify({
-      timestamp: Date.now(), duration: timer,
-      sound: sound.label, breathwork: breathwork.label,
+      timestamp: Date.now(), duration: timer, sound: sound.label, breathwork: breathwork.label,
     }));
     setPhase("done");
   };
@@ -238,22 +234,12 @@ export default function MeditatePage() {
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          {/* Companion on done screen */}
-          <motion.div
-            animate={{ y:[0,-8,0] }}
-            transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-            style={{ position:"relative", display:"inline-block", marginBottom:20 }}
-          >
-            <motion.div
-              animate={{ scale:[1,1.3,1], opacity:[0.2,0.5,0.2] }}
-              transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-              style={{ position:"absolute", inset:-30, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
-                pointerEvents:"none" }}
-            />
+          <motion.div animate={{ y:[0,-8,0] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+            style={{ position:"relative", display:"inline-block", marginBottom:20 }}>
+            <motion.div animate={{ scale:[1,1.3,1], opacity:[0.2,0.5,0.2] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+              style={{ position:"absolute", inset:-30, borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)", pointerEvents:"none" }} />
             <img src={avatarUrl} alt="companion" style={{ width:140, height:155, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(168,85,247,0.5))", position:"relative", zIndex:1 }} />
           </motion.div>
-
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
@@ -278,61 +264,28 @@ export default function MeditatePage() {
   if (phase === "active") {
     return (
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"max(52px,env(safe-area-inset-top)) 24px 52px" }}>
-        {/* Timer + sound label */}
         <div style={{ textAlign:"center" }}>
           <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 2px" }}>{sound.emoji} {sound.label} · {breathwork.label}</p>
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
 
-        {/* Big avatar with rings */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
           <div style={{ position:"relative", width:320, height:360, display:"flex", alignItems:"center", justifyContent:"center" }}>
-
-            {/* Outermost radiating glow ring */}
-            <motion.div
-              animate={{ scale:[1, 1.35, 1], opacity:[0.06, 0.2, 0.06] }}
-              transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
-              style={{ position:"absolute", width:310, height:310, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
-                pointerEvents:"none" }}
-            />
-
-            {/* Middle ring */}
-            <motion.div
-              animate={{ scale:[1, 1.22, 1], opacity:[0.1, 0.35, 0.1] }}
-              transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:0.5 }}
-              style={{ position:"absolute", width:260, height:260, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(219,39,119,0.25) 0%, transparent 70%)",
-                pointerEvents:"none" }}
-            />
-
-            {/* Inner glow under avatar */}
-            <motion.div
-              animate={{ scale:[1, 1.12, 1], opacity:[0.2, 0.55, 0.2] }}
-              transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:1 }}
-              style={{ position:"absolute", width:210, height:210, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
-                pointerEvents:"none" }}
-            />
-
-            {/* Avatar — BIG, gentle bounce */}
+            <motion.div animate={{ scale:[1,1.35,1], opacity:[0.06,0.2,0.06] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
+              style={{ position:"absolute", width:310, height:310, borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)", pointerEvents:"none" }} />
+            <motion.div animate={{ scale:[1,1.22,1], opacity:[0.1,0.35,0.1] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:0.5 }}
+              style={{ position:"absolute", width:260, height:260, borderRadius:"50%", background:"radial-gradient(circle, rgba(219,39,119,0.25) 0%, transparent 70%)", pointerEvents:"none" }} />
+            <motion.div animate={{ scale:[1,1.12,1], opacity:[0.2,0.55,0.2] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:1 }}
+              style={{ position:"absolute", width:210, height:210, borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)", pointerEvents:"none" }} />
             <motion.img
               src={avatarUrl}
               alt="companion meditating"
-              animate={{ y:[0, -14, 0] }}
+              animate={{ y:[0,-14,0] }}
               transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
-              style={{
-                width: 290,
-                height: 330,
-                objectFit:"contain",
-                position:"relative",
-                zIndex:2,
-                filter:"drop-shadow(0 0 32px rgba(168,85,247,0.6))"
-              }}
+              style={{ width:290, height:330, objectFit:"contain", position:"relative", zIndex:2, filter:"drop-shadow(0 0 32px rgba(168,85,247,0.6))" }}
             />
           </div>
 
-          {/* Breath phase indicator */}
           {breathwork.pattern.length > 0 && (
             <div style={{ textAlign:"center" }}>
               <p style={{ color:"white", fontWeight:700, fontSize:20, margin:"0 0 4px" }}>{curPhaseName}</p>
@@ -363,71 +316,64 @@ export default function MeditatePage() {
     <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0, position:"relative" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0, position:"relative", zIndex:200 }}>
         <button onClick={() => navigate(-1)} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
 
-        {/* Tappable mini avatar — opens options menu */}
-        <button
-          onClick={() => setOptionsOpen(o => !o)}
-          style={{ background:"none", border:"none", padding:0, cursor:"pointer", position:"relative" }}
-        >
-          <img
-            src={avatarUrl}
-            alt="companion"
-            style={{ width:42, height:42, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(168,85,247,0.5))" }}
-          />
+        {/* Tappable mini avatar — opens companion picker */}
+        <button onClick={() => setPickerOpen(o => !o)}
+          style={{ background:"none", border:"none", padding:4, cursor:"pointer", borderRadius:"50%",
+            outline: pickerOpen ? "2px solid rgba(168,85,247,0.6)" : "none" }}>
+          <img src={avatarUrl} alt="companion" style={{ width:42, height:42, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(168,85,247,0.5))", display:"block" }} />
         </button>
 
-        {/* Dropdown options menu */}
+        {/* Companion picker dropdown */}
         <AnimatePresence>
-          {optionsOpen && (
+          {pickerOpen && (
             <motion.div
-              initial={{ opacity:0, y:-10, scale:0.95 }}
+              initial={{ opacity:0, y:-8, scale:0.95 }}
               animate={{ opacity:1, y:0, scale:1 }}
-              exit={{ opacity:0, y:-10, scale:0.95 }}
-              transition={{ duration:0.18 }}
+              exit={{ opacity:0, y:-8, scale:0.95 }}
+              transition={{ duration:0.15 }}
               style={{
-                position:"absolute", top:"100%", right:16, zIndex:100,
-                background:"rgba(20,10,40,0.97)", border:"1px solid rgba(168,85,247,0.25)",
-                borderRadius:16, padding:"8px 0", minWidth:200,
-                boxShadow:"0 8px 32px rgba(0,0,0,0.6)"
+                position:"absolute", top:"calc(100% + 6px)", right:12, zIndex:300,
+                background:"rgba(18,8,38,0.98)", border:"1px solid rgba(168,85,247,0.3)",
+                borderRadius:20, padding:"14px 12px",
+                boxShadow:"0 12px 40px rgba(0,0,0,0.7)",
+                width: 260,
               }}
             >
-              {/* Close row */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px 4px" }}>
-                <span style={{ color:"rgba(255,255,255,0.4)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em" }}>Options</span>
-                <button onClick={() => setOptionsOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <span style={{ color:"rgba(255,255,255,0.5)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:600 }}>Choose Companion</span>
+                <button onClick={() => setPickerOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
                   <X size={16} color="rgba(255,255,255,0.4)" />
                 </button>
               </div>
 
-              <div style={{ height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
-
-              {/* Menu items */}
-              {[
-                { icon:"🏠", label:"Go to Hub",        action: () => { setOptionsOpen(false); navigate("/hub"); } },
-                { icon:"💬", label:"Chat with " + (companionName ? companionName.charAt(0).toUpperCase() + companionName.slice(1) : "Companion"), action: () => { setOptionsOpen(false); navigate("/chat"); } },
-                { icon:"📔", label:"Open Journal",      action: () => { setOptionsOpen(false); navigate("/journal"); } },
-                { icon:"⚙️", label:"Settings",          action: () => { setOptionsOpen(false); navigate("/settings"); } },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  onClick={item.action}
-                  style={{
-                    width:"100%", display:"flex", alignItems:"center", gap:12,
-                    padding:"12px 16px", background:"none", border:"none",
-                    cursor:"pointer", textAlign:"left",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(168,85,247,0.12)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}
-                >
-                  <span style={{ fontSize:18 }}>{item.icon}</span>
-                  <span style={{ color:"rgba(255,255,255,0.85)", fontSize:14, fontWeight:500 }}>{item.label}</span>
-                </button>
-              ))}
+              {/* Grid of companions */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+                {COMPANIONS.map(id => (
+                  <button key={id} onClick={() => handlePickCompanion(id)}
+                    style={{
+                      background: companionId === id ? "rgba(168,85,247,0.25)" : "rgba(255,255,255,0.04)",
+                      border: companionId === id ? "2px solid #a855f7" : "2px solid transparent",
+                      borderRadius:12, padding:"6px 4px", cursor:"pointer",
+                      display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+                    }}>
+                    <img
+                      src={MEDITATION_AVATARS[id]}
+                      alt={id}
+                      style={{ width:44, height:48, objectFit:"contain", filter: companionId===id ? "drop-shadow(0 0 6px rgba(168,85,247,0.7))" : "none" }}
+                      onError={e => { e.target.style.display="none"; }}
+                    />
+                    <span style={{ color: companionId===id ? "white" : "rgba(255,255,255,0.45)", fontSize:9, fontWeight: companionId===id ? 700 : 500, textTransform:"capitalize" }}>
+                      {id}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -437,23 +383,12 @@ export default function MeditatePage() {
 
         {/* Companion preview */}
         <div style={{ display:"flex", justifyContent:"center", marginBottom:24 }}>
-          <motion.div
-            animate={{ y:[0,-8,0] }}
-            transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-            style={{ position:"relative" }}
-          >
-            <motion.div
-              animate={{ scale:[1,1.2,1], opacity:[0.15,0.45,0.15] }}
-              transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-              style={{ position:"absolute", inset:-24, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
-                pointerEvents:"none" }}
-            />
-            <img
-              src={avatarUrl}
-              alt="companion"
-              style={{ width:120, height:132, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(168,85,247,0.5))", position:"relative", zIndex:1 }}
-            />
+          <motion.div animate={{ y:[0,-8,0] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+            style={{ position:"relative" }}>
+            <motion.div animate={{ scale:[1,1.2,1], opacity:[0.15,0.45,0.15] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+              style={{ position:"absolute", inset:-24, borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)", pointerEvents:"none" }} />
+            <img src={avatarUrl} alt="companion"
+              style={{ width:120, height:132, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(168,85,247,0.5))", position:"relative", zIndex:1 }} />
           </motion.div>
         </div>
 
@@ -489,16 +424,10 @@ export default function MeditatePage() {
           ))}
         </div>
 
-        <motion.button
-          whileTap={{ scale:0.97 }}
-          onClick={handleStart}
-          disabled={loading}
+        <motion.button whileTap={{ scale:0.97 }} onClick={handleStart} disabled={loading}
           style={{ width:"100%", padding:"16px", background: loading ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:16, color:"white", fontWeight:700, fontSize:16, cursor: loading ? "default" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, boxShadow:"0 4px 24px rgba(124,58,237,0.4)", opacity: loading ? 0.7 : 1 }}>
           {loading ? (
-            <>
-              <div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", animation:"spin 0.8s linear infinite" }} />
-              Loading...
-            </>
+            <><div style={{ width:18, height:18, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"white", animation:"spin 0.8s linear infinite" }} />Loading...</>
           ) : (
             <><Play size={18} fill="white" /> Begin Session</>
           )}
