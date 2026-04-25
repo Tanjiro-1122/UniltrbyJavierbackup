@@ -291,23 +291,29 @@ export default function MeditatePage() {
   // ── ACTIVE ────────────────────────────────────────────────────────────────
   if (phase === "active") {
     return (
-      <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"max(52px,env(safe-area-inset-top)) 24px 52px" }}>
+      <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", padding:"max(52px,env(safe-area-inset-top)) 24px 52px", gap:16 }}>
         <div style={{ textAlign:"center" }}>
           <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 2px" }}>{sound.emoji} {sound.label} · {breathwork.label}</p>
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
 
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", width:340, height:380 }}>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16, flex:1, width:"100%", justifyContent:"center" }}>
+          <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", width:"100%", flex:1, maxHeight:"60vh" }}>
             {/* Glow rings */}
             <motion.div animate={{ scale:[1,1.35,1], opacity:[0.06,0.22,0.06] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
-              style={{ position:"absolute", width:"100%", height:"100%", borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 68%)", pointerEvents:"none" }} />
+              style={{ position:"absolute", inset:0, borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 68%)", pointerEvents:"none" }} />
             <motion.div animate={{ scale:[1,1.2,1], opacity:[0.1,0.38,0.1] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:0.5 }}
-              style={{ position:"absolute", width:"80%", height:"80%", borderRadius:"50%", background:"radial-gradient(circle, rgba(219,39,119,0.28) 0%, transparent 68%)", pointerEvents:"none" }} />
+              style={{ position:"absolute", inset:"10%", borderRadius:"50%", background:"radial-gradient(circle, rgba(219,39,119,0.28) 0%, transparent 68%)", pointerEvents:"none" }} />
             <motion.div animate={{ scale:[1,1.1,1], opacity:[0.18,0.55,0.18] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:1 }}
-              style={{ position:"absolute", width:"62%", height:"62%", borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.45) 0%, transparent 68%)", pointerEvents:"none" }} />
-            {/* Avatar — normalized size */}
-            <MeditationAvatar url={avatarUrl} width={340} height={380} />
+              style={{ position:"absolute", inset:"20%", borderRadius:"50%", background:"radial-gradient(circle, rgba(168,85,247,0.45) 0%, transparent 68%)", pointerEvents:"none" }} />
+            {/* Avatar — fills all available space */}
+            <motion.img
+              src={avatarUrl}
+              alt="companion meditating"
+              animate={{ y:[0,-18,0] }}
+              transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
+              style={{ position:"relative", zIndex:2, width:"90%", height:"100%", objectFit:"contain", objectPosition:"center", filter:"drop-shadow(0 0 40px rgba(168,85,247,0.7))" }}
+            />
           </div>
 
           {breathwork.pattern.length > 0 && (
