@@ -362,7 +362,7 @@ export default function HubPage() {
           companionName={companionDisplayName}
           isPremium={isPremium}
           sessionCount={sessionCount}
-          onViewAll={() => {}}
+          onViewAll={() => navigate("/settings", { state: { screen: "memory" } })}
         />
         <MoodTrendGraph
           emotionalTimeline={emotionalTimeline}
