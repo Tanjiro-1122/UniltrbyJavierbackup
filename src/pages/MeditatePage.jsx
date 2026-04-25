@@ -2,25 +2,55 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, Play, StopCircle } from "lucide-react";
-import { COMPANIONS } from "@/components/companionData";
 
-// Real recorded ambient audio — hosted on Base44 CDN
+// ── Meditation avatar map ─────────────────────────────────────────────────────
+const MEDITATION_AVATARS = {
+  luna:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/77af5e6d3_luna_meditation.png",
+  river:  "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/b1dcf6480_river_meditation.png",
+  kai:    "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/94d7a11ba_kai_meditation.png",
+  nova:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/745636f0e_nova_meditation.png",
+  ash:    "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/7057e2cdc_ash_meditation.png",
+  sakura: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/54138a454_sakura_meditation.png",
+  ryuu:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/9f5906b5a_ryuu_meditation.png",
+  sage:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/66be0c212_sage_meditation.png",
+  zara:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/126c7e0ac_zara_meditation.png",
+  echo:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/a937dffb9_echo_meditation.png",
+  soleil: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/5841520c9_soleil_meditation.png",
+  juan:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/609a3c0d7_juan_meditation.png",
+};
+
+const DEFAULT_AVATAR = MEDITATION_AVATARS.luna;
+
+function getCompanionAvatar() {
+  try {
+    // Try reading companion_name from localStorage profile
+    const profile = localStorage.getItem("unfiltr_profile");
+    if (profile) {
+      const parsed = JSON.parse(profile);
+      const name = (parsed.companion_name || "").toLowerCase().trim();
+      if (MEDITATION_AVATARS[name]) return MEDITATION_AVATARS[name];
+    }
+    // Fallback: companion_name stored directly
+    const name = (localStorage.getItem("companion_name") || "").toLowerCase().trim();
+    if (MEDITATION_AVATARS[name]) return MEDITATION_AVATARS[name];
+  } catch {}
+  return DEFAULT_AVATAR;
+}
+
+// ── Audio URLs ────────────────────────────────────────────────────────────────
 const AUDIO_URLS = {
-  // 🌧️ Rain: Mixkit storm page ID 2404 — 1:39 stereo rain+thunder loop, 249kbps
   rain:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
-  // 🔥 Fire: Mixkit fire page ID 1330 — "Campfire crackles", 24s stereo 307kbps loop
   fire:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
-  // 🌊 Ocean: Mixkit beach page ID 1208 — 1:17 stereo beach waves loop, 246kbps
   ocean: "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
 };
 
 const SOUNDS = [
-  { id: "rain",    emoji: "🌧️", label: "Rainy Day",    desc: "Rain + soft thunder" },
-  { id: "fire",    emoji: "🔥", label: "Cabin Fire",    desc: "Warm crackling fireplace" },
-  { id: "ocean",   emoji: "🌊", label: "Beach Waves",   desc: "Ocean shore & seabirds" },
-  { id: "brown",   emoji: "🌫️", label: "Brown Noise",   desc: "Deep & grounding" },
-  { id: "pink",    emoji: "🌸", label: "Pink Noise",    desc: "Best for sleep & anxiety" },
-  { id: "silence", emoji: "🤫", label: "Silence",       desc: "Breath guide only" },
+  { id: "rain",    emoji: "🌧️", label: "Rainy Day",   desc: "Rain + soft thunder" },
+  { id: "fire",    emoji: "🔥", label: "Cabin Fire",   desc: "Warm crackling fireplace" },
+  { id: "ocean",   emoji: "🌊", label: "Beach Waves",  desc: "Ocean shore & seabirds" },
+  { id: "brown",   emoji: "🌫️", label: "Brown Noise",  desc: "Deep & grounding" },
+  { id: "pink",    emoji: "🌸", label: "Pink Noise",   desc: "Best for sleep & anxiety" },
+  { id: "silence", emoji: "🤫", label: "Silence",      desc: "Breath guide only" },
 ];
 
 const BREATHWORK = [
@@ -30,7 +60,7 @@ const BREATHWORK = [
   { id: "none",   label: "Just Ambience", desc: "No breathing guide",             pattern: [],        phases: [] },
 ];
 
-// ── Synthesized noise (brown / pink) ─────────────────────────────────────────
+// ── Noise synthesis ───────────────────────────────────────────────────────────
 function makeBrownBuf(ctx, secs = 4) {
   const buf = ctx.createBuffer(1, ctx.sampleRate * secs, ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -70,12 +100,10 @@ function createAmbientSound(type, ctx) {
   master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
   master.connect(ctx.destination);
 
-  // Real recordings — load via fetch → AudioBuffer → loop
   if (type === "rain" || type === "fire" || type === "ocean") {
     const url = AUDIO_URLS[type];
     let sourceNode = null;
     let stopped = false;
-
     fetch(url)
       .then(r => r.arrayBuffer())
       .then(ab => ctx.decodeAudioData(ab))
@@ -84,28 +112,21 @@ function createAmbientSound(type, ctx) {
         sourceNode = ctx.createBufferSource();
         sourceNode.buffer = decoded;
         sourceNode.loop = true;
-        sourceNode.loopStart = 0;
-        sourceNode.loopEnd = decoded.duration;
         sourceNode.connect(master);
         sourceNode.start(0);
       })
       .catch(e => console.warn("Audio load failed:", e));
-
     return {
       stop: () => {
         stopped = true;
         try {
           master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-          setTimeout(() => {
-            try { if (sourceNode) sourceNode.stop(); } catch {}
-            try { ctx.close(); } catch {}
-          }, 1600);
+          setTimeout(() => { try { if (sourceNode) sourceNode.stop(); } catch {} try { ctx.close(); } catch {} }, 1600);
         } catch {}
       }
     };
   }
 
-  // Synthesized: brown noise
   if (type === "brown") {
     const buf = makeBrownBuf(ctx, 6);
     const src = ctx.createBufferSource();
@@ -114,34 +135,22 @@ function createAmbientSound(type, ctx) {
     lpf.type = "lowpass"; lpf.frequency.value = 700;
     src.connect(lpf); lpf.connect(master);
     src.start();
-    return {
-      stop: () => {
-        master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-        setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600);
-      }
-    };
+    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); } };
   }
 
-  // Synthesized: pink noise
   if (type === "pink") {
     const buf = makePinkBuf(ctx, 4);
     const src = ctx.createBufferSource();
     src.buffer = buf; src.loop = true;
     src.connect(master);
     src.start();
-    return {
-      stop: () => {
-        master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-        setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600);
-      }
-    };
+    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); } };
   }
 
   return null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ── Main component ────────────────────────────────────────────────────────────
 export default function MeditatePage() {
   const navigate = useNavigate();
   const [selectedSound,  setSelectedSound]  = useState("rain");
@@ -152,26 +161,15 @@ export default function MeditatePage() {
   const [breathCount,    setBreathCount]    = useState(0);
   const [breathScale,    setBreathScale]    = useState(1);
   const [loading,        setLoading]        = useState(false);
-  const [intent,         setIntent]         = useState("");
-  const [companionData,  setCompanionData]  = useState(null);
-  const [companionMood,  setCompanionMood]  = useState("neutral");
+  const [avatarUrl,      setAvatarUrl]      = useState(DEFAULT_AVATAR);
+
   const audioCtxRef = useRef(null);
   const soundRef    = useRef(null);
   const timerRef    = useRef(null);
   const breathRef   = useRef(null);
 
-  // Load companion from localStorage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("unfiltr_companion");
-      if (raw) {
-        const c = JSON.parse(raw);
-        const found = COMPANIONS.find(x => x.id === c.id);
-        if (found) setCompanionData(found);
-      }
-      const savedMood = localStorage.getItem("unfiltr_mood") || "neutral";
-      setCompanionMood(savedMood);
-    } catch {}
+    setAvatarUrl(getCompanionAvatar());
   }, []);
 
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
@@ -184,7 +182,6 @@ export default function MeditatePage() {
       soundRef.current    = createAmbientSound(sound.id, audioCtxRef.current);
     } catch(e) { console.warn("Audio init:", e); }
 
-    // Small delay so iOS AudioContext unlocks properly
     setTimeout(() => {
       setLoading(false);
       setPhase("active");
@@ -202,7 +199,7 @@ export default function MeditatePage() {
             setBreathPhaseIdx(pI); setBreathCount(0);
           }
           const pName = breathwork.phases[pI]?.toLowerCase() || "";
-          setBreathScale(pName === "inhale" ? 1.35 : 1);
+          setBreathScale(pName === "inhale" ? 1.08 : 1);
         }, 1000);
       }
     }, 300);
@@ -215,14 +212,7 @@ export default function MeditatePage() {
     localStorage.setItem("unfiltr_just_meditated", JSON.stringify({
       timestamp: Date.now(), duration: timer,
       sound: sound.label, breathwork: breathwork.label,
-      intent: intent.trim() || "",
     }));
-    // Track meditation history
-    try {
-      const existing = JSON.parse(localStorage.getItem("unfiltr_meditation_history") || "[]");
-      existing.unshift({ timestamp: Date.now(), duration: timer, sound: sound.label, breathwork: breathwork.label, intent: intent.trim() || "" });
-      localStorage.setItem("unfiltr_meditation_history", JSON.stringify(existing.slice(0, 50)));
-    } catch {}
     setPhase("done");
   };
 
@@ -239,45 +229,23 @@ export default function MeditatePage() {
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (phase === "done") {
     const mins = Math.floor(timer/60), secs = timer%60;
-    const companionAvatar = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
-    const intentMsg = intent.trim()
-      ? `You came in thinking about "${intent.trim().slice(0,40)}${intent.trim().length > 40 ? "..." : ""}". Take a moment to notice how you feel now.`
-      : "Notice how your mind and body feel different now.";
-    const breathworkMessages = {
-      "478":    "The 4-7-8 technique slows your nervous system beautifully.",
-      "box":    "Box breathing is incredible for grounding yourself.",
-      "simple": "Simple rhythmic breathing — sometimes the gentlest approach is the best.",
-      "none":   "Sometimes just being present with ambient sound is enough.",
-    };
-    const breathMsg = breathworkMessages[breathwork.id] || "Great session.";
     return (
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          {companionAvatar ? (
-            <motion.img src={companionAvatar} alt={companionData?.name}
-              initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}
-              style={{ width:100, height:100, objectFit:"contain", margin:"0 auto 12px", filter:"drop-shadow(0 0 18px rgba(168,85,247,0.55))", display:"block" }} />
-          ) : (
-            <div style={{ fontSize:72, marginBottom:16 }}>🧘</div>
-          )}
+          <img src={avatarUrl} alt="companion" style={{ width:120, height:120, objectFit:"contain", marginBottom:16 }} />
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
           </p>
-          <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 8px", lineHeight:1.5 }}>{breathMsg}</p>
-          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:12, margin:"0 0 28px", lineHeight:1.5 }}>{intentMsg}</p>
+          <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => { navigate("/chat"); }}
+            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-              Chat with {companionData?.name || "my companion"} 💜
+              Choose Something Else ✦
             </motion.button>
-            <button onClick={() => setPhase("setup")}
+            <button onClick={() => navigate(-1)}
               style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"rgba(255,255,255,0.5)", fontWeight:600, fontSize:14, cursor:"pointer" }}>
-              Meditate again
-            </button>
-            <button onClick={() => navigate('/hub')}
-              style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:14, color:"rgba(255,255,255,0.3)", fontWeight:500, fontSize:14, cursor:"pointer" }}>
               ← Go Back
             </button>
           </div>
@@ -288,73 +256,70 @@ export default function MeditatePage() {
 
   // ── ACTIVE ────────────────────────────────────────────────────────────────
   if (phase === "active") {
-    const companionAvatar = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
     return (
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"max(52px,env(safe-area-inset-top)) 24px 52px" }}>
+        {/* Timer + sound label */}
         <div style={{ textAlign:"center" }}>
           <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 2px" }}>{sound.emoji} {sound.label} · {breathwork.label}</p>
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:24 }}>
-          {/* Companion avatar floating above orb */}
-          {companionAvatar && (
-            <motion.img src={companionAvatar} alt={companionData?.name}
-              animate={{ y: [0, -6, 0] }} transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
-              style={{ width:64, height:64, objectFit:"contain", filter:"drop-shadow(0 0 14px rgba(168,85,247,0.5))", marginBottom:-8 }} />
-          )}
-          {/* Outer pulse rings */}
-          <div style={{ position:"relative", width:220, height:220, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {/* Ring 3 — outermost ambient pulse */}
+
+        {/* Avatar section */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+          <div style={{ position:"relative", width:240, height:260, display:"flex", alignItems:"center", justifyContent:"center" }}>
+
+            {/* Outermost radiating glow ring */}
             <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.15, 1] : [1,1.22,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur * 1.1, ease:"easeInOut", repeat:0 }
-                : { repeat:Infinity, duration:4.5, ease:"easeInOut" }
-              }
-              style={{ position:"absolute", width:210, height:210, borderRadius:"50%",
-                border:"1px solid rgba(168,85,247,0.12)", pointerEvents:"none" }}
+              animate={{ scale:[1, 1.35, 1], opacity:[0.08, 0.18, 0.08] }}
+              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut" }}
+              style={{ position:"absolute", width:230, height:230, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.25) 0%, transparent 70%)",
+                pointerEvents:"none" }}
             />
-            {/* Ring 2 — middle ring */}
+
+            {/* Middle ring */}
             <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.08, 1] : [1,1.13,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur, ease:"easeInOut", repeat:0 }
-                : { repeat:Infinity, duration:4, ease:"easeInOut", delay:0.3 }
-              }
-              style={{ position:"absolute", width:196, height:196, borderRadius:"50%",
-                border:"1.5px solid rgba(168,85,247,0.22)", pointerEvents:"none" }}
+              animate={{ scale:[1, 1.2, 1], opacity:[0.15, 0.3, 0.15] }}
+              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut", delay:0.4 }}
+              style={{ position:"absolute", width:195, height:195, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(219,39,119,0.2) 0%, transparent 70%)",
+                pointerEvents:"none" }}
             />
-            {/* Core breathing orb */}
+
+            {/* Inner soft glow under avatar */}
             <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? breathScale : [1,1.1,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur, ease: curPhaseName.toLowerCase()==="inhale" ? "easeIn" : "easeOut" }
-                : { repeat:Infinity, duration:4, ease:"easeInOut" }
-              }
-              style={{ width:180, height:180, borderRadius:"50%",
-                background:"radial-gradient(circle at 40% 35%, rgba(168,85,247,0.65) 0%, rgba(219,39,119,0.3) 50%, rgba(6,2,15,0.2) 100%)",
-                boxShadow:"0 0 60px rgba(168,85,247,0.45), 0 0 120px rgba(168,85,247,0.18)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                position:"relative", zIndex:2,
-              }}
-            >
-              {breathwork.pattern.length > 0 && (
-                <div style={{ textAlign:"center" }}>
-                  <p style={{ color:"white", fontWeight:700, fontSize:18, margin:"0 0 2px" }}>{curPhaseName}</p>
-                  <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, margin:0 }}>{curPhaseDur - breathCount}s</p>
-                </div>
-              )}
-            </motion.div>
+              animate={{ scale:[1, 1.1, 1], opacity:[0.25, 0.5, 0.25] }}
+              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut", delay:0.8 }}
+              style={{ position:"absolute", width:160, height:160, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+                pointerEvents:"none" }}
+            />
+
+            {/* Avatar — gentle bounce */}
+            <motion.img
+              src={avatarUrl}
+              alt="companion meditating"
+              animate={{ y:[0, -10, 0] }}
+              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut" }}
+              style={{ width:200, height:220, objectFit:"contain", position:"relative", zIndex:2, filter:"drop-shadow(0 0 24px rgba(168,85,247,0.5))" }}
+            />
           </div>
+
+          {/* Breath phase indicator */}
           {breathwork.pattern.length > 0 && (
-            <div style={{ display:"flex", gap:8 }}>
-              {breathwork.phases.map((_,i) => (
-                <div key={i} style={{ width:i===breathPhaseIdx?24:8, height:8, borderRadius:4,
-                  background:i===breathPhaseIdx?"#a855f7":"rgba(255,255,255,0.1)", transition:"all 0.3s" }} />
-              ))}
+            <div style={{ textAlign:"center" }}>
+              <p style={{ color:"white", fontWeight:700, fontSize:20, margin:"0 0 4px" }}>{curPhaseName}</p>
+              <p style={{ color:"rgba(255,255,255,0.4)", fontSize:14, margin:"0 0 12px" }}>{curPhaseDur - breathCount}s</p>
+              <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+                {breathwork.phases.map((_,i) => (
+                  <div key={i} style={{ width:i===breathPhaseIdx?24:8, height:8, borderRadius:4,
+                    background:i===breathPhaseIdx?"#a855f7":"rgba(255,255,255,0.1)", transition:"all 0.3s" }} />
+                ))}
+              </div>
             </div>
           )}
         </div>
+
         <motion.button whileTap={{ scale:0.95 }} onClick={handleStop}
           style={{ display:"flex", alignItems:"center", gap:8, padding:"14px 32px",
             background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)",
@@ -367,34 +332,35 @@ export default function MeditatePage() {
   }
 
   // ── SETUP ─────────────────────────────────────────────────────────────────
-  const companionAvatarSetup = companionData?.poses?.[companionMood] || companionData?.poses?.neutral || companionData?.avatar;
   return (
     <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-        <button onClick={() => navigate('/hub')} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+        <button onClick={() => navigate(-1)} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        {companionAvatarSetup ? (
-          <motion.img src={companionAvatarSetup} alt={companionData?.name}
-            animate={{ y:[0,-4,0] }} transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-            style={{ width:36, height:36, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(168,85,247,0.5))" }} />
-        ) : (
-          <span style={{ fontSize:24 }}>🧘</span>
-        )}
+        {/* Mini companion preview in header */}
+        <img src={avatarUrl} alt="companion" style={{ width:36, height:36, objectFit:"contain" }} />
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
-        {/* Intent capture */}
-        <div style={{ marginBottom:24 }}>
-          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>What's on your mind?</p>
-          <textarea
-            value={intent}
-            onChange={e => setIntent(e.target.value)}
-            placeholder="Optional: share what you're hoping to release or find in this session..."
-            maxLength={120}
-            style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, color:"rgba(255,255,255,0.8)", fontSize:13, lineHeight:1.5, padding:"12px 14px", resize:"none", outline:"none", boxSizing:"border-box", minHeight:68, fontFamily:"inherit" }}
-          />
+
+        {/* Companion preview above sounds */}
+        <div style={{ display:"flex", justifyContent:"center", marginBottom:24 }}>
+          <motion.div
+            animate={{ y:[0,-6,0] }}
+            transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+            style={{ position:"relative" }}
+          >
+            <motion.div
+              animate={{ scale:[1,1.15,1], opacity:[0.2,0.45,0.2] }}
+              transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+              style={{ position:"absolute", inset:-20, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                pointerEvents:"none" }}
+            />
+            <img src={avatarUrl} alt="companion" style={{ width:100, height:110, objectFit:"contain", filter:"drop-shadow(0 0 16px rgba(168,85,247,0.4))", position:"relative", zIndex:1 }} />
+          </motion.div>
         </div>
 
         <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ambient Sound</p>
