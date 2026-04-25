@@ -1698,8 +1698,8 @@ export default function ChatPage() {
                         <path d="M2 0 L18 0 Q2 11 10 22 Z" fill="rgba(35,5,75,0.98)" />
                         <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
-                      <div style={{
-                        maxHeight: "38vh",
+                      <div ref={el => { if (el) el.scrollTop = el.scrollHeight; }} style={{
+                        maxHeight: "55vh",
                         overflowY: "auto",
                         WebkitOverflowScrolling: "touch",
                         scrollbarWidth: "none",
