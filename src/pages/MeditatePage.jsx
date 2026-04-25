@@ -365,7 +365,10 @@ export default function MeditatePage() {
               transition={{ duration:0.15 }}
               style={{ position:"absolute", top:"calc(100% + 6px)", right:12, zIndex:300, background:"rgba(18,8,38,0.98)", border:"1px solid rgba(168,85,247,0.3)", borderRadius:20, padding:"14px 12px", boxShadow:"0 12px 40px rgba(0,0,0,0.7)", width:272 }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                <span style={{ color:"rgba(255,255,255,0.5)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:600 }}>Choose Companion</span>
+                <div>
+                  <span style={{ color:"rgba(255,255,255,0.5)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:600 }}>Choose Companion</span>
+                  <p style={{ color:"rgba(168,85,247,0.6)", fontSize:10, margin:"2px 0 0", fontStyle:"italic" }}>For this session only</p>
+                </div>
                 <button onClick={() => setPickerOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
                   <X size={16} color="rgba(255,255,255,0.4)" />
                 </button>
