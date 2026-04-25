@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ChevronRight, Sparkles, Check, Trash2, PauseCircle,
@@ -116,7 +116,8 @@ function NicknameField() {
 // ── Main ────────────────────────────────────────────────────────────────────
 export default function Settings() {
   const navigate = useNavigate();
-  const [screen, setScreen] = useState(null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
+  const location  = useLocation();
+  const [screen, setScreen] = useState(location?.state?.screen || null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
   const [userProfile, setUserProfile]         = useState(null);
   const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
