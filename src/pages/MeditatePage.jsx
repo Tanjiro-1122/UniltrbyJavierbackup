@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronLeft, Play, StopCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, Play, StopCircle, X, Moon, Sun, Volume2, VolumeX } from "lucide-react";
 
 // ── Meditation avatar map ─────────────────────────────────────────────────────
 const MEDITATION_AVATARS = {
@@ -21,20 +21,22 @@ const MEDITATION_AVATARS = {
 
 const DEFAULT_AVATAR = MEDITATION_AVATARS.luna;
 
-function getCompanionAvatar() {
+function getCompanionName() {
   try {
-    // Try reading companion_name from localStorage profile
     const profile = localStorage.getItem("unfiltr_profile");
     if (profile) {
       const parsed = JSON.parse(profile);
       const name = (parsed.companion_name || "").toLowerCase().trim();
-      if (MEDITATION_AVATARS[name]) return MEDITATION_AVATARS[name];
+      if (name) return name;
     }
-    // Fallback: companion_name stored directly
-    const name = (localStorage.getItem("companion_name") || "").toLowerCase().trim();
-    if (MEDITATION_AVATARS[name]) return MEDITATION_AVATARS[name];
+    return (localStorage.getItem("companion_name") || "").toLowerCase().trim();
   } catch {}
-  return DEFAULT_AVATAR;
+  return "";
+}
+
+function getCompanionAvatar() {
+  const name = getCompanionName();
+  return MEDITATION_AVATARS[name] || DEFAULT_AVATAR;
 }
 
 // ── Audio URLs ────────────────────────────────────────────────────────────────
@@ -94,7 +96,6 @@ function makePinkBuf(ctx, secs = 2) {
 // ── Audio engine ──────────────────────────────────────────────────────────────
 function createAmbientSound(type, ctx) {
   if (type === "silence") return null;
-
   const master = ctx.createGain();
   master.gain.setValueAtTime(0, ctx.currentTime);
   master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
@@ -150,7 +151,8 @@ function createAmbientSound(type, ctx) {
   return null;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function MeditatePage() {
   const navigate = useNavigate();
   const [selectedSound,  setSelectedSound]  = useState("rain");
@@ -159,9 +161,10 @@ export default function MeditatePage() {
   const [timer,          setTimer]          = useState(0);
   const [breathPhaseIdx, setBreathPhaseIdx] = useState(0);
   const [breathCount,    setBreathCount]    = useState(0);
-  const [breathScale,    setBreathScale]    = useState(1);
   const [loading,        setLoading]        = useState(false);
   const [avatarUrl,      setAvatarUrl]      = useState(DEFAULT_AVATAR);
+  const [companionName,  setCompanionName]  = useState("");
+  const [optionsOpen,    setOptionsOpen]    = useState(false);
 
   const audioCtxRef = useRef(null);
   const soundRef    = useRef(null);
@@ -169,7 +172,10 @@ export default function MeditatePage() {
   const breathRef   = useRef(null);
 
   useEffect(() => {
-    setAvatarUrl(getCompanionAvatar());
+    const url = getCompanionAvatar();
+    const name = getCompanionName();
+    setAvatarUrl(url);
+    setCompanionName(name);
   }, []);
 
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
@@ -177,6 +183,7 @@ export default function MeditatePage() {
 
   const handleStart = () => {
     setLoading(true);
+    setOptionsOpen(false);
     try {
       audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       soundRef.current    = createAmbientSound(sound.id, audioCtxRef.current);
@@ -185,7 +192,7 @@ export default function MeditatePage() {
     setTimeout(() => {
       setLoading(false);
       setPhase("active");
-      setTimer(0); setBreathPhaseIdx(0); setBreathCount(0); setBreathScale(1);
+      setTimer(0); setBreathPhaseIdx(0); setBreathCount(0);
 
       timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
 
@@ -198,8 +205,6 @@ export default function MeditatePage() {
             cI = 0; pI = (pI + 1) % breathwork.pattern.length;
             setBreathPhaseIdx(pI); setBreathCount(0);
           }
-          const pName = breathwork.phases[pI]?.toLowerCase() || "";
-          setBreathScale(pName === "inhale" ? 1.08 : 1);
         }, 1000);
       }
     }, 300);
@@ -233,7 +238,22 @@ export default function MeditatePage() {
       <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 28px" }}>
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
-          <img src={avatarUrl} alt="companion" style={{ width:120, height:120, objectFit:"contain", marginBottom:16 }} />
+          {/* Companion on done screen */}
+          <motion.div
+            animate={{ y:[0,-8,0] }}
+            transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+            style={{ position:"relative", display:"inline-block", marginBottom:20 }}
+          >
+            <motion.div
+              animate={{ scale:[1,1.3,1], opacity:[0.2,0.5,0.2] }}
+              transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
+              style={{ position:"absolute", inset:-30, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
+                pointerEvents:"none" }}
+            />
+            <img src={avatarUrl} alt="companion" style={{ width:140, height:155, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(168,85,247,0.5))", position:"relative", zIndex:1 }} />
+          </motion.div>
+
           <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
             {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
@@ -264,44 +284,51 @@ export default function MeditatePage() {
           <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
         </div>
 
-        {/* Avatar section */}
+        {/* Big avatar with rings */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <div style={{ position:"relative", width:240, height:260, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ position:"relative", width:320, height:360, display:"flex", alignItems:"center", justifyContent:"center" }}>
 
             {/* Outermost radiating glow ring */}
             <motion.div
-              animate={{ scale:[1, 1.35, 1], opacity:[0.08, 0.18, 0.08] }}
-              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut" }}
-              style={{ position:"absolute", width:230, height:230, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.25) 0%, transparent 70%)",
+              animate={{ scale:[1, 1.35, 1], opacity:[0.06, 0.2, 0.06] }}
+              transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
+              style={{ position:"absolute", width:310, height:310, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)",
                 pointerEvents:"none" }}
             />
 
             {/* Middle ring */}
             <motion.div
-              animate={{ scale:[1, 1.2, 1], opacity:[0.15, 0.3, 0.15] }}
-              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut", delay:0.4 }}
-              style={{ position:"absolute", width:195, height:195, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(219,39,119,0.2) 0%, transparent 70%)",
+              animate={{ scale:[1, 1.22, 1], opacity:[0.1, 0.35, 0.1] }}
+              transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:0.5 }}
+              style={{ position:"absolute", width:260, height:260, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(219,39,119,0.25) 0%, transparent 70%)",
                 pointerEvents:"none" }}
             />
 
-            {/* Inner soft glow under avatar */}
+            {/* Inner glow under avatar */}
             <motion.div
-              animate={{ scale:[1, 1.1, 1], opacity:[0.25, 0.5, 0.25] }}
-              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut", delay:0.8 }}
-              style={{ position:"absolute", width:160, height:160, borderRadius:"50%",
-                background:"radial-gradient(circle, rgba(168,85,247,0.35) 0%, transparent 70%)",
+              animate={{ scale:[1, 1.12, 1], opacity:[0.2, 0.55, 0.2] }}
+              transition={{ repeat:Infinity, duration:4, ease:"easeInOut", delay:1 }}
+              style={{ position:"absolute", width:210, height:210, borderRadius:"50%",
+                background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
                 pointerEvents:"none" }}
             />
 
-            {/* Avatar — gentle bounce */}
+            {/* Avatar — BIG, gentle bounce */}
             <motion.img
               src={avatarUrl}
               alt="companion meditating"
-              animate={{ y:[0, -10, 0] }}
-              transition={{ repeat:Infinity, duration:3.5, ease:"easeInOut" }}
-              style={{ width:200, height:220, objectFit:"contain", position:"relative", zIndex:2, filter:"drop-shadow(0 0 24px rgba(168,85,247,0.5))" }}
+              animate={{ y:[0, -14, 0] }}
+              transition={{ repeat:Infinity, duration:4, ease:"easeInOut" }}
+              style={{
+                width: 290,
+                height: 330,
+                objectFit:"contain",
+                position:"relative",
+                zIndex:2,
+                filter:"drop-shadow(0 0 32px rgba(168,85,247,0.6))"
+              }}
             />
           </div>
 
@@ -334,32 +361,99 @@ export default function MeditatePage() {
   // ── SETUP ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", overflow:"hidden" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0, position:"relative" }}>
         <button onClick={() => navigate(-1)} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
           <ChevronLeft size={20} color="white" />
         </button>
         <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        {/* Mini companion preview in header */}
-        <img src={avatarUrl} alt="companion" style={{ width:36, height:36, objectFit:"contain" }} />
+
+        {/* Tappable mini avatar — opens options menu */}
+        <button
+          onClick={() => setOptionsOpen(o => !o)}
+          style={{ background:"none", border:"none", padding:0, cursor:"pointer", position:"relative" }}
+        >
+          <img
+            src={avatarUrl}
+            alt="companion"
+            style={{ width:42, height:42, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(168,85,247,0.5))" }}
+          />
+        </button>
+
+        {/* Dropdown options menu */}
+        <AnimatePresence>
+          {optionsOpen && (
+            <motion.div
+              initial={{ opacity:0, y:-10, scale:0.95 }}
+              animate={{ opacity:1, y:0, scale:1 }}
+              exit={{ opacity:0, y:-10, scale:0.95 }}
+              transition={{ duration:0.18 }}
+              style={{
+                position:"absolute", top:"100%", right:16, zIndex:100,
+                background:"rgba(20,10,40,0.97)", border:"1px solid rgba(168,85,247,0.25)",
+                borderRadius:16, padding:"8px 0", minWidth:200,
+                boxShadow:"0 8px 32px rgba(0,0,0,0.6)"
+              }}
+            >
+              {/* Close row */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px 4px" }}>
+                <span style={{ color:"rgba(255,255,255,0.4)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em" }}>Options</span>
+                <button onClick={() => setOptionsOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
+                  <X size={16} color="rgba(255,255,255,0.4)" />
+                </button>
+              </div>
+
+              <div style={{ height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+
+              {/* Menu items */}
+              {[
+                { icon:"🏠", label:"Go to Hub",        action: () => { setOptionsOpen(false); navigate("/hub"); } },
+                { icon:"💬", label:"Chat with " + (companionName ? companionName.charAt(0).toUpperCase() + companionName.slice(1) : "Companion"), action: () => { setOptionsOpen(false); navigate("/chat"); } },
+                { icon:"📔", label:"Open Journal",      action: () => { setOptionsOpen(false); navigate("/journal"); } },
+                { icon:"⚙️", label:"Settings",          action: () => { setOptionsOpen(false); navigate("/settings"); } },
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={item.action}
+                  style={{
+                    width:"100%", display:"flex", alignItems:"center", gap:12,
+                    padding:"12px 16px", background:"none", border:"none",
+                    cursor:"pointer", textAlign:"left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(168,85,247,0.12)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <span style={{ fontSize:18 }}>{item.icon}</span>
+                  <span style={{ color:"rgba(255,255,255,0.85)", fontSize:14, fontWeight:500 }}>{item.label}</span>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
 
-        {/* Companion preview above sounds */}
+        {/* Companion preview */}
         <div style={{ display:"flex", justifyContent:"center", marginBottom:24 }}>
           <motion.div
-            animate={{ y:[0,-6,0] }}
+            animate={{ y:[0,-8,0] }}
             transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
             style={{ position:"relative" }}
           >
             <motion.div
-              animate={{ scale:[1,1.15,1], opacity:[0.2,0.45,0.2] }}
+              animate={{ scale:[1,1.2,1], opacity:[0.15,0.45,0.15] }}
               transition={{ repeat:Infinity, duration:3, ease:"easeInOut" }}
-              style={{ position:"absolute", inset:-20, borderRadius:"50%",
+              style={{ position:"absolute", inset:-24, borderRadius:"50%",
                 background:"radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)",
                 pointerEvents:"none" }}
             />
-            <img src={avatarUrl} alt="companion" style={{ width:100, height:110, objectFit:"contain", filter:"drop-shadow(0 0 16px rgba(168,85,247,0.4))", position:"relative", zIndex:1 }} />
+            <img
+              src={avatarUrl}
+              alt="companion"
+              style={{ width:120, height:132, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(168,85,247,0.5))", position:"relative", zIndex:1 }}
+            />
           </motion.div>
         </div>
 
