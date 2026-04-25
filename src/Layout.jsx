@@ -140,7 +140,18 @@ export default function Layout({ children }) {
 
   return (
     <Suspense fallback={<FullScreenLoader />}>
-      {children}
+      {/* Tablet/desktop centering — keeps the app phone-width on larger screens */}
+      <div style={{
+        maxWidth: 480,
+        width: '100%',
+        height: '100dvh',
+        margin: '0 auto',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#06020f',
+      }}>
+        {children}
+      </div>
     </Suspense>
   );
 }
