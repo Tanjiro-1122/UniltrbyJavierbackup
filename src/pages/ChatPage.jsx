@@ -1707,7 +1707,7 @@ export default function ChatPage() {
                         <path d="M2 0 Q2 11 10 22" stroke="rgba(196,180,252,0.3)" strokeWidth="1.5" fill="none" />
                       </svg>
                       <div ref={bubbleScrollRef} style={{
-                        maxHeight: "42vh",
+                        height: "42vh",
                         overflowY: "auto",
                         WebkitOverflowScrolling: "touch",
                         scrollbarWidth: "none",
