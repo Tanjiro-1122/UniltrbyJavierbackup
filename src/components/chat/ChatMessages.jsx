@@ -253,6 +253,9 @@ export default function ChatMessages({
                     color: "white",
                     letterSpacing: "0.01em",
                     transition: "box-shadow 0.3s ease",
+                    maxHeight: "42vh",
+                    overflowY: "auto",
+                    WebkitOverflowScrolling: "touch",
 
                     /* ── User bubble: rich glowing gem ── */
                     ...(isUser ? {
