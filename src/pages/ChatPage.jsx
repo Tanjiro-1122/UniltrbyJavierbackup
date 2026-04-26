@@ -1629,7 +1629,6 @@ export default function ChatPage() {
               flexDirection: "column",
               justifyContent: "flex-end",
               alignItems: "flex-start",
-              pointerEvents: "none",
             }}>
               {(() => {
                 const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
@@ -1712,6 +1711,7 @@ export default function ChatPage() {
                         WebkitOverflowScrolling: "touch",
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
+                        pointerEvents: "auto",
                       }}>
                         <p style={{
                           color: "rgba(240,230,255,0.95)",
