@@ -47,17 +47,7 @@ function StatCard({ icon, label, value, sub, grad = GRAD_PURPLE }) {
       backdropFilter: "blur(16px)",
       display: "flex", flexDirection: "column", gap: 6,
     }}>
-      <button
-        onClick={() => navigate("/hub")}
-        style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "none", border: "none", cursor: "pointer",
-          color: "#888", fontSize: 14, padding: "12px 16px 4px",
-          fontWeight: 500
-        }}
-      >
-        ← Back
-      </button>
+
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:28, height:28, borderRadius:8, background:grad, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:`0 2px 12px ${hexToGlow(grad, 0.5)}` }}>
           {icon}
