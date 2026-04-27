@@ -47,13 +47,15 @@ function getSavedCompanionId() {
 const AUDIO_URLS = {
   rain:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
   fire:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
-  ocean: "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
+  ocean:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
+  forest: "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/bc6b2525f_forest_meditation.mp3",
 };
 
 const SOUNDS = [
   { id: "rain",    emoji: "🌧️", label: "Rainy Day",   desc: "Rain + soft thunder" },
   { id: "fire",    emoji: "🔥", label: "Cabin Fire",   desc: "Warm crackling fireplace" },
   { id: "ocean",   emoji: "🌊", label: "Beach Waves",  desc: "Ocean shore & seabirds" },
+  { id: "forest",  emoji: "🌲", label: "Deep Forest",  desc: "Birds & rustling trees" },
   { id: "brown",   emoji: "🌫️", label: "Brown Noise",  desc: "Deep & grounding" },
   { id: "pink",    emoji: "🌸", label: "Pink Noise",   desc: "Best for sleep & anxiety" },
   { id: "silence", emoji: "🤫", label: "Silence",      desc: "Breath guide only" },
@@ -97,7 +99,7 @@ function createAmbientSound(type, ctx) {
   master.gain.setValueAtTime(0, ctx.currentTime);
   master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
   master.connect(ctx.destination);
-  if (["rain","fire","ocean"].includes(type)) {
+  if (["rain","fire","ocean","forest"].includes(type)) {
     const url = AUDIO_URLS[type]; let sourceNode = null, stopped = false;
     fetch(url).then(r=>r.arrayBuffer()).then(ab=>ctx.decodeAudioData(ab)).then(decoded=>{
       if (stopped) return;
