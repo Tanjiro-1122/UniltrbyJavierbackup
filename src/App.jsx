@@ -1,3 +1,4 @@
+import { hasPin } from "@/lib/pinHash";
 import React from "react";
 // build: 2026-04-08-2054
 import { Toaster } from "@/components/ui/toaster"
@@ -74,7 +75,7 @@ const HIDE_TABS_ON = [
 const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
   "/TermsOfUse", "/DeleteAccount", "/support", "/Pricing", "/onboarding",
-  "/how-it-works",
+  "/how-it-works", "/pin-gate",
 ];
 
 // Admin routes bypass ALL auth/onboarding/age-gate redirects.
@@ -238,6 +239,21 @@ const AuthenticatedApp = ({ splashDone }) => {
       navigate("/age-verification", { replace: true });
     }
   }, [splashDone, location.pathname]);
+
+  // Step 1.5: PIN gate — fires after age check, before anything else
+  useEffect(() => {
+    if (!splashDone) return;
+    if (isPublicPath || isAdminPath) return;
+    const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
+    if (!ageVerified) return;
+    const onboardingDone = !!localStorage.getItem("unfiltr_onboarding_complete");
+    if (!onboardingDone) return; // don't pin-gate new users
+    const pinVerified = !!sessionStorage.getItem("pin_verified");
+    if (!pinVerified && hasPin()) {
+      navigate("/pin-gate?dest=app", { replace: true });
+    }
+  }, [splashDone, location.pathname]);
+
 
   // Step 2: Route based on auth + onboarding state
   useEffect(() => {

@@ -10,6 +10,11 @@ export default function PinGate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dest = searchParams.get("dest") || "chat";
+  const getDestPath = (d) => {
+    if (d === "journal") return "/journal-enter";
+    if (d === "app") return "/hub";
+    return "/chat-enter";
+  };
   const [pin, setPin]         = useState("");
   const [confirm, setConfirm] = useState("");
   const [stage, setStage]     = useState(hasPin() ? "verify" : "create");
@@ -17,7 +22,7 @@ export default function PinGate() {
   // PIN gate: if PIN exists show verify screen, otherwise show create screen
 
   const handleSkip = () => {
-    navigate(dest === "journal" ? "/journal-enter" : "/chat-enter");
+    navigate(getDestPath(dest));
   };
 
   const handleDigit = async (d) => {
@@ -28,7 +33,8 @@ export default function PinGate() {
       if (next.length === 4) {
         const isMatch = await checkPin(next);
         if (isMatch) {
-          navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
+          sessionStorage.setItem("pin_verified", "1");
+          navigate(getDestPath(dest), { replace: true });
         } else {
           setPin(""); // wrong PIN — reset
         }
@@ -44,7 +50,8 @@ export default function PinGate() {
       if (next.length === 4) {
         if (next === pin) {
           await storePin(pin);
-          navigate(dest === "journal" ? "/journal-enter" : "/chat-enter", { replace: true });
+          sessionStorage.setItem("pin_verified", "1");
+          navigate(getDestPath(dest), { replace: true });
         } else {
           setConfirm("");
         }
@@ -72,7 +79,7 @@ export default function PinGate() {
     }}>
 
       {/* Close button */}
-      <button onClick={() => navigate(dest === "journal" ? "/journal-enter" : "/chat-enter")} style={{
+      <button onClick={() => navigate(getDestPath(dest))} style={{
         position: "absolute", top: "max(1.5rem,env(safe-area-inset-top))", left: 20,
         background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
         borderRadius: "50%", width: 36, height: 36, color: "rgba(255,255,255,0.5)",
