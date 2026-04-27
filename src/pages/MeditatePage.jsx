@@ -59,7 +59,7 @@ const SOUNDS = [
   { id: "ocean",   emoji: "🌊", label: "Beach Waves",  desc: "Ocean shore & seabirds" },
   { id: "forest",      emoji: "🌲", label: "Deep Forest",   desc: "Birds & rustling trees" },
   { id: "earlymorning", emoji: "🌅", label: "Early Morning", desc: "Birds chirping at dawn" },
-  { id: "lakeside",     emoji: "🪵", label: "Lakeside Dock",  desc: "Gentle water & dock ambience" },
+  { id: "lakeside",     emoji: "🐠", label: "Aquarium",      desc: "Gentle water & bubbling fish tank" },
   { id: "brown",   emoji: "🌫️", label: "Brown Noise",  desc: "Deep & grounding" },
   { id: "pink",    emoji: "🌸", label: "Pink Noise",   desc: "Best for sleep & anxiety" },
   { id: "silence", emoji: "🤫", label: "Silence",      desc: "Breath guide only" },
