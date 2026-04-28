@@ -240,9 +240,10 @@ const AuthenticatedApp = ({ splashDone }) => {
     }
   }, [splashDone, location.pathname]);
 
-  // Step 1.5: PIN gate — fires after age check, before anything else
+  // Step 1.5: PIN gate — fires ONCE after splash, never again this session
   useEffect(() => {
     if (!splashDone) return;
+    if (location.pathname === "/pin-gate") return; // already there
     if (isPublicPath || isAdminPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) return;
@@ -252,7 +253,7 @@ const AuthenticatedApp = ({ splashDone }) => {
     if (!pinVerified && hasPin()) {
       navigate("/pin-gate?dest=app", { replace: true });
     }
-  }, [splashDone, location.pathname]);
+  }, [splashDone]); // ← only runs once when splash completes, NOT on every nav
 
 
   // Step 2: Route based on auth + onboarding state
