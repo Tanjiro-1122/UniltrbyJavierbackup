@@ -3,15 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
-import SaveProgressModal, { getSavePreference, setSavePreference } from "@/components/chat/SaveProgressModal";
-import { getTier as getEntitlementTier, JOURNAL_MONTHLY_LIMITS } from "@/lib/entitlements";
+import { getSharedDailyUsage, incrementSharedDailyUsage } from "@/components/useMessageLimit";
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
+function getTier() {
+  if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
+  if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
+  if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
+  return "free";
+}
 async function saveJournalEntryToDB(entry) {
   try {
     const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
     if (!appleUserId) return;
-    const tier = getEntitlementTier();
+    const tier = getTier();
     await fetch("/api/utils", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -20,8 +25,8 @@ async function saveJournalEntryToDB(entry) {
   } catch {}
 }
 
-// Use the central JOURNAL_MONTHLY_LIMITS from entitlements as source of truth
-const JOURNAL_LIMITS = JOURNAL_MONTHLY_LIMITS;
+// Journal entry limits per tier
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
 const JOURNAL_KEY = "unfiltr_journal_monthly";
 
 function getMonthKey() { return new Date().toISOString().slice(0, 7); }
@@ -41,8 +46,13 @@ function incrementJournalUsage() {
 }
 
 function getJournalLimit() {
-  const tier = getEntitlementTier();
-  return JOURNAL_LIMITS[tier] ?? JOURNAL_LIMITS.free;
+  const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
+  const isPro     = localStorage.getItem("unfiltr_is_pro") === "true";
+  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
+  if (isAnnual)  return JOURNAL_LIMITS.annual;
+  if (isPro)     return JOURNAL_LIMITS.pro;
+  if (isPremium) return JOURNAL_LIMITS.plus;
+  return JOURNAL_LIMITS.free;
 }
 
 const STICKER_DEFS = [
@@ -108,14 +118,6 @@ const STICKER_DEFS = [
   },
 ];
 
-const AI_SUGGESTIONS = [
-  { at: 20,  key: "20",  msg: "You're off to a great start. What feeling is strongest right now?" },
-  { at: 50,  key: "50",  msg: "Keep going — what do you wish someone understood about this?" },
-  { at: 100, key: "100", msg: "You're really opening up 💜. What would feel like relief right now?" },
-  { at: 150, key: "150", msg: "What do you want to remember about today, a year from now?" },
-  { at: 200, key: "200", msg: "Amazing depth. Is there anything you haven't written yet that still needs to come out?" },
-];
-
 function PlacedSticker({ sticker, onRemove, constraintsRef }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const tapRef = useRef(0);
@@ -175,15 +177,9 @@ export default function JournalEntry() {
   const [showStickers, setShowStickers] = useState(false);
   const [placedStickers, setPlacedStickers] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
-  const [aiSuggestion, setAiSuggestion] = useState(null);
-  const [showChatContext, setShowChatContext] = useState(false);
-  const [chatContext, setChatContext] = useState("");
   const journalRef = useRef(null);
   const fileInputRef = useRef(null);
   const stickerIdRef = useRef(0);
-  const aiSuggestionShownRef = useRef(new Set());
-  const [showJournalSavePrompt, setShowJournalSavePrompt] = useState(false);
-  const journalWordCountRef = useRef(0); // tracks words typed since last prompt
 
   useEffect(() => {
     const now = new Date();
@@ -203,31 +199,7 @@ export default function JournalEntry() {
         }
       }
     } catch {}
-    // Load chat context if coming from chat
-    try {
-      const ctx = localStorage.getItem("unfiltr_journal_context");
-      if (ctx) {
-        setChatContext(ctx);
-        setShowChatContext(true);
-        localStorage.removeItem("unfiltr_journal_context");
-      }
-    } catch {}
   }, []);
-
-  // ── AI suggestion triggers based on word count ─────────────────────────
-  const wordCount = entry.trim() ? entry.trim().split(/\s+/).length : 0;
-
-  useEffect(() => {
-    const companionName = companionData?.name || "your companion";
-    for (const s of AI_SUGGESTIONS) {
-      if (wordCount >= s.at && !aiSuggestionShownRef.current.has(s.key)) {
-        aiSuggestionShownRef.current.add(s.key);
-        setAiSuggestion({ key: s.key, msg: s.msg, name: companionName });
-        const suggestionDismissTimer = setTimeout(() => setAiSuggestion(null), 8000);
-        return () => clearTimeout(suggestionDismissTimer);
-      }
-    }
-  }, [wordCount, companionData]);
 
   const handleMic = () => {
     if (isListening) {
@@ -253,6 +225,15 @@ export default function JournalEntry() {
   const handleSave = () => {
     if (!entry.trim() || saving) return;
     // Enforce monthly journal entry limit
+    // Enforce shared daily limit for free users (chat + journal combined)
+    const tier = getTier();
+    if (tier === "free") {
+      const dailyUsed = getSharedDailyUsage();
+      if (dailyUsed >= 10) {
+        alert("You've reached your 10 free interactions for today (chat + journal combined). Come back tomorrow or upgrade to write more 💜");
+        return;
+      }
+    }
     const limit = getJournalLimit();
     const used  = getJournalUsage();
     if (used >= limit) {
@@ -275,26 +256,10 @@ export default function JournalEntry() {
     const existing = JSON.parse(localStorage.getItem("unfiltr_journal_entries") || "[]");
     localStorage.setItem("unfiltr_journal_entries", JSON.stringify([newEntry, ...existing]));
     incrementJournalUsage();
+    if (getTier() === "free") incrementSharedDailyUsage();
     // ── Auto-save to DB (tiered) ──────────────────────────────────────────────
     saveJournalEntryToDB(newEntry);
-
-    // ── Journal → Memory bridge (premium+, fire-and-forget) ──────────────────
-    try {
-      const profileId = localStorage.getItem("userProfileId");
-      if (profileId && entry.trim().split(/\s+/).length >= 20) {
-        fetch("/api/journalMemoryBridge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            profileId,
-            journalContent: entry.trim(),
-            journalTitle: title?.trim() || "",
-          }),
-        }).catch(() => {}); // fire-and-forget — never blocks the user
-      }
-    } catch(e) { /* non-fatal */ }
     // ── Auto-save vibe + relationship mode for paid users ─────────────────────
-    const tier = getTier();
     if (tier !== "free") {
       try {
         const appleUserId = localStorage.getItem("unfiltr_apple_user_id");
@@ -334,20 +299,11 @@ export default function JournalEntry() {
     });
   };
 
+  const wordCount = entry.trim() ? entry.trim().split(/\s+/).length : 0;
+
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: "linear-gradient(160deg, #0d0520 0%, #1a0a35 60%, #0a1020 100%)" }}>
-      <button
-        onClick={() => navigate("/journal-list")}
-        style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "none", border: "none", cursor: "pointer",
-          color: "#888", fontSize: 14, padding: "12px 16px 4px",
-          fontWeight: 500
-        }}
-      >
-        ← Back
-      </button>
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 pb-3 shrink-0"
@@ -368,30 +324,6 @@ export default function JournalEntry() {
         </button>
       </div>
 
-      {/* Chat context banner — shown when navigating from chat */}
-      <AnimatePresence>
-        {showChatContext && chatContext && (
-          <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }}
-            className="mx-4 mb-2 rounded-2xl p-3 shrink-0"
-            style={{ background:"rgba(124,58,237,0.15)", border:"1px solid rgba(168,85,247,0.3)" }}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <p className="text-purple-300 text-xs font-semibold mb-1">✨ From your chat — use as inspiration</p>
-                <p className="text-white/40 text-xs leading-relaxed line-clamp-3">{chatContext.slice(0, 180)}{chatContext.length > 180 ? "..." : ""}</p>
-              </div>
-              <button onClick={() => setShowChatContext(false)} className="shrink-0 mt-0.5">
-                <X className="w-3.5 h-3.5 text-white/30" />
-              </button>
-            </div>
-            <button onClick={() => { setEntry(prev => prev ? prev + "\n\n" + chatContext : chatContext); setShowChatContext(false); }}
-              className="mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white active:scale-95 transition-all"
-              style={{ background:"rgba(124,58,237,0.5)" }}>
-              Add to entry
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Journal card */}
       <div className="flex-1 px-4 pb-2 overflow-hidden flex flex-col min-h-0">
         <motion.div ref={journalRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -401,29 +333,6 @@ export default function JournalEntry() {
           {placedStickers.map((s) => (
             <PlacedSticker key={s.id} sticker={s} onRemove={removeSticker} constraintsRef={journalRef} />
           ))}
-
-          {/* AI suggestion floating prompt */}
-          <AnimatePresence>
-            {aiSuggestion && (
-              <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:8 }}
-                style={{ position:"absolute", bottom:48, left:12, right:12, zIndex:20,
-                  background:"rgba(20,8,50,0.96)", border:"1px solid rgba(168,85,247,0.35)",
-                  borderRadius:14, padding:"10px 14px", display:"flex", alignItems:"flex-start", gap:10,
-                  boxShadow:"0 8px 24px rgba(0,0,0,0.5)", backdropFilter:"blur(10px)" }}>
-                {companionMoodUrl && (
-                  <img src={companionMoodUrl} alt={companionData?.name}
-                    style={{ width:30, height:30, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 0 6px rgba(168,85,247,0.5))", marginTop:2 }} />
-                )}
-                <div style={{ flex:1 }}>
-                  <p style={{ color:"rgba(168,85,247,0.9)", fontSize:11, fontWeight:700, margin:"0 0 3px" }}>{aiSuggestion.name} suggests</p>
-                  <p style={{ color:"rgba(255,255,255,0.75)", fontSize:12, margin:0, lineHeight:1.5 }}>{aiSuggestion.msg}</p>
-                </div>
-                <button onClick={() => setAiSuggestion(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:0, flexShrink:0, marginTop:2 }}>
-                  <X style={{ width:14, height:14, color:"rgba(255,255,255,0.3)" }} />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           <div className="px-5 pt-4 pb-3 border-b border-white/10 shrink-0 flex items-center gap-3">
             {companionMoodUrl && (
@@ -456,15 +365,7 @@ export default function JournalEntry() {
           <div className="flex-1 relative overflow-hidden min-h-0">
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, rgba(255,255,255,0.04) 31px, rgba(255,255,255,0.04) 32px)", backgroundPositionY: "48px" }} />
-            <textarea value={entry} onChange={(e) => {
-                setEntry(e.target.value);
-                // After ~80 words written, prompt to save (roughly 8 sentences)
-                const wordCount = e.target.value.trim().split(/\s+/).filter(Boolean).length;
-                if (wordCount >= 80 && journalWordCountRef.current < 80 && getSavePreference() !== "auto") {
-                  setShowJournalSavePrompt(true);
-                }
-                journalWordCountRef.current = wordCount;
-              }}
+            <textarea value={entry} onChange={(e) => setEntry(e.target.value)}
               placeholder={(() => {
                 const m = currentMood || "neutral";
                 const prompts = {
@@ -537,22 +438,7 @@ export default function JournalEntry() {
           <p className="text-white/20 text-xs">Write freely 🌙</p>
         </div>
       </div>
-
-      {/* ── Save progress prompt (after ~80 words written) ── */}
-      {(() => {
-        const dismissJournalSavePrompt = () => { setShowJournalSavePrompt(false); journalWordCountRef.current = 0; };
-        return (
-          <SaveProgressModal
-            visible={showJournalSavePrompt}
-            context="journal"
-            companionName=""
-            onSave={() => { dismissJournalSavePrompt(); handleSave(); }}
-            onAutoSave={() => { setSavePreference("auto"); dismissJournalSavePrompt(); handleSave(); }}
-            onAlwaysAsk={() => { setSavePreference("ask"); dismissJournalSavePrompt(); }}
-            onDismiss={dismissJournalSavePrompt}
-          />
-        );
-      })()}
     </div>
   );
 }
+
