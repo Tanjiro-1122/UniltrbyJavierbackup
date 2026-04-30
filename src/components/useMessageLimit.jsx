@@ -1,21 +1,37 @@
 import { useState, useEffect } from "react";
 
 // Tier limits
-const FREE_DAILY       = 20;
+const FREE_DAILY       = 10;    // ← dropped from 20
 const PLUS_DAILY       = 100;   // $9.99/mo
-const PRO_DAILY        = 200;   // $14.99/mo — double the daily vs Plus
+const PRO_DAILY        = 200;   // $14.99/mo
 const ANNUAL_DAILY     = 99999; // unlimited
 
-const FREE_MONTHLY     = 600;   // 20/day × 30
+const FREE_MONTHLY     = 300;   // 10/day × 30
 const PLUS_MONTHLY     = 3000;  // 100/day × 30
 const PRO_MONTHLY      = 6000;  // 200/day × 30
 const ANNUAL_MONTHLY   = 99999; // unlimited
 
-const STORAGE_KEY      = "unfiltr_msg_usage";
+// SHARED daily key — used by both chat AND journal so they share the same 10/day limit
+export const SHARED_DAILY_KEY = "unfiltr_daily_usage";
 const MONTHLY_KEY      = "unfiltr_msg_monthly";
 
 function getTodayKey()   { return new Date().toISOString().split("T")[0]; }
 function getMonthKey()   { return new Date().toISOString().slice(0, 7); }
+
+// Helper for journal (and any other page) to read/increment the shared daily counter
+export function getSharedDailyUsage() {
+  try {
+    const raw = localStorage.getItem(SHARED_DAILY_KEY);
+    if (!raw) return 0;
+    const { date, count } = JSON.parse(raw);
+    return date === getTodayKey() ? count : 0;
+  } catch { return 0; }
+}
+
+export function incrementSharedDailyUsage() {
+  const count = getSharedDailyUsage() + 1;
+  localStorage.setItem(SHARED_DAILY_KEY, JSON.stringify({ date: getTodayKey(), count }));
+}
 
 export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
   const [usedToday,   setUsedToday]   = useState(0);
@@ -28,12 +44,11 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     let monthly = FREE_MONTHLY;
 
     // Family/admin override — unlimited if flag is set in localStorage
-    const hasOverride   = localStorage.getItem("unfiltr_msg_limit_override") === "true";
-    const hasFamilyKey  = localStorage.getItem("unfiltr_family_unlock") === "true";
-    const hasFamilyUnlimited = localStorage.getItem("unfiltr_family_unlimited") === "true";
+    const hasOverride  = localStorage.getItem("unfiltr_msg_limit_override") === "true";
+    const hasFamilyKey = localStorage.getItem("unfiltr_family_unlock") === "true";
     const lsPremium    = localStorage.getItem("unfiltr_is_premium") === "true";
 
-    if (hasOverride || hasFamilyKey || hasFamilyUnlimited || isAnnual) {
+    if (hasOverride || hasFamilyKey || isAnnual) {
       daily   = ANNUAL_DAILY;
       monthly = ANNUAL_MONTHLY;
     } else if (isPro) {
@@ -51,19 +66,19 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     setDailyLimit(daily);
     setMonthlyLimit(monthly);
 
-    // Daily count
+    // Daily count — read from SHARED key
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(SHARED_DAILY_KEY);
       if (raw) {
         const { date, count } = JSON.parse(raw);
         if (date === getTodayKey()) {
           setUsedToday(count);
         } else {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayKey(), count: 0 }));
+          localStorage.setItem(SHARED_DAILY_KEY, JSON.stringify({ date: getTodayKey(), count: 0 }));
           setUsedToday(0);
         }
       }
-    } catch { localStorage.removeItem(STORAGE_KEY); }
+    } catch { localStorage.removeItem(SHARED_DAILY_KEY); }
 
     // Monthly count
     try {
@@ -82,8 +97,9 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
   }, [isPremium, isAnnual, isPro]);
 
   const incrementCount = () => {
+    // Increment shared daily counter
     const newDay = usedToday + 1;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayKey(), count: newDay }));
+    localStorage.setItem(SHARED_DAILY_KEY, JSON.stringify({ date: getTodayKey(), count: newDay }));
     setUsedToday(newDay);
 
     const newMonth = usedMonth + 1;
