@@ -1,5 +1,6 @@
 // v4-deploy-trigger
 import React, { useState, useEffect } from "react";
+import { getTier, isFamilyUnlimited } from "@/lib/entitlements";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "../components/companionData";
@@ -23,7 +24,8 @@ export default function HubPage() {
 
   const name = localStorage.getItem("unfiltr_display_name") || null;
   const nickName = localStorage.getItem("unfiltr_companion_nickname") || null;
-  const isPremium = localStorage.getItem("unfiltr_is_premium") === "true" || localStorage.getItem("unfiltr_pro") === "true" || localStorage.getItem("unfiltr_annual") === "true";
+  const _tier = getTier();
+  const isPremium = _tier !== "free";
   const [userFacts, setUserFacts] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { return {}; }
   });
@@ -376,6 +378,7 @@ export default function HubPage() {
     </div>
   );
 }
+
 
 
 
