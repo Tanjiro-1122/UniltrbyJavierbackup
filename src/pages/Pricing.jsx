@@ -54,7 +54,7 @@ const PLANS = [
 
 const PERKS = [
   { icon: Brain,         label: 'Deep memory — your companion truly knows you' },
-  { icon: MessageCircle, label: 'Up to 200 msgs/day (vs 20 free)' },
+  { icon: MessageCircle, label: 'Up to 200 msgs/day (vs 10 free)' },
   { icon: Mic,           label: 'Voice responses (TTS)' },
   { icon: BookOpen,      label: 'Full conversation history & journal' },
   { icon: Zap,           label: 'Priority responses' },
@@ -390,7 +390,7 @@ export default function Pricing() {
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
                 <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
                 <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22, margin: '0 0 6px' }}>You've hit your limit</h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: 0 }}>You've used all 20 free messages today. Upgrade to keep chatting — no limits, ever.</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: 0 }}>You've used all 10 free messages today. Upgrade to keep chatting — no limits, ever.</p>
               </div>
 
               {/* Perks */}
@@ -491,5 +491,6 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
 
