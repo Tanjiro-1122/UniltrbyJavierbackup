@@ -4,7 +4,7 @@ import { isNativeApp, sendNative, ensureBridgeInstalled } from '@/lib/nativeBrid
 
 const MOCK_PRODUCTS = [
   { productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' },
-  { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$59.99', period: 'year' },
+  { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$99.99', period: 'year' },
   { productId: 'com.huertas.unfiltr.tier.pro',    title: 'Pro Tier',        price: '$14.99', period: 'month' },
 ];
 
@@ -63,7 +63,7 @@ export class AppleStoreKitService {
     }
     try {
       const packageId = productId.includes('annual')   ? '$rc_annual'
-                      : productId.includes('tier.pro') ? 'pro_tier'
+                      : productId.includes('tier.pro') ? '$rc_monthly'
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
@@ -241,3 +241,4 @@ export function useAppleSubscriptions() {
 
   return { purchasing, error, statusMessage, purchase, restore, loadProducts };
 }
+
