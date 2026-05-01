@@ -83,15 +83,37 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try { await base44.auth.logout(); } catch (e) {}
     profileCache.current = null;
-    // Clear all identity tokens
+
+    // Preserve apple_user_id and companion identity so chat history restores
+    // instantly when the user signs back in. These are identifiers, not auth tokens.
+    const appleUserId  = localStorage.getItem("unfiltr_apple_user_id");
+    const companionId  = localStorage.getItem("unfiltr_companion_id");
+    const companionRaw = localStorage.getItem("unfiltr_companion");
+    const displayName  = localStorage.getItem("unfiltr_display_name");
+    const profileId    = localStorage.getItem("userProfileId");
+
+    // Clear actual auth tokens + session data
     localStorage.removeItem("unfiltr_auth_token");
     localStorage.removeItem("unfiltr_user_id");
     localStorage.removeItem("unfiltr_user_email");
-    localStorage.removeItem("unfiltr_apple_user_id");
     localStorage.removeItem("unfiltr_apple_email");
+    localStorage.removeItem("unfiltr_chat_history");
+    localStorage.removeItem("unfiltr_current_chat_db_id");
+
     // Clear premium/subscription flags so they don't survive to the next user on
-    // a shared device.  clearEntitlements() removes all canonical tier keys.
+    // a shared device. clearEntitlements() removes all canonical tier keys.
     clearEntitlements();
+
+    // Restore identity keys so sign-in can immediately reload chat history
+    if (appleUserId) {
+      localStorage.setItem("unfiltr_apple_user_id", appleUserId);
+      localStorage.setItem("unfiltr_user_id", appleUserId);
+    }
+    if (companionId)  localStorage.setItem("unfiltr_companion_id", companionId);
+    if (companionRaw) localStorage.setItem("unfiltr_companion", companionRaw);
+    if (displayName)  localStorage.setItem("unfiltr_display_name", displayName);
+    if (profileId)    localStorage.setItem("userProfileId", profileId);
+
     setUser(null);
     setIsAuthenticated(false);
     setAuthError({ type: "logged_out" });
