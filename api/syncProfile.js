@@ -136,6 +136,7 @@ function buildProfileResponse(profile, companionData) {
     is_premium:          profile.is_premium || profile.premium || false,
     annual_plan:         profile.annual_plan || false,
     pro_plan:            profile.pro_plan    || false,
+    ultimate_friend:     profile.ultimate_friend || false,
     display_name:        profile.display_name || null,
     onboarding_complete: profile.onboarding_complete || false,
     companion_id:        profile.companion_id || null,
@@ -394,3 +395,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
