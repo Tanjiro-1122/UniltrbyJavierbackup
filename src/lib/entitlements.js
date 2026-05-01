@@ -7,14 +7,14 @@
  *   annual  – Annual plan ($59.99/yr)  → unlimited history, unlimited messages
  *   pro     – Pro plan   ($14.99/mo)  → 100 history, 200 msg/day
  *   plus    – Monthly    ($9.99/mo)   → 20 history, 100 msg/day
- *   free    – No plan                 → 2 history, 20 msg/day
+ *   free    – No plan                 → 2 history, 10 msg/day
  */
 
 // ─── Plan constants ───────────────────────────────────────────────────────────
 
 export const HISTORY_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, ultimate_friend: 9999, family: 9999 };
 
-export const DAILY_MSG_LIMITS = { free: 20, plus: 100, pro: 200, annual: Number.MAX_SAFE_INTEGER, ultimate_friend: Number.MAX_SAFE_INTEGER, family: Number.MAX_SAFE_INTEGER };
+export const DAILY_MSG_LIMITS = { free: 10, plus: 100, pro: 200, annual: Number.MAX_SAFE_INTEGER, ultimate_friend: Number.MAX_SAFE_INTEGER, family: Number.MAX_SAFE_INTEGER };
 
 /** Daily photo limit per tier when sending images in chat */
 export const PHOTO_DAILY_LIMITS = { free: 2, plus: 5, pro: 10, annual: 99999, ultimate_friend: 99999, family: 99999 };
@@ -117,16 +117,25 @@ export function clearEntitlements() {
  * All localStorage keys that carry identity or cached state.
  * Cleared by performFullReset().
  */
-const IDENTITY_KEYS = [
-  // Auth / identity
+// Keys that should NEVER be cleared on sign-out — they allow instant
+// chat restore and profile rehydration when the user signs back in.
+const PRESERVE_ON_SIGNOUT = new Set([
   "unfiltr_apple_user_id",
   "unfiltr_device_id",
   "userProfileId",
+  "unfiltr_display_name",
+  "unfiltr_companion",
+  "unfiltr_companion_id",
+  "unfiltr_companion_name",
+  "unfiltr_companion_nickname",
+]);
+
+const IDENTITY_KEYS = [
+  // Auth / identity (apple_user_id intentionally excluded — preserved across sign-out)
   "unfiltr_user_id",
   "unfiltr_auth_token",
   "unfiltr_apple_email",
   "unfiltr_user_email",
-  "unfiltr_display_name",
   // Age gate / onboarding flags (maximum reset — wipe everything)
   "unfiltr_age_verified",
   "unfiltr_consent_accepted",
@@ -189,9 +198,9 @@ export function performFullReset(navigate) {
   // 1. Remove all known identity / feature keys
   IDENTITY_KEYS.forEach(k => localStorage.removeItem(k));
 
-  // 2. Remove any remaining unfiltr_ keys not in the explicit list
+  // 2. Remove any remaining unfiltr_ keys not in the explicit list (skip preserved identity keys)
   Object.keys(localStorage).forEach(k => {
-    if (k.startsWith("unfiltr_")) localStorage.removeItem(k);
+    if (k.startsWith("unfiltr_") && !PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k);
   });
 
   // 3. Clear sessionStorage
@@ -292,3 +301,4 @@ export async function clearDataAndReset(navigate) {
   // ── Web fallback ──────────────────────────────────────────────────────────
   if (navigate) navigate("/", { replace: true });
 }
+
