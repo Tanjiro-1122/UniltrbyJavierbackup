@@ -44,13 +44,15 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     if (profile.companion_id && profile.companion_id !== "pending") {
       localStorage.setItem("unfiltr_companion_id", profile.companion_id);
     }
-    // Set all three canonical premium flags consistently
-    const isAnnual  = !!(profile.annual_plan);
-    const isPro     = !!(profile.pro_plan);
-    const isPremium = !!(profile.is_premium || isPro || isAnnual);
-    localStorage.setItem("unfiltr_is_premium", String(isPremium));
-    localStorage.setItem("unfiltr_is_annual",  String(isAnnual));
-    localStorage.setItem("unfiltr_is_pro",     String(isPro));
+    // Set all canonical premium flags consistently (including ultimate_friend)
+    const isAnnual         = !!(profile.annual_plan);
+    const isPro            = !!(profile.pro_plan);
+    const isUltimateFriend = !!(profile.ultimate_friend);
+    const isPremium        = !!(profile.is_premium || isPro || isAnnual || isUltimateFriend);
+    localStorage.setItem("unfiltr_is_premium",      String(isPremium));
+    localStorage.setItem("unfiltr_is_annual",       String(isAnnual));
+    localStorage.setItem("unfiltr_is_pro",          String(isPro));
+    localStorage.setItem("unfiltr_ultimate_friend", String(isUltimateFriend));
     // Notify all mounted components that auth state changed
     window.dispatchEvent(new Event("unfiltr_auth_updated"));
   }
@@ -139,8 +141,10 @@ async function handleGoogleSignIn({ googleUserId, email, displayName, isPremiumF
     if (profile.companion_id && profile.companion_id !== "pending") {
       localStorage.setItem("unfiltr_companion_id", profile.companion_id);
     }
-    const isPremium = !!(profile.is_premium || profile.pro_plan || profile.annual_plan);
-    localStorage.setItem("unfiltr_is_premium", String(isPremium));
+    const isUltimateFriendG = !!(profile.ultimate_friend);
+    const isPremium = !!(profile.is_premium || profile.pro_plan || profile.annual_plan || isUltimateFriendG);
+    localStorage.setItem("unfiltr_is_premium",      String(isPremium));
+    localStorage.setItem("unfiltr_ultimate_friend", String(isUltimateFriendG));
     window.dispatchEvent(new Event("unfiltr_auth_updated"));
   }
 
@@ -551,3 +555,4 @@ export default function HomeScreen() {
     </div>
   );
 }
+
