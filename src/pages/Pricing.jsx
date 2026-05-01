@@ -23,8 +23,8 @@ const PLANS = [
   {
     id: 'annual',
     productId: 'com.huertas.unfiltr.pro.annual',
-    label: '$199.99 / year',
-    sub: 'Ultimate Friend — only $16.67/mo · Memory · Continuity · Cancel anytime',
+    label: '$99.99 / year',
+    sub: 'Ultimate Friend — only $8.33/mo · Memory · Continuity · Cancel anytime',
     badge: 'ULTIMATE FRIEND ⭐',
     badgeBg: 'linear-gradient(135deg,#7c3aed,#ec4899)',
     isAnnual: true,
@@ -34,7 +34,7 @@ const PLANS = [
   {
     id: 'pro',
     productId: 'com.huertas.unfiltr.tier.pro',
-    label: '$19.99 / month',
+    label: '$14.99 / month',
     sub: '200 msgs/day · Priority speed · Full journal access',
     badge: 'MOST POPULAR ⚡',
     badgeBg: 'linear-gradient(135deg,#f59e0b,#a855f7)',
@@ -491,4 +491,5 @@ export default function Pricing() {
     </AppShell>
   );
 }
+
 
