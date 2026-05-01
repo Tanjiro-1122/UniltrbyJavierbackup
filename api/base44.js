@@ -499,23 +499,37 @@ async function handleGetRecentMessages(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  if (!companion_id || typeof companion_id !== "string") {
-    return res.status(400).json({ error: "companion_id is required" });
-  }
   const token = b44Token();
   const headers = { Authorization: `Bearer ${token}` };
   const limit = Math.min(parseInt(limitArg, 10) || 20, 100);
   try {
-    const r = await fetch(
-      `${B44_ENTITIES}/Message?apple_user_id=${encodeURIComponent(apple_user_id)}&companion_id=${encodeURIComponent(companion_id)}&limit=${limit}&sort=-created_date`,
-      { headers }
-    );
+    // Query ChatHistory — most recent records for this user, optionally filtered by companion
+    let url = `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=${limit}&sort=-saved_at`;
+    if (companion_id && typeof companion_id === "string") {
+      url += `&companion_id=${encodeURIComponent(companion_id)}`;
+    }
+    const r = await fetch(url, { headers });
     if (!r.ok) {
+      const bodyText = await r.text().catch(() => "");
+      console.error(`[base44/getRecentMessages] ChatHistory query failed HTTP ${r.status} — ${bodyText.slice(0, 200)}`);
       return res.status(r.status).json({ error: `Base44 query failed: ${r.status}` });
     }
     const data = await r.json();
     const records = Array.isArray(data) ? data : (data?.records || []);
-    return res.status(200).json({ ok: true, items: records });
+    // Flatten messages arrays from ChatHistory records into a single message list
+    const messages = [];
+    for (const record of records.reverse()) {
+      const msgs = Array.isArray(record.messages) ? record.messages : [];
+      for (const m of msgs) {
+        if (m && m.role && m.content) {
+          messages.push({ role: m.role, content: m.content, created_date: record.saved_at });
+        }
+      }
+    }
+    // Return last N messages
+    const trimmed = messages.slice(-limit);
+    console.log(`[base44/getRecentMessages] Returning ${trimmed.length} messages from ${records.length} ChatHistory records`);
+    return res.status(200).json({ ok: true, items: trimmed });
   } catch (err) {
     console.error("[base44/getRecentMessages] Unexpected error:", err.message);
     return res.status(500).json({ error: "Internal error fetching messages" });
@@ -786,3 +800,4 @@ async function handleProxy(req, res, body) {
     return res.status(500).json({ error: "Proxy error" });
   }
 }
+
