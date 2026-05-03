@@ -246,8 +246,12 @@ export function performFullReset(navigate) {
 export async function clearDataAndReset(navigate) {
   // ── Synchronous local clear ───────────────────────────────────────────────
   IDENTITY_KEYS.forEach(k => localStorage.removeItem(k));
+  // Apply the same PRESERVE_ON_SIGNOUT guard as performFullReset so that keys
+  // like unfiltr_apple_user_id and userProfileId are retained across sign-out.
+  // Without this guard the user loses their profile anchor and chat history
+  // cannot be restored after they sign back in.
   Object.keys(localStorage).forEach(k => {
-    if (k.startsWith("unfiltr_")) localStorage.removeItem(k);
+    if (k.startsWith("unfiltr_") && !PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k);
   });
   try { sessionStorage.clear(); } catch (_) {}
   if (typeof window !== "undefined") {

@@ -45,11 +45,13 @@ const ALLOWED_ORIGINS = new Set([
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.has(origin)) return true;
-  // Allow all Vercel preview deployments for this project
-  // Pattern: https://<project>-<hash>-<org>.vercel.app
+  // Allow preview deployments for this specific project only.
+  // Vercel preview URLs follow the pattern: <project>-<hash>-<org>.vercel.app
+  // Matching the exact project name prevents tenants like "unfiltrmalicious"
+  // from making credentialed cross-origin requests to this API.
   try {
     const url = new URL(origin);
-    if (url.protocol === "https:" && url.hostname.endsWith(".vercel.app")) return true;
+    if (url.protocol === "https:" && /^unfiltr-[a-z0-9]+-[a-z0-9]+\.vercel\.app$/.test(url.hostname)) return true;
   } catch {}
   return false;
 }
@@ -292,7 +294,6 @@ async function handleGetChatHistory(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
   const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 9999, 9999);
   try {
@@ -321,21 +322,22 @@ async function handleDeleteChatHistory(req, res, body) {
   if (!record_id || typeof record_id !== "string") {
     return res.status(400).json({ error: "record_id is required" });
   }
-  const token = b44Token();
+  // apple_user_id is required for ownership verification — anonymous deletes are
+  // not permitted. The caller must prove they own the record before it is removed.
+  if (!apple_user_id || typeof apple_user_id !== "string") {
+    return res.status(400).json({ error: "apple_user_id is required" });
+  }
   const headers = b44Headers();
   try {
-    // If apple_user_id is provided, verify ownership before deleting
-    if (apple_user_id && typeof apple_user_id === "string") {
-      const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
-      if (!checkRes.ok) {
-        return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
-      }
-      const record = await checkRes.json();
-      // Deny deletion if the record has no owner OR is owned by a different user.
-      if (!record.apple_user_id || record.apple_user_id !== apple_user_id) {
-        console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
-        return res.status(403).json({ error: "Forbidden" });
-      }
+    const checkRes = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, { headers });
+    if (!checkRes.ok) {
+      return res.status(checkRes.status).json({ error: `Record not found: ${checkRes.status}` });
+    }
+    const record = await checkRes.json();
+    // Deny deletion if the record has no owner OR is owned by a different user.
+    if (!record.apple_user_id || record.apple_user_id !== apple_user_id) {
+      console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
+      return res.status(403).json({ error: "Forbidden" });
     }
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, {
       method: "DELETE",
@@ -434,14 +436,18 @@ async function handleClearAllChatHistory(req, res, body) {
       `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=1`,
       { headers }
     );
-    if (profileRes.ok) {
-      const profileData = await profileRes.json();
-      const profileRecords = Array.isArray(profileData)
-        ? profileData
-        : (profileData.items || profileData.records || []);
-      if (!profileRecords.length) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
+    // A non-2xx response means we cannot confirm ownership — abort rather than
+    // silently proceeding and deleting records without verification.
+    if (!profileRes.ok) {
+      console.error(`[base44/clearAllChatHistory] Profile verification failed HTTP ${profileRes.status} — aborting deletion`);
+      return res.status(500).json({ error: "Could not verify profile ownership — deletion aborted" });
+    }
+    const profileData = await profileRes.json();
+    const profileRecords = Array.isArray(profileData)
+      ? profileData
+      : (profileData.items || profileData.records || []);
+    if (!profileRecords.length) {
+      return res.status(404).json({ error: "Profile not found" });
     }
     const r = await fetch(
       `${B44_ENTITIES}/ChatHistory?apple_user_id=${encodeURIComponent(apple_user_id)}&limit=500`,
@@ -472,8 +478,7 @@ async function handleGetMoodEntries(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 60, 200);
   try {
     const r = await fetch(
@@ -499,8 +504,7 @@ async function handleGetRecentMessages(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 20, 100);
   try {
     // Query ChatHistory — most recent records for this user, optionally filtered by companion
@@ -543,8 +547,7 @@ async function handleGetJournalEntries(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = b44Headers();
   const limit = Math.min(parseInt(limitArg, 10) || 200, 500);
   try {
     const r = await fetch(
@@ -573,7 +576,6 @@ async function handleDeleteJournalEntry(req, res, body) {
   if (!apple_user_id || typeof apple_user_id !== "string") {
     return res.status(400).json({ error: "apple_user_id is required" });
   }
-  const token = b44Token();
   const headers = b44Headers();
   try {
     // Verify ownership before deleting
@@ -605,8 +607,7 @@ async function handleGetUserProfile(req, res, body) {
   if (!apple_user_id && !profile_id) {
     return res.status(400).json({ error: "apple_user_id or profile_id is required" });
   }
-  const token = b44Token();
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = b44Headers();
   try {
     let profile = null;
     if (profile_id) {

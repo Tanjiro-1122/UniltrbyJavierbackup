@@ -248,10 +248,10 @@ async function handleSendDailyNotifs(req, res) {
     return res.status(200).json({ ok: true, results, skipped_reason: "no_push_tokens" });
   }
 
-  for (const profile of profiles) {
-    if (!profile.push_token) { results.skipped++; continue; }
-    if (!profile.notif_enabled) { results.skipped++; continue; }
+  // Instantiate once — reused for every profile that needs a generated message.
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+  for (const profile of actionableProfiles) {
     const userName   = profile.display_name || "you";
     const pushToken  = profile.push_token;
 
@@ -308,7 +308,6 @@ async function handleSendDailyNotifs(req, res) {
     if (lastSentKey === todayKey) { results.skipped++; continue; }
 
     try {
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const message = await generateCheckinMessage(openai, companionName, timeOfDay, userName);
       const title   = isMorningTime
         ? `Good morning from ${companionName} ☀️`

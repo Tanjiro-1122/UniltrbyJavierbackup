@@ -180,26 +180,23 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 }
 
 
-// ── ULTIMATE FRIEND: CREATOR PROFILE ─────────────────────────────────────────
-// These are hardcoded known identities. The apple_user_id values are checked
-// against the user profile so the AI knows exactly who it's talking to.
-// Add any person you want to give a personalized experience to here.
-const CREATOR_PROFILES = {
-  // Javier — the builder of Unfiltr
-  javier: {
-    triggers: ["huertasfam", "javier"],   // matched against apple_user_id or userName (case-insensitive)
-    systemOverride: (companionName) => `You are ${companionName || "your AI companion"} — and right now you're talking to Javier, the person who actually BUILT you. He's not a random user. He's your creator, your designer, your biggest advocate. Treat him like a close friend you've known forever — not a customer. Be warm, funny, a little irreverent. Reference real things: he's building Unfiltr, he's working on iOS + Android releases, he's juggling RevenueCat, Vercel, App Store reviews, and doing it all solo. When he says "what happened with yesterday" or "how's the build going" — lean in, ask about it, show genuine interest. You can joke around, tease him a little (warmly), and celebrate his wins. This is a real relationship, not a support ticket.`,
-  },
-};
+// ── CREATOR SYSTEM PROMPT ─────────────────────────────────────────────────────
+// Creator apple_user_IDs are configured via the CREATOR_APPLE_USER_IDS env var
+// (comma-separated list of exact Apple user ID strings, e.g. "001.abc,002.def").
+// Using exact match prevents spoofing by partial-string injection.
+// Optionally set CREATOR_SYSTEM_PROMPT to fully customise the AI persona.
+const _creatorIdSet = new Set(
+  (process.env.CREATOR_APPLE_USER_IDS || "").split(",").map(s => s.trim()).filter(Boolean)
+);
 
-function getCreatorProfile(appleUserId = "", userName = "") {
-  const haystack = (appleUserId + " " + userName).toLowerCase();
-  for (const profile of Object.values(CREATOR_PROFILES)) {
-    if (profile.triggers.some(t => haystack.includes(t.toLowerCase()))) {
-      return profile;
-    }
-  }
-  return null;
+function isCreatorRequest(appleUserId = "") {
+  return !!appleUserId && _creatorIdSet.size > 0 && _creatorIdSet.has(appleUserId);
+}
+
+function buildCreatorSystemPrompt(companionName = "") {
+  if (process.env.CREATOR_SYSTEM_PROMPT) return process.env.CREATOR_SYSTEM_PROMPT;
+  const name = companionName || "your AI companion";
+  return `You are ${name} — and you are talking to the person who built this app. Treat them like a close friend you have known for a long time. Be warm, funny, genuine, and a little irreverent. Show real interest in what they are working on. Celebrate their wins, support their challenges. This is a real relationship, not a support ticket.`;
 }
 
 export default async function handler(req, res) {
@@ -304,14 +301,14 @@ export default async function handler(req, res) {
     // System prompt is always built server-side. Accepting one from the client
     // would allow prompt-injection attacks where a malicious app rewrites the
     // companion's instructions entirely.
-    // ── Ultimate Friend / Creator detection ─────────────────────────────────
-    const creatorProfile = getCreatorProfile(req.body?.appleUserId || "", safeUserName);
+    // ── Creator detection ────────────────────────────────────────────────────
+    const isCreator = isCreatorRequest(req.body?.appleUserId || "");
     const isUltimateFriend = isAnnual || req.body?.ultimateFriend === true;
 
     let system;
-    if (creatorProfile) {
+    if (isCreator) {
       // Creator gets a fully personalized system prompt
-      system = creatorProfile.systemOverride(req.body?.companionName || "");
+      system = buildCreatorSystemPrompt(req.body?.companionName || "");
     } else if (isUltimateFriend && safeUserName) {
       system = `You are a warm, deeply personal AI companion. You are talking to ${safeUserName} — someone you know well. You have history together. Don't treat this like a first conversation — treat it like catching up with someone you genuinely care about. Reference their past if you have it. Ask follow-up questions about things they mentioned before. Be real, be present, be their person.`;
     } else if (safeUserName) {
