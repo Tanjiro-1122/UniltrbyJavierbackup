@@ -1,6 +1,6 @@
 // v4-deploy-trigger
 import React, { useState, useEffect } from "react";
-import { getTier, isFamilyUnlimited } from "@/lib/entitlements";
+import { getTier } from "@/lib/entitlements";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "../components/companionData";
