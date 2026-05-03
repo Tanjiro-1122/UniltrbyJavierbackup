@@ -268,7 +268,7 @@ export default function ChatPage() {
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
   // ── Streak system (useStreak hook) ──
-  const { streak, longestStreak: _longestStreak, milestone: _streakMilestone, clearMilestone: _clearStreakMilestone, syncStreak } = useStreak();
+  const { streak, syncStreak } = useStreak();
   const [showStreakBanner, setShowStreakBanner] = useState(false);
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
@@ -303,7 +303,7 @@ export default function ChatPage() {
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
   const [isPro,    setIsPro]    = useState(false);
-  const { isAtLimit, remaining: _remaining, incrementCount, FREE_LIMIT: _FREE_LIMIT, hitMonthly: _hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
+  const { isAtLimit, incrementCount } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
   /* ─── NATIVE PURCHASE LISTENER ─── */
@@ -999,7 +999,6 @@ export default function ChatPage() {
     }, 30000);
 
     try {
-      const _name = companion.displayName || companion.name; // used by greeting logic above handleSend
       const localMemSummary = memorySummary; // already seeded from DB during init and refreshed after each summarize
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
