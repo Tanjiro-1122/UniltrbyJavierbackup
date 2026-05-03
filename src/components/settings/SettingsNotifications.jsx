@@ -47,9 +47,9 @@ export default function SettingsNotifications({ profile, onUpdate }) {
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    localStorage.setItem("unfiltr_notif_daily_checkin", dailyCheckIn);
-    localStorage.setItem("unfiltr_notif_time_capsule", timeCapsule);
-    localStorage.setItem("unfiltr_notif_reminder", reminderEnabled);
+    localStorage.setItem("unfiltr_notif_daily_checkin", String(dailyCheckIn));
+    localStorage.setItem("unfiltr_notif_time_capsule", String(timeCapsule));
+    localStorage.setItem("unfiltr_notif_reminder", String(reminderEnabled));
     localStorage.setItem("unfiltr_notif_reminder_time", reminderTime);
     onUpdate && onUpdate({
       notif_daily_checkin: dailyCheckIn,

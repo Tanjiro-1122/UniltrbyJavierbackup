@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import RatingPromptModal from "@/components/RatingPromptModal";
-import { subscribeToPlan, restorePurchases } from "@/components/utils/iapBridge";
 import ShareCardModal from "@/components/ShareCardModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
 import { usePushNotifications } from "@/components/usePushNotifications";
@@ -39,14 +38,6 @@ import CrisisBanner from "@/components/chat/CrisisBanner";
 import { useStreak } from "@/components/useStreak";
 import MissYouBanner from "@/components/chat/MissYouBanner";
 import { debugLog } from "@/components/DebugPanel";
-
-const VIBES_SUFFIX = {
-  chill: "Keep it casual, laid-back and conversational. Short responses.",
-  vent:  "Be a compassionate listener. Let them vent. Validate feelings. Ask gentle follow-up questions.",
-  hype:  "Be ENERGETIC and hyped up! Use caps, exclamation marks, pump them up!",
-  deep:  "Go deep. Be thoughtful, philosophical. Explore emotions and meaning.",
-  journal: "You are a gentle journal scribe. Ask reflective questions one at a time. Listen carefully. After 3-4 exchanges, offer to save a journal entry summarizing their thoughts. Keep your questions short and open-ended. Don't give advice unless asked.",
-};
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
@@ -277,7 +268,7 @@ export default function ChatPage() {
   const [avatarState, setAvatarState]   = useState("idle");
   const [particles, setParticles]       = useState([]);
   // ── Streak system (useStreak hook) ──
-  const { streak, longestStreak, milestone: streakMilestone, clearMilestone: clearStreakMilestone, syncStreak } = useStreak();
+  const { streak, longestStreak: _longestStreak, milestone: _streakMilestone, clearMilestone: _clearStreakMilestone, syncStreak } = useStreak();
   const [showStreakBanner, setShowStreakBanner] = useState(false);
   const [anniversary, setAnniversary]   = useState(null);
   const [showAnniversary, setShowAnniversary] = useState(false);
@@ -312,7 +303,7 @@ export default function ChatPage() {
   const profileId = localStorage.getItem("userProfileId");
   const [isAnnual, setIsAnnual] = useState(false);
   const [isPro,    setIsPro]    = useState(false);
-  const { isAtLimit, remaining, incrementCount, FREE_LIMIT, hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
+  const { isAtLimit, remaining: _remaining, incrementCount, FREE_LIMIT: _FREE_LIMIT, hitMonthly: _hitMonthly } = useMessageLimit(isPremium, isAnnual, isPro);
   usePushNotifications(profileId);
 
   /* ─── NATIVE PURCHASE LISTENER ─── */
@@ -329,10 +320,8 @@ export default function ChatPage() {
   const fileInputRef           = useRef(null);
   // Tracks the last time we wrote to DB ChatHistory (used to throttle saves to ≥15 s apart)
   const lastChatHistorySaveRef = useRef(0);
-  const saveErrorShownRef      = useRef(false); // show save-error banner at most once per session
 
   const [pendingImage, setPendingImage]               = useState(null);
-  const [photoCount, setPhotoCount]                   = useState(0);
   const [showPhotoDisclaimer, setShowPhotoDisclaimer] = useState(false);
   const [photoLimitToast, setPhotoLimitToast]         = useState(null); // { msg: string }
 
@@ -1010,7 +999,7 @@ export default function ChatPage() {
     }, 30000);
 
     try {
-      const name = companion.displayName || companion.name;
+      const _name = companion.displayName || companion.name; // used by greeting logic above handleSend
       const localMemSummary = memorySummary; // already seeded from DB during init and refreshed after each summarize
       const userContent = pendingImage ? (text || "What do you think of this?") : text;
       const history = [...messages, { role: "user", content: userContent }].slice(-10);
@@ -1021,7 +1010,6 @@ export default function ChatPage() {
         const stored = JSON.parse(localStorage.getItem("unfiltr_photo_count") || '{"date":"","count":0}');
         const newCount = (stored.date === today ? stored.count : 0) + 1;
         localStorage.setItem("unfiltr_photo_count", JSON.stringify({ date: today, count: newCount }));
-        setPhotoCount(newCount);
         setPendingImage(null);
       }
 
@@ -1348,16 +1336,6 @@ export default function ChatPage() {
     setShowSavePrompt(false);
     consecutiveMsgRef.current = 0;
   };
-
-  const handleRetry = () => {
-    if (!lastFailedText) return;
-    // Remove the error message
-    setMessages(m => m.filter(msg => msg.content !== "__ERROR__"));
-    handleSend(lastFailedText);
-  };
-
-  const handleSubscribe = () => subscribeToPlan("monthly");
-  const handleRestore = () => restorePurchases();
 
   /* ─── LOADING STATE ─── */
   if (!companion || !environment) return (

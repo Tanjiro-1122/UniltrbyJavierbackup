@@ -191,7 +191,7 @@ const IDENTITY_KEYS = [
  *   any AsyncStorage / Keychain data it persisted (fire-and-forget).
  *   For the async variant that awaits CLEAR_DATA_COMPLETE, use clearDataAndReset().
  *
- * @param {function} [navigate] – react-router navigate fn; if provided,
+ * @param {function} [navigate] - react-router navigate fn; if provided,
  *                                navigates to "/" after clearing.
  */
 export function performFullReset(navigate) {
@@ -241,7 +241,7 @@ export function performFullReset(navigate) {
  *    5 s for CLEAR_DATA_COMPLETE before reloading via window.location.replace.
  * 3. For plain web usage, immediately navigates with react-router.
  *
- * @param {function} [navigate] – react-router navigate fn (used on web only).
+ * @param {function} [navigate] - react-router navigate fn (used on web only).
  */
 export async function clearDataAndReset(navigate) {
   // ── Synchronous local clear ───────────────────────────────────────────────
