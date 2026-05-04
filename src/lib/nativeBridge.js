@@ -139,7 +139,8 @@ export function sendNative(type, payload = {}, responseTypes, timeoutMs = 30000)
 
   const RESPONSE_MAP = {
     PURCHASE:          ['PURCHASE_SUCCESS', 'PURCHASE_ERROR'],
-    RESTORE:           ['RESTORE_RESULT'],
+    RESTORE:           ['RESTORE_RESULT', 'RESTORE_SUCCESS', 'RESTORE_ERROR'],  // iOS=RESTORE_RESULT, Android=RESTORE_SUCCESS
+    RESTORE_PURCHASES: ['RESTORE_SUCCESS', 'RESTORE_ERROR'],  // Android alias
     GET_OFFERINGS:     ['OFFERINGS_RESULT'],
     GET_CUSTOMER_INFO: ['CUSTOMER_INFO_RESULT'],
     SIGN_IN_WITH_APPLE: ['APPLE_SIGN_IN_SUCCESS', 'APPLE_SIGN_IN_CANCELLED', 'APPLE_SIGN_IN_ERROR', 'APPLE_SIGN_IN_WAITING'],
@@ -157,3 +158,4 @@ export function sendNative(type, payload = {}, responseTypes, timeoutMs = 30000)
 
   return waiter;
 }
+
