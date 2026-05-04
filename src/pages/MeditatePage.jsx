@@ -245,7 +245,7 @@ export default function MeditatePage() {
 
   const avatarUrl  = MEDITATION_AVATARS[companionId] || MEDITATION_AVATARS[DEFAULT_ID];
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
-  const sound      = ALL_ALL_SOUNDS.find(s => s.id === selectedSound);
+  const sound      = ALL_SOUNDS.find(s => s.id === selectedSound);
 
   const handleTabChange = (t) => {
     setTab(t);
