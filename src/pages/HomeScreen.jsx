@@ -212,8 +212,31 @@ export default function HomeScreen() {
     const appleId = localStorage.getItem("unfiltr_apple_user_id");
     const googleId = localStorage.getItem("unfiltr_google_user_id");
     const onboarded = localStorage.getItem("unfiltr_onboarding_complete");
-    if ((appleId || googleId) && onboarded) {
-      navigate("/hub", { replace: true });
+    // If user ID is restored from AsyncStorage (native) but onboarding flag is
+    // missing (wasn't saved yet), still redirect — hub/AuthContext will handle
+    // the onboarding redirect if needed.
+    if (appleId || googleId) {
+      if (onboarded) {
+        navigate("/hub", { replace: true });
+      } else {
+        // Has user ID but no onboarding flag — check DB to determine where to go
+        fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "sync", appleUserId: appleId || googleId, email: "", fullName: "" }),
+        })
+        .then(r => r.json())
+        .then(result => {
+          const profile = result?.data;
+          if (profile?.onboarding_complete || profile?.companion_id) {
+            localStorage.setItem("unfiltr_onboarding_complete", "true");
+            navigate("/hub", { replace: true });
+          } else {
+            navigate("/onboarding/consent", { replace: true });
+          }
+        })
+        .catch(() => navigate("/hub", { replace: true }));
+      }
     }
   }, []);
 
