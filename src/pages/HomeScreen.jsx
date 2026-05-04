@@ -4,6 +4,7 @@
  * After sign-in: new users → /onboarding/consent, returning → /hub
  */
 import React, { useState, useEffect } from "react";
+import { postToNative, isNativeApp } from "@/lib/nativeBridge";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -55,6 +56,30 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     localStorage.setItem("unfiltr_ultimate_friend", String(isUltimateFriend));
     // Notify all mounted components that auth state changed
     window.dispatchEvent(new Event("unfiltr_auth_updated"));
+
+    // Persist to native AsyncStorage — survives WKWebView cache clears / force-quit.
+    // Without this iOS clears localStorage on cold start and user must sign in every time.
+    if (isNativeApp()) {
+      try {
+        postToNative({
+          type: "SAVE_SESSION",
+          data: {
+            appleUserId:        appleUserId,
+            email:              email        || undefined,
+            displayName:        profile.display_name || undefined,
+            companionId:        profile.companion_id || undefined,
+            isPremium:          isPremium,
+            plan:               isUltimateFriend ? "annual"
+                              : isAnnual         ? "annual"
+                              : isPro            ? "pro"
+                              : isPremium        ? "monthly"
+                              : undefined,
+            onboardingComplete: localStorage.getItem("unfiltr_onboarding_complete") === "true",
+            ageVerified:        localStorage.getItem("unfiltr_age_verified") === "true",
+          },
+        });
+      } catch (e) { console.warn("[HomeScreen] SAVE_SESSION failed:", e?.message); }
+    }
   }
 
   // Restore companion details if returning user
