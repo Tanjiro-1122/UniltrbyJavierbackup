@@ -22,7 +22,7 @@
  *  AI_MAX_RPM         — AI_MAX_RPM            (default 10 req/min)
  *
  * Daily message limits by tier (server-enforced):
- *  DAILY_MSG_LIMITS   — { free:20, plus:100, pro:200, annual:99999 }
+ *  DAILY_MSG_LIMITS   — { free:10, plus:100, pro:200, annual:99999, ultimate_friend:99999 }
  */
 
 import crypto from "crypto";
@@ -308,10 +308,11 @@ export function mergeFacts(existing = {}, extracted = {}) {
 export const UNLIMITED_MESSAGES = Number.MAX_SAFE_INTEGER;
 
 export const DAILY_MSG_LIMITS = {
-  free: 20,
+  free: 10,
   plus: 100,
   pro: 200,
   annual: UNLIMITED_MESSAGES,
+  ultimate_friend: UNLIMITED_MESSAGES,
 };
 
 /**
@@ -372,3 +373,4 @@ export async function getProfileTierByAppleId(appleUserId) {
     return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: true };
   }
 }
+
