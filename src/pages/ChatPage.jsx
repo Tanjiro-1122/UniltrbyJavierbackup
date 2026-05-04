@@ -958,11 +958,31 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
+
+    // ── Compress before sending — iPhone photos are 4-8MB raw,
+    //    Vercel has a 4.5MB body limit and OpenAI only needs ~1024px anyway.
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
-      const base64 = dataUrl.split(",")[1];
-      setPendingImage({ base64, preview: dataUrl, name: file.name });
+      const originalDataUrl = ev.target.result;
+      const img = new Image();
+      img.onload = () => {
+        const MAX_PX = 1024;
+        let { width, height } = img;
+        if (width > MAX_PX || height > MAX_PX) {
+          if (width > height) { height = Math.round(height * MAX_PX / width); width = MAX_PX; }
+          else                { width  = Math.round(width  * MAX_PX / height); height = MAX_PX; }
+        }
+        const canvas  = document.createElement("canvas");
+        canvas.width  = width;
+        canvas.height = height;
+        const ctx2d   = canvas.getContext("2d");
+        ctx2d.drawImage(img, 0, 0, width, height);
+        // 0.82 quality keeps detail while staying well under 1MB base64
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        const base64 = compressedDataUrl.split(",")[1];
+        setPendingImage({ base64, preview: compressedDataUrl, name: file.name });
+      };
+      img.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
   };
