@@ -23,9 +23,17 @@ export const RC_API_BASE    = "https://api.revenuecat.com/v1";
  * then defaults to "monthly".
  */
 export const PRODUCT_MAP = {
-  "com.huertas.unfiltr.pro.monthly": "monthly",
-  "com.huertas.unfiltr.tier.pro":    "pro",
-  "com.huertas.unfiltr.pro.annual":  "annual",
+  // iOS product IDs
+  "com.huertas.unfiltr.pro.monthly":              "monthly",
+  "com.huertas.unfiltr.tier.pro":                 "pro",
+  "com.huertas.unfiltr.pro.annual":               "annual",
+  // Android product IDs (Google Play subscription base plans)
+  "unfiltr_plus_monthly:monthly-999":             "monthly",
+  "unfiltr_plus_monthly":                         "monthly",
+  "unfiltr_pro_monthly:monthly-1499":             "pro",
+  "unfiltr_pro_monthly":                          "pro",
+  "unfiltr_ultimate_friend_annual:annual-99":     "annual",
+  "unfiltr_ultimate_friend_annual":               "annual",
 };
 
 /**
@@ -36,8 +44,11 @@ export const PRODUCT_MAP = {
 export function planFromProductId(productId = "") {
   return (
     PRODUCT_MAP[productId] ||
-    (productId.includes("annual") ? "annual" :
-     productId.includes("pro")    ? "pro"    : "monthly")
+    (productId.includes("annual")          ? "annual"  :
+     productId.includes("ultimate_friend") ? "annual"  :
+     productId.includes("tier.pro")        ? "pro"     :
+     productId.includes("pro_monthly")     ? "pro"     :
+     productId.includes("pro")             ? "pro"     : "monthly")
   );
 }
 
