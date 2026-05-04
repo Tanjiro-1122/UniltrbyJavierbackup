@@ -57,6 +57,8 @@ const ICONS = {
   tibetanriver:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/515daf4b9_generated_image.png",
   tibetanhealing:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/97ed86f52_generated_image.png",
   tibetanpeace:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/f47c5b0f9_generated_image.png",
+  earlymorning:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/182429e4f_generated_image.png",
+  aquarium:       "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/bf2a4e5e2_generated_image.png",
 };
 
 const AUDIO_URLS = {
@@ -73,6 +75,8 @@ const AUDIO_URLS = {
   tibetanriver:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/25d21e64a_tibetan_bowls_river.mp3",
   tibetanhealing: "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/92fe6cb4f_tibetan_bowl_healing.mp3",
   tibetanpeace:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/c20f51587_tibetan_bowl_peace.mp3",
+  earlymorning:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/7874349b6_early_morning.mp3",
+  aquarium:       "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/abe7ab0bb_aquarium.mp3",
 };
 
 const SOUNDS_CLASSIC = [
@@ -81,7 +85,9 @@ const SOUNDS_CLASSIC = [
   { id: "ocean",   label: "Beach Waves",  desc: "Ocean shore & seabirds",     icon: ICONS.ocean },
   { id: "brown",   label: "Brown Noise",  desc: "Deep & grounding",           icon: ICONS.brown,   synth: true },
   { id: "pink",    label: "Pink Noise",   desc: "Best for sleep & anxiety",   icon: ICONS.pink,    synth: true },
-  { id: "silence", label: "Silence",      desc: "Breath guide only",          icon: ICONS.silence, synth: true },
+  { id: "silence",      label: "Silence",        desc: "Breath guide only",          icon: ICONS.silence,      synth: true },
+  { id: "earlymorning", label: "Early Morning",  desc: "Birdsong & soft dawn light",  icon: ICONS.earlymorning },
+  { id: "aquarium",     label: "Aquarium",       desc: "Gentle bubbles & water life", icon: ICONS.aquarium },
 ];
 
 const SOUNDS_WORLD = [
