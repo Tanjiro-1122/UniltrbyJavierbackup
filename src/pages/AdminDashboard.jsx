@@ -78,18 +78,20 @@ function SectionTitle({ children, color = "#c084fc" }) {
 }
 
 function PlanBadge({ u }) {
-  if (u.annual_plan)  return <Badge text="Annual"  color="#34d399" />;
-  if (u.pro_plan)     return <Badge text="Pro"     color="#a855f7" />;
-  if (u.is_premium)   return <Badge text="Premium" color="#f59e0b" />;
-  if (u.trial_active) return <Badge text="Trial"   color="#60a5fa" />;
+  if (u.ultimate_friend) return <Badge text="⭐ Ultimate" color="#f97316" />;
+  if (u.annual_plan)     return <Badge text="Annual"      color="#34d399" />;
+  if (u.pro_plan)        return <Badge text="Pro"         color="#a855f7" />;
+  if (u.is_premium)      return <Badge text="Premium"     color="#f59e0b" />;
+  if (u.trial_active)    return <Badge text="Trial"       color="#60a5fa" />;
   return <Badge text="Free" color="#6b7280" />;
 }
 
 function planColor(u) {
-  if (u.annual_plan)  return "#34d399";
-  if (u.pro_plan)     return "#a855f7";
-  if (u.is_premium)   return "#f59e0b";
-  if (u.trial_active) return "#60a5fa";
+  if (u.ultimate_friend) return "#f97316";
+  if (u.annual_plan)     return "#34d399";
+  if (u.pro_plan)        return "#a855f7";
+  if (u.is_premium)      return "#f59e0b";
+  if (u.trial_active)    return "#60a5fa";
   return "#6b7280";
 }
 
@@ -728,7 +730,8 @@ export default function AdminDashboard() {
   ];
 
   const totalUsers = stats?.totalUsers  ?? 0;
-  const proUsers   = stats?.premiumUsers ?? 0;
+  const proUsers       = stats?.premiumUsers ?? 0;
+  const ultimateUsers  = stats?.ultimateUsers ?? 0;
   const convRate   = totalUsers > 0 ? ((proUsers / totalUsers) * 100).toFixed(1) : "0";
 
   return (
