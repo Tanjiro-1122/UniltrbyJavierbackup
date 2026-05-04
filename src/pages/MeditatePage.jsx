@@ -132,34 +132,7 @@ function makePinkBuf(ctx, secs = 2) {
   }
   return buf;
 }
-function createAmbientSound(type, ctx) {
-  if (type === "silence") return null;
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
-  master.connect(ctx.destination);
-  if (["rain","fire","ocean","earlymorning","lakeside"].includes(type)) {
-    const url = AUDIO_URLS[type]; let sourceNode = null, stopped = false;
-    fetch(url).then(r=>r.arrayBuffer()).then(ab=>ctx.decodeAudioData(ab)).then(decoded=>{
-      if (stopped) return;
-      sourceNode = ctx.createBufferSource(); sourceNode.buffer=decoded; sourceNode.loop=true;
-      sourceNode.connect(master); sourceNode.start(0);
-    }).catch(e=>console.warn("Audio:",e));
-    return { stop:()=>{ stopped=true; try{ master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{if(sourceNode)sourceNode.stop()}catch{}try{ctx.close()}catch{}},1600); }catch{} } };
-  }
-  if (type === "brown") {
-    const buf=makeBrownBuf(ctx,6), src=ctx.createBufferSource();
-    src.buffer=buf; src.loop=true; const lpf=ctx.createBiquadFilter(); lpf.type="lowpass"; lpf.frequency.value=700;
-    src.connect(lpf); lpf.connect(master); src.start();
-    return { stop:()=>{ master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{src.stop();ctx.close()}catch{}},1600); } };
-  }
-  if (type === "pink") {
-    const buf=makePinkBuf(ctx,4), src=ctx.createBufferSource();
-    src.buffer=buf; src.loop=true; src.connect(master); src.start();
-    return { stop:()=>{ master.gain.linearRampToValueAtTime(0,ctx.currentTime+1.5); setTimeout(()=>{try{src.stop();ctx.close()}catch{}},1600); } };
-  }
-  return null;
-}
+
 
 
 // ─── AUDIO ENGINE ────────────────────────────────────────────────────────────
