@@ -75,8 +75,8 @@ const AUDIO_URLS = {
   tibetanriver:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/25d21e64a_tibetan_bowls_river.mp3",
   tibetanhealing: "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/92fe6cb4f_tibetan_bowl_healing.mp3",
   tibetanpeace:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/c20f51587_tibetan_bowl_peace.mp3",
-  earlymorning:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/7874349b6_early_morning.mp3",
-  aquarium:       "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/abe7ab0bb_aquarium.mp3",
+  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/226d0b352_early_morning.mp3",
+  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/b8be7b568_aquarium.mp3",
 };
 
 const SOUNDS_CLASSIC = [
