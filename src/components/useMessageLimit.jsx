@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // Tier limits — must stay in sync with DAILY_MSG_LIMITS in api/_helpers.js
-const FREE_DAILY       = 20;    // matches server-side DAILY_MSG_LIMITS.free
+const FREE_DAILY       = 10;    // matches server-side DAILY_MSG_LIMITS.free
 const PLUS_DAILY       = 100;   // $9.99/mo
 const PRO_DAILY        = 200;   // $14.99/mo
 const ANNUAL_DAILY     = 99999; // unlimited
@@ -119,3 +119,4 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     FREE_LIMIT: dailyLimit, MONTHLY_LIMIT: PLUS_MONTHLY, ANNUAL_LIMIT: ANNUAL_DAILY,
   };
 }
+
