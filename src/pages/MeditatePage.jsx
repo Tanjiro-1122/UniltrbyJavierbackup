@@ -57,8 +57,8 @@ const ICONS = {
   tibetanriver:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/515daf4b9_generated_image.png",
   tibetanhealing:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/97ed86f52_generated_image.png",
   tibetanpeace:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/f47c5b0f9_generated_image.png",
-  earlymorning:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/182429e4f_generated_image.png",
-  aquarium:       "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/bf2a4e5e2_generated_image.png",
+  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/949b0dc9a_rain5.mp3",
+  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/4a3361c60_creek_b.mp3",
 };
 
 const AUDIO_URLS = {
