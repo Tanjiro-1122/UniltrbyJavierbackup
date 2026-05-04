@@ -1,42 +1,174 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, Play, StopCircle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
-// Real recorded ambient audio — hosted on Base44 CDN
+// ── Audio URLs — all hosted on Base44 CDN ─────────────────────────────────────
 const AUDIO_URLS = {
-  rain:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
-  fire:  "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
-  ocean: "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
+  rain:          "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
+  fire:          "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
+  ocean:         "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
+  forest:        "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/e3b94965a_forest_v2.mp3",
+  earlymorning:  "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/226d0b352_early_morning.mp3",
+  creek:         "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/54a09f5d8_creek.mp3",
+  aquarium:      "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/b8be7b568_aquarium.mp3",
 };
 
-// ── World sounds — free-to-use sources ────────────────────────────────────────
-// Using Pixabay & Freesound public domain / CC0 tracks
-const WORLD_AUDIO_URLS = {
-  tibetan_bowls:  "https://cdn.pixabay.com/audio/2022/03/15/audio_1a7b2a2b3c.mp3",
-  forest_japan:   "https://cdn.pixabay.com/audio/2022/05/27/audio_1234abcd.mp3",
-  indian_rain:    "https://cdn.pixabay.com/audio/2021/09/06/audio_tropical_rain.mp3",
-  flute:          "https://cdn.pixabay.com/audio/2022/08/02/audio_tibetan_flute.mp3",
-  gong:           "https://cdn.pixabay.com/audio/2022/10/25/audio_meditation_gong.mp3",
-  om_chant:       "https://cdn.pixabay.com/audio/2023/01/12/audio_om_chant.mp3",
-};
-
+// ── Sound definitions with rich icon art ─────────────────────────────────────
 const SOUNDS_AMBIENT = [
-  { id: "rain",    emoji: "🌧️", label: "Rainy Day",    desc: "Rain + soft thunder" },
-  { id: "fire",    emoji: "🔥", label: "Cabin Fire",    desc: "Warm crackling fireplace" },
-  { id: "ocean",   emoji: "🌊", label: "Beach Waves",   desc: "Ocean shore & seabirds" },
-  { id: "brown",   emoji: "🌫️", label: "Brown Noise",   desc: "Deep & grounding" },
-  { id: "pink",    emoji: "🌸", label: "Pink Noise",    desc: "Best for sleep & anxiety" },
-  { id: "silence", emoji: "🤫", label: "Silence",       desc: "Breath guide only" },
-];
-
-const SOUNDS_WORLD = [
-  { id: "tibetan_bowls", emoji: "🔔", label: "Tibetan Bowls",  desc: "Ancient singing bowls", region: "Tibet" },
-  { id: "forest_japan",  emoji: "🎋", label: "Zen Forest",     desc: "Japanese bamboo & birds", region: "Japan" },
-  { id: "indian_rain",   emoji: "🪷", label: "Monsoon Rain",   desc: "Indian tropical downpour", region: "India" },
-  { id: "flute",         emoji: "🪈", label: "Bansuri Flute",  desc: "Himalayan wind flute", region: "Nepal" },
-  { id: "gong",          emoji: "🎵", label: "Temple Gong",    desc: "Bronze resonance", region: "China" },
-  { id: "om_chant",      emoji: "🕉️", label: "Om Chant",       desc: "Sacred mantra drone", region: "India" },
+  {
+    id: "rain",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M36 20c0-6.627-5.373-12-12-12S12 13.373 12 20c-3.866 0-7 3.134-7 7s3.134 7 7 7h24c3.866 0 7-3.134 7-7s-3.134-7-7-7z" fill="#7dd3fc" opacity=".9"/>
+        <line x1="16" y1="38" x2="14" y2="44" stroke="#7dd3fc" strokeWidth="2.2" strokeLinecap="round"/>
+        <line x1="22" y1="38" x2="20" y2="44" stroke="#7dd3fc" strokeWidth="2.2" strokeLinecap="round"/>
+        <line x1="28" y1="38" x2="26" y2="44" stroke="#7dd3fc" strokeWidth="2.2" strokeLinecap="round"/>
+        <line x1="34" y1="38" x2="32" y2="44" stroke="#7dd3fc" strokeWidth="2.2" strokeLinecap="round"/>
+      </svg>
+    ),
+    label: "Rainy Day",
+    desc: "Rain + soft thunder",
+    color: "#1e3a5f",
+    accent: "#7dd3fc",
+  },
+  {
+    id: "fire",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M24 6c0 0-2 6-6 9-2 1.5-3 4-3 6 0 5.523 4.03 10 9 10s9-4.477 9-10c0-4-3-7-3-7s-1 5-3 6c0 0 2-7-3-14z" fill="#fb923c"/>
+        <path d="M24 22c0 0-1 3-3 4.5-.8.6-1 2-1 3 0 2.21 1.79 4 4 4s4-1.79 4-4c0-1.5-1-3-1-3s-.5 2-1.5 2.5C25.5 29 26 25 24 22z" fill="#fef08a"/>
+      </svg>
+    ),
+    label: "Cabin Fire",
+    desc: "Warm crackling fireplace",
+    color: "#3b1a0a",
+    accent: "#fb923c",
+  },
+  {
+    id: "ocean",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M6 28c3 0 3-4 6-4s3 4 6 4 3-4 6-4 3 4 6 4 3-4 6-4" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M6 34c3 0 3-4 6-4s3 4 6 4 3-4 6-4 3 4 6 4 3-4 6-4" stroke="#0ea5e9" strokeWidth="2.5" strokeLinecap="round" opacity=".7"/>
+        <path d="M6 22c3 0 3-4 6-4s3 4 6 4 3-4 6-4 3 4 6 4 3-4 6-4" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" opacity=".5"/>
+        <circle cx="34" cy="12" r="5" fill="#fde68a" opacity=".9"/>
+      </svg>
+    ),
+    label: "Beach Waves",
+    desc: "Ocean shore & seabirds",
+    color: "#0c2a3b",
+    accent: "#38bdf8",
+  },
+  {
+    id: "forest",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <polygon points="24,8 34,26 14,26" fill="#4ade80" opacity=".9"/>
+        <polygon points="24,16 36,36 12,36" fill="#22c55e"/>
+        <rect x="21" y="36" width="6" height="7" rx="1" fill="#92400e"/>
+      </svg>
+    ),
+    label: "Deep Forest",
+    desc: "Birds & rustling trees",
+    color: "#0a2213",
+    accent: "#4ade80",
+  },
+  {
+    id: "earlymorning",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M8 28c8-8 12-16 16-20 4 4 8 12 16 20" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity=".4"/>
+        <circle cx="24" cy="18" r="7" fill="#fde68a"/>
+        <path d="M24 8V5M24 31v-3M14 18h-3M37 18h-3M17 11l-2-2M33 11l2-2" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M10 38c7 0 7-5 14-5s7 5 14 5" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" opacity=".5"/>
+      </svg>
+    ),
+    label: "Early Morning",
+    desc: "Birdsong at dawn",
+    color: "#2a1f00",
+    accent: "#fbbf24",
+  },
+  {
+    id: "creek",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M6 32c4-2 6-6 10-6s6 4 10 4 6-4 10-4 6 2 6 2" stroke="#67e8f9" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M6 38c4-2 6-5 10-5s6 3 10 3 6-3 10-3 6 2 6 2" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".6"/>
+        <ellipse cx="12" cy="18" rx="4" ry="8" fill="#4ade80" opacity=".6" transform="rotate(-15 12 18)"/>
+        <ellipse cx="36" cy="16" rx="3" ry="7" fill="#4ade80" opacity=".5" transform="rotate(10 36 16)"/>
+        <circle cx="22" cy="28" r="1.5" fill="#a5f3fc" opacity=".8"/>
+        <circle cx="30" cy="31" r="1" fill="#a5f3fc" opacity=".6"/>
+      </svg>
+    ),
+    label: "Babbling Creek",
+    desc: "Flowing stream & stones",
+    color: "#0a2a2a",
+    accent: "#67e8f9",
+  },
+  {
+    id: "aquarium",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <rect x="6" y="10" width="36" height="28" rx="4" stroke="#38bdf8" strokeWidth="2" fill="#0c4a6e" opacity=".6"/>
+        <path d="M14 28c2-4 4-2 6 0s4 2 6 0 4-2 6 0" stroke="#38bdf8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+        <ellipse cx="18" cy="24" rx="4" ry="2.5" fill="#fb923c" opacity=".9" transform="rotate(-5 18 24)"/>
+        <line x1="16" y1="21" x2="20" y2="21" stroke="#ffffff" strokeWidth=".8" opacity=".5"/>
+        <circle cx="15.5" cy="23" r="1" fill="#1c1917"/>
+        <ellipse cx="32" cy="20" rx="3" ry="2" fill="#a3e635" opacity=".8" transform="rotate(10 32 20)"/>
+        <circle cx="29.5" cy="19" r=".8" fill="#1c1917"/>
+        <circle cx="24" cy="32" r="1.5" fill="#67e8f9" opacity=".5"/>
+        <circle cx="30" cy="30" r="1" fill="#67e8f9" opacity=".4"/>
+        <circle cx="16" cy="33" r="1.2" fill="#67e8f9" opacity=".3"/>
+      </svg>
+    ),
+    label: "Aquarium",
+    desc: "Gentle bubbles & fish",
+    color: "#03192b",
+    accent: "#38bdf8",
+  },
+  {
+    id: "brown",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M6 24 Q10 18 14 24 Q18 30 22 24 Q26 18 30 24 Q34 30 38 24 Q42 18 46 24" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M6 30 Q10 24 14 30 Q18 36 22 30 Q26 24 30 30 Q34 36 38 30 Q42 24 46 30" stroke="#b45309" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
+        <path d="M6 18 Q10 14 14 18 Q18 22 22 18 Q26 14 30 18 Q34 22 38 18 Q42 14 46 18" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity=".3"/>
+      </svg>
+    ),
+    label: "Brown Noise",
+    desc: "Deep & grounding",
+    color: "#1c0f00",
+    accent: "#d97706",
+  },
+  {
+    id: "pink",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <path d="M6 24 Q8 20 10 24 Q12 28 14 22 Q16 16 18 24 Q20 32 22 24 Q24 16 26 22 Q28 28 30 24 Q32 20 34 26 Q36 32 38 24 Q40 16 42 24" stroke="#f9a8d4" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M6 30 Q9 26 12 30 Q15 34 18 30 Q21 26 24 30 Q27 34 30 30 Q33 26 36 30 Q39 34 42 30" stroke="#ec4899" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity=".4"/>
+      </svg>
+    ),
+    label: "Pink Noise",
+    desc: "Best for sleep & anxiety",
+    color: "#2a0a1a",
+    accent: "#f9a8d4",
+  },
+  {
+    id: "silence",
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <circle cx="24" cy="24" r="16" stroke="#a78bfa" strokeWidth="2" opacity=".5"/>
+        <circle cx="24" cy="24" r="10" stroke="#a78bfa" strokeWidth="1.5" opacity=".3"/>
+        <circle cx="24" cy="24" r="4" fill="#a78bfa" opacity=".8"/>
+        <path d="M16 16l16 16M32 16L16 32" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" opacity=".0"/>
+      </svg>
+    ),
+    label: "Silence",
+    desc: "Breath guide only",
+    color: "#120a2a",
+    accent: "#a78bfa",
+  },
 ];
 
 const BREATHWORK = [
@@ -86,14 +218,10 @@ function createAmbientSound(type, ctx) {
   master.gain.linearRampToValueAtTime(0.75, ctx.currentTime + 3);
   master.connect(ctx.destination);
 
-  // Real recordings (ambient + world) — load via fetch → AudioBuffer → loop
-  const allUrls = { ...AUDIO_URLS, ...WORLD_AUDIO_URLS };
-  if (allUrls[type]) {
-    const url = allUrls[type];
+  if (AUDIO_URLS[type]) {
     let sourceNode = null;
     let stopped = false;
-
-    fetch(url)
+    fetch(AUDIO_URLS[type])
       .then(r => r.arrayBuffer())
       .then(ab => ctx.decodeAudioData(ab))
       .then(decoded => {
@@ -101,13 +229,10 @@ function createAmbientSound(type, ctx) {
         sourceNode = ctx.createBufferSource();
         sourceNode.buffer = decoded;
         sourceNode.loop = true;
-        sourceNode.loopStart = 0;
-        sourceNode.loopEnd = decoded.duration;
         sourceNode.connect(master);
         sourceNode.start(0);
       })
       .catch(e => console.warn("Audio load failed:", e));
-
     return {
       stop: () => {
         stopped = true;
@@ -130,26 +255,14 @@ function createAmbientSound(type, ctx) {
     lpf.type = "lowpass"; lpf.frequency.value = 700;
     src.connect(lpf); lpf.connect(master);
     src.start();
-    return {
-      stop: () => {
-        master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-        setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600);
-      }
-    };
+    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); }};
   }
-
   if (type === "pink") {
     const buf = makePinkBuf(ctx, 4);
     const src = ctx.createBufferSource();
     src.buffer = buf; src.loop = true;
-    src.connect(master);
-    src.start();
-    return {
-      stop: () => {
-        master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-        setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600);
-      }
-    };
+    src.connect(master); src.start();
+    return { stop: () => { master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5); setTimeout(() => { try { src.stop(); ctx.close(); } catch {} }, 1600); }};
   }
 
   return null;
@@ -159,7 +272,6 @@ function createAmbientSound(type, ctx) {
 
 export default function MeditatePage() {
   const navigate = useNavigate();
-  const [soundTab,       setSoundTab]       = useState("ambient"); // "ambient" | "world"
   const [selectedSound,  setSelectedSound]  = useState("rain");
   const [selectedBreath, setSelectedBreath] = useState("478");
   const [phase,          setPhase]          = useState("setup");
@@ -173,9 +285,8 @@ export default function MeditatePage() {
   const timerRef    = useRef(null);
   const breathRef   = useRef(null);
 
-  const allSounds  = [...SOUNDS_AMBIENT, ...SOUNDS_WORLD];
   const breathwork = BREATHWORK.find(b => b.id === selectedBreath);
-  const sound      = allSounds.find(s => s.id === selectedSound);
+  const sound      = SOUNDS_AMBIENT.find(s => s.id === selectedSound);
 
   const handleStart = () => {
     setLoading(true);
@@ -188,9 +299,7 @@ export default function MeditatePage() {
       setLoading(false);
       setPhase("active");
       setTimer(0); setBreathPhaseIdx(0); setBreathCount(0); setBreathScale(1);
-
       timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-
       if (breathwork.pattern.length > 0) {
         let pI = 0, cI = 0;
         breathRef.current = setInterval(() => {
@@ -236,21 +345,16 @@ export default function MeditatePage() {
         <motion.div initial={{ scale:0.85, opacity:0 }} animate={{ scale:1, opacity:1 }} transition={{ type:"spring", damping:16 }}
           style={{ textAlign:"center", width:"100%", maxWidth:320 }}>
           <div style={{ fontSize:72, marginBottom:16 }}>🧘</div>
-          <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session complete</h2>
-          <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>
-            {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}
+          <h2 style={{ color:"white", fontWeight:800, fontSize:26, margin:"0 0 8px" }}>Session Complete</h2>
+          <p style={{ color:"#a78bfa", fontSize:16, margin:"0 0 28px" }}>
+            {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} of {sound?.label}
           </p>
-          <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
-              style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-              Choose Something Else ✦
-            </motion.button>
-            <button onClick={() => navigate('/hub')}
-              style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"rgba(255,255,255,0.5)", fontWeight:600, fontSize:14, cursor:"pointer" }}>
-              ← Go Back
-            </button>
-          </div>
+          <button onClick={() => navigate(-1)} style={{ background:"#7c3aed", color:"white", border:"none", borderRadius:14, padding:"14px 36px", fontSize:16, fontWeight:700, cursor:"pointer", width:"100%" }}>
+            Done
+          </button>
+          <button onClick={() => { setPhase("setup"); setTimer(0); }} style={{ background:"transparent", color:"#a78bfa", border:"none", fontSize:14, marginTop:14, cursor:"pointer" }}>
+            Go again
+          </button>
         </motion.div>
       </div>
     );
@@ -258,226 +362,104 @@ export default function MeditatePage() {
 
   // ── ACTIVE ────────────────────────────────────────────────────────────────
   if (phase === "active") {
-    // World sounds get a warmer gold/amber orb instead of purple
-    const isWorld = SOUNDS_WORLD.some(s => s.id === sound.id);
-    const orbGradient = isWorld
-      ? "radial-gradient(circle at 40% 35%, rgba(234,179,8,0.65) 0%, rgba(220,105,30,0.3) 50%, rgba(6,2,15,0.2) 100%)"
-      : "radial-gradient(circle at 40% 35%, rgba(168,85,247,0.65) 0%, rgba(219,39,119,0.3) 50%, rgba(6,2,15,0.2) 100%)";
-    const orbGlow = isWorld
-      ? "0 0 60px rgba(234,179,8,0.45), 0 0 120px rgba(234,179,8,0.18)"
-      : "0 0 60px rgba(168,85,247,0.45), 0 0 120px rgba(168,85,247,0.18)";
-    const ringColor1 = isWorld ? "rgba(234,179,8,0.12)" : "rgba(168,85,247,0.12)";
-    const ringColor2 = isWorld ? "rgba(234,179,8,0.22)" : "rgba(168,85,247,0.22)";
-    const dotColor   = isWorld ? "#eab308" : "#a855f7";
-
+    const companion = JSON.parse(localStorage.getItem("unfiltr_companion") || "null");
+    const avatarUrl = companion?.avatar || null;
     return (
-      <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between", padding:"max(52px,env(safe-area-inset-top)) 24px 52px" }}>
-        <div style={{ textAlign:"center" }}>
-          <p style={{ color:"rgba(255,255,255,0.3)", fontSize:13, margin:"0 0 2px" }}>{sound.emoji} {sound.label} · {breathwork.label}</p>
-          {sound.region && <p style={{ color:"rgba(255,255,255,0.15)", fontSize:11, margin:"0 0 2px", letterSpacing:"0.06em" }}>{sound.region}</p>}
-          <p style={{ color:"rgba(255,255,255,0.12)", fontSize:44, fontWeight:200, margin:0, letterSpacing:6 }}>{fmt(timer)}</p>
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:24 }}>
-          <div style={{ position:"relative", width:220, height:220, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.15, 1] : [1,1.22,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur * 1.1, ease:"easeInOut", repeat:0 }
-                : { repeat:Infinity, duration:4.5, ease:"easeInOut" }
-              }
-              style={{ position:"absolute", width:210, height:210, borderRadius:"50%",
-                border:`1px solid ${ringColor1}`, pointerEvents:"none" }}
-            />
-            <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? [1, breathScale * 1.08, 1] : [1,1.13,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur, ease:"easeInOut", repeat:0 }
-                : { repeat:Infinity, duration:4, ease:"easeInOut", delay:0.3 }
-              }
-              style={{ position:"absolute", width:196, height:196, borderRadius:"50%",
-                border:`1.5px solid ${ringColor2}`, pointerEvents:"none" }}
-            />
-            <motion.div
-              animate={{ scale: breathwork.pattern.length > 0 ? breathScale : [1,1.1,1] }}
-              transition={ breathwork.pattern.length > 0
-                ? { duration: curPhaseDur, ease: curPhaseName.toLowerCase()==="inhale" ? "easeIn" : "easeOut" }
-                : { repeat:Infinity, duration:4, ease:"easeInOut" }
-              }
-              style={{ width:180, height:180, borderRadius:"50%",
-                background: orbGradient,
-                boxShadow: orbGlow,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                position:"relative", zIndex:2,
-              }}
-            >
-              {breathwork.pattern.length > 0 && (
-                <div style={{ textAlign:"center" }}>
-                  <p style={{ color:"white", fontWeight:700, fontSize:18, margin:"0 0 2px" }}>{curPhaseName}</p>
-                  <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, margin:0 }}>{curPhaseDur - breathCount}s</p>
-                </div>
-              )}
-              {breathwork.pattern.length === 0 && (
-                <span style={{ fontSize:36 }}>{sound.emoji}</span>
-              )}
-            </motion.div>
-          </div>
-          {breathwork.pattern.length > 0 && (
-            <div style={{ display:"flex", gap:8 }}>
-              {breathwork.phases.map((_,i) => (
-                <div key={i} style={{ width:i===breathPhaseIdx?24:8, height:8, borderRadius:4,
-                  background:i===breathPhaseIdx ? dotColor : "rgba(255,255,255,0.1)", transition:"all 0.3s" }} />
-              ))}
-            </div>
-          )}
-        </div>
-        <motion.button whileTap={{ scale:0.95 }} onClick={handleStop}
-          style={{ display:"flex", alignItems:"center", gap:8, padding:"14px 32px",
-            background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)",
-            borderRadius:50, color:"white", fontWeight:600, fontSize:15, cursor:"pointer" }}>
-          <StopCircle size={18} color="rgba(255,255,255,0.6)" />
-          End session
-        </motion.button>
+      <div style={{ position:"fixed", inset:0, background: sound?.color || "#06020f", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+        {avatarUrl && (
+          <motion.img src={avatarUrl} alt="companion" animate={{ scale: breathScale }} transition={{ duration: curPhaseDur * 0.9, ease:"easeInOut" }}
+            style={{ width:140, height:140, borderRadius:"50%", objectFit:"cover", marginBottom:24, boxShadow:`0 0 40px ${sound?.accent || "#a78bfa"}66` }} />
+        )}
+        {!avatarUrl && (
+          <motion.div animate={{ scale: breathScale }} transition={{ duration: curPhaseDur * 0.9, ease:"easeInOut" }}
+            style={{ width:130, height:130, borderRadius:"50%", background:`radial-gradient(circle, ${sound?.accent || "#a78bfa"}55, ${sound?.color || "#06020f"})`,
+              boxShadow:`0 0 60px ${sound?.accent || "#a78bfa"}77`, marginBottom:24, border:`2px solid ${sound?.accent || "#a78bfa"}44` }} />
+        )}
+        {curPhaseName && (
+          <>
+            <p style={{ color:"white", fontSize:22, fontWeight:700, margin:"0 0 4px", letterSpacing:1 }}>{curPhaseName}</p>
+            <p style={{ color: sound?.accent || "#a78bfa", fontSize:38, fontWeight:800, margin:"0 0 20px", fontVariantNumeric:"tabular-nums" }}>
+              {breathCount}
+            </p>
+          </>
+        )}
+        <p style={{ color:"rgba(255,255,255,0.4)", fontSize:22, fontVariantNumeric:"tabular-nums", margin:"0 0 36px" }}>{fmt(timer)}</p>
+        <button onClick={handleStop} style={{ background:"rgba(255,255,255,0.12)", color:"white", border:`1.5px solid ${sound?.accent || "#a78bfa"}66`, borderRadius:40, padding:"13px 40px", fontSize:15, fontWeight:600, cursor:"pointer", backdropFilter:"blur(10px)" }}>
+          End Session
+        </button>
       </div>
     );
   }
 
   // ── SETUP ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position:"fixed", inset:0, background:"#06020f", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, background:"#06020f", overflowY:"auto" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"max(14px,env(safe-area-inset-top)) 16px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-        <button onClick={() => navigate('/hub')} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.08)", border:"none", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
-          <ChevronLeft size={20} color="white" />
+      <div style={{ display:"flex", alignItems:"center", padding:"52px 20px 8px", gap:8 }}>
+        <button onClick={() => navigate(-1)} style={{ background:"none", border:"none", color:"#a78bfa", cursor:"pointer", padding:4, display:"flex" }}>
+          <ChevronLeft size={22} />
         </button>
-        <h1 style={{ color:"white", fontWeight:700, fontSize:20, margin:0, flex:1 }}>Meditate</h1>
-        <span style={{ fontSize:24 }}>🧘</span>
+        <h1 style={{ color:"white", fontWeight:800, fontSize:20, margin:0 }}>Meditate</h1>
       </div>
 
-      <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 120px" }}>
+      <div style={{ padding:"0 20px 120px" }}>
 
-        {/* Sound section label */}
-        <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Ambient Sound</p>
-
-        {/* Tab switcher */}
-        <div style={{ display:"flex", gap:8, marginBottom:16, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
-          <button
-            onClick={() => setSoundTab("ambient")}
-            style={{
-              flex:1, padding:"9px 0", borderRadius:9, border:"none", cursor:"pointer", fontWeight:600, fontSize:13,
-              background: soundTab === "ambient" ? "rgba(168,85,247,0.3)" : "transparent",
-              color: soundTab === "ambient" ? "white" : "rgba(255,255,255,0.4)",
-              transition:"all 0.2s"
-            }}>
-            🌿 Ambient
-          </button>
-          <button
-            onClick={() => setSoundTab("world")}
-            style={{
-              flex:1, padding:"9px 0", borderRadius:9, border:"none", cursor:"pointer", fontWeight:600, fontSize:13,
-              background: soundTab === "world" ? "rgba(234,179,8,0.25)" : "transparent",
-              color: soundTab === "world" ? "#eab308" : "rgba(255,255,255,0.4)",
-              transition:"all 0.2s"
-            }}>
-            🌏 World
-          </button>
+        {/* ── Sound Grid ───────────────────────────────────────────────── */}
+        <h2 style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", margin:"24px 0 12px" }}>
+          Ambient Sound
+        </h2>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:10 }}>
+          {SOUNDS_AMBIENT.map(s => {
+            const active = selectedSound === s.id;
+            return (
+              <motion.button key={s.id} whileTap={{ scale: 0.96 }} onClick={() => setSelectedSound(s.id)}
+                style={{
+                  background: active ? s.color : "rgba(255,255,255,0.04)",
+                  border: active ? `1.5px solid ${s.accent}` : "1.5px solid rgba(255,255,255,0.08)",
+                  borderRadius: 16,
+                  padding: "14px 12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: 8,
+                  textAlign: "left",
+                  transition: "all 0.2s ease",
+                  boxShadow: active ? `0 0 18px ${s.accent}33` : "none",
+                }}>
+                <div style={{ background: active ? `${s.accent}22` : "rgba(255,255,255,0.06)", borderRadius: 10, padding: 8, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {s.icon}
+                </div>
+                <div>
+                  <p style={{ color: active ? "white" : "rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, margin:0, lineHeight:1.3 }}>{s.label}</p>
+                  <p style={{ color: active ? s.accent : "rgba(255,255,255,0.35)", fontWeight:400, fontSize:11, margin:"3px 0 0", lineHeight:1.4 }}>{s.desc}</p>
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
 
-        {/* Ambient sounds grid */}
-        {soundTab === "ambient" && (
-          <motion.div
-            initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.2 }}
-            style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:28 }}
-          >
-            {SOUNDS_AMBIENT.map(s => (
-              <button key={s.id} onClick={() => setSelectedSound(s.id)}
-                style={{ padding:"14px 8px", borderRadius:14,
-                  border: selectedSound===s.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.08)",
-                  background: selectedSound===s.id ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",
-                  cursor:"pointer", textAlign:"center" }}>
-                <span style={{ fontSize:24, display:"block", marginBottom:4 }}>{s.emoji}</span>
-                <span style={{ color:selectedSound===s.id?"white":"rgba(255,255,255,0.5)", fontWeight:selectedSound===s.id?700:500, fontSize:11, display:"block" }}>{s.label}</span>
-                <span style={{ color:"rgba(255,255,255,0.25)", fontSize:10, display:"block", marginTop:2 }}>{s.desc}</span>
-              </button>
-            ))}
-          </motion.div>
-        )}
-
-        {/* World sounds grid */}
-        {soundTab === "world" && (
-          <motion.div
-            initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.2 }}
-          >
-            {/* Decorative header */}
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, padding:"12px 14px", borderRadius:12, background:"rgba(234,179,8,0.06)", border:"1px solid rgba(234,179,8,0.12)" }}>
-              <span style={{ fontSize:20 }}>🌏</span>
-              <div>
-                <p style={{ color:"rgba(234,179,8,0.9)", fontWeight:700, fontSize:12, margin:0 }}>World Meditation Sounds</p>
-                <p style={{ color:"rgba(255,255,255,0.3)", fontSize:11, margin:0 }}>Sacred sounds from ancient traditions</p>
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:28 }}>
-              {SOUNDS_WORLD.map(s => (
-                <button key={s.id} onClick={() => setSelectedSound(s.id)}
-                  style={{ padding:"16px 10px", borderRadius:14,
-                    border: selectedSound===s.id ? "2px solid #eab308" : "1px solid rgba(255,255,255,0.08)",
-                    background: selectedSound===s.id ? "rgba(234,179,8,0.15)" : "rgba(255,255,255,0.03)",
-                    cursor:"pointer", textAlign:"center" }}>
-                  <span style={{ fontSize:28, display:"block", marginBottom:6 }}>{s.emoji}</span>
-                  <span style={{ color:selectedSound===s.id?"white":"rgba(255,255,255,0.6)", fontWeight:selectedSound===s.id?700:500, fontSize:12, display:"block" }}>{s.label}</span>
-                  <span style={{ color:"rgba(255,255,255,0.25)", fontSize:10, display:"block", marginTop:2 }}>{s.desc}</span>
-                  <span style={{ color:selectedSound===s.id ? "rgba(234,179,8,0.7)" : "rgba(255,255,255,0.15)", fontSize:10, display:"block", marginTop:4, letterSpacing:"0.05em" }}>{s.region}</span>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Breathing technique */}
-        <p style={{ color:"rgba(255,255,255,0.35)", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Breathing Technique</p>
-        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:32 }}>
-          {BREATHWORK.map(b => (
-            <button key={b.id} onClick={() => setSelectedBreath(b.id)}
-              style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:14,
-                border: selectedBreath===b.id ? "2px solid #db2777" : "1px solid rgba(255,255,255,0.07)",
-                background: selectedBreath===b.id ? "rgba(219,39,119,0.12)" : "rgba(255,255,255,0.03)",
-                cursor:"pointer", textAlign:"left" }}>
-              <div style={{ width:36, height:36, borderRadius:10,
-                background: selectedBreath===b.id ? "rgba(219,39,119,0.25)" : "rgba(255,255,255,0.06)",
-                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <span style={{ fontSize:18 }}>{b.id==="478"?"🌀":b.id==="box"?"📦":b.id==="simple"?"〰️":"🔇"}</span>
-              </div>
-              <div style={{ flex:1 }}>
-                <p style={{ color:selectedBreath===b.id?"white":"rgba(255,255,255,0.6)", fontWeight:600, fontSize:14, margin:"0 0 2px" }}>{b.label}</p>
-                <p style={{ color:"rgba(255,255,255,0.25)", fontSize:12, margin:0 }}>{b.desc}</p>
-              </div>
-              {selectedBreath===b.id && (
-                <div style={{ width:8, height:8, borderRadius:"50%", background:"#db2777", flexShrink:0 }} />
-              )}
-            </button>
-          ))}
+        {/* ── Breathwork ───────────────────────────────────────────────── */}
+        <h2 style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", margin:"28px 0 12px" }}>
+          Breathing Pattern
+        </h2>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {BREATHWORK.map(b => {
+            const active = selectedBreath === b.id;
+            return (
+              <motion.button key={b.id} whileTap={{ scale:0.98 }} onClick={() => setSelectedBreath(b.id)}
+                style={{ background: active ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.04)", border: active ? "1.5px solid #7c3aed" : "1.5px solid rgba(255,255,255,0.08)", borderRadius:14, padding:"14px 16px", cursor:"pointer", display:"flex", flexDirection:"column", textAlign:"left", gap:2 }}>
+                <span style={{ color: active ? "white" : "rgba(255,255,255,0.7)", fontWeight:700, fontSize:14 }}>{b.label}</span>
+                <span style={{ color: active ? "#a78bfa" : "rgba(255,255,255,0.35)", fontSize:12 }}>{b.desc}</span>
+              </motion.button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Start button */}
-      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"16px 16px max(24px,env(safe-area-inset-bottom))", background:"linear-gradient(to top, #06020f 60%, transparent)", flexShrink:0 }}>
-        <motion.button
-          whileTap={{ scale:0.97 }}
-          onClick={handleStart}
-          disabled={loading}
-          style={{ width:"100%", padding:"16px", background: soundTab==="world"
-            ? "linear-gradient(135deg,#b45309,#eab308)"
-            : "linear-gradient(135deg,#7c3aed,#db2777)",
-            border:"none", borderRadius:16, color:"white", fontWeight:700, fontSize:16, cursor:"pointer",
-            display:"flex", alignItems:"center", justifyContent:"center", gap:10,
-            opacity: loading ? 0.7 : 1 }}>
-          {loading ? (
-            <span style={{ fontSize:14 }}>Loading audio...</span>
-          ) : (
-            <>
-              <Play size={18} fill="white" />
-              Begin Session · {sound?.emoji} {sound?.label}
-            </>
-          )}
+        {/* ── Start button ─────────────────────────────────────────────── */}
+        <motion.button whileTap={{ scale:0.97 }} onClick={handleStart} disabled={loading}
+          style={{ width:"100%", marginTop:28, background: loading ? "rgba(124,58,237,0.4)" : "linear-gradient(135deg, #7c3aed, #6d28d9)", color:"white", border:"none", borderRadius:16, padding:"18px 0", fontSize:17, fontWeight:800, cursor: loading ? "default" : "pointer", boxShadow:"0 4px 24px rgba(124,58,237,0.4)" }}>
+          {loading ? "Loading audio…" : "Begin Session"}
         </motion.button>
       </div>
     </div>
