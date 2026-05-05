@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import ChatAppearancePanel from "./ChatAppearancePanel";
 import ChatCustomizePanel from "./ChatCustomizePanel";
 
 /* ─────────────────────────────────────────
@@ -13,7 +12,6 @@ import ChatCustomizePanel from "./ChatCustomizePanel";
    Each has a big expressive emoji + label + soft glow color
 ───────────────────────────────────────── */
 const BASE_ACTIONS = [
-  { id: "style",     label: "Style",     emoji: "✨",  glow: "#a855f7", desc: "Chat look" },
   { id: "customize", label: "Customize", emoji: "🎨",  glow: "#f472b6", desc: "Voice, avatar, vibe" },
   { id: "history",   label: "History",   emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
   { id: "newchat",   label: "New Chat",  emoji: "🌟",  glow: "#f59e0b", desc: "Fresh start" },
@@ -37,7 +35,6 @@ export default function ChatHeader({
   relationshipMode, setRelationshipMode,
 }) {
   const [saving, setSaving]               = useState(false);
-  const [showAppearance, setShowAppearance] = useState(false);
   const [showCustomize, setShowCustomize]   = useState(false);
   const [showOptions, setShowOptions]       = useState(false);
 
@@ -109,7 +106,6 @@ export default function ChatHeader({
   const handleAction = (id) => {
     setShowOptions(false);
     switch (id) {
-      case "style":     return setShowAppearance(true);
       case "customize":  return setShowCustomize(true);
       case "history":  return navigate("/chat-history");
       case "newchat":  return handleNewChat();
@@ -328,7 +324,6 @@ export default function ChatHeader({
       )}
 
       {/* ── APPEARANCE PANEL ── */}
-      {showAppearance && <ChatAppearancePanel onClose={() => setShowAppearance(false)} />}
 
       {/* ── CUSTOMIZE PANEL ── */}
       {showCustomize && (
