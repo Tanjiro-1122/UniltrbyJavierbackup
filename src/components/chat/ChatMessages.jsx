@@ -9,37 +9,39 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Comic-style tail pointing bottom-left (companion) ─────────── */
+/* ── Comic-style tail: points DOWN-LEFT below bubble (companion) ── */
 function BubbleTailLeft() {
   return (
-    <svg width="22" height="20" viewBox="0 0 22 20" fill="none"
-      style={{ position: "absolute", left: -16, bottom: 0, zIndex: 1, filter: "drop-shadow(-2px 3px 4px rgba(0,0,0,0.35))" }}>
-      {/* Solid triangle: top-right corner → tip at bottom-left → bottom-right corner */}
-      <path d="M22 0 L0 20 L22 20 Z" fill="url(#compGrad2)" />
-      <defs>
-        <linearGradient id="compGrad2" x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(88,28,135,0.88)" />
-          <stop offset="100%" stopColor="rgba(67,20,110,0.92)" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <div style={{
+      position: "absolute",
+      bottom: -14,
+      left: 18,
+      width: 0,
+      height: 0,
+      borderLeft: "14px solid transparent",
+      borderRight: "0px solid transparent",
+      borderTop: "15px solid rgba(67,20,110,0.92)",
+      filter: "drop-shadow(0px 3px 4px rgba(0,0,0,0.35))",
+      zIndex: 1,
+    }} />
   );
 }
 
-/* ── Comic-style tail pointing bottom-right (user) ──────────────── */
+/* ── Comic-style tail: points DOWN-RIGHT below bubble (user) ─────── */
 function BubbleTailRight() {
   return (
-    <svg width="22" height="20" viewBox="0 0 22 20" fill="none"
-      style={{ position: "absolute", right: -16, bottom: 0, zIndex: 1, filter: "drop-shadow(2px 3px 4px rgba(0,0,0,0.35))" }}>
-      {/* Solid triangle: top-left corner → tip at bottom-right → bottom-left corner */}
-      <path d="M0 0 L22 20 L0 20 Z" fill="url(#userGrad2)" />
-      <defs>
-        <linearGradient id="userGrad2" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#8b5cf6" />
-          <stop offset="100%" stopColor="#db2777" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <div style={{
+      position: "absolute",
+      bottom: -14,
+      right: 18,
+      width: 0,
+      height: 0,
+      borderRight: "14px solid transparent",
+      borderLeft: "0px solid transparent",
+      borderTop: "15px solid #7c3aed",
+      filter: "drop-shadow(0px 3px 4px rgba(0,0,0,0.35))",
+      zIndex: 1,
+    }} />
   );
 }
 
@@ -247,8 +249,8 @@ export default function ChatMessages({
                     position: "relative",
                     padding: "12px 17px",
                     borderRadius: isUser
-                      ? "20px 20px 4px 20px"
-                      : "20px 20px 20px 4px",
+                      ? "20px 20px 20px 20px"
+                      : "20px 20px 20px 20px",
                     fontSize: 14.5,
                     lineHeight: 1.6,
                     wordBreak: "break-word",
@@ -392,4 +394,5 @@ export default function ChatMessages({
     </div>
   );
 }
+
 
