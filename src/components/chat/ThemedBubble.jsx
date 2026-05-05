@@ -333,7 +333,7 @@ const THEME_MAP = {
    MAIN EXPORT
 ══════════════════════════════════════════════════════════════ */
 export default function ThemedBubble({
-  role, content, theme = "imessage",
+  role, content, children, theme = "imessage",
   fontFamily, fontSize = 15, isLoading = false,
 }) {
   const isUser  = role === "user";
@@ -348,7 +348,7 @@ export default function ThemedBubble({
         wordBreak: "break-word",
         display: "block",
       }}>
-        {content}
+        {children || content}
       </span>
     </BubbleComponent>
   );
