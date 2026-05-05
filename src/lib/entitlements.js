@@ -133,6 +133,7 @@ const PRESERVE_ON_SIGNOUT = new Set([
 const IDENTITY_KEYS = [
   // Auth / identity (apple_user_id intentionally excluded — preserved across sign-out)
   "unfiltr_user_id",
+  "unfiltr_google_user_id",  // Android Google Sign-In — cleared on logout to prevent stale auth
   "unfiltr_auth_token",
   "unfiltr_apple_email",
   "unfiltr_user_email",
