@@ -266,7 +266,7 @@ export default function ChatMessages({
                 {/* Sparkle burst */}
                 {!isUser && sparkleIdx === i && <SparkleEffect active />}
 
-                {/* ── THE BUBBLE ── */}
+                {/* ── THE BUBBLE — SVG ThemedBubble system ── */}
                 <div
                   className={isUser ? "bubble-enter-user" : "bubble-enter-companion"}
                   onContextMenu={(e) => { e.preventDefault(); handleLongPress(i); }}
@@ -274,95 +274,55 @@ export default function ChatMessages({
                   onTouchEnd={() => clearTimeout(window.__rxTimer)}
                   onTouchMove={() => clearTimeout(window.__rxTimer)}
                   style={{
-                    position: "relative",
-                    padding: "12px 17px",
-                    borderRadius: "20px", /* base fallback — overridden by bubbleStyle below */
                     animationDelay: `${Math.min(i * 0.04, 0.25)}s`,
-                    marginBottom: 28,
-                    overflow: "visible",
-                    fontSize: fontSize,
-                    lineHeight: 1.6,
-                    wordBreak: "break-word",
-                    color: "white",
-                    letterSpacing: "0.01em",
-                    transition: "box-shadow 0.3s ease",
                     maxHeight: "42vh",
                     overflowY: "auto",
                     WebkitOverflowScrolling: "touch",
-
-                    /* ── Bubble style applied first, then colour/shadow on top ── */
-                    /* bubbleStyle.render() sets borderRadius — must come before overrides */
-                    ...bubbleStyle.render(isUser),
-                    ...(isUser ? {
-                      background: "linear-gradient(140deg, #8b5cf6 0%, #7c3aed 45%, #db2777 100%)",
-                      boxShadow: "0 4px 20px rgba(124,58,237,0.6), 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
-                    } : {
-                      background: "linear-gradient(145deg, rgba(88,28,135,0.82) 0%, rgba(67,20,110,0.88) 50%, rgba(76,29,149,0.82) 100%)",
-                      backdropFilter: "blur(24px)",
-                      WebkitBackdropFilter: "blur(24px)",
-                      border: bubbleStyle.id === "minimal" ? undefined : "1.5px solid rgba(196,180,252,0.22)",
-                      boxShadow: "0 6px 32px rgba(109,40,217,0.55), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
-                      animation: isNewest ? "glowPulse 2.5s ease-in-out 3" : undefined,
-                    }),
-                    ...fontStyle,
-                    /* Comic/spiky: add starburst clip-path */
-                    ...(bubbleStyle.spiky ? {
-                      clipPath: isUser
-                        ? "polygon(5% 10%,15% 0%,25% 8%,35% 0%,45% 9%,55% 0%,65% 8%,75% 0%,85% 10%,95% 0%,100% 10%,92% 20%,100% 35%,92% 50%,100% 65%,92% 80%,100% 90%,85% 100%,75% 92%,65% 100%,55% 91%,45% 100%,35% 92%,25% 100%,15% 91%,5% 100%,0% 88%,8% 75%,0% 60%,8% 45%,0% 30%,8% 15%)"
-                        : "polygon(0% 10%,8% 0%,18% 9%,28% 0%,38% 8%,48% 0%,58% 9%,68% 0%,78% 8%,88% 0%,95% 10%,100% 0%,100% 12%,92% 25%,100% 40%,92% 55%,100% 70%,92% 85%,100% 100%,85% 92%,75% 100%,65% 91%,55% 100%,45% 92%,35% 100%,25% 91%,15% 100%,5% 92%,0% 100%,0% 85%,8% 70%,0% 55%,8% 40%,0% 25%)",
-                      borderRadius: "0px",
-                      padding: "18px 22px",
-                    } : {}),
                   }}
                 >
-                  {/* iMessage bubble tail — only shown when style is imessage */}
-                  {!isUser && bubbleStyle.tail && (
-                    <BubbleTailLeft color="rgba(67,20,110,0.90)" />
-                  )}
-                  {isUser && bubbleStyle.tail && (
-                    <BubbleTailRight color="#7c3aed" />
-                  )}
-
-                  {/* Quoted reply */}
-                  {msg.quoteReply && (
-                    <div style={{
-                      borderLeft: "2.5px solid rgba(196,180,252,0.55)",
-                      paddingLeft: 9, marginBottom: 8,
-                      background: "rgba(0,0,0,0.15)",
-                      borderRadius: "0 6px 6px 0",
-                      padding: "4px 9px",
-                    }}>
-                      <p style={{ fontSize: 11, margin: 0, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 210 }}>
-                        ↩ {msg.quoteReply}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Image preview */}
-                  {msg.imagePreview && (
-                    <img src={msg.imagePreview} alt="shared"
-                      style={{ width: "100%", maxWidth: 190, borderRadius: 12, marginBottom: 8, display: "block", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }} />
-                  )}
-
-                  {/* Message content */}
-                  {msg.role === "assistant" ? (
-                    <ReactMarkdown components={{
-                      p: ({ children }) => <span style={{ display: "inline" }}>{children}</span>,
-                      strong: ({ children }) => <strong style={{ fontWeight: 700, color: "#e9d5ff" }}>{children}</strong>,
-                      em: ({ children }) => <em style={{ color: "#f3e8ff" }}>{children}</em>,
-                      ul: ({ children }) => <ul style={{ margin: "5px 0", paddingLeft: 18 }}>{children}</ul>,
-                      ol: ({ children }) => <ol style={{ margin: "5px 0", paddingLeft: 18 }}>{children}</ol>,
-                      li: ({ children }) => <li style={{ marginBottom: 3 }}>{children}</li>,
-                      a: ({ children, href }) => (
-                        <a href={href} target="_blank" rel="noopener noreferrer"
-                          style={{ color: "#c4b5fd", textDecoration: "underline", textUnderlineOffset: 2 }}>
-                          {children}
-                        </a>
-                      ),
-                    }}>{msg.content}</ReactMarkdown>
-                  ) : (
-                    <span>{msg.content}</span>
-                  )}
+                  <ThemedBubble
+                    role={msg.role}
+                    theme={bubbleStyle.id}
+                    fontFamily={fontStyle.fontFamily}
+                    fontSize={fontSize}
+                    isNewest={isNewest}
+                  >
+                    {msg.quoteReply && (
+                      <div style={{
+                        borderLeft: "2.5px solid rgba(196,180,252,0.55)",
+                        paddingLeft: 9, marginBottom: 8,
+                        background: "rgba(0,0,0,0.15)",
+                        borderRadius: "0 6px 6px 0",
+                        padding: "4px 9px",
+                      }}>
+                        <p style={{ fontSize: 11, margin: 0, opacity: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 210 }}>
+                          ↩ {msg.quoteReply}
+                        </p>
+                      </div>
+                    )}
+                    {msg.imagePreview && (
+                      <img src={msg.imagePreview} alt="shared"
+                        style={{ width: "100%", maxWidth: 190, borderRadius: 12, marginBottom: 8, display: "block", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }} />
+                    )}
+                    {msg.role === "assistant" ? (
+                      <ReactMarkdown components={{
+                        p: ({ children }) => <span style={{ display: "inline" }}>{children}</span>,
+                        strong: ({ children }) => <strong style={{ fontWeight: 700, color: "#e9d5ff" }}>{children}</strong>,
+                        em: ({ children }) => <em style={{ color: "#f3e8ff" }}>{children}</em>,
+                        ul: ({ children }) => <ul style={{ margin: "5px 0", paddingLeft: 18 }}>{children}</ul>,
+                        ol: ({ children }) => <ol style={{ margin: "5px 0", paddingLeft: 18 }}>{children}</ol>,
+                        li: ({ children }) => <li style={{ marginBottom: 3 }}>{children}</li>,
+                        a: ({ children, href }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer"
+                            style={{ color: "#c4b5fd", textDecoration: "underline", textUnderlineOffset: 2 }}>
+                            {children}
+                          </a>
+                        ),
+                      }}>{msg.content}</ReactMarkdown>
+                    ) : (
+                      <span>{msg.content}</span>
+                    )}
+                  </ThemedBubble>
                 </div>
 
                 {/* Reactions row */}
