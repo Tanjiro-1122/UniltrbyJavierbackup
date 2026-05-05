@@ -9,52 +9,34 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── iMessage-style tail — companion (bottom-left corner) ── */
+/* ── iMessage-style tail using border-radius (companion = left, user = right) ── */
 function BubbleTailLeft({ color }) {
   return (
-    <svg
-      width="14" height="18"
-      viewBox="0 0 14 18"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        position: "absolute",
-        bottom: -1,
-        left: -7,
-        display: "block",
-        pointerEvents: "none",
-      }}
-    >
-      {/* Thin curved tail: starts at top-right (attaches to bubble corner),
-          sweeps to a sharp point at bottom-left */}
-      <path
-        d="M 14 0 C 14 6, 6 10, 0 18 C 4 12, 8 6, 8 0 Z"
-        fill={color}
-      />
-    </svg>
+    <div style={{
+      position: "absolute",
+      bottom: -9,
+      left: -6,
+      width: 16,
+      height: 16,
+      background: color,
+      borderRadius: "0 0 50% 0",
+      transform: "skewY(-15deg)",
+    }} />
   );
 }
 
-/* ── iMessage-style tail — user (bottom-right corner) ── */
 function BubbleTailRight({ color }) {
   return (
-    <svg
-      width="14" height="18"
-      viewBox="0 0 14 18"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{
-        position: "absolute",
-        bottom: -1,
-        right: -7,
-        display: "block",
-        pointerEvents: "none",
-      }}
-    >
-      {/* Mirror of left tail */}
-      <path
-        d="M 0 0 C 0 6, 8 10, 14 18 C 10 12, 6 6, 6 0 Z"
-        fill={color}
-      />
-    </svg>
+    <div style={{
+      position: "absolute",
+      bottom: -9,
+      right: -6,
+      width: 16,
+      height: 16,
+      background: color,
+      borderRadius: "0 0 0 50%",
+      transform: "skewY(15deg)",
+    }} />
   );
 }
 
