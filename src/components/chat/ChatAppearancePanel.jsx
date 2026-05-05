@@ -68,7 +68,7 @@ export default function ChatAppearancePanel({ onClose }) {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
+      position: "fixed", inset: 0, zIndex: 400,
       background: "rgba(0,0,0,0.6)",
       backdropFilter: "blur(8px)",
       display: "flex", alignItems: "flex-end",
