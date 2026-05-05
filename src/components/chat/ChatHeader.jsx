@@ -13,16 +13,17 @@ import ChatCustomizePanel from "./ChatCustomizePanel";
    Each has a big expressive emoji + label + soft glow color
 ───────────────────────────────────────── */
 const BASE_ACTIONS = [
-  { id: "style",    label: "Style",    emoji: "✨",  glow: "#a855f7", desc: "Chat look" },
-  { id: "history",  label: "History",  emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
-  { id: "newchat",  label: "New Chat", emoji: "🌟",  glow: "#f59e0b", desc: "Fresh start" },
-  { id: "topics",   label: "Topics",   emoji: "💫",  glow: "#8b5cf6", desc: "What to talk" },
-  { id: "mood",     label: "Mood",     emoji: "🌈",  glow: "#ec4899", desc: "Track feelings" },
-  { id: "capsule",  label: "Capsule",  emoji: "🔮",  glow: "#06b6d4", desc: "Time capsule" },
-  { id: "sleep",    label: "Sleep",    emoji: "🌙",  glow: "#4f46e5", desc: "Sleep story" },
-  { id: "games",    label: "Games",    emoji: "🎮",  glow: "#10b981", desc: "Play games" },
-  { id: "badges",   label: "Badges",   emoji: "🏅",  glow: "#f59e0b", desc: "Achievements" },
-  { id: "saved",    label: "Saved",    emoji: "💜",  glow: "#db2777", desc: "Bookmarks" },
+  { id: "style",     label: "Style",     emoji: "✨",  glow: "#a855f7", desc: "Chat look" },
+  { id: "customize", label: "Customize", emoji: "🎨",  glow: "#f472b6", desc: "Voice, avatar, vibe" },
+  { id: "history",   label: "History",   emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
+  { id: "newchat",   label: "New Chat",  emoji: "🌟",  glow: "#f59e0b", desc: "Fresh start" },
+  { id: "topics",    label: "Topics",    emoji: "💫",  glow: "#8b5cf6", desc: "What to talk" },
+  { id: "mood",      label: "Mood",      emoji: "🌈",  glow: "#ec4899", desc: "Track feelings" },
+  { id: "capsule",   label: "Capsule",   emoji: "🔮",  glow: "#06b6d4", desc: "Time capsule" },
+  { id: "sleep",     label: "Sleep",     emoji: "🌙",  glow: "#4f46e5", desc: "Sleep story" },
+  { id: "games",     label: "Games",     emoji: "🎮",  glow: "#10b981", desc: "Play games" },
+  { id: "badges",    label: "Badges",    emoji: "🏅",  glow: "#f59e0b", desc: "Achievements" },
+  { id: "saved",     label: "Saved",     emoji: "💜",  glow: "#db2777", desc: "Bookmarks" },
 ];
 
 export default function ChatHeader({
@@ -108,7 +109,8 @@ export default function ChatHeader({
   const handleAction = (id) => {
     setShowOptions(false);
     switch (id) {
-      case "style":    return setShowAppearance(true);
+      case "style":     return setShowAppearance(true);
+      case "customize":  return setShowCustomize(true);
       case "history":  return navigate("/chat-history");
       case "newchat":  return handleNewChat();
       case "topics":   return onShowTopics();
