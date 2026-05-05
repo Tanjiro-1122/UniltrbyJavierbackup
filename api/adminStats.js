@@ -463,9 +463,10 @@ export default async function handler(req, res) {
 
   // ── STATS FETCH ──────────────────────────────────────────────────────────
   try {
-    const [allProfiles, allFeedback] = await Promise.all([
+    const [allProfiles, allFeedback, allJournals] = await Promise.all([
       fetchEntity("UserProfile"),
       fetchEntity("Feedback").catch(() => []),
+      fetchEntity("JournalEntry", { limit: 500 }).catch(() => []),
     ]);
 
     const totalMessages = allProfiles.reduce((sum, p) => sum + (p.message_count || 0), 0);
@@ -478,13 +479,14 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       totalUsers:          allProfiles.length,
-      premiumUsers:        allProfiles.filter(p => p.is_premium || p.annual_plan || p.pro_plan).length,
+      premiumUsers:        allProfiles.filter(p => p.is_premium || p.annual_plan || p.pro_plan || p.ultimate_friend).length,
+      ultimateFriendUsers: allProfiles.filter(p => p.ultimate_friend).length,
       trialUsers:          allProfiles.filter(p => p.trial_active).length,
       onlineNow,
       appleUsers,
       todayMessages:       0,
       totalMessages,
-      totalJournalEntries: 0,
+      totalJournalEntries: allJournals.length,
       crisisFlags:         0,
       newThisWeek:         allProfiles.filter(p => (p.created_date || "") >= weekAgo).length,
       activeThisWeek:      allProfiles.filter(p => (p.last_seen || p.last_active || "") >= weekAgo).length,
@@ -504,22 +506,24 @@ export default async function handler(req, res) {
           apple_user_id: p.apple_user_id || null,
           created_date: p.created_date,
           last_seen: p.last_seen || null,
-          is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan),
+          is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan || p.ultimate_friend),
           annual_plan: !!(p.annual_plan),
           pro_plan: !!(p.pro_plan),
+          ultimate_friend: !!(p.ultimate_friend),
           trial_active: !!(p.trial_active),
           message_count: p.message_count || 0,
           onboarding_complete: !!(p.onboarding_complete),
           account_delete_requested: !!(p.account_delete_requested),
         })),
       premiumList: [...allProfiles]
-        .filter(p => p.is_premium || p.annual_plan || p.pro_plan)
+        .filter(p => p.is_premium || p.annual_plan || p.pro_plan || p.ultimate_friend)
         .map(p => ({
           id: p.id,
           display_name: p.display_name || "Anonymous",
           is_premium: true,
           annual_plan: p.annual_plan,
           pro_plan: p.pro_plan,
+          ultimate_friend: p.ultimate_friend,
         })),
       allFeedback: [...allFeedback]
         .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
@@ -538,3 +542,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
