@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { loadAppearance, BUBBLE_STYLES, FONT_OPTIONS } from "./ChatAppearancePanel";
+import ReactMarkdown from "react-markdown";
 
 const SIZE_MAP = { sm: 13, md: 15, lg: 17, xl: 20 };
-import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import { hapticLight } from "@/components/utils/haptics";
@@ -136,18 +136,32 @@ export default function ChatMessages({
       <style>{`
         /* ── Bubble entrance ── */
         @keyframes bubblePop {
-          0%   { transform: scale(0.75) translateY(8px); opacity: 0; }
-          65%  { transform: scale(1.05) translateY(-2px); opacity: 1; }
+          0%   { transform: scale(0.7) translateY(10px); opacity: 0; }
+          65%  { transform: scale(1.04) translateY(-3px); opacity: 1; }
           100% { transform: scale(1) translateY(0); opacity: 1; }
         }
-        .bubble-enter {
-          animation: bubblePop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        @keyframes userBubblePop {
+          0%   { transform: scale(0.75) translateX(12px); opacity: 0; }
+          70%  { transform: scale(1.03) translateX(-2px); opacity: 1; }
+          100% { transform: scale(1) translateX(0); opacity: 1; }
+        }
+        .bubble-enter-companion {
+          animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .bubble-enter-user {
+          animation: userBubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
 
         /* ── Typing dots ── */
         @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
-          30%            { transform: translateY(-8px) scale(1.25); opacity: 1; }
+          0%, 60%, 100% { transform: translateY(0) scale(1); opacity: 0.35; }
+          30%            { transform: translateY(-7px) scale(1.3); opacity: 1; }
+        }
+        .typing-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: rgba(196,180,252,0.9);
+          display: inline-block;
+          animation: typingBounce 1.1s ease-in-out infinite;
         }
 
         /* ── Shimmer on companion bubble ── */
@@ -254,7 +268,7 @@ export default function ChatMessages({
 
                 {/* ── THE BUBBLE ── */}
                 <div
-                  className={`bubble-enter ${isUser ? "bubble-user" : "bubble-companion"}`}
+                  className={isUser ? "bubble-enter-user" : "bubble-enter-companion"}
                   onContextMenu={(e) => { e.preventDefault(); handleLongPress(i); }}
                   onTouchStart={() => { window.__rxTimer = setTimeout(() => handleLongPress(i), 500); }}
                   onTouchEnd={() => clearTimeout(window.__rxTimer)}
@@ -263,6 +277,7 @@ export default function ChatMessages({
                     position: "relative",
                     padding: "12px 17px",
                     borderRadius: "20px", /* base fallback — overridden by bubbleStyle below */
+                    animationDelay: `${Math.min(i * 0.04, 0.25)}s`,
                     marginBottom: 28,
                     overflow: "visible",
                     fontSize: fontSize,
@@ -290,6 +305,14 @@ export default function ChatMessages({
                       animation: isNewest ? "glowPulse 2.5s ease-in-out 3" : undefined,
                     }),
                     ...fontStyle,
+                    /* Comic/spiky: add starburst clip-path */
+                    ...(bubbleStyle.spiky ? {
+                      clipPath: isUser
+                        ? "polygon(5% 10%,15% 0%,25% 8%,35% 0%,45% 9%,55% 0%,65% 8%,75% 0%,85% 10%,95% 0%,100% 10%,92% 20%,100% 35%,92% 50%,100% 65%,92% 80%,100% 90%,85% 100%,75% 92%,65% 100%,55% 91%,45% 100%,35% 92%,25% 100%,15% 91%,5% 100%,0% 88%,8% 75%,0% 60%,8% 45%,0% 30%,8% 15%)"
+                        : "polygon(0% 10%,8% 0%,18% 9%,28% 0%,38% 8%,48% 0%,58% 9%,68% 0%,78% 8%,88% 0%,95% 10%,100% 0%,100% 12%,92% 25%,100% 40%,92% 55%,100% 70%,92% 85%,100% 100%,85% 92%,75% 100%,65% 91%,55% 100%,45% 92%,35% 100%,25% 91%,15% 100%,5% 92%,0% 100%,0% 85%,8% 70%,0% 55%,8% 40%,0% 25%)",
+                      borderRadius: "0px",
+                      padding: "18px 22px",
+                    } : {}),
                   }}
                 >
                   {/* iMessage bubble tail — only shown when style is imessage */}
@@ -408,7 +431,28 @@ export default function ChatMessages({
         });
       })()} {/* end messages IIFE */}
 
-      {/* Typing indicator shown in avatar panel above */}
+      {/* Typing indicator — animated dots bubble */}
+      {loading && (
+        <div style={{
+          display: "flex", justifyContent: "flex-start",
+          animation: "bubblePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both",
+          paddingLeft: 2,
+        }}>
+          <div style={{
+            padding: "14px 20px",
+            background: "linear-gradient(145deg, rgba(88,28,135,0.82), rgba(67,20,110,0.88))",
+            border: "1.5px solid rgba(196,180,252,0.22)",
+            borderRadius: "20px",
+            borderBottomLeftRadius: 4,
+            boxShadow: "0 4px 20px rgba(109,40,217,0.4)",
+            display: "flex", gap: 5, alignItems: "center",
+          }}>
+            <span className="typing-dot" style={{ animationDelay: "0s" }} />
+            <span className="typing-dot" style={{ animationDelay: "0.18s" }} />
+            <span className="typing-dot" style={{ animationDelay: "0.36s" }} />
+          </div>
+        </div>
+      )}
 
       <div ref={messagesEndRef} />
     </div>
