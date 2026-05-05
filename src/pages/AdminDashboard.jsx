@@ -274,10 +274,11 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
           <div style={{ marginTop:14 }}>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
               {[
-                ["is_premium",  "Premium",      "#f59e0b"],
-                ["pro_plan",    "Pro Plan",     "#a855f7"],
-                ["annual_plan", "Annual Plan",  "#34d399"],
-                ["trial_active","Trial Active", "#60a5fa"],
+                ["is_premium",     "Premium",        "#f59e0b"],
+                ["pro_plan",       "Pro Plan",        "#a855f7"],
+                ["annual_plan",    "Annual Plan",     "#34d399"],
+                ["ultimate_friend","Ultimate Friend ⭐","#f97316"],
+                ["trial_active",   "Trial Active",    "#60a5fa"],
               ].map(([key, label, color]) => (
                 <label key={key} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", background:`${color}11`, border:`1px solid ${color}33`, borderRadius:10, padding:"8px 10px" }}>
                   <input
@@ -842,7 +843,8 @@ export default function AdminDashboard() {
 
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
               <StatCard icon={<Users size={13} color="#fff"/>}         label="Total Users"     value={stats.totalUsers}            grad={GRAD_PURPLE} />
-              <StatCard icon={<Crown size={13} color="#fff"/>}         label="Pro Users"       value={stats.premiumUsers}          sub={convRate + "% conv"} grad={GRAD_AMBER} />
+              <StatCard icon={<Crown size={13} color="#fff"/>}         label="Premium Users"   value={stats.premiumUsers}          sub={convRate + "% conv"} grad={GRAD_AMBER} />
+              <StatCard icon={<span style={{fontSize:13}}>⭐</span>}  label="Ultimate Friend" value={stats.ultimateFriendUsers ?? 0} grad="linear-gradient(135deg,#f97316,#ea580c)" />
               <StatCard icon={<span style={{fontSize:13}}>🆕</span>}  label="New This Week"   value={stats.newThisWeek}           grad={GRAD_GREEN} />
               <StatCard icon={<span style={{fontSize:13}}>🟢</span>}  label="Online Now"      value={stats.onlineNow}             grad={GRAD_GREEN} />
               <StatCard icon={<MessageSquare size={13} color="#fff"/>} label="Today's Msgs"   value={stats.todayMessages}         grad={GRAD_BLUE} />
@@ -1212,5 +1214,6 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
 
 
