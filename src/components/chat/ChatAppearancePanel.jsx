@@ -97,20 +97,22 @@ export function saveAppearance(data) {
   } catch {}
 }
 
+const SIZE_OPTIONS = [
+  { id: "sm", label: "S", px: 13 },
+  { id: "md", label: "M", px: 15 },
+  { id: "lg", label: "L", px: 17 },
+  { id: "xl", label: "XL", px: 20 },
+];
+
 export default function ChatAppearancePanel({ onClose }) {
   const saved = loadAppearance();
-  const [selectedFont, setSelectedFont] = React.useState(saved.font || "default");
+  const [selectedFont,   setSelectedFont]   = React.useState(saved.font   || "default");
   const [selectedBubble, setSelectedBubble] = React.useState(saved.bubble || "imessage");
+  const [selectedSize,   setSelectedSize]   = React.useState(saved.size   || "md");
 
-  const handleFont = (id) => {
-    setSelectedFont(id);
-    saveAppearance({ font: id });
-  };
-
-  const handleBubble = (id) => {
-    setSelectedBubble(id);
-    saveAppearance({ bubble: id });
-  };
+  const handleFont = (id) => { setSelectedFont(id);   saveAppearance({ font: id }); };
+  const handleBubble = (id) => { setSelectedBubble(id); saveAppearance({ bubble: id }); };
+  const handleSize = (id) => { setSelectedSize(id);   saveAppearance({ size: id }); };
 
   return (
     <div style={{
@@ -139,6 +141,20 @@ export default function ChatAppearancePanel({ onClose }) {
           <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={16} color="white" />
           </button>
+        </div>
+
+        {/* Size Section */}
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Text Size</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {SIZE_OPTIONS.map(s => (
+            <button key={s.id} onClick={() => handleSize(s.id)} style={{
+              flex: 1, height: 44, borderRadius: 12,
+              border: selectedSize === s.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
+              background: selectedSize === s.id ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.04)",
+              color: selectedSize === s.id ? "white" : "rgba(255,255,255,0.5)",
+              fontWeight: 700, fontSize: s.px, cursor: "pointer",
+            }}>{s.label}</button>
+          ))}
         </div>
 
         {/* Font Section */}
@@ -196,13 +212,14 @@ export default function ChatAppearancePanel({ onClose }) {
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
             <div style={{
               padding: "10px 16px",
-              maxWidth: "70%",
+              maxWidth: "75%",
               background: "linear-gradient(145deg, rgba(88,28,135,0.9), rgba(67,20,110,0.95))",
               color: "white",
-              fontSize: 13,
               border: "1.5px solid rgba(196,180,252,0.2)",
+              transition: "all 0.2s ease",
               ...BUBBLE_STYLES.find(b => b.id === selectedBubble)?.render(false),
               ...FONT_OPTIONS.find(f => f.id === selectedFont)?.style,
+              fontSize: SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15,
             }}>
               Hey, how are you? 💜
             </div>
@@ -211,14 +228,15 @@ export default function ChatAppearancePanel({ onClose }) {
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <div style={{
               padding: "10px 16px",
-              maxWidth: "70%",
+              maxWidth: "75%",
               background: "linear-gradient(140deg, #8b5cf6, #7c3aed 45%, #db2777)",
               color: "white",
-              fontSize: 13,
+              transition: "all 0.2s ease",
               ...BUBBLE_STYLES.find(b => b.id === selectedBubble)?.render(true),
               ...FONT_OPTIONS.find(f => f.id === selectedFont)?.style,
+              fontSize: SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15,
             }}>
-              I'm doing great!
+              I'm doing great! 😊
             </div>
           </div>
         </div>
