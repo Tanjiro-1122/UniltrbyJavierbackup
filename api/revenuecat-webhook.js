@@ -136,21 +136,23 @@ export default async function handler(req, res) {
 
   if (GRANT_EVENTS.includes(eventType)) {
     updates = {
-      is_premium:   true,
-      annual_plan:  plan === "annual",
-      pro_plan:     plan === "pro",
-      premium:      true,
-      trial_active: false,
+      is_premium:       true,
+      annual_plan:      plan === "annual" || plan === "ultimate_friend",
+      pro_plan:         plan === "pro",
+      ultimate_friend:  plan === "ultimate_friend",
+      premium:          true,
+      trial_active:     false,
       ...(expiresDate ? { subscription_expires: expiresDate } : {}),
     };
     console.log(`[RC Webhook] ✅ Granting premium (${plan}) to profile ${profile.id}`);
 
   } else if (REVOKE_EVENTS.includes(eventType)) {
     updates = {
-      is_premium:  false,
-      annual_plan: false,
-      pro_plan:    false,
-      premium:     false,
+      is_premium:      false,
+      annual_plan:     false,
+      pro_plan:        false,
+      ultimate_friend: false,
+      premium:         false,
     };
     console.log(`[RC Webhook] ❌ Revoking premium from profile ${profile.id}`);
 
@@ -166,3 +168,4 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ received: true, matched: true, updated: ok, plan });
 }
+
