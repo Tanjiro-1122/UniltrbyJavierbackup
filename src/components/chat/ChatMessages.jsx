@@ -1,6 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import Lottie from "lottie-react";
-import bubbleAnimation from "/src/assets/Bubbles.json";
 import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -11,33 +9,37 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Lottie speech bubble wrapper ── */
-function LottieBubbleWrap({ isUser, children }) {
+/* ── Speech bubble tail (bottom-left for companion) ── */
+function BubbleTailLeft({ color }) {
   return (
-    <div style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}>
-      {/* Lottie bubble plays once on mount as a pop-in animation */}
-      <Lottie
-        animationData={bubbleAnimation}
-        loop={false}
-        style={{
-          position: "absolute",
-          top: 0, left: 0, right: 0, bottom: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 0,
-          pointerEvents: "none",
-          opacity: 0.18,
-        }}
-      />
-      <div style={{ position: "relative", zIndex: 1 }}>
-        {children}
-      </div>
-    </div>
+    <div style={{
+      position: "absolute",
+      bottom: -12,
+      left: 20,
+      width: 0,
+      height: 0,
+      borderLeft: "10px solid transparent",
+      borderTop: \`14px solid \${color}\`,
+      borderRight: "4px solid transparent",
+    }} />
   );
 }
-function BubbleTailLeft({ color }) { return null; }
 
-function BubbleTailRight({ color }) { return null; }
+/* ── Speech bubble tail (bottom-right for user) ── */
+function BubbleTailRight({ color }) {
+  return (
+    <div style={{
+      position: "absolute",
+      bottom: -12,
+      right: 20,
+      width: 0,
+      height: 0,
+      borderRight: "10px solid transparent",
+      borderTop: \`14px solid \${color}\`,
+      borderLeft: "4px solid transparent",
+    }} />
+  );
+}
 
 /* ── Sparkle burst on new companion message ─────────────────────── */
 function SparkleEffect({ active }) {
