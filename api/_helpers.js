@@ -341,10 +341,11 @@ export async function getProfileTier(profileId) {
     }
   }
 
-  const isAnnual  = !!(profile?.annual_plan);
+  const isUltimateFriend = !!(profile?.ultimate_friend);
+  const isAnnual  = !!(profile?.annual_plan) || isUltimateFriend;
   const isPro     = !!(profile?.pro_plan);
-  const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual);
-  return { isPremium, isPro, isAnnual, profile, fetchFailed: false };
+  const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual || isUltimateFriend);
+  return { isPremium, isPro, isAnnual, isUltimateFriend, profile, fetchFailed: false };
 }
 
 /**
@@ -364,13 +365,15 @@ export async function getProfileTierByAppleId(appleUserId) {
     const profile = records.length > 0 ? records[0] : null;
     if (!profile) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
     if (profile.id) setCachedProfile(profile.id, profile);
-    const isAnnual  = !!(profile.annual_plan);
+    const isUltimateFriend = !!(profile.ultimate_friend);
+    const isAnnual  = !!(profile.annual_plan) || isUltimateFriend;
     const isPro     = !!(profile.pro_plan);
-    const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual);
-    return { isPremium, isPro, isAnnual, profile, fetchFailed: false };
+    const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual || isUltimateFriend);
+    return { isPremium, isPro, isAnnual, isUltimateFriend, profile, fetchFailed: false };
   } catch (e) {
     console.warn(`[getProfileTierByAppleId] lookup failed for ${appleUserId?.slice(0, 12)}: ${e.message}`);
     return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: true };
   }
 }
+
 
