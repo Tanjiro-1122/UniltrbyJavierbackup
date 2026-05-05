@@ -1,14 +1,29 @@
 import React, { useState } from "react";
 import {
-  Volume2, VolumeX, Settings, Save, BookOpen, ChevronLeft,
-  RotateCcw, History, Zap, SlidersHorizontal, Palette,
-  Wind, Moon, TrendingUp, Clock, Gamepad2, Trophy, Bookmark,
-  Sparkles, X
+  Volume2, VolumeX, Settings, BookOpen, ChevronLeft,
+  RotateCcw, History, Sparkles, X
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import ChatAppearancePanel from "./ChatAppearancePanel";
 import ChatCustomizePanel from "./ChatCustomizePanel";
+
+/* ─────────────────────────────────────────
+   Disney/Pixar-style quick action items
+   Each has a big expressive emoji + label + soft glow color
+───────────────────────────────────────── */
+const BASE_ACTIONS = [
+  { id: "style",    label: "Style",    emoji: "✨",  glow: "#a855f7", desc: "Chat look" },
+  { id: "history",  label: "History",  emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
+  { id: "newchat",  label: "New Chat", emoji: "🌟",  glow: "#f59e0b", desc: "Fresh start" },
+  { id: "topics",   label: "Topics",   emoji: "💫",  glow: "#8b5cf6", desc: "What to talk" },
+  { id: "mood",     label: "Mood",     emoji: "🌈",  glow: "#ec4899", desc: "Track feelings" },
+  { id: "capsule",  label: "Capsule",  emoji: "🔮",  glow: "#06b6d4", desc: "Time capsule" },
+  { id: "sleep",    label: "Sleep",    emoji: "🌙",  glow: "#4f46e5", desc: "Sleep story" },
+  { id: "games",    label: "Games",    emoji: "🎮",  glow: "#10b981", desc: "Play games" },
+  { id: "badges",   label: "Badges",   emoji: "🏅",  glow: "#f59e0b", desc: "Achievements" },
+  { id: "saved",    label: "Saved",    emoji: "💜",  glow: "#db2777", desc: "Bookmarks" },
+];
 
 export default function ChatHeader({
   voiceEnabled, setVoiceEnabled,
@@ -23,7 +38,7 @@ export default function ChatHeader({
   const [saving, setSaving]               = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
   const [showCustomize, setShowCustomize]   = useState(false);
-  const [showQuickMenu, setShowQuickMenu]   = useState(false);
+  const [showOptions, setShowOptions]       = useState(false);
 
   /* ── Save to journal ── */
   const handleSaveJournal = async () => {
@@ -89,26 +104,33 @@ export default function ChatHeader({
     URL.revokeObjectURL(url);
   };
 
-  /* ── Quick menu items ── */
-  const quickActions = [
-    { label: "Customize", emoji: "🎛️", action: () => { setShowQuickMenu(false); setShowCustomize(true); } },
-    { label: "Style",     emoji: "🎨", action: () => { setShowQuickMenu(false); setShowAppearance(true); } },
-    { label: "History",   emoji: "📜", action: () => { setShowQuickMenu(false); navigate("/chat-history"); } },
-    { label: "New Chat",  emoji: "🔄", action: () => { setShowQuickMenu(false); handleNewChat(); } },
-    { label: "Topics",    emoji: "✨", action: () => { setShowQuickMenu(false); onShowTopics(); } },
-    { label: "Meditate",  emoji: "🌙", action: () => { setShowQuickMenu(false); onShowMeditation(); } },
-    { label: "Mood",      emoji: "📊", action: () => { setShowQuickMenu(false); onShowMoodInsights(); } },
-    { label: "Capsule",   emoji: "⏰", action: () => { setShowQuickMenu(false); onShowTimeCapsule(); } },
-    { label: "Breathe",   emoji: "🌬️", action: () => { setShowQuickMenu(false); onShowBreathing(); } },
-    { label: "Sleep",     emoji: "💤", action: () => { setShowQuickMenu(false); onShowSleepStory(); } },
-    { label: "Games",     emoji: "🎮", action: () => { setShowQuickMenu(false); onShowGames(); } },
-    { label: "Badges",    emoji: "🏆", action: () => { setShowQuickMenu(false); onShowAchievements(); } },
-    { label: "Saved",     emoji: "🔖", action: () => { setShowQuickMenu(false); onShowBookmarks(); } },
+  /* ── Route quick action taps ── */
+  const handleAction = (id) => {
+    setShowOptions(false);
+    switch (id) {
+      case "style":    return setShowAppearance(true);
+      case "history":  return navigate("/chat-history");
+      case "newchat":  return handleNewChat();
+      case "topics":   return onShowTopics();
+      case "mood":     return onShowMoodInsights();
+      case "capsule":  return onShowTimeCapsule();
+      case "sleep":    return onShowSleepStory();
+      case "games":    return onShowGames();
+      case "badges":   return onShowAchievements();
+      case "saved":    return onShowBookmarks();
+      case "saveentry":return handleSaveJournal();
+      case "export":   return handleExport();
+    }
+  };
+
+  /* ── Build final action list ── */
+  const actions = [
+    ...BASE_ACTIONS,
     ...(vibe === "journal" && messages.filter(m => m.role === "user").length >= 2
-      ? [{ label: "Save Entry", emoji: "📓", action: () => { setShowQuickMenu(false); handleSaveJournal(); } }]
+      ? [{ id: "saveentry", label: "Save Entry", emoji: "📓", glow: "#4ade80", desc: "Save to journal" }]
       : []),
     ...(isPremium && vibe !== "journal"
-      ? [{ label: "Export",    emoji: "💾", action: () => { setShowQuickMenu(false); handleExport(); } }]
+      ? [{ id: "export", label: "Export", emoji: "💾", glow: "#94a3b8", desc: "Download chat" }]
       : []),
   ];
 
@@ -116,38 +138,47 @@ export default function ChatHeader({
 
   return (
     <>
+      <style>{`
+        @keyframes optionsPop {
+          0%   { opacity: 0; transform: scale(0.92) translateY(12px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes cardFloat {
+          0%,100% { transform: translateY(0px); }
+          50%      { transform: translateY(-2px); }
+        }
+        .options-modal { animation: optionsPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .action-card:active { transform: scale(0.93) !important; }
+      `}</style>
+
       {/* ── HEADER BAR ── */}
       <div style={{
         flexShrink: 0, width: "100%",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "8px 12px", boxSizing: "border-box", minHeight: 48,
+        padding: "8px 14px", boxSizing: "border-box", minHeight: 50,
       }}>
 
-        {/* LEFT: back + voice + streak badge */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", minWidth: 90 }}>
-          <button onClick={() => navigate("/vibe")}
-            style={iconBtn}>
+        {/* LEFT: back + voice + streak */}
+        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+          <button onClick={() => navigate("/vibe")} style={iconBtn}>
             <ChevronLeft size={18} color="white" />
           </button>
 
-          <button onClick={() => setVoiceEnabled(v => !v)}
-            style={iconBtn}>
+          <button onClick={() => setVoiceEnabled(v => !v)} style={iconBtn}>
             {voiceEnabled
               ? <Volume2 size={16} color="white" />
-              : <VolumeX size={16} color="rgba(255,255,255,0.4)" />}
+              : <VolumeX size={16} color="rgba(255,255,255,0.35)" />}
           </button>
 
-          {/* 🔥 Streak badge — only if streak ≥ 2 */}
           {streak >= 2 && (
             <div style={{
-              height: 28, borderRadius: 14,
-              background: "linear-gradient(135deg, rgba(251,146,60,0.25), rgba(239,68,68,0.2))",
-              border: "1px solid rgba(251,146,60,0.4)",
-              display: "flex", alignItems: "center", gap: 3,
-              padding: "0 8px",
+              height: 26, borderRadius: 13,
+              background: "linear-gradient(135deg, rgba(251,146,60,0.22), rgba(239,68,68,0.18))",
+              border: "1px solid rgba(251,146,60,0.35)",
+              display: "flex", alignItems: "center", gap: 3, padding: "0 8px",
             }}>
-              <span style={{ fontSize: 13 }}>🔥</span>
-              <span style={{ color: "#fb923c", fontSize: 12, fontWeight: 700 }}>{streak}</span>
+              <span style={{ fontSize: 12 }}>🔥</span>
+              <span style={{ color: "#fb923c", fontSize: 11, fontWeight: 800 }}>{streak}</span>
             </div>
           )}
         </div>
@@ -155,88 +186,138 @@ export default function ChatHeader({
         {/* CENTER: companion name */}
         <div style={{ flex: 1, textAlign: "center" }}>
           <span style={{
-            color: "rgba(255,255,255,0.92)",
-            fontSize: 16, fontWeight: 700,
-            textShadow: "0 1px 8px rgba(0,0,0,0.8)",
+            color: "white",
+            fontSize: 16, fontWeight: 800,
+            textShadow: "0 2px 12px rgba(0,0,0,0.9)",
             letterSpacing: "0.01em",
           }}>
             {companionDisplayName}
           </span>
         </div>
 
-        {/* RIGHT: More pill + Settings only */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+        {/* RIGHT: ✨ Options pill + ⚙️ Settings */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
 
-          {/* ⚡ MORE pill — everything lives here */}
-          <button onClick={() => setShowQuickMenu(true)}
+          {/* ✨ OPTIONS PILL */}
+          <button
+            onClick={() => setShowOptions(true)}
             style={{
-              height: 32, borderRadius: 999,
-              background: "linear-gradient(135deg, rgba(124,58,237,0.5), rgba(109,40,217,0.6))",
-              border: "1px solid rgba(167,139,250,0.4)",
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "0 14px", cursor: "pointer",
-            }}>
-            <Zap size={13} color="#c4b5fd" fill="#c4b5fd" />
-            <span style={{ color: "#c4b5fd", fontSize: 12, fontWeight: 700 }}>More</span>
+              height: 34, borderRadius: 999,
+              background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)",
+              border: "none",
+              boxShadow: "0 0 18px rgba(168,85,247,0.55), 0 2px 8px rgba(0,0,0,0.3)",
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "0 16px", cursor: "pointer",
+              transition: "transform 0.15s, box-shadow 0.15s",
+            }}
+            onTouchStart={e => { e.currentTarget.style.transform = "scale(0.95)"; e.currentTarget.style.boxShadow = "0 0 28px rgba(168,85,247,0.8), 0 2px 8px rgba(0,0,0,0.3)"; }}
+            onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 0 18px rgba(168,85,247,0.55), 0 2px 8px rgba(0,0,0,0.3)"; }}
+          >
+            <span style={{ fontSize: 13 }}>✨</span>
+            <span style={{ color: "white", fontSize: 13, fontWeight: 800, letterSpacing: "0.02em" }}>Options</span>
           </button>
 
-          {/* Settings — only standalone button kept */}
+          {/* ⚙️ Settings */}
           <button onClick={onNavigateToSettings || (() => navigate("/settings"))} style={iconBtn} title="Settings">
-            <Settings size={14} color="white" />
+            <Settings size={14} color="rgba(255,255,255,0.85)" />
           </button>
         </div>
       </div>
 
-      {/* ── QUICK MENU MODAL ── */}
-      {showQuickMenu && (
+      {/* ── OPTIONS MODAL ── */}
+      {showOptions && (
         <div
-          onClick={() => setShowQuickMenu(false)}
+          onClick={() => setShowOptions(false)}
           style={{
             position: "fixed", inset: 0, zIndex: 300,
-            background: "rgba(0,0,0,0.65)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 24px",
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            display: "flex", alignItems: "flex-end",
+            paddingBottom: 0,
           }}
         >
           <div
+            className="options-modal"
             onClick={e => e.stopPropagation()}
             style={{
-              width: "100%", maxWidth: 360,
-              background: "linear-gradient(180deg, #1a0535 0%, #0e0120 100%)",
-              borderRadius: 24,
-              border: "1px solid rgba(139,92,246,0.3)",
-              padding: "24px 20px 28px",
-              boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(168,85,247,0.1)",
+              width: "100%",
+              background: "linear-gradient(180deg, #1c0540 0%, #0d0120 100%)",
+              borderRadius: "28px 28px 0 0",
+              border: "1px solid rgba(168,85,247,0.25)",
+              borderBottom: "none",
+              padding: "20px 20px 44px",
+              boxSizing: "border-box",
+              boxShadow: "0 -12px 60px rgba(124,58,237,0.35)",
             }}
           >
-            {/* Modal header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <span style={{ color: "white", fontWeight: 800, fontSize: 17 }}>⚡ Quick Actions</span>
-              <button onClick={() => setShowQuickMenu(false)}
-                style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <X size={14} color="white" />
+            {/* Handle bar */}
+            <div style={{
+              width: 40, height: 4, borderRadius: 2,
+              background: "rgba(255,255,255,0.2)",
+              margin: "0 auto 20px",
+            }} />
+
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+              <div>
+                <p style={{ color: "white", fontWeight: 900, fontSize: 20, margin: 0, letterSpacing: "-0.01em" }}>✨ Options</p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: "2px 0 0" }}>What would you like to do?</p>
+              </div>
+              <button onClick={() => setShowOptions(false)}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}>
+                <X size={14} color="rgba(255,255,255,0.7)" />
               </button>
             </div>
 
-            {/* Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-              {quickActions.map(({ label, emoji, action }) => (
-                <button key={label} onClick={action}
+            {/* Action grid — Disney/Pixar style cards */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 10,
+            }}>
+              {actions.map(({ id, label, emoji, glow, desc }) => (
+                <button
+                  key={id}
+                  className="action-card"
+                  onClick={() => handleAction(id)}
                   style={{
-                    display: "flex", flexDirection: "column", alignItems: "center",
-                    gap: 6, padding: "12px 4px",
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 14, cursor: "pointer",
-                    transition: "all 0.15s",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "14px 6px 12px",
+                    background: `radial-gradient(ellipse at 50% 0%, ${glow}22 0%, rgba(255,255,255,0.03) 70%)`,
+                    border: `1px solid ${glow}33`,
+                    borderRadius: 18,
+                    cursor: "pointer",
+                    transition: "transform 0.15s",
+                    position: "relative",
+                    overflow: "hidden",
                   }}
-                  onTouchStart={e => e.currentTarget.style.background = "rgba(139,92,246,0.2)"}
-                  onTouchEnd={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                 >
-                  <span style={{ fontSize: 22 }}>{emoji}</span>
-                  <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 600, textAlign: "center", lineHeight: 1.2 }}>{label}</span>
+                  {/* Glow spot behind emoji */}
+                  <div style={{
+                    position: "absolute", top: 6, left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: `radial-gradient(circle, ${glow}40 0%, transparent 70%)`,
+                    filter: "blur(6px)",
+                  }} />
+                  <span style={{ fontSize: 26, lineHeight: 1, position: "relative", zIndex: 1 }}>{emoji}</span>
+                  <span style={{
+                    color: "rgba(255,255,255,0.88)",
+                    fontSize: 10, fontWeight: 700,
+                    textAlign: "center", lineHeight: 1.2,
+                    position: "relative", zIndex: 1,
+                    letterSpacing: "0.01em",
+                  }}>{label}</span>
                 </button>
               ))}
             </div>
@@ -265,12 +346,10 @@ export default function ChatHeader({
   );
 }
 
-/* ── Shared icon button style ── */
 const iconBtn = {
   width: 34, height: 34, borderRadius: "50%",
   background: "rgba(255,255,255,0.1)",
-  border: "none",
+  border: "1px solid rgba(255,255,255,0.08)",
   display: "flex", alignItems: "center", justifyContent: "center",
-  cursor: "pointer",
-  flexShrink: 0,
+  cursor: "pointer", flexShrink: 0,
 };
