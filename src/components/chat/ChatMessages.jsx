@@ -262,7 +262,7 @@ export default function ChatMessages({
                   style={{
                     position: "relative",
                     padding: "12px 17px",
-                    borderRadius: "20px",
+                    borderRadius: "20px", /* base fallback — overridden by bubbleStyle below */
                     marginBottom: 28,
                     overflow: "visible",
                     fontSize: fontSize,
@@ -275,32 +275,28 @@ export default function ChatMessages({
                     overflowY: "auto",
                     WebkitOverflowScrolling: "touch",
 
-                    /* ── User bubble: rich glowing gem ── */
+                    /* ── Bubble style applied first, then colour/shadow on top ── */
+                    /* bubbleStyle.render() sets borderRadius — must come before overrides */
+                    ...bubbleStyle.render(isUser),
                     ...(isUser ? {
                       background: "linear-gradient(140deg, #8b5cf6 0%, #7c3aed 45%, #db2777 100%)",
-                      borderBottomRightRadius: 4,
                       boxShadow: "0 4px 20px rgba(124,58,237,0.6), 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
-                      ...bubbleStyle.render(true),
-                      ...fontStyle,
                     } : {
-                      /* ── Companion bubble: deep jewel with shimmer border ── */
                       background: "linear-gradient(145deg, rgba(88,28,135,0.82) 0%, rgba(67,20,110,0.88) 50%, rgba(76,29,149,0.82) 100%)",
-                      borderBottomLeftRadius: 4,
                       backdropFilter: "blur(24px)",
                       WebkitBackdropFilter: "blur(24px)",
-                      border: "1.5px solid rgba(196,180,252,0.22)",
+                      border: bubbleStyle.id === "minimal" ? undefined : "1.5px solid rgba(196,180,252,0.22)",
                       boxShadow: "0 6px 32px rgba(109,40,217,0.55), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
                       animation: isNewest ? "glowPulse 2.5s ease-in-out 3" : undefined,
-                      ...bubbleStyle.render(false),
-                      ...fontStyle,
                     }),
+                    ...fontStyle,
                   }}
                 >
-                  {/* iMessage bubble tail */}
-                  {!isUser && (
+                  {/* iMessage bubble tail — only shown when style is imessage */}
+                  {!isUser && bubbleStyle.tail && (
                     <BubbleTailLeft color="rgba(67,20,110,0.90)" />
                   )}
-                  {isUser && (
+                  {isUser && bubbleStyle.tail && (
                     <BubbleTailRight color="#7c3aed" />
                   )}
 
