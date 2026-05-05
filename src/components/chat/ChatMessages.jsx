@@ -81,13 +81,17 @@ export default function ChatMessages({
   const [sparkleIdx, setSparkleIdx] = useState(null);
   const [appearance, setAppearance] = useState(() => loadAppearance());
 
-  // Re-read appearance whenever panel might have changed
+  // Re-read appearance instantly on custom event OR poll every 500ms
   useEffect(() => {
-    const onStorage = () => setAppearance(loadAppearance());
-    window.addEventListener("storage", onStorage);
-    // Also poll every 2s in case same-tab changes
-    const interval = setInterval(() => setAppearance(loadAppearance()), 2000);
-    return () => { window.removeEventListener("storage", onStorage); clearInterval(interval); };
+    const refresh = () => setAppearance(loadAppearance());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("unfiltr_appearance_changed", refresh);
+    const interval = setInterval(refresh, 500);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("unfiltr_appearance_changed", refresh);
+      clearInterval(interval);
+    };
   }, []);
 
   const bubbleStyle = BUBBLE_STYLES.find(b => b.id === (appearance.bubble || "imessage")) || BUBBLE_STYLES[0];
