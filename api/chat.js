@@ -244,10 +244,10 @@ export default async function handler(req, res) {
     // ── Server-side tier verification ────────────────────────────────────────
     // Never trust isPremium/isPro/isAnnual sent by the client — a free user
     // could forge these to unlock paid features at no cost.
-    const { isPremium, isPro, isAnnual, profile } = await getProfileTier(profileId);
+    const { isPremium, isPro, isAnnual, isUltimateFriend, profile } = await getProfileTier(profileId);
 
     // ── Server-side daily message limit ──────────────────────────────────────
-    const tier = isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
+    const tier = isUltimateFriend ? "ultimate_friend" : isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
     const dailyLimit = DAILY_MSG_LIMITS[tier] ?? DAILY_MSG_LIMITS.free;
     let prevCount = 0;
     let todayKey = new Date().toISOString().slice(0, 10);
@@ -303,7 +303,7 @@ export default async function handler(req, res) {
     // companion's instructions entirely.
     // ── Creator detection ────────────────────────────────────────────────────
     const isCreator = isCreatorRequest(req.body?.appleUserId || "");
-    const isUltimateFriend = isAnnual || req.body?.ultimateFriend === true;
+    // isUltimateFriend comes from DB (getProfileTier) — never trust client body for this
 
     let system;
     if (isCreator) {
@@ -488,3 +488,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 }
+
