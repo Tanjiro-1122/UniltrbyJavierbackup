@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import Lottie from "lottie-react";
+import bubbleAnimation from "/src/assets/Bubbles.json";
 import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -9,29 +11,33 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Smooth curved tail — bottom-left (companion) ── */
-function BubbleTailLeft({ color }) {
+/* ── Lottie speech bubble wrapper ── */
+function LottieBubbleWrap({ isUser, children }) {
   return (
-    <svg width="28" height="26" viewBox="0 0 28 26" fill="none"
-      style={{ position: "absolute", bottom: -20, left: 18, zIndex: 2, display: "block" }}>
-      {/* Curved hook: starts at top-right, curves to a point at bottom-left, comes back up */}
-      <path d="M28 0 C28 0 10 8 4 20 C2 24 0 26 0 26 C0 26 6 22 14 16 C20 12 28 6 28 0 Z"
-        fill={color} />
-    </svg>
+    <div style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}>
+      {/* Lottie bubble plays once on mount as a pop-in animation */}
+      <Lottie
+        animationData={bubbleAnimation}
+        loop={false}
+        style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 0,
+          pointerEvents: "none",
+          opacity: 0.18,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {children}
+      </div>
+    </div>
   );
 }
+function BubbleTailLeft({ color }) { return null; }
 
-/* ── Smooth curved tail — bottom-right (user) ── */
-function BubbleTailRight({ color }) {
-  return (
-    <svg width="28" height="26" viewBox="0 0 28 26" fill="none"
-      style={{ position: "absolute", bottom: -20, right: 18, zIndex: 2, display: "block" }}>
-      {/* Mirror of left tail */}
-      <path d="M0 0 C0 0 18 8 24 20 C26 24 28 26 28 26 C28 26 22 22 14 16 C8 12 0 6 0 0 Z"
-        fill={color} />
-    </svg>
-  );
-}
+function BubbleTailRight({ color }) { return null; }
 
 /* ── Sparkle burst on new companion message ─────────────────────── */
 function SparkleEffect({ active }) {
