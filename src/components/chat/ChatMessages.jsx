@@ -9,41 +9,11 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Comic-style tail: points DOWN-LEFT below bubble (companion) ── */
-function BubbleTailLeft() {
-  return (
-    <div style={{
-      position: "absolute",
-      bottom: -14,
-      left: 18,
-      width: 0,
-      height: 0,
-      borderLeft: "14px solid transparent",
-      borderRight: "0px solid transparent",
-      borderTop: "15px solid rgba(67,20,110,0.92)",
-      filter: "drop-shadow(0px 3px 4px rgba(0,0,0,0.35))",
-      zIndex: 1,
-    }} />
-  );
-}
+/* ── Comic tail: rendered via CSS class, no JSX element needed ── */
+function BubbleTailLeft() { return null; }
 
-/* ── Comic-style tail: points DOWN-RIGHT below bubble (user) ─────── */
-function BubbleTailRight() {
-  return (
-    <div style={{
-      position: "absolute",
-      bottom: -14,
-      right: 18,
-      width: 0,
-      height: 0,
-      borderRight: "14px solid transparent",
-      borderLeft: "0px solid transparent",
-      borderTop: "15px solid #7c3aed",
-      filter: "drop-shadow(0px 3px 4px rgba(0,0,0,0.35))",
-      zIndex: 1,
-    }} />
-  );
-}
+/* ── Comic tail: rendered via CSS class, no JSX element needed ── */
+function BubbleTailRight() { return null; }
 
 /* ── Sparkle burst on new companion message ─────────────────────── */
 function SparkleEffect({ active }) {
@@ -121,6 +91,65 @@ export default function ChatMessages({
     }}>
       <style>{`
         /* ── Bubble entrance ── */
+        /* ── Comic speech bubble tails via ::before/::after ── */
+        .bubble-companion {
+          position: relative;
+          border-radius: 18px !important;
+          margin-bottom: 14px;
+        }
+        .bubble-companion::after {
+          content: "";
+          position: absolute;
+          bottom: -13px;
+          left: 20px;
+          width: 0;
+          height: 0;
+          border-left: 13px solid transparent;
+          border-right: 0px solid transparent;
+          border-top: 14px solid rgba(67,20,110,0.90);
+        }
+        .bubble-companion::before {
+          content: "";
+          position: absolute;
+          bottom: -17px;
+          left: 18px;
+          width: 0;
+          height: 0;
+          border-left: 15px solid transparent;
+          border-right: 2px solid transparent;
+          border-top: 17px solid rgba(196,180,252,0.22);
+          z-index: -1;
+        }
+
+        .bubble-user {
+          position: relative;
+          border-radius: 18px !important;
+          margin-bottom: 14px;
+        }
+        .bubble-user::after {
+          content: "";
+          position: absolute;
+          bottom: -13px;
+          right: 20px;
+          width: 0;
+          height: 0;
+          border-right: 13px solid transparent;
+          border-left: 0px solid transparent;
+          border-top: 14px solid #7c3aed;
+        }
+        .bubble-user::before {
+          content: "";
+          position: absolute;
+          bottom: -17px;
+          right: 18px;
+          width: 0;
+          height: 0;
+          border-right: 15px solid transparent;
+          border-left: 2px solid transparent;
+          border-top: 17px solid rgba(0,0,0,0.35);
+          z-index: -1;
+        }
+
         @keyframes bubblePop {
           0%   { transform: scale(0.75) translateY(8px); opacity: 0; }
           65%  { transform: scale(1.05) translateY(-2px); opacity: 1; }
@@ -240,7 +269,7 @@ export default function ChatMessages({
 
                 {/* ── THE BUBBLE ── */}
                 <div
-                  className="bubble-enter"
+                  className={`bubble-enter ${isUser ? "bubble-user" : "bubble-companion"}`}
                   onContextMenu={(e) => { e.preventDefault(); handleLongPress(i); }}
                   onTouchStart={() => { window.__rxTimer = setTimeout(() => handleLongPress(i), 500); }}
                   onTouchEnd={() => clearTimeout(window.__rxTimer)}
@@ -276,9 +305,7 @@ export default function ChatMessages({
                     }),
                   }}
                 >
-                  {/* Tail */}
-                  {!isUser && <BubbleTailLeft />}
-                  {isUser && <BubbleTailRight />}
+                  {/* Tail handled by CSS ::before/::after on .bubble-companion/.bubble-user */}
 
                   {/* Quoted reply */}
                   {msg.quoteReply && (
@@ -394,5 +421,6 @@ export default function ChatMessages({
     </div>
   );
 }
+
 
 
