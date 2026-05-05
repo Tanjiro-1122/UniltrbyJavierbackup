@@ -31,6 +31,7 @@ export function saveAppearance(data) {
   try {
     const existing = loadAppearance();
     localStorage.setItem("unfiltr_chat_appearance", JSON.stringify({ ...existing, ...data }));
+    window.dispatchEvent(new Event("unfiltr_appearance_changed"));
   } catch {}
 }
 
