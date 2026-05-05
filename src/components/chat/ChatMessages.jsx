@@ -1,4 +1,12 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense, lazy } from "react";
+import bubbleAnimData from "../../assets/BubblesNew.json";
+
+// Safe Lottie — falls back gracefully if package isn't ready
+const LottiePlayer = lazy(() =>
+  import("lottie-react")
+    .then(mod => ({ default: mod.default }))
+    .catch(() => ({ default: () => null }))
+);
 import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +46,20 @@ function BubbleTailRight({ color }) {
       borderTop: \`14px solid \${color}\`,
       borderLeft: "4px solid transparent",
     }} />
+  );
+}
+
+/* ── Lottie speech bubble (crash-safe, lazy loaded) ── */
+function LottieSpeechBubble({ style }) {
+  return (
+    <Suspense fallback={null}>
+      <LottiePlayer
+        animationData={bubbleAnimData}
+        loop={true}
+        autoplay={true}
+        style={style}
+      />
+    </Suspense>
   );
 }
 
@@ -271,6 +293,19 @@ export default function ChatMessages({
                     }),
                   }}
                 >
+                  {/* Lottie animation overlay on companion bubbles */}
+                  {!isUser && (
+                    <LottieSpeechBubble style={{
+                      position: "absolute",
+                      top: 0, left: 0,
+                      width: "100%", height: "100%",
+                      opacity: 0.12,
+                      pointerEvents: "none",
+                      zIndex: 0,
+                      borderRadius: 18,
+                      overflow: "hidden",
+                    }} />
+                  )}
                   {/* Curved speech bubble tail */}
                   {!isUser && (
                     <BubbleTailLeft color="rgba(67,20,110,0.90)" />
