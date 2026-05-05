@@ -21,6 +21,7 @@ export default function HubPage() {
   const navigate = useNavigate();
   const [companion, setCompanion] = useState(null);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const [proactiveMsg, setProactiveMsg] = useState(null);
 
   const name = localStorage.getItem("unfiltr_display_name") || null;
   const nickName = localStorage.getItem("unfiltr_companion_nickname") || null;
@@ -34,6 +35,36 @@ export default function HubPage() {
   });
   const sessionCount = parseInt(localStorage.getItem("unfiltr_session_count") || "0", 10);
   const greeting = getGreeting();
+
+  // ── Proactive companion check-in message ──────────────────────────────────
+  useEffect(() => {
+    const profileId = localStorage.getItem("userProfileId");
+    if (!profileId) return;
+    const seen = localStorage.getItem("unfiltr_proactive_seen");
+    const today = new Date().toISOString().slice(0, 10);
+    if (seen === today) return; // already dismissed today
+    import("@/api/base44Client").then(({ base44 }) => {
+      base44.entities.UserProfile.get(profileId)
+        .then(profile => {
+          if (profile?.proactive_message && profile?.proactive_message_date === today && !profile?.proactive_message_seen) {
+            setProactiveMsg(profile.proactive_message);
+          }
+        })
+        .catch(() => {});
+    });
+  }, []);
+
+  const dismissProactive = () => {
+    setProactiveMsg(null);
+    localStorage.setItem("unfiltr_proactive_seen", new Date().toISOString().slice(0, 10));
+    // Mark as seen in DB (fire and forget)
+    const profileId = localStorage.getItem("userProfileId");
+    if (profileId) {
+      import("@/api/base44Client").then(({ base44 }) => {
+        base44.entities.UserProfile.update(profileId, { proactive_message_seen: true }).catch(() => {});
+      });
+    }
+  };
 
   useEffect(() => {
     try {
