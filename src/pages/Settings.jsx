@@ -20,6 +20,7 @@ import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
+import ChatAppearanceSettings from "@/components/settings/ChatAppearance";
 
 // ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
 const VOICE_OPTIONS = {
@@ -769,6 +770,12 @@ export default function Settings() {
           })}
         </div>
       </SubScreen>
+
+      {screen === "appearance" && (
+        <SubScreen title="Chat Appearance" onBack={() => setScreen(null)}>
+          <ChatAppearanceSettings />
+        </SubScreen>
+      )}
     ),
 
     memory: (
@@ -1260,7 +1267,8 @@ export default function Settings() {
             <Section>
               <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
               <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
-              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} last />
+              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
+              <Row icon={<span style={{fontSize:14}}>💬</span>} iconBg="#1a0535" label="Chat Appearance" value="Bubbles & Font" onPress={() => setScreen("appearance")} last />
             </Section>
           </>
         )}
