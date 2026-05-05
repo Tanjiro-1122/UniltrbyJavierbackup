@@ -769,13 +769,14 @@ export default function Settings() {
             );
           })}
         </div>
-      </SubScreen>
 
-      {screen === "appearance" && (
-        <SubScreen title="Chat Appearance" onBack={() => setScreen(null)}>
-          <ChatAppearanceSettings />
-        </SubScreen>
-      )}
+      </SubScreen>
+    ),
+
+    appearance: (
+      <SubScreen title="Chat Appearance" onBack={() => setScreen(null)}>
+        <ChatAppearanceSettings />
+      </SubScreen>
     ),
 
     memory: (
