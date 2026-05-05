@@ -1,4 +1,5 @@
 import React from "react";
+import ThemedBubble from "./ThemedBubble";
 import { X } from "lucide-react";
 
 export const FONT_OPTIONS = [
@@ -10,78 +11,14 @@ export const FONT_OPTIONS = [
 ];
 
 export const BUBBLE_STYLES = [
-  {
-    id: "imessage",
-    label: "iMessage",
-    emoji: "💬",
-    desc: "Rounded with tail",
-    render: (isUser) => ({
-      borderRadius: "20px",
-      ...(isUser
-        ? { borderBottomRightRadius: 4 }
-        : { borderBottomLeftRadius: 4 }),
-    }),
-    tail: true,
-  },
-  {
-    id: "cloud",
-    label: "Cloud",
-    emoji: "☁️",
-    desc: "Puffy thinking bubble",
-    render: () => ({
-      borderRadius: "50px",
-      padding: "14px 22px",
-    }),
-    tail: false,
-    cloudDots: true,
-  },
-  {
-    id: "square",
-    label: "Square",
-    emoji: "⬜",
-    desc: "Sharp corners",
-    render: () => ({
-      borderRadius: "6px",
-    }),
-    tail: false,
-  },
-  {
-    id: "spiky",
-    label: "Comic",
-    emoji: "💥",
-    desc: "Spiky comic burst",
-    render: () => ({
-      borderRadius: "6px",
-    }),
-    tail: false,
-    spiky: true,
-  },
-  {
-    id: "pill",
-    label: "Pill",
-    emoji: "💊",
-    desc: "Fully rounded pill",
-    render: () => ({
-      borderRadius: "999px",
-      padding: "12px 22px",
-    }),
-    tail: false,
-  },
-  {
-    id: "minimal",
-    label: "Minimal",
-    emoji: "✏️",
-    desc: "No background, just text",
-    render: (isUser) => ({
-      borderRadius: "8px",
-      background: "transparent !important",
-      border: isUser
-        ? "1.5px solid rgba(168,85,247,0.6)"
-        : "1.5px solid rgba(196,180,252,0.3)",
-      boxShadow: "none",
-    }),
-    tail: false,
-  },
+  { id: "imessage", label: "iMessage", emoji: "💬", desc: "Rounded with tail",       render: (isUser) => ({ borderRadius: "20px", ...(isUser ? { borderBottomRightRadius: 4 } : { borderBottomLeftRadius: 4 }) }), tail: true },
+  { id: "cloud",    label: "Thought",  emoji: "💭", desc: "Floating circles tail",   render: () => ({ borderRadius: "999px", padding: "12px 20px" }), tail: false },
+  { id: "spiky",    label: "Comic",    emoji: "💥", desc: "Spiky starburst burst",   render: () => ({ borderRadius: "6px" }), tail: false, spiky: true },
+  { id: "neon",     label: "Neon",     emoji: "⚡", desc: "Glowing neon glow",        render: () => ({ borderRadius: "8px" }), tail: false },
+  { id: "sticky",   label: "Sticky",   emoji: "📝", desc: "Post-it note style",       render: () => ({ borderRadius: "4px" }), tail: false },
+  { id: "pill",     label: "Pill",     emoji: "💊", desc: "Fully rounded pill",       render: () => ({ borderRadius: "999px", padding: "12px 22px" }), tail: false },
+  { id: "minimal",  label: "Minimal",  emoji: "✏️", desc: "No fill, border only",    render: (isUser) => ({ borderRadius: "8px", background: "transparent", border: isUser ? "1.5px solid rgba(168,85,247,0.6)" : "1.5px solid rgba(196,180,252,0.3)" }), tail: false },
+  { id: "retro",    label: "Retro",    emoji: "📟", desc: "Old-school SMS terminal",  render: () => ({ borderRadius: "6px" }), tail: false },
 ];
 
 export function loadAppearance() {
@@ -208,36 +145,24 @@ export default function ChatAppearancePanel({ onClose }) {
         {/* Preview */}
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", margin: "24px 0 12px" }}>Preview</p>
         <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 16, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Companion bubble */}
+            {/* Live ThemedBubble preview */}
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{
-              padding: "10px 16px",
-              maxWidth: "75%",
-              background: "linear-gradient(145deg, rgba(88,28,135,0.9), rgba(67,20,110,0.95))",
-              color: "white",
-              border: "1.5px solid rgba(196,180,252,0.2)",
-              transition: "all 0.2s ease",
-              ...BUBBLE_STYLES.find(b => b.id === selectedBubble)?.render(false),
-              ...FONT_OPTIONS.find(f => f.id === selectedFont)?.style,
-              fontSize: SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15,
-            }}>
-              Hey, how are you? 💜
-            </div>
+            <ThemedBubble
+              role="assistant"
+              content="Hey, how are you? 💜"
+              theme={selectedBubble}
+              fontFamily={FONT_OPTIONS.find(f => f.id === selectedFont)?.style?.fontFamily}
+              fontSize={SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15}
+            />
           </div>
-          {/* User bubble */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <div style={{
-              padding: "10px 16px",
-              maxWidth: "75%",
-              background: "linear-gradient(140deg, #8b5cf6, #7c3aed 45%, #db2777)",
-              color: "white",
-              transition: "all 0.2s ease",
-              ...BUBBLE_STYLES.find(b => b.id === selectedBubble)?.render(true),
-              ...FONT_OPTIONS.find(f => f.id === selectedFont)?.style,
-              fontSize: SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15,
-            }}>
-              I'm doing great! 😊
-            </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <ThemedBubble
+              role="user"
+              content="I'm doing great! 😊"
+              theme={selectedBubble}
+              fontFamily={FONT_OPTIONS.find(f => f.id === selectedFont)?.style?.fontFamily}
+              fontSize={SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15}
+            />
           </div>
         </div>
       </div>
