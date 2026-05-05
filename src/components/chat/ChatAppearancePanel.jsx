@@ -1,6 +1,6 @@
 import React from "react";
 import ThemedBubble from "./ThemedBubble";
-import { X } from "lucide-react";
+import { X, RotateCcw, Check } from "lucide-react";
 
 export const FONT_OPTIONS = [
   { id: "default",    label: "Default",     style: { fontFamily: "inherit" } },
@@ -44,13 +44,27 @@ const SIZE_OPTIONS = [
 
 export default function ChatAppearancePanel({ onClose }) {
   const saved = loadAppearance();
+
+  // Original values at open time — used for revert
+  const [original] = React.useState({ font: saved.font || "default", bubble: saved.bubble || "imessage", size: saved.size || "md" });
+
+  // Working (pending) state — changes preview but don't save until Save is tapped
   const [selectedFont,   setSelectedFont]   = React.useState(saved.font   || "default");
   const [selectedBubble, setSelectedBubble] = React.useState(saved.bubble || "imessage");
   const [selectedSize,   setSelectedSize]   = React.useState(saved.size   || "md");
 
-  const handleFont = (id) => { setSelectedFont(id);   saveAppearance({ font: id }); };
-  const handleBubble = (id) => { setSelectedBubble(id); saveAppearance({ bubble: id }); };
-  const handleSize = (id) => { setSelectedSize(id);   saveAppearance({ size: id }); };
+  const isDirty = selectedFont !== original.font || selectedBubble !== original.bubble || selectedSize !== original.size;
+
+  const handleSave = () => {
+    saveAppearance({ font: selectedFont, bubble: selectedBubble, size: selectedSize });
+    onClose();
+  };
+
+  const handleRevert = () => {
+    setSelectedFont(original.font);
+    setSelectedBubble(original.bubble);
+    setSelectedSize(original.size);
+  };
 
   return (
     <div style={{
@@ -85,7 +99,7 @@ export default function ChatAppearancePanel({ onClose }) {
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Text Size</p>
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
           {SIZE_OPTIONS.map(s => (
-            <button key={s.id} onClick={() => handleSize(s.id)} style={{
+            <button key={s.id} onClick={() => setSelectedSize(s.id)} style={{
               flex: 1, height: 44, borderRadius: 12,
               border: selectedSize === s.id ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
               background: selectedSize === s.id ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.04)",
@@ -101,7 +115,7 @@ export default function ChatAppearancePanel({ onClose }) {
           {FONT_OPTIONS.map(f => (
             <button
               key={f.id}
-              onClick={() => handleFont(f.id)}
+              onClick={() => setSelectedFont(f.id)}
               style={{
                 padding: "10px 16px",
                 borderRadius: 12,
@@ -125,7 +139,7 @@ export default function ChatAppearancePanel({ onClose }) {
           {BUBBLE_STYLES.map(b => (
             <button
               key={b.id}
-              onClick={() => handleBubble(b.id)}
+              onClick={() => setSelectedBubble(b.id)}
               style={{
                 padding: "14px 12px",
                 borderRadius: 14,
@@ -146,7 +160,6 @@ export default function ChatAppearancePanel({ onClose }) {
         {/* Preview */}
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", margin: "24px 0 12px" }}>Preview</p>
         <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 16, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Live ThemedBubble preview */}
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
             <ThemedBubble
               role="assistant"
@@ -165,6 +178,42 @@ export default function ChatAppearancePanel({ onClose }) {
               fontSize={SIZE_OPTIONS.find(s => s.id === selectedSize)?.px || 15}
             />
           </div>
+        </div>
+
+        {/* Revert + Save buttons */}
+        <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+          <button
+            onClick={handleRevert}
+            disabled={!isDirty}
+            style={{
+              flex: 1, height: 48, borderRadius: 14,
+              background: isDirty ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: isDirty ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.2)",
+              fontWeight: 700, fontSize: 14, cursor: isDirty ? "pointer" : "default",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              transition: "all 0.15s",
+            }}
+          >
+            <RotateCcw size={15} />
+            Revert
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 2, height: 48, borderRadius: 14,
+              background: "linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)",
+              border: "none",
+              color: "white",
+              fontWeight: 800, fontSize: 15, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              boxShadow: "0 4px 18px rgba(168,85,247,0.45)",
+              transition: "all 0.15s",
+            }}
+          >
+            <Check size={16} />
+            Save Changes
+          </button>
         </div>
       </div>
     </div>
