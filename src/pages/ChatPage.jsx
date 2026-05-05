@@ -1524,62 +1524,6 @@ export default function ChatPage() {
                 100% { transform: rotate(360deg) scale(1);  }
               }
 
-              /* ── iMessage-style bubble tails via ::before + ::after ── */
-              /* Technique: two pseudo elements overlaid — colored shape + bg cutout */
-
-              .chat-bubble-companion {
-                position: relative;
-                overflow: visible !important;
-              }
-              .chat-bubble-companion::before {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: -7px;
-                width: 20px;
-                height: 25px;
-                background: rgba(55,15,105,0.95);
-                border-bottom-right-radius: 16px 14px;
-              }
-              .chat-bubble-companion::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: -26px;
-                width: 26px;
-                height: 25px;
-                background: transparent;
-                border-bottom-right-radius: 10px;
-                box-shadow: 8px 8px 0 8px rgba(0,0,0,0.55);
-                clip-path: inset(0 -20px -20px 0);
-              }
-
-              .chat-bubble-user {
-                position: relative;
-                overflow: visible !important;
-              }
-              .chat-bubble-user::before {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                right: -7px;
-                width: 20px;
-                height: 25px;
-                background: #db2777;
-                border-bottom-left-radius: 16px 14px;
-              }
-              .chat-bubble-user::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                right: -26px;
-                width: 26px;
-                height: 25px;
-                background: transparent;
-                border-bottom-left-radius: 10px;
-                box-shadow: -8px 8px 0 8px rgba(0,0,0,0.55);
-                clip-path: inset(0 0 -20px -20px);
-              }
             `}</style>
 
             {/* ── AVATAR — pinned to RIGHT half, stands from bottom ── */}
@@ -1689,12 +1633,12 @@ export default function ChatPage() {
 
                 if (loading) {
                   return (
-                    <div className="chat-bubble-companion" style={{
+                    <div style={{
                       background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
                       backdropFilter: "blur(24px)",
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
-                      borderRadius: "22px 22px 22px 4px",
+                      borderRadius: "22px 22px 22px 22px",
                       padding: "16px 20px",
                       width: "100%",
                       position: "relative",
@@ -1737,12 +1681,12 @@ export default function ChatPage() {
                     key={lastComp.content.slice(0,40)}
                     style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", width: "100%", position: "relative" }}
                   >
-                    <div className="chat-bubble-companion" style={{
+                    <div style={{
                       background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
                       backdropFilter: "blur(24px)",
                       WebkitBackdropFilter: "blur(24px)",
                       border: "2px solid rgba(196,180,252,0.3)",
-                      borderRadius: "22px 22px 22px 4px",
+                      borderRadius: "22px",
                       padding: "14px 18px",
                       boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
                       position: "relative",
@@ -1802,9 +1746,9 @@ export default function ChatPage() {
                     pointerEvents: "none",
                   }}
                 >
-                  <div className="chat-bubble-user" style={{
+                  <div  style={{
                     background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    borderRadius: "22px 22px 4px 22px",
+                    borderRadius: "22px",
                     padding: "12px 16px",
                     boxShadow: "0 6px 24px rgba(124,58,237,0.55), 0 2px 8px rgba(0,0,0,0.4)",
                   }}>
