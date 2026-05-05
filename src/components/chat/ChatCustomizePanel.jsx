@@ -59,8 +59,8 @@ function Chip({ active, onClick, children }) {
   );
 }
 
-export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion", relationshipMode: initRelMode = "friend", onRelationshipChange, companionDbId }) {
-  const [open, setOpen] = useState(false);
+export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabled, setVoiceEnabled, triggerMode = "icon", companionName = "Companion", relationshipMode: initRelMode = "friend", onRelationshipChange, companionDbId, onClose }) {
+  const [open, setOpen] = useState(() => triggerMode === "panel");
   const [tab, setTab] = useState("Companion");
   const [relMode, setRelMode] = useState(() => localStorage.getItem("unfiltr_relationship_mode") || initRelMode || "friend");
 
@@ -491,7 +491,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)}
+            onClick={() => { setOpen(false); onClose?.(); }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 110, backdropFilter: "blur(4px)" }}
           />
         )}
@@ -519,7 +519,7 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
               <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.15)", margin: "0 auto 14px" }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <h2 style={{ color: "white", fontWeight: 800, fontSize: 18, margin: 0 }}>Customize</h2>
-                <button onClick={() => setOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button onClick={() => { setOpen(false); onClose?.(); }} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.08)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <X size={16} color="rgba(255,255,255,0.6)" />
                 </button>
               </div>
