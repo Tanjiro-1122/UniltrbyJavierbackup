@@ -180,15 +180,10 @@ export default function ChatCustomizePanel({ companion, setCompanion, voiceEnabl
     setCurrentBg(bgId);
     localStorage.setItem("unfiltr_background", bgId);
     window.dispatchEvent(new CustomEvent("unfiltr_background_change", { detail: bgId }));
-    // Also fire 'unfiltr_env_change' for ChatPage compatibility
-    const bg = BACKGROUNDS.find(b => b.id === bgId);
-    if (bg) {
-      window.dispatchEvent(new CustomEvent("unfiltr_env_change", { detail: { id: bgId, label: bg.label, url: bg.url, emoji: bg.emoji } }));
-    }
-    // Also update unfiltr_env so Settings and ChatPage stay in sync
-    const bg = BACKGROUNDS.find(b => b.id === bgId);
-    if (bg) {
-      const envObj = { id: bg.id, label: bg.label, bg: bg.url };
+    // Fire unfiltr_env_change and persist to localStorage so ChatPage + Settings stay in sync
+    const bgData = BACKGROUNDS.find(b => b.id === bgId);
+    if (bgData) {
+      const envObj = { id: bgData.id, label: bgData.label, bg: bgData.url, url: bgData.url, emoji: bgData.emoji };
       localStorage.setItem("unfiltr_env", JSON.stringify(envObj));
       window.dispatchEvent(new CustomEvent("unfiltr_env_change", { detail: envObj }));
     }
