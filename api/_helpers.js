@@ -341,7 +341,7 @@ export async function getProfileTier(profileId) {
     }
   }
 
-  const isUltimateFriend = !!(profile?.ultimate_friend);
+  const isUltimateFriend = !!(profile?.ultimate_friend) || !!(profile?.family_plan);
   const isAnnual  = !!(profile?.annual_plan) || isUltimateFriend;
   const isPro     = !!(profile?.pro_plan);
   const isPremium = !!(profile?.is_premium || profile?.premium || isPro || isAnnual || isUltimateFriend);
@@ -365,7 +365,7 @@ export async function getProfileTierByAppleId(appleUserId) {
     const profile = records.length > 0 ? records[0] : null;
     if (!profile) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
     if (profile.id) setCachedProfile(profile.id, profile);
-    const isUltimateFriend = !!(profile.ultimate_friend);
+    const isUltimateFriend = !!(profile.ultimate_friend) || !!(profile.family_plan);
     const isAnnual  = !!(profile.annual_plan) || isUltimateFriend;
     const isPro     = !!(profile.pro_plan);
     const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual || isUltimateFriend);
