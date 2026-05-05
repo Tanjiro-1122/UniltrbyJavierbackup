@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { loadAppearance, BUBBLE_STYLES, FONT_OPTIONS } from "./ChatAppearancePanel";
 import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -76,6 +77,19 @@ export default function ChatMessages({
   const [pickerIdx, setPickerIdx] = useState(null);
   // Typing indicator is shown in the avatar bubble panel above, not here
   const [sparkleIdx, setSparkleIdx] = useState(null);
+  const [appearance, setAppearance] = useState(() => loadAppearance());
+
+  // Re-read appearance whenever panel might have changed
+  useEffect(() => {
+    const onStorage = () => setAppearance(loadAppearance());
+    window.addEventListener("storage", onStorage);
+    // Also poll every 2s in case same-tab changes
+    const interval = setInterval(() => setAppearance(loadAppearance()), 2000);
+    return () => { window.removeEventListener("storage", onStorage); clearInterval(interval); };
+  }, []);
+
+  const bubbleStyle = BUBBLE_STYLES.find(b => b.id === (appearance.bubble || "imessage")) || BUBBLE_STYLES[0];
+  const fontStyle = FONT_OPTIONS.find(f => f.id === (appearance.font || "default"))?.style || {};
   const prevLengthRef = useRef(messages.length);
 
   // Sound + haptic + sparkle on new companion message
@@ -263,6 +277,8 @@ export default function ChatMessages({
                       background: "linear-gradient(140deg, #8b5cf6 0%, #7c3aed 45%, #db2777 100%)",
                       borderBottomRightRadius: 4,
                       boxShadow: "0 4px 20px rgba(124,58,237,0.6), 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+                      ...bubbleStyle.render(true),
+                      ...fontStyle,
                     } : {
                       /* ── Companion bubble: deep jewel with shimmer border ── */
                       background: "linear-gradient(145deg, rgba(88,28,135,0.82) 0%, rgba(67,20,110,0.88) 50%, rgba(76,29,149,0.82) 100%)",
@@ -272,6 +288,8 @@ export default function ChatMessages({
                       border: "1.5px solid rgba(196,180,252,0.22)",
                       boxShadow: "0 6px 32px rgba(109,40,217,0.55), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
                       animation: isNewest ? "glowPulse 2.5s ease-in-out 3" : undefined,
+                      ...bubbleStyle.render(false),
+                      ...fontStyle,
                     }),
                   }}
                 >
