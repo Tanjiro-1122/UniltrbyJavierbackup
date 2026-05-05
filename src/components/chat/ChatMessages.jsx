@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { loadAppearance, BUBBLE_STYLES, FONT_OPTIONS } from "./ChatAppearancePanel";
+
+const SIZE_MAP = { sm: 13, md: 15, lg: 17, xl: 20 };
 import ReactMarkdown from "react-markdown";
 import { Share2, Bookmark } from "lucide-react";
 import { toast } from "sonner";
@@ -90,6 +92,7 @@ export default function ChatMessages({
 
   const bubbleStyle = BUBBLE_STYLES.find(b => b.id === (appearance.bubble || "imessage")) || BUBBLE_STYLES[0];
   const fontStyle = FONT_OPTIONS.find(f => f.id === (appearance.font || "default"))?.style || {};
+  const fontSize  = SIZE_MAP[appearance.size || "md"] || 15;
   const prevLengthRef = useRef(messages.length);
 
   // Sound + haptic + sparkle on new companion message
@@ -262,7 +265,7 @@ export default function ChatMessages({
                     borderRadius: "20px",
                     marginBottom: 28,
                     overflow: "visible",
-                    fontSize: 14.5,
+                    fontSize: fontSize,
                     lineHeight: 1.6,
                     wordBreak: "break-word",
                     color: "white",
