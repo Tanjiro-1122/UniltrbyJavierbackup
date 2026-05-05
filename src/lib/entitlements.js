@@ -145,6 +145,7 @@ const IDENTITY_KEYS = [
   "unfiltr_is_premium",
   "unfiltr_is_pro",
   "unfiltr_is_annual",
+  "unfiltr_ultimate_friend",
   "unfiltr_plan",
   "unfiltr_family_unlock",
   "unfiltr_msg_limit_override",
@@ -306,4 +307,5 @@ export async function clearDataAndReset(navigate) {
   // ── Web fallback ──────────────────────────────────────────────────────────
   if (navigate) navigate("/", { replace: true });
 }
+
 
