@@ -9,11 +9,29 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Comic tail: rendered via CSS class, no JSX element needed ── */
-function BubbleTailLeft() { return null; }
+/* ── Smooth curved tail — bottom-left (companion) ── */
+function BubbleTailLeft({ color }) {
+  return (
+    <svg width="28" height="26" viewBox="0 0 28 26" fill="none"
+      style={{ position: "absolute", bottom: -20, left: 18, zIndex: 2, display: "block" }}>
+      {/* Curved hook: starts at top-right, curves to a point at bottom-left, comes back up */}
+      <path d="M28 0 C28 0 10 8 4 20 C2 24 0 26 0 26 C0 26 6 22 14 16 C20 12 28 6 28 0 Z"
+        fill={color} />
+    </svg>
+  );
+}
 
-/* ── Comic tail: rendered via CSS class, no JSX element needed ── */
-function BubbleTailRight() { return null; }
+/* ── Smooth curved tail — bottom-right (user) ── */
+function BubbleTailRight({ color }) {
+  return (
+    <svg width="28" height="26" viewBox="0 0 28 26" fill="none"
+      style={{ position: "absolute", bottom: -20, right: 18, zIndex: 2, display: "block" }}>
+      {/* Mirror of left tail */}
+      <path d="M0 0 C0 0 18 8 24 20 C26 24 28 26 28 26 C28 26 22 22 14 16 C8 12 0 6 0 0 Z"
+        fill={color} />
+    </svg>
+  );
+}
 
 /* ── Sparkle burst on new companion message ─────────────────────── */
 function SparkleEffect({ active }) {
@@ -91,65 +109,6 @@ export default function ChatMessages({
     }}>
       <style>{`
         /* ── Bubble entrance ── */
-        /* ── Comic speech bubble tails via ::before/::after ── */
-        .bubble-companion {
-          position: relative;
-          border-radius: 18px !important;
-          margin-bottom: 14px;
-        }
-        .bubble-companion::after {
-          content: "";
-          position: absolute;
-          bottom: -13px;
-          left: 20px;
-          width: 0;
-          height: 0;
-          border-left: 13px solid transparent;
-          border-right: 0px solid transparent;
-          border-top: 14px solid rgba(67,20,110,0.90);
-        }
-        .bubble-companion::before {
-          content: "";
-          position: absolute;
-          bottom: -17px;
-          left: 18px;
-          width: 0;
-          height: 0;
-          border-left: 15px solid transparent;
-          border-right: 2px solid transparent;
-          border-top: 17px solid rgba(196,180,252,0.22);
-          z-index: -1;
-        }
-
-        .bubble-user {
-          position: relative;
-          border-radius: 18px !important;
-          margin-bottom: 14px;
-        }
-        .bubble-user::after {
-          content: "";
-          position: absolute;
-          bottom: -13px;
-          right: 20px;
-          width: 0;
-          height: 0;
-          border-right: 13px solid transparent;
-          border-left: 0px solid transparent;
-          border-top: 14px solid #7c3aed;
-        }
-        .bubble-user::before {
-          content: "";
-          position: absolute;
-          bottom: -17px;
-          right: 18px;
-          width: 0;
-          height: 0;
-          border-right: 15px solid transparent;
-          border-left: 2px solid transparent;
-          border-top: 17px solid rgba(0,0,0,0.35);
-          z-index: -1;
-        }
-
         @keyframes bubblePop {
           0%   { transform: scale(0.75) translateY(8px); opacity: 0; }
           65%  { transform: scale(1.05) translateY(-2px); opacity: 1; }
@@ -277,9 +236,8 @@ export default function ChatMessages({
                   style={{
                     position: "relative",
                     padding: "12px 17px",
-                    borderRadius: isUser
-                      ? "20px 20px 20px 20px"
-                      : "20px 20px 20px 20px",
+                    borderRadius: "20px",
+                    marginBottom: 22,
                     fontSize: 14.5,
                     lineHeight: 1.6,
                     wordBreak: "break-word",
@@ -305,7 +263,13 @@ export default function ChatMessages({
                     }),
                   }}
                 >
-                  {/* Tail handled by CSS ::before/::after on .bubble-companion/.bubble-user */}
+                  {/* Curved speech bubble tail */}
+                  {!isUser && (
+                    <BubbleTailLeft color="rgba(67,20,110,0.90)" />
+                  )}
+                  {isUser && (
+                    <BubbleTailRight color="#7c3aed" />
+                  )}
 
                   {/* Quoted reply */}
                   {msg.quoteReply && (
