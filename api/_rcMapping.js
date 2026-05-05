@@ -32,8 +32,10 @@ export const PRODUCT_MAP = {
   "unfiltr_plus_monthly":                         "monthly",
   "unfiltr_pro_monthly:monthly-1499":             "pro",
   "unfiltr_pro_monthly":                          "pro",
-  "unfiltr_ultimate_friend_annual:annual-99":     "annual",
-  "unfiltr_ultimate_friend_annual":               "annual",
+  "unfiltr_ultimate_friend_annual:annual-99":     "ultimate_friend",
+  "unfiltr_ultimate_friend_annual":               "ultimate_friend",
+  // iOS Ultimate Friend  
+  "com.huertas.unfiltr.pro.annual":               "ultimate_friend",
 };
 
 /**
@@ -44,8 +46,8 @@ export const PRODUCT_MAP = {
 export function planFromProductId(productId = "") {
   return (
     PRODUCT_MAP[productId] ||
-    (productId.includes("annual")          ? "annual"  :
-     productId.includes("ultimate_friend") ? "annual"  :
+    (productId.includes("ultimate_friend") ? "ultimate_friend" :
+     productId.includes("annual")          ? "ultimate_friend"  :
      productId.includes("tier.pro")        ? "pro"     :
      productId.includes("pro_monthly")     ? "pro"     :
      productId.includes("pro")             ? "pro"     : "monthly")
@@ -68,6 +70,7 @@ export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
       premium:              false,
       pro_plan:             false,
       annual_plan:          false,
+      ultimate_friend:      false,
       trial_active:         false,
       subscription_expires: null,
     };
@@ -83,6 +86,7 @@ export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
       premium:              false,
       pro_plan:             false,
       annual_plan:          false,
+      ultimate_friend:      false,
       trial_active:         false,
       subscription_expires: expiresDate,
     };
@@ -96,7 +100,8 @@ export function mapEntitlementToFlags(entitlement, fallbackProductId = "") {
     is_premium:           true,
     premium:              true,
     pro_plan:             plan === "pro",
-    annual_plan:          plan === "annual",
+    annual_plan:          plan === "annual" || plan === "ultimate_friend",
+    ultimate_friend:      plan === "ultimate_friend",
     trial_active:         isTrial,
     subscription_expires: expiresDate,
   };
@@ -207,3 +212,4 @@ export async function postReceiptToRC(receiptData, appUserId, productId, platfor
   }
   return body;
 }
+
