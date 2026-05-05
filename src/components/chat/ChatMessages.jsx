@@ -9,35 +9,49 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Speech bubble tail (bottom-left for companion) ── */
+/* ── iMessage-style curved tail — bottom-left (companion) ── */
 function BubbleTailLeft({ color }) {
   return (
-    <div style={{
-      position: "absolute",
-      bottom: -12,
-      left: 20,
-      width: 0,
-      height: 0,
-      borderLeft: "10px solid transparent",
-      borderTop: \`14px solid \${color}\`,
-      borderRight: "4px solid transparent",
-    }} />
+    <svg
+      width="20" height="20"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        position: "absolute",
+        bottom: -14,
+        left: 8,
+        display: "block",
+        overflow: "visible",
+      }}
+    >
+      <path
+        d="M 20 0 C 20 10, 8 14, 0 20 C 6 14, 10 8, 10 0 Z"
+        fill={color}
+      />
+    </svg>
   );
 }
 
-/* ── Speech bubble tail (bottom-right for user) ── */
+/* ── iMessage-style curved tail — bottom-right (user) ── */
 function BubbleTailRight({ color }) {
   return (
-    <div style={{
-      position: "absolute",
-      bottom: -12,
-      right: 20,
-      width: 0,
-      height: 0,
-      borderRight: "10px solid transparent",
-      borderTop: \`14px solid \${color}\`,
-      borderLeft: "4px solid transparent",
-    }} />
+    <svg
+      width="20" height="20"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        position: "absolute",
+        bottom: -14,
+        right: 8,
+        display: "block",
+        overflow: "visible",
+      }}
+    >
+      <path
+        d="M 0 0 C 0 10, 12 14, 20 20 C 14 14, 10 8, 10 0 Z"
+        fill={color}
+      />
+    </svg>
   );
 }
 
