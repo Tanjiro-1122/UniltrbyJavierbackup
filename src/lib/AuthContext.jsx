@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("unfiltr_user_id");
     localStorage.removeItem("unfiltr_user_email");
     localStorage.removeItem("unfiltr_apple_email");
+    localStorage.removeItem("unfiltr_google_user_id");
     localStorage.removeItem("unfiltr_chat_history");
     localStorage.removeItem("unfiltr_current_chat_db_id");
 
@@ -147,3 +148,4 @@ export const useAuth = () => {
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
+
