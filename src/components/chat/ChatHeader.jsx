@@ -91,6 +91,10 @@ export default function ChatHeader({
 
   /* ── Quick menu items ── */
   const quickActions = [
+    { label: "Customize", emoji: "🎛️", action: () => { setShowQuickMenu(false); setShowCustomize(true); } },
+    { label: "Style",     emoji: "🎨", action: () => { setShowQuickMenu(false); setShowAppearance(true); } },
+    { label: "History",   emoji: "📜", action: () => { setShowQuickMenu(false); navigate("/chat-history"); } },
+    { label: "New Chat",  emoji: "🔄", action: () => { setShowQuickMenu(false); handleNewChat(); } },
     { label: "Topics",    emoji: "✨", action: () => { setShowQuickMenu(false); onShowTopics(); } },
     { label: "Meditate",  emoji: "🌙", action: () => { setShowQuickMenu(false); onShowMeditation(); } },
     { label: "Mood",      emoji: "📊", action: () => { setShowQuickMenu(false); onShowMoodInsights(); } },
@@ -100,7 +104,6 @@ export default function ChatHeader({
     { label: "Games",     emoji: "🎮", action: () => { setShowQuickMenu(false); onShowGames(); } },
     { label: "Badges",    emoji: "🏆", action: () => { setShowQuickMenu(false); onShowAchievements(); } },
     { label: "Saved",     emoji: "🔖", action: () => { setShowQuickMenu(false); onShowBookmarks(); } },
-    { label: "Style",     emoji: "🎨", action: () => { setShowQuickMenu(false); setShowAppearance(true); } },
     ...(vibe === "journal" && messages.filter(m => m.role === "user").length >= 2
       ? [{ label: "Save Entry", emoji: "📓", action: () => { setShowQuickMenu(false); handleSaveJournal(); } }]
       : []),
@@ -161,40 +164,25 @@ export default function ChatHeader({
           </span>
         </div>
 
-        {/* RIGHT: More pill + Customize + Settings + History + New chat */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", minWidth: 90, justifyContent: "flex-end" }}>
+        {/* RIGHT: More pill + Settings only */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
 
-          {/* ⚡ MORE pill */}
+          {/* ⚡ MORE pill — everything lives here */}
           <button onClick={() => setShowQuickMenu(true)}
             style={{
               height: 32, borderRadius: 999,
               background: "linear-gradient(135deg, rgba(124,58,237,0.5), rgba(109,40,217,0.6))",
               border: "1px solid rgba(167,139,250,0.4)",
               display: "flex", alignItems: "center", gap: 5,
-              padding: "0 12px", cursor: "pointer",
+              padding: "0 14px", cursor: "pointer",
             }}>
             <Zap size={13} color="#c4b5fd" fill="#c4b5fd" />
             <span style={{ color: "#c4b5fd", fontSize: 12, fontWeight: 700 }}>More</span>
           </button>
 
-          {/* Sliders (customize) */}
-          <button onClick={() => setShowCustomize(true)} style={iconBtn} title="Customize">
-            <SlidersHorizontal size={14} color="white" />
-          </button>
-
-          {/* Settings */}
+          {/* Settings — only standalone button kept */}
           <button onClick={onNavigateToSettings || (() => navigate("/settings"))} style={iconBtn} title="Settings">
             <Settings size={14} color="white" />
-          </button>
-
-          {/* History */}
-          <button onClick={() => navigate("/chat-history")} style={iconBtn} title="Chat history">
-            <History size={14} color="white" />
-          </button>
-
-          {/* New chat */}
-          <button onClick={handleNewChat} style={iconBtn} title="New chat">
-            <RotateCcw size={14} color="white" />
           </button>
         </div>
       </div>
