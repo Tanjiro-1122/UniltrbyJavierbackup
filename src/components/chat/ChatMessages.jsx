@@ -9,46 +9,49 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── iMessage-style curved tail — bottom-left (companion) ── */
+/* ── iMessage-style tail — companion (bottom-left corner) ── */
 function BubbleTailLeft({ color }) {
   return (
     <svg
-      width="20" height="20"
-      viewBox="0 0 20 20"
+      width="14" height="18"
+      viewBox="0 0 14 18"
       xmlns="http://www.w3.org/2000/svg"
       style={{
         position: "absolute",
-        bottom: -14,
-        left: 8,
+        bottom: -1,
+        left: -7,
         display: "block",
-        overflow: "visible",
+        pointerEvents: "none",
       }}
     >
+      {/* Thin curved tail: starts at top-right (attaches to bubble corner),
+          sweeps to a sharp point at bottom-left */}
       <path
-        d="M 20 0 C 20 10, 8 14, 0 20 C 6 14, 10 8, 10 0 Z"
+        d="M 14 0 C 14 6, 6 10, 0 18 C 4 12, 8 6, 8 0 Z"
         fill={color}
       />
     </svg>
   );
 }
 
-/* ── iMessage-style curved tail — bottom-right (user) ── */
+/* ── iMessage-style tail — user (bottom-right corner) ── */
 function BubbleTailRight({ color }) {
   return (
     <svg
-      width="20" height="20"
-      viewBox="0 0 20 20"
+      width="14" height="18"
+      viewBox="0 0 14 18"
       xmlns="http://www.w3.org/2000/svg"
       style={{
         position: "absolute",
-        bottom: -14,
-        right: 8,
+        bottom: -1,
+        right: -7,
         display: "block",
-        overflow: "visible",
+        pointerEvents: "none",
       }}
     >
+      {/* Mirror of left tail */}
       <path
-        d="M 0 0 C 0 10, 12 14, 20 20 C 14 14, 10 8, 10 0 Z"
+        d="M 0 0 C 0 6, 8 10, 14 18 C 10 12, 6 6, 6 0 Z"
         fill={color}
       />
     </svg>
@@ -276,10 +279,12 @@ export default function ChatMessages({
                     /* ── User bubble: rich glowing gem ── */
                     ...(isUser ? {
                       background: "linear-gradient(140deg, #8b5cf6 0%, #7c3aed 45%, #db2777 100%)",
+                      borderBottomRightRadius: 4,
                       boxShadow: "0 4px 20px rgba(124,58,237,0.6), 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
                     } : {
                       /* ── Companion bubble: deep jewel with shimmer border ── */
                       background: "linear-gradient(145deg, rgba(88,28,135,0.82) 0%, rgba(67,20,110,0.88) 50%, rgba(76,29,149,0.82) 100%)",
+                      borderBottomLeftRadius: 4,
                       backdropFilter: "blur(24px)",
                       WebkitBackdropFilter: "blur(24px)",
                       border: "1.5px solid rgba(196,180,252,0.22)",
