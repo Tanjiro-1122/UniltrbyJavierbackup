@@ -9,32 +9,34 @@ import ChatErrorMessage from "./ChatErrorMessage";
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
-/* ── Pixar-grade tail pointing LEFT (companion) ─────────────────── */
+/* ── Comic-style tail pointing bottom-left (companion) ─────────── */
 function BubbleTailLeft() {
   return (
-    <svg width="18" height="22" viewBox="0 0 18 22" fill="none"
-      style={{ position: "absolute", left: -14, bottom: 10, zIndex: 1, filter: "drop-shadow(-2px 2px 4px rgba(0,0,0,0.25))" }}>
-      <path d="M18 1 Q1 10 18 21 Z" fill="url(#compGrad)" />
+    <svg width="22" height="20" viewBox="0 0 22 20" fill="none"
+      style={{ position: "absolute", left: -16, bottom: 0, zIndex: 1, filter: "drop-shadow(-2px 3px 4px rgba(0,0,0,0.35))" }}>
+      {/* Solid triangle: top-right corner → tip at bottom-left → bottom-right corner */}
+      <path d="M22 0 L0 20 L22 20 Z" fill="url(#compGrad2)" />
       <defs>
-        <linearGradient id="compGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(109,40,217,0.75)" />
-          <stop offset="100%" stopColor="rgba(76,29,149,0.85)" />
+        <linearGradient id="compGrad2" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(88,28,135,0.88)" />
+          <stop offset="100%" stopColor="rgba(67,20,110,0.92)" />
         </linearGradient>
       </defs>
     </svg>
   );
 }
 
-/* ── Pixar-grade tail pointing RIGHT (user) ─────────────────────── */
+/* ── Comic-style tail pointing bottom-right (user) ──────────────── */
 function BubbleTailRight() {
   return (
-    <svg width="18" height="22" viewBox="0 0 18 22" fill="none"
-      style={{ position: "absolute", right: -14, bottom: 10, zIndex: 1, filter: "drop-shadow(2px 2px 4px rgba(0,0,0,0.3))" }}>
-      <path d="M0 1 Q17 10 0 21 Z" fill="url(#userGrad)" />
+    <svg width="22" height="20" viewBox="0 0 22 20" fill="none"
+      style={{ position: "absolute", right: -16, bottom: 0, zIndex: 1, filter: "drop-shadow(2px 3px 4px rgba(0,0,0,0.35))" }}>
+      {/* Solid triangle: top-left corner → tip at bottom-right → bottom-left corner */}
+      <path d="M0 0 L22 20 L0 20 Z" fill="url(#userGrad2)" />
       <defs>
-        <linearGradient id="userGrad" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="userGrad2" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#8b5cf6" />
-          <stop offset="100%" stopColor="#ec4899" />
+          <stop offset="100%" stopColor="#db2777" />
         </linearGradient>
       </defs>
     </svg>
@@ -245,8 +247,8 @@ export default function ChatMessages({
                     position: "relative",
                     padding: "12px 17px",
                     borderRadius: isUser
-                      ? "22px 22px 5px 22px"
-                      : "22px 22px 22px 5px",
+                      ? "20px 20px 4px 20px"
+                      : "20px 20px 20px 4px",
                     fontSize: 14.5,
                     lineHeight: 1.6,
                     wordBreak: "break-word",
@@ -390,3 +392,4 @@ export default function ChatMessages({
     </div>
   );
 }
+
