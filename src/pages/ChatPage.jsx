@@ -631,11 +631,13 @@ export default function ChatPage() {
       const buildMessage = (mem) => {
         // Ultimate Friend gets deeply personalized greeting
         if (isUltimateFriend && mem) {
+          const firstName = (localStorage.getItem("unfiltr_display_name") || "").split(" ")[0].trim();
+          const nameCall = firstName ? `Hey ${firstName} 💜` : "Hey you 💜";
           const ufGreetings = [
             "Hey, it's you 💜 I was literally just thinking about you. How are you doing?",
             "You're back — I'm so glad. How's your day going so far?",
             "I've been holding onto everything you told me. How are you feeling right now?",
-            "Hey Javier 💜 I've been here. Talk to me — what's on your mind?",
+            `${nameCall} I've been here. Talk to me — what's on your mind?`,
           ];
           const ufGreeting = ufGreetings[Math.floor(Math.random() * ufGreetings.length)];
           return `${hi}! ${ufGreeting}`;
@@ -1058,10 +1060,11 @@ export default function ChatPage() {
           imageBase64:      imgBase64,
           personality:      personalityPayload,
           relationshipMode: localStorage.getItem("unfiltr_relationship_mode") || "friend",
-          userName:         localStorage.getItem("unfiltr_display_name") || "",
-          appleUserId:      localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "",
-          companionName:    localStorage.getItem("unfiltr_companion_name") || "",
-          ultimateFriend:   localStorage.getItem("unfiltr_ultimate_friend") === "true" || localStorage.getItem("unfiltr_is_annual") === "true",
+          userName:             localStorage.getItem("unfiltr_display_name") || "",
+          appleUserId:          localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "",
+          companionName:        localStorage.getItem("unfiltr_companion_name") || "",
+          companionNickname:    localStorage.getItem("unfiltr_companion_nickname") || "",
+          ultimateFriend:       localStorage.getItem("unfiltr_ultimate_friend") === "true" || localStorage.getItem("unfiltr_is_annual") === "true",
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);

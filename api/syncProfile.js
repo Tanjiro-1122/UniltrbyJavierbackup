@@ -138,6 +138,7 @@ function buildProfileResponse(profile, companionData) {
     pro_plan:            profile.pro_plan    || false,
     ultimate_friend:     profile.ultimate_friend || false,
     display_name:        profile.display_name || null,
+    companion_nickname:  profile.companion_nickname || (companionData?.nickname) || null,
     onboarding_complete: profile.onboarding_complete || false,
     companion_id:        profile.companion_id || null,
     preferred_mood:      profile.preferred_mood || null,

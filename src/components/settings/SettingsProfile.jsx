@@ -7,12 +7,34 @@ function NicknameField() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const save = () => {
+  const save = async () => {
     const trimmed = nick.trim();
     if (!trimmed) { setError("Nickname cannot be empty."); return; }
     if (trimmed.length > 30) { setError("Max 30 characters."); return; }
     setError("");
+    // Always write locally first — immediate effect even if DB fails
     localStorage.setItem("unfiltr_companion_nickname", trimmed);
+    // Dispatch event so ChatPage and other listeners can pick up the new name
+    window.dispatchEvent(new CustomEvent("unfiltr_companion_changed"));
+    // Persist to DB so it survives device reinstall / cross-device login
+    const profileId   = localStorage.getItem("userProfileId");
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "";
+    if (profileId && appleUserId) {
+      try {
+        await fetch("/api/syncProfile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action:     "update",
+            profileId,
+            appleUserId,
+            updateData: { companion_nickname: trimmed },
+          }),
+        });
+      } catch (e) {
+        console.warn("[NicknameField] DB sync failed (local saved):", e.message);
+      }
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

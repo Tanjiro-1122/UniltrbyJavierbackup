@@ -41,6 +41,11 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     }
     localStorage.setItem("userProfileId", profile.profileId);
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    // Restore companion nickname from DB profile — takes priority over stale localStorage
+    // (profile.companion_nickname is now returned by buildProfileResponse in syncProfile)
+    if (profile.companion_nickname) {
+      localStorage.setItem("unfiltr_companion_nickname", profile.companion_nickname);
+    }
     // Restore companion ID from the UserProfile record first (most reliable)
     if (profile.companion_id && profile.companion_id !== "pending") {
       localStorage.setItem("unfiltr_companion_id", profile.companion_id);
@@ -68,7 +73,12 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
             email:              email        || undefined,
             displayName:        profile.display_name || undefined,
             companionId:        profile.companion_id || undefined,
+            companionNickname:  profile.companion_nickname || localStorage.getItem("unfiltr_companion_nickname") || undefined,
+            profileId:          profile.profileId || undefined,
             isPremium:          isPremium,
+            isAnnual:           isAnnual,
+            isPro:              isPro,
+            isUltimateFriend:   isUltimateFriend,
             plan:               isUltimateFriend ? "annual"
                               : isAnnual         ? "annual"
                               : isPro            ? "pro"
