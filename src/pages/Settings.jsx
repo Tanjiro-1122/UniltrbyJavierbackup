@@ -271,6 +271,7 @@ export default function Settings() {
 
   // Privacy state
   const [privateSession, setPrivateSession]             = useState(() => localStorage.getItem("unfiltr_private_session") === "true");
+  const [proactiveGreeting, setProactiveGreeting]       = useState(() => localStorage.getItem("unfiltr_proactive_greeting") !== "false");
   const [clearingChat, setClearingChat]                 = useState(false);
   const [clearChatDone, setClearChatDone]               = useState(false);
   const [deletingMemory, setDeletingMemory]             = useState(false);
@@ -1051,6 +1052,38 @@ export default function Settings() {
               }} />
             </button>
           </div>
+
+          {/* Proactive Greeting toggle — Ultimate Friend only */}
+          {localStorage.getItem("unfiltr_ultimate_friend") === "true" && (
+            <>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Ultimate Friend</p>
+              <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 3px" }}>💜 Proactive Greetings</p>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: 0, lineHeight: 1.5 }}>Your companion greets you based on how long you've been away. Turn off if you prefer a quiet open.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const next = !proactiveGreeting;
+                    setProactiveGreeting(next);
+                    localStorage.setItem("unfiltr_proactive_greeting", next ? "true" : "false");
+                  }}
+                  style={{
+                    width: 48, height: 28, borderRadius: 99, border: "none", cursor: "pointer", flexShrink: 0,
+                    background: proactiveGreeting ? "#7c3aed" : "rgba(255,255,255,0.1)",
+                    transition: "background 0.2s", position: "relative",
+                  }}
+                >
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", background: "white",
+                    position: "absolute", top: 3,
+                    left: proactiveGreeting ? 23 : 3,
+                    transition: "left 0.2s",
+                  }} />
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Clear chat history */}
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Data Controls</p>

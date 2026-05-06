@@ -523,6 +523,7 @@ export default function ChatPage() {
     const name = companion.displayName || companion.name;
     const userName = localStorage.getItem("unfiltr_user_display_name") || localStorage.getItem("unfiltr_display_name") || "";
     const isUltimateFriend = localStorage.getItem("unfiltr_ultimate_friend") === "true";
+    const proactiveGreetingOn = localStorage.getItem("unfiltr_proactive_greeting") !== "false";
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
@@ -639,7 +640,7 @@ export default function ChatPage() {
 
       const buildMessage = (mem) => {
         // ── ULTIMATE FRIEND — fully alive, time-aware, emotionally continuous ──
-        if (isUltimateFriend) {
+        if (isUltimateFriend && proactiveGreetingOn) {
           const firstName = (localStorage.getItem("unfiltr_display_name") || localStorage.getItem("unfiltr_user_display_name") || "").split(" ")[0].trim();
           const nameCall  = firstName ? firstName : null;
 
@@ -756,6 +757,12 @@ export default function ChatPage() {
             : "";
 
           return `${ufGreeting}${memoryLayer}${moodLayer}${lateNudge}`;
+        }
+
+        // ── Ultimate Friend with proactive OFF — warm but quiet ──
+        if (isUltimateFriend && !proactiveGreetingOn) {
+          const firstName = (localStorage.getItem("unfiltr_display_name") || localStorage.getItem("unfiltr_user_display_name") || "").split(" ")[0].trim();
+          return firstName ? `Hey ${firstName} 💜` : "Hey 💜";
         }
 
         // ── Standard tiers ──
