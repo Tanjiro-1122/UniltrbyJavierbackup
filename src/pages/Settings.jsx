@@ -1054,9 +1054,9 @@ export default function Settings() {
           </div>
 
           {/* Proactive Greeting toggle — Ultimate Friend only */}
-          {localStorage.getItem("unfiltr_ultimate_friend") === "true" && (
+          {(localStorage.getItem("unfiltr_ultimate_friend") === "true" || isFamilyUnlimited()) && (
             <>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Ultimate Friend</p>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Premium Features</p>
               <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", padding: "14px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: "0 0 3px" }}>💜 Proactive Greetings</p>

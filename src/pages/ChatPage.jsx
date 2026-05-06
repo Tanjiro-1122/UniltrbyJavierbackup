@@ -640,7 +640,7 @@ export default function ChatPage() {
 
       const buildMessage = (mem) => {
         // ── ULTIMATE FRIEND — fully alive, time-aware, emotionally continuous ──
-        if (isUltimateFriend && proactiveGreetingOn) {
+        if ((isUltimateFriend || isFamilyUnlimited()) && proactiveGreetingOn) {
           const firstName = (localStorage.getItem("unfiltr_display_name") || localStorage.getItem("unfiltr_user_display_name") || "").split(" ")[0].trim();
           const nameCall  = firstName ? firstName : null;
 
@@ -760,7 +760,7 @@ export default function ChatPage() {
         }
 
         // ── Ultimate Friend with proactive OFF — warm but quiet ──
-        if (isUltimateFriend && !proactiveGreetingOn) {
+        if ((isUltimateFriend || isFamilyUnlimited()) && !proactiveGreetingOn) {
           const firstName = (localStorage.getItem("unfiltr_display_name") || localStorage.getItem("unfiltr_user_display_name") || "").split(" ")[0].trim();
           return firstName ? `Hey ${firstName} 💜` : "Hey 💜";
         }
