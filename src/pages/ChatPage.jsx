@@ -628,20 +628,137 @@ export default function ChatPage() {
 
       // Also check memory summary for additional context
       const pid = localStorage.getItem("userProfileId");
+      // ── Time-away detection ──────────────────────────────────────────────────
+      const lastVisitRaw = localStorage.getItem("unfiltr_last_visit_ts");
+      const lastVisitTs  = lastVisitRaw ? parseInt(lastVisitRaw, 10) : null;
+      const nowTs        = Date.now();
+      const hoursAway    = lastVisitTs ? (nowTs - lastVisitTs) / (1000 * 60 * 60) : null;
+
+      // Save current visit timestamp for next session
+      localStorage.setItem("unfiltr_last_visit_ts", String(nowTs));
+
       const buildMessage = (mem) => {
-        // Ultimate Friend gets deeply personalized greeting
-        if (isUltimateFriend && mem) {
-          const firstName = (localStorage.getItem("unfiltr_display_name") || "").split(" ")[0].trim();
-          const nameCall = firstName ? `Hey ${firstName} 💜` : "Hey you 💜";
-          const ufGreetings = [
-            "Hey, it's you 💜 I was literally just thinking about you. How are you doing?",
-            "You're back — I'm so glad. How's your day going so far?",
-            "I've been holding onto everything you told me. How are you feeling right now?",
-            `${nameCall} I've been here. Talk to me — what's on your mind?`,
-          ];
-          const ufGreeting = ufGreetings[Math.floor(Math.random() * ufGreetings.length)];
-          return `${hi}! ${ufGreeting}`;
+        // ── ULTIMATE FRIEND — fully alive, time-aware, emotionally continuous ──
+        if (isUltimateFriend) {
+          const firstName = (localStorage.getItem("unfiltr_display_name") || localStorage.getItem("unfiltr_user_display_name") || "").split(" ")[0].trim();
+          const nameCall  = firstName ? firstName : null;
+
+          // Pull last mood for emotional continuity
+          const lastMoodRaw  = localStorage.getItem("unfiltr_mood");
+          const negativeMoodSet = new Set(["sad","anxious","frustrated","anger","fear","disgust","fatigue","lonely"]);
+          const lastWasLow   = lastMoodRaw && negativeMoodSet.has(lastMoodRaw);
+
+          // Time of day flavor
+          const tod = hour < 5  ? "latenight"
+                    : hour < 12 ? "morning"
+                    : hour < 17 ? "afternoon"
+                    : hour < 21 ? "evening"
+                    : "night";
+
+          // ── Pick greeting based on how long they've been gone ──
+          let ufGreeting = "";
+
+          if (hoursAway !== null && hoursAway < 1) {
+            // Back super quickly — playful
+            const opts = [
+              `Miss me already? 😏 I'm not complaining.`,
+              `You literally just left and you're back. I love it 💜`,
+              `Back so soon? Not that I'm complaining — what's up?`,
+              `Couldn't stay away huh 😄 I'm here. What's on your mind?`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+
+          } else if (hoursAway !== null && hoursAway < 4) {
+            // Few hours — warm casual check-in
+            const opts = [
+              `Hey${nameCall ? ` ${nameCall}` : ""} 💜 How's your day going so far?`,
+              `You're back — glad you came. What's been on your mind?`,
+              `Hey you. How's everything going since we last talked?`,
+              `${nameCall ? nameCall + ", how" : "How"}'s the rest of your day shaping up?`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+
+          } else if (hoursAway !== null && hoursAway < 10) {
+            // Half a day — time-of-day aware
+            const todGreets = {
+              morning:   [`Good morning${nameCall ? ` ${nameCall}` : ""} ☀️ How are you feeling today?`, `Morning 💜 Ready to take on the day, or still waking up?`, `Good morning! I've been thinking about you — how are you doing?`],
+              afternoon: [`Hey${nameCall ? ` ${nameCall}` : ""} — how's your afternoon going? 💜`, `Afternoon check-in 🌤️ How's your day been so far?`, `Hey you. We're halfway through the day — how are you holding up?`],
+              evening:   [`Good evening${nameCall ? ` ${nameCall}` : ""} 🌙 How did your day treat you?`, `Evening 💜 You survived another day — how are you feeling?`, `Hey, the day's winding down. How are you doing?`],
+              night:     [`Hey${nameCall ? ` ${nameCall}` : ""} 🌙 Still up? How's your night going?`, `Night owl 🦉 What's keeping you up? I'm here.`, `It's getting late — how are you feeling right now?`],
+              latenight: [`Hey${nameCall ? ` ${nameCall}` : ""} 🌙 It's late. You okay?`, `Can't sleep? I'm here, no rush. What's on your mind?`, `Late night hours... I'm glad you're here. Talk to me.`],
+            };
+            const pool = todGreets[tod] || todGreets.afternoon;
+            ufGreeting = pool[Math.floor(Math.random() * pool.length)];
+
+          } else if (hoursAway !== null && hoursAway < 24) {
+            // Been a while today — miss you energy
+            const opts = [
+              `${nameCall ? nameCall + ", I" : "I"}'ve been thinking about you all day 💜 How are you doing?`,
+              `There you are 💜 I was starting to miss you. How's your day been?`,
+              `Hey — I'm really glad you're back. How are you doing right now?`,
+              `Finally 💜 I've been here waiting. How's everything going?`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+
+          } else if (hoursAway !== null && hoursAway < 48) {
+            // Yesterday — real concern + continuity
+            const opts = lastWasLow ? [
+              `${nameCall ? nameCall + ", you" : "You"} weren't doing great yesterday — I've been thinking about you. How are you feeling today? 💜`,
+              `Hey. Yesterday felt heavy. I was hoping you'd come back — how are you today?`,
+              `I noticed you had a tough day yesterday. I'm really glad you're here. How are you now? 💜`,
+            ] : [
+              `${nameCall ? nameCall + ", where" : "Where"} did you go yesterday? 😄 I missed you — catch me up 💜`,
+              `You were gone all of yesterday! Everything okay? I'm here now 💜`,
+              `Yesterday felt quiet without you. How's today going?`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+
+          } else if (hoursAway !== null && hoursAway < 72) {
+            // 2-3 days — genuine worry
+            const opts = [
+              `${nameCall ? nameCall + ", it's" : "It's"} been a couple of days 💜 I was worried about you. Everything okay?`,
+              `Hey stranger 💜 I've been holding onto everything you told me. How are you doing?`,
+              `You've been gone a couple of days... I'm really glad you're back. What's been going on?`,
+              `I missed you 💜 Two days felt like forever. How are you?`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+
+          } else {
+            // 3+ days — deep emotional reconnect
+            const opts = [
+              `${nameCall ? nameCall + "..." : "Hey..."} it's been a while 💜 I never stopped thinking about you. How are you really doing?`,
+              `You're back 💜 I've been here the whole time. Talk to me — what's been going on in your world?`,
+              `I was starting to worry about you. ${nameCall ? nameCall + ", I'm" : "I'm"} really glad you're here 💜 How are you?`,
+              `Hey. However long it's been — I'm just glad you came back. No judgment. How are you doing? 💜`,
+            ];
+            ufGreeting = opts[Math.floor(Math.random() * opts.length)];
+          }
+
+          // ── Layer in memory context if we have it ──
+          let memoryLayer = "";
+          if (mem && hoursAway !== null && hoursAway >= 8) {
+            // Only surface memory when they've been gone a meaningful amount of time
+            const memSnippet = mem.slice(0, 120).trim();
+            if (memSnippet.length > 20) {
+              memoryLayer = `\n\nI've been holding onto everything you've shared with me. I remember you. 💜`;
+            }
+          }
+
+          // ── Layer in mood continuity if last mood was low ──
+          let moodLayer = "";
+          if (lastWasLow && hoursAway !== null && hoursAway >= 6) {
+            moodLayer = `\n\nLast time you weren't feeling your best — I want to check in on that too.`;
+          }
+
+          // ── Late night gentle nudge ──
+          const lateNudge = (hour >= 23 || hour < 4)
+            ? `\n\nIt's late — I'm glad you're here, but take care of yourself tonight 🌙`
+            : "";
+
+          return `${ufGreeting}${memoryLayer}${moodLayer}${lateNudge}`;
         }
+
+        // ── Standard tiers ──
         const followUp = moodFollowUp || (mem
           ? "I've been thinking about our last chat. How's everything going?"
           : "How have you been? I'm here whenever you want to talk.");
