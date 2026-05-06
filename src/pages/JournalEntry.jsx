@@ -119,45 +119,68 @@ const STICKER_DEFS = [
 ];
 
 function PlacedSticker({ sticker, onRemove, constraintsRef }) {
-  const [showConfirm, setShowConfirm] = useState(false);
-  const tapRef = useRef(0);
+  const [selected, setSelected] = useState(false);
+  const isDragging = useRef(false);
   const def = STICKER_DEFS.find((d) => d.id === sticker.type);
   if (!def) return null;
-
-  const handleTap = () => {
-    if (showConfirm) return;
-    const now = Date.now();
-    if (now - tapRef.current < 400) {
-      setShowConfirm(true);
-    }
-    tapRef.current = now;
-  };
 
   return (
     <>
       <style>{def.keyframes}</style>
       <motion.div
-        drag dragConstraints={constraintsRef} dragElastic={0.05} dragMomentum={false}
-        initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
-        style={{ position: "absolute", left: sticker.x, top: sticker.y, zIndex: showConfirm ? 50 : 10, cursor: "grab", userSelect: "none", touchAction: "none" }}
-        onClick={handleTap}
+        drag
+        dragConstraints={constraintsRef}
+        dragElastic={0.05}
+        dragMomentum={false}
+        onDragStart={() => { isDragging.current = true; }}
+        onDragEnd={() => { setTimeout(() => { isDragging.current = false; }, 50); }}
+        onTap={() => {
+          if (isDragging.current) return;
+          setSelected((v) => !v);
+        }}
+        initial={{ scale: 0, rotate: -20 }}
+        animate={{ scale: 1, rotate: 0 }}
+        style={{
+          position: "absolute",
+          left: sticker.x,
+          top: sticker.y,
+          zIndex: selected ? 50 : 10,
+          cursor: "grab",
+          userSelect: "none",
+          touchAction: "none",
+        }}
       >
         <span style={{ fontSize: 36, ...def.style }}>{def.emoji}</span>
-        {showConfirm && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-            className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5 whitespace-nowrap"
-          >
-            <button
+        <AnimatePresence>
+          {selected && (
+            <motion.button
+              key="delete-btn"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
               onPointerDown={(e) => { e.stopPropagation(); onRemove(sticker.id); }}
-              className="px-2.5 py-1 rounded-lg bg-red-600/90 text-white text-xs font-semibold active:scale-95"
-            >Remove</button>
-            <button
-              onPointerDown={(e) => { e.stopPropagation(); setShowConfirm(false); }}
-              className="px-2.5 py-1 rounded-lg bg-white/20 text-white text-xs font-semibold active:scale-95"
-            >Keep</button>
-          </motion.div>
-        )}
+              style={{
+                position: "absolute",
+                top: -10,
+                right: -10,
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "#ef4444",
+                border: "2px solid white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                zIndex: 60,
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 2L8 8M8 2L2 8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </motion.div>
     </>
   );
@@ -339,10 +362,12 @@ export default function JournalEntry() {
               <motion.img
                 src={companionMoodUrl}
                 alt={companionData?.name}
+                draggable="false"
+                onContextMenu={(e) => e.preventDefault()}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
-                style={{ width: 44, height: 44, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(168,85,247,0.5))", flexShrink: 0 }}
+                style={{ width: 44, height: 44, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(168,85,247,0.5))", flexShrink: 0, WebkitUserSelect: "none", WebkitTouchCallout: "none", userSelect: "none", pointerEvents: "none" }}
               />
             )}
             <p className="text-purple-400/80 text-xs uppercase tracking-widest font-medium">{today}</p>
@@ -398,7 +423,7 @@ export default function JournalEntry() {
             className="mx-4 mb-2 rounded-2xl p-4 shrink-0"
             style={{ background: "rgba(20,8,50,0.97)", border: "1px solid rgba(168,85,247,0.2)" }}>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-white/50 text-xs uppercase tracking-widest">Tap to place · Double-tap placed sticker to remove</p>
+              <p className="text-white/50 text-xs uppercase tracking-widest">Tap to place · Tap sticker to select, then ✕ to delete</p>
               <button onClick={() => setShowStickers(false)}><X className="w-4 h-4 text-white/40" /></button>
             </div>
             <div className="grid grid-cols-6 gap-3">
