@@ -351,8 +351,10 @@ export default function HomeScreen() {
     safetyTimer = setTimeout(() => {
       if (!resolved) {
         finish();
-        setLoading(false);
-        setError("Sign-in timed out. Please try again.");
+        if (mountedRef.current) {
+          setLoading(false);
+          setError("Sign-in timed out. Please try again.");
+        }
         debugLog("[HomeScreen] ⚠️ Sign-in timed out");
       }
     }, 30000);
@@ -437,8 +439,10 @@ export default function HomeScreen() {
     safetyTimer = setTimeout(() => {
       if (!resolved) {
         finish();
-        setLoading(false);
-        setError("Sign-in timed out. Please try again.");
+        if (mountedRef.current) {
+          setLoading(false);
+          setError("Sign-in timed out. Please try again.");
+        }
       }
     }, 30000);
 
