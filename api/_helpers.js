@@ -43,7 +43,11 @@ export const MAX_INPUT_CHARS = _safeInt(process.env.AI_MAX_INPUT_CHARS, 8000);
 export const MAX_OUTPUT_TOKENS = _safeInt(process.env.AI_MAX_OUTPUT_TOKENS, 800);
 
 /** Milliseconds before an upstream OpenAI request is aborted. */
-export const AI_TIMEOUT_MS = _safeInt(process.env.AI_REQUEST_TIMEOUT_MS, 25000);
+// Fix B – Infinite Stream Timeout: default raised from 25s → 55s so GPT-4o
+// has room to generate long responses without hitting our own abort before
+// Vercel's 60s wall. The 5-second gap lets us return a graceful error message
+// rather than letting Vercel kill the connection with a raw 504.
+export const AI_TIMEOUT_MS = _safeInt(process.env.AI_REQUEST_TIMEOUT_MS, 55000);
 
 /** Max AI/chat requests allowed per user per minute (best-effort, per-instance). */
 export const AI_MAX_RPM = _safeInt(process.env.AI_MAX_RPM, 10);
