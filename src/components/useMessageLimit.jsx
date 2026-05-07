@@ -107,6 +107,27 @@ export function useMessageLimit(isPremium, isAnnual = false, isPro = false) {
     setUsedMonth(newMonth);
   };
 
+  // Fix 2 – Zombie Timer (web side): when the iOS wrapper resumes from background,
+  // native sends APP_BECAME_ACTIVE. We re-read localStorage so the daily counter
+  // reflects reality — JS timers freeze while backgrounded, leaving state stale.
+  useEffect(() => {
+    const handler = (e) => {
+      try {
+        const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (!msg || msg.type !== "APP_BECAME_ACTIVE") return;
+        const raw = localStorage.getItem(SHARED_DAILY_KEY);
+        if (raw) {
+          const { date, count } = JSON.parse(raw);
+          setUsedToday(date === getTodayKey() ? (count || 0) : 0);
+        } else {
+          setUsedToday(0);
+        }
+      } catch {}
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   const isAtLimit   = usedToday >= dailyLimit || usedMonth >= monthlyLimit;
   const remaining   = Math.max(0, Math.min(dailyLimit - usedToday, monthlyLimit - usedMonth));
   const hitMonthly  = usedMonth >= monthlyLimit && monthlyLimit < ANNUAL_MONTHLY;
