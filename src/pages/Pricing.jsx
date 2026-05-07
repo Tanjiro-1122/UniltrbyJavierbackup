@@ -262,6 +262,7 @@ export default function Pricing() {
   const [tab, setTab]             = useState('upgrade');
   const [showAdmin, setShowAdmin] = useState(false);
   const [tapCount, setTapCount]   = useState(0);
+  const [showDebug, setShowDebug] = useState(false);
   const tapTimer                  = useRef(null);
 
   const { purchasing, error, statusMessage, purchase, restore, loadProducts } = useAppleSubscriptions();
@@ -364,6 +365,7 @@ export default function Pricing() {
 
           {/* 5-tap secret: ✨ emoji */}
           <span onClick={handleSparkTap} style={{ fontSize: 22, cursor: 'pointer', userSelect: 'none' }}>✨</span>
+      {showDebug && <IAPDebugPanel onClose={() => setShowDebug(false)} />}
 
           {/* Hidden admin button — tap to open admin panel */}
           <button onClick={() => setShowAdmin(true)} style={{ background: 'transparent', border: 'none', color: 'transparent', fontSize: 10, cursor: 'pointer', padding: '4px 8px', userSelect: 'none' }}>{"·"}</button>
