@@ -1009,7 +1009,7 @@ export default function ChatPage() {
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
       const cleanText = text.replace(/[\*\_\~\#\>`]/g, "").slice(0, 400);
-      if (!cleanText.trim()) { console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
+      if (!cleanText.trim()) { if (process.env.NODE_ENV !== "production") console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
 
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
@@ -1356,9 +1356,26 @@ export default function ChatPage() {
         trySummarize();
       }
     } catch (error) {
-      console.error("Chat send failed:", error?.message || error, error?.response?.data);
+      // Fix 4 – Network error recovery: always preserve lastFailedText for retry.
+      // Distinguish a network drop (TypeError: Failed to fetch) from an API error
+      // so we can show a friendlier hint without spamming the native bridge.
+      const isNetworkDrop = error instanceof TypeError && (error.message || "").includes("fetch");
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Chat send failed:", error?.message || error);
+      }
       setLastFailedText(text);
-      setMessages(m => [...m, { role: "assistant", content: "__ERROR__" }]);
+      setMessages(m => {
+        // Only append __ERROR__ if the last message is the user's (no partial reply yet)
+        const last = m[m.length - 1];
+        if (last?.role === "user") {
+          return [...m, {
+            role: "assistant",
+            content: "__ERROR__",
+            _errorHint: isNetworkDrop ? "Connection lost — tap Retry" : undefined,
+          }];
+        }
+        return m;
+      });
       setIsSpeaking(false); setAvatarState("idle");
     } finally { clearTimeout(safetyTimer); setLoading(false); }
   };
