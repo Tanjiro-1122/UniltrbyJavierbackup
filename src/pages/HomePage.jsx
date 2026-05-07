@@ -22,9 +22,8 @@ export default function HomePage() {
 
   // Check if user already has a saved session
   const hasSession = !!(
-    localStorage.getItem("userProfileId") &&
-    localStorage.getItem("unfiltr_companion") &&
-    localStorage.getItem("unfiltr_env")
+    localStorage.getItem("unfiltr_apple_user_id") &&
+    localStorage.getItem("unfiltr_onboarding_complete") === "true"
   );
 
   return (
