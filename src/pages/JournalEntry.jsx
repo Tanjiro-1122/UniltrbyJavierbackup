@@ -7,6 +7,7 @@ import { getSharedDailyUsage, incrementSharedDailyUsage } from "@/components/use
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
 function getTier() {
+  if (localStorage.getItem("unfiltr_ultimate_friend") === "true") return "ultimate_friend";
   if (localStorage.getItem("unfiltr_is_annual") === "true") return "annual";
   if (localStorage.getItem("unfiltr_is_pro") === "true") return "pro";
   if (localStorage.getItem("unfiltr_is_premium") === "true") return "plus";
@@ -26,7 +27,7 @@ async function saveJournalEntryToDB(entry) {
 }
 
 // Journal entry limits per tier
-const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999 };
+const JOURNAL_LIMITS = { free: 5, plus: 30, pro: 100, annual: 99999, ultimate_friend: 99999 };
 const JOURNAL_KEY = "unfiltr_journal_monthly";
 
 function getMonthKey() { return new Date().toISOString().slice(0, 7); }
@@ -46,9 +47,11 @@ function incrementJournalUsage() {
 }
 
 function getJournalLimit() {
+  const isUltimate = localStorage.getItem("unfiltr_ultimate_friend") === "true";
   const isAnnual  = localStorage.getItem("unfiltr_is_annual") === "true";
   const isPro     = localStorage.getItem("unfiltr_is_pro") === "true";
   const isPremium = localStorage.getItem("unfiltr_is_premium") === "true";
+  if (isUltimate) return JOURNAL_LIMITS.ultimate_friend;
   if (isAnnual)  return JOURNAL_LIMITS.annual;
   if (isPro)     return JOURNAL_LIMITS.pro;
   if (isPremium) return JOURNAL_LIMITS.plus;
