@@ -105,10 +105,12 @@ export const AuthProvider = ({ children }) => {
     // a shared device. clearEntitlements() removes all canonical tier keys.
     clearEntitlements();
 
-    // Restore identity keys so sign-in can immediately reload chat history
+    // Restore identity anchor (apple_user_id only) so chat history can reload on next sign-in.
+    // NOTE: Do NOT restore unfiltr_user_id here — checkAuth() uses it to determine
+    // isAuthenticated, and restoring it would immediately re-authenticate the user after logout.
     if (appleUserId) {
       localStorage.setItem("unfiltr_apple_user_id", appleUserId);
-      localStorage.setItem("unfiltr_user_id", appleUserId);
+      // unfiltr_user_id is intentionally NOT restored here
     }
     if (companionId)  localStorage.setItem("unfiltr_companion_id", companionId);
     if (companionRaw) localStorage.setItem("unfiltr_companion", companionRaw);
