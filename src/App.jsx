@@ -272,7 +272,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         return;
       }
       // Onboarding done — only redirect if they're on a landing/root page, not mid-session
-      const activePaths = ["/chat", "/chat-enter", "/mood", "/journal", "/settings", "/vibe", "/feedback", "/Pricing"];
+      const activePaths = ["/chat", "/chat-enter", "/mood", "/journal", "/settings", "/vibe", "/feedback", "/Pricing", "/", "/hub", "/returning-screen"];
       const isActive = activePaths.some(p => location.pathname.startsWith(p));
       if (!isActive) {
         navigate("/returning-screen", { replace: true });
