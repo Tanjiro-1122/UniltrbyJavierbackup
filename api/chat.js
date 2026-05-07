@@ -493,7 +493,14 @@ export default async function handler(req, res) {
   } catch (err) {
     safeLogError(err, { ...ctx, tag: "chat" });
     if (err.name === "AbortError" || err.message?.includes("aborted") || err.message?.includes("timed out")) {
-      return res.status(504).json({ error: "The AI took too long to respond. Please try again." });
+      // Fix B – friendly timeout: return a partial "thinking" reply so the user
+      // sees a message bubble instead of a dead connection / red error banner.
+      return res.status(200).json({
+        reply: "Hmm, I was in the middle of a thought and lost it 😅 Give me a second and try again — I'm still here 💜",
+        mood: "neutral",
+        crisis: false,
+        _timeout: true,
+      });
     }
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
