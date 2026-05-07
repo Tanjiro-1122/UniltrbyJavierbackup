@@ -108,6 +108,7 @@ export default function ReturningScreen() {
             src={companionImg}
             alt={companionDisplayName}
             onLoad={() => setAvatarLoaded(true)}
+            onError={() => setAvatarLoaded(true)}
             style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "bottom center" }}
           />
         </motion.div>
