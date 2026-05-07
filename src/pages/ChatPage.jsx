@@ -32,6 +32,8 @@ import MoodInsights from "@/components/chat/MoodInsights";
 import DailyAffirmation from "@/components/chat/DailyAffirmation";
 import ConversationTopics from "@/components/chat/ConversationTopics";
 import { COMPANIONS } from "@/components/companionData";
+import ThemedBubble from "@/components/chat/ThemedBubble";
+import { loadAppearance, FONT_OPTIONS } from "@/components/chat/ChatAppearancePanel";
 import { COMPANION_PERSONALITIES, CRISIS_KEYWORDS } from "@/components/companion/companionPersonalities";
 import BookmarksModal from "@/components/chat/BookmarksModal";
 import CrisisBanner from "@/components/chat/CrisisBanner";
@@ -253,6 +255,21 @@ export default function ChatPage() {
     window.addEventListener('unfiltr_env_change', onBgChange);
     return () => window.removeEventListener('unfiltr_env_change', onBgChange);
   }, []);
+
+  // ── THEME ENGINE: read chat appearance (bubble style + font + size) ──
+  // Syncs with Settings → Chat Appearance on every save via unfiltr_appearance_changed.
+  const [chatAppearance, setChatAppearance] = React.useState(() => loadAppearance());
+  React.useEffect(() => {
+    const onAppearanceChange = () => setChatAppearance(loadAppearance());
+    window.addEventListener("unfiltr_appearance_changed", onAppearanceChange);
+    return () => window.removeEventListener("unfiltr_appearance_changed", onAppearanceChange);
+  }, []);
+  // Derived appearance values used in bubble rendering
+  const bubbleTheme  = chatAppearance.bubble || "imessage";
+  const bubbleFontId = chatAppearance.font   || "default";
+  const bubbleSizeId = chatAppearance.size   || "md";
+  const bubbleFontFamily = FONT_OPTIONS.find(f => f.id === bubbleFontId)?.style?.fontFamily || "inherit";
+  const bubbleFontSize   = { sm: 13, md: 15, lg: 17, xl: 20 }[bubbleSizeId] || 15;
 
   // Persist messages so returning from Settings doesn't lose chat
   React.useEffect(() => {
@@ -1776,33 +1793,17 @@ export default function ChatPage() {
                 const lastComp = [...messages].reverse().find(m => m.role === "assistant" && m.content !== "__ERROR__");
 
                 if (loading) {
+                  // THEME ENGINE: typing dots use same theme as reply bubble
                   return (
-                    <div style={{
-                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
-                      backdropFilter: "blur(24px)",
-                      WebkitBackdropFilter: "blur(24px)",
-                      border: "2px solid rgba(196,180,252,0.3)",
-                      borderRadius: "22px 22px 22px 22px",
-                      padding: "16px 20px",
-                      width: "100%",
-                      position: "relative",
-                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), inset 0 1px 0 rgba(255,255,255,0.12)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}>
-                      {/* Pixar-style thinking dots */}
-                      {[0,1,2].map(d => (
-                        <div key={d} style={{
-                          width: 11,
-                          height: 11,
-                          borderRadius: "50%",
-                          background: d===0 ? "#a78bfa" : d===1 ? "#c084fc" : "#e879f9",
-                          boxShadow: `0 0 10px ${d===0?"rgba(167,139,250,0.9)":d===1?"rgba(192,132,252,0.9)":"rgba(232,121,249,0.9)"}`,
-                          animation: "dotBounce 1.4s ease-in-out infinite",
-                          animationDelay: `${d * 0.2}s`,
-                        }} />
-                      ))}
+                    <div style={{ width: "100%", fontFamily: bubbleFontFamily }}>
+                      <ThemedBubble
+                        role="assistant"
+                        content=""
+                        theme={bubbleTheme}
+                        fontFamily={bubbleFontFamily}
+                        fontSize={bubbleFontSize}
+                        isLoading={true}
+                      />
                     </div>
                   );
                 }
@@ -1820,49 +1821,43 @@ export default function ChatPage() {
                   </div>
                 );
 
+                // ── THEME ENGINE: companion bubble uses ThemedBubble ──
                 return (
                   <div
                     key={lastComp.content.slice(0,40)}
-                    style={{ animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both", width: "100%", position: "relative" }}
+                    style={{
+                      animation: "bubblePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both",
+                      width: "100%", position: "relative",
+                      fontFamily: bubbleFontFamily,
+                      fontSize: bubbleFontSize,
+                    }}
                   >
-                    <div style={{
-                      background: "linear-gradient(145deg, rgba(55,15,105,0.95), rgba(35,5,75,0.98))",
-                      backdropFilter: "blur(24px)",
-                      WebkitBackdropFilter: "blur(24px)",
-                      border: "2px solid rgba(196,180,252,0.3)",
-                      borderRadius: "22px",
-                      padding: "14px 18px",
-                      boxShadow: "0 10px 40px rgba(88,28,135,0.65), 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
-                      position: "relative",
-                    }}>
-<div style={{ overflowY: "auto", maxHeight: "38vh", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
-                        <p style={{
-                          color: "rgba(240,230,255,0.95)",
-                          fontSize: 15,
-                          lineHeight: 1.55,
-                          margin: 0,
-                          fontWeight: 500,
-                          letterSpacing: "0.01em",
-                        }}>
-                          {lastComp.content}
-                        </p>
-                      </div>
-                      {/* Mood emoji pill */}
-                      {companionMood && companionMood !== "neutral" && (
-                        <div style={{
-                          position: "absolute",
-                          top: -10,
-                          right: -8,
-                          background: "rgba(88,28,135,0.9)",
-                          borderRadius: 999,
-                          padding: "2px 7px",
-                          fontSize: 13,
-                          border: "1.5px solid rgba(196,180,252,0.25)",
-                        }}>
-                          {getMoodEmoji(companionMood)}
-                        </div>
-                      )}
+                    <div style={{ overflowY: "auto", maxHeight: "38vh", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
+                      <ThemedBubble
+                        role="assistant"
+                        content={lastComp.content}
+                        theme={bubbleTheme}
+                        fontFamily={bubbleFontFamily}
+                        fontSize={bubbleFontSize}
+                        isLoading={false}
+                      />
                     </div>
+                    {/* Mood emoji pill */}
+                    {companionMood && companionMood !== "neutral" && (
+                      <div style={{
+                        position: "absolute",
+                        top: -10,
+                        right: -8,
+                        background: "rgba(88,28,135,0.9)",
+                        borderRadius: 999,
+                        padding: "2px 7px",
+                        fontSize: 13,
+                        border: "1.5px solid rgba(196,180,252,0.25)",
+                        zIndex: 1,
+                      }}>
+                        {getMoodEmoji(companionMood)}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1890,21 +1885,16 @@ export default function ChatPage() {
                     pointerEvents: "none",
                   }}
                 >
-                  <div  style={{
-                    background: "linear-gradient(135deg, #7c3aed, #db2777)",
-                    borderRadius: "22px",
-                    padding: "12px 16px",
-                    boxShadow: "0 6px 24px rgba(124,58,237,0.55), 0 2px 8px rgba(0,0,0,0.4)",
-                  }}>
-                    <p style={{
-                      color: "white",
-                      fontSize: 15,
-                      lineHeight: 1.45,
-                      margin: 0,
-                      fontWeight: 500,
-                    }}>
-                      {lastUser.content}
-                    </p>
+                  {/* THEME ENGINE: user bubble */}
+                  <div style={{ fontFamily: bubbleFontFamily, fontSize: bubbleFontSize }}>
+                    <ThemedBubble
+                      role="user"
+                      content={lastUser.content}
+                      theme={bubbleTheme}
+                      fontFamily={bubbleFontFamily}
+                      fontSize={bubbleFontSize}
+                      isLoading={false}
+                    />
                   </div>
                 </div>
               );
