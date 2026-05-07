@@ -216,6 +216,19 @@ function useNativeBridge() {
     ensureBridgeInstalled();
     // Always ensure __nativeBus default exists so pages can safely chain onto it
     if (!window.__nativeBus) window.__nativeBus = () => {};
+
+    // Fix A – Splash Gate: signal the native wrapper that React has fully mounted
+    // and the session has been injected into localStorage. The native layer holds
+    // the WebView hidden (opacity: 0) until it receives this message, eliminating
+    // the 0.5-second "Sign In" flicker on cold start.
+    const timer = setTimeout(() => {
+      try {
+        if (window.ReactNativeWebView?.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'WEB_APP_READY' }));
+        }
+      } catch (e) { /* not in a native WebView — web-only mode, no-op */ }
+    }, 300); // 300ms grace — enough for session injection to propagate to localStorage
+    return () => clearTimeout(timer);
   }, []);
 }
 
