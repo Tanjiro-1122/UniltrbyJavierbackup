@@ -1136,11 +1136,7 @@ export default function Settings() {
         <Section>
           <Row icon={<RefreshCw size={15} color="#fb923c" />} iconBg="rgba(251,146,60,0.12)"
             label="Sign out & Clear Device Data"
-            onPress={async () => {
-              if (window.confirm("This will sign you out and erase all local data. You will need to sign in again. Continue?")) {
-                await clearDataAndReset(navigate);
-              }
-            }} />
+            onPress={() => setShowClearDataModal(true)} />
           <Row icon={<Trash2 size={15} color="#f87171" />} iconBg="rgba(239,68,68,0.12)" label="Delete My Account" onPress={() => setShowDeleteConfirm(true)} danger last />
         </Section>
       </SubScreen>
@@ -1547,7 +1543,30 @@ export default function Settings() {
 
       {/* ── Delete Confirm ── */}
       <AnimatePresence>
-        {showDeleteConfirm && (
+        {/* ── Clear Device Data Confirm Modal ── */}
+      {showClearDataModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 24px" }}>
+          <div style={{ background:"#1a0a2e", borderRadius:20, padding:"28px 24px", maxWidth:360, width:"100%", textAlign:"center" }}>
+            <div style={{ fontSize:36, marginBottom:12 }}>⚠️</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:8 }}>Clear Device Data?</div>
+            <div style={{ color:"rgba(255,255,255,0.6)", fontSize:14, lineHeight:1.5, marginBottom:24 }}>
+              This will sign you out and erase all local data from this device. You will need to sign in again.
+            </div>
+            <div style={{ display:"flex", gap:12 }}>
+              <button onClick={() => setShowClearDataModal(false)}
+                style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(255,255,255,0.08)", border:"none", color:"#fff", fontSize:15, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={async () => { setShowClearDataModal(false); await clearDataAndReset(navigate); }}
+                style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(251,146,60,0.8)", border:"none", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+                Clear Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
             onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmed(false); }}>
