@@ -34,7 +34,7 @@ export default function OnboardingPin() {
           if (next.join("") === pin.join("")) {
             // ✅ PIN confirmed — hash and save, then move on
             await storePin(pin.join(""));
-            navigate("/onboarding/name");
+            navigate("/onboarding/companion");
           } else {
             triggerShake();
             setError("PINs don't match — try again");
@@ -54,7 +54,7 @@ export default function OnboardingPin() {
 
   const handleSkip = () => {
     clearPin();
-    navigate("/onboarding/name");
+    navigate("/onboarding/companion");
   };
 
   const dots = Array.from({ length: 4 }, (_, i) => i < current.length);
