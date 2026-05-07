@@ -245,6 +245,7 @@ const AuthenticatedApp = ({ splashDone }) => {
   useEffect(() => {
     if (!splashDone) return;
     if (location.pathname === "/pin-gate") return; // already there
+    if (location.pathname === "/ad-maker") return; // ad maker is admin-only, no PIN needed
     if (isPublicPath || isAdminPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) return;
