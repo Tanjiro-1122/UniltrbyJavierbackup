@@ -70,22 +70,6 @@ async function findByEmail(email) {
   }
 }
 
-async function findByDisplayName(name) {
-  if (!name || name.trim().length < 2) return null;
-  try {
-    const res = await fetch(
-      `${B44_BASE}/UserProfile?display_name=${encodeURIComponent(name.trim())}&limit=5`,
-      { headers: b44Headers() }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const records = _toRecords(data);
-    if (records.length === 0) return null;
-    // Prefer profiles with no apple_user_id (migrating old users)
-    const noApple = records.find(p => !p.apple_user_id);
-    return noApple || null;
-  } catch { return null; }
-}
 
 async function updateProfile(id, data) {
   const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
@@ -302,10 +286,7 @@ export default async function handler(req, res) {
     // findByEmail() must not be used as a profile-lookup step here.
 
     // 2. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
-    if (!profile && fullName && fullName.trim().length > 1 && platform !== "android") {
-      profile = await findByDisplayName(fullName);
-      if (profile) console.log(`[syncProfile] Found by display_name: ${profile?.id}`);
-    }
+    // [SECURITY] findByDisplayName fallback removed — prevented account hijack via name match
 
     const now = new Date().toISOString();
 
