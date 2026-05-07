@@ -60,6 +60,7 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
 import PinGate               from "./pages/PinGate";
+import AdMaker               from "./pages/AdMaker";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -67,7 +68,7 @@ const HIDE_TABS_ON = [
   "/support", "/BackgroundSelect",
   "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
-  "/journal/world", "/journal/splash",
+  "/journal/world", "/ad-maker", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
   "/chat-history",
 ];
@@ -370,6 +371,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/AdminAvatarProcessor"  element={<AdminRoute><AdminAvatarProcessor /></AdminRoute>} />
         <Route path="/AdminDashboard"        element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/FeedbackAdmin"         element={<AdminRoute><FeedbackAdmin /></AdminRoute>} />
+        <Route path="/ad-maker"              element={<AdMaker />} />
         <Route path="*"                      element={<PageNotFound />} />
       </Routes>
       {showTabs && <BottomTabs />}
