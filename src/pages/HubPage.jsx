@@ -170,6 +170,7 @@ export default function HubPage() {
           {companionImg ? (
             <img src={companionImg} alt={companionDisplayName}
               onLoad={() => setAvatarLoaded(true)}
+              onError={() => setAvatarLoaded(true)}
               style={{
                 position: "absolute",
                 top: "-15%", left: "50%",
