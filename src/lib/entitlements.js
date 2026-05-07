@@ -198,7 +198,7 @@ const IDENTITY_KEYS = [
  */
 export function performFullReset(navigate) {
   // 1. Remove all known identity / feature keys
-  IDENTITY_KEYS.forEach(k => localStorage.removeItem(k));
+  IDENTITY_KEYS.forEach(k => { if (!PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k); });
 
   // 2. Remove any remaining unfiltr_ keys not in the explicit list (skip preserved identity keys)
   Object.keys(localStorage).forEach(k => {
@@ -247,7 +247,7 @@ export function performFullReset(navigate) {
  */
 export async function clearDataAndReset(navigate) {
   // ── Synchronous local clear ───────────────────────────────────────────────
-  IDENTITY_KEYS.forEach(k => localStorage.removeItem(k));
+  IDENTITY_KEYS.forEach(k => { if (!PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k); });
   // Apply the same PRESERVE_ON_SIGNOUT guard as performFullReset so that keys
   // like unfiltr_apple_user_id and userProfileId are retained across sign-out.
   // Without this guard the user loses their profile anchor and chat history
