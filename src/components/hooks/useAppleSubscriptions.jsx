@@ -81,6 +81,8 @@ export class AppleStoreKitService {
         localStorage.setItem('unfiltr_is_premium', 'true');
         localStorage.setItem('unfiltr_is_annual',  String(isAnnual));
         localStorage.setItem('unfiltr_is_pro',     String(isPro));
+        // Ultimate Friend = the annual plan — set flag immediately so Hub/Chat recognize it
+        if (isAnnual) localStorage.setItem('unfiltr_ultimate_friend', 'true');
         // Immediate UI update with product-derived flags
         window.dispatchEvent(new Event('unfiltr_auth_updated'));
         debugLog('✅ Premium granted! localStorage updated.');
