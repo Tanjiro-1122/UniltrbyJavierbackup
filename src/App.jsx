@@ -60,7 +60,6 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { base44 } from "@/api/base44Client";
 import MeditatePage          from "./pages/MeditatePage";
 import PinGate               from "./pages/PinGate";
-import AdMaker               from "./pages/AdMaker";
 
 const HIDE_TABS_ON = [
   "/onboarding", "/vibe",   "/AdminAvatarProcessor", "/AdminDashboard", "/FeedbackAdmin",
@@ -68,7 +67,7 @@ const HIDE_TABS_ON = [
   "/support", "/BackgroundSelect",
   "/chat-enter", "/journal-enter", "/mood", "/hub", "/meditate",
   "/journal/immersive",
-  "/journal/world", "/ad-maker", "/journal/splash",
+  "/journal/world", "/journal/splash",
   "/Pricing", "/chat", "/feedback", "/PersonalityQuiz",
   "/chat-history",
 ];
@@ -77,7 +76,6 @@ const PUBLIC_PATHS = [
   "/age-verification", "/home-screen", "/returning-screen", "/PrivacyPolicy",
   "/TermsOfUse", "/DeleteAccount", "/support", "/Pricing", "/onboarding",
   "/how-it-works", "/pin-gate",
-  "/ad-maker",
 ];
 
 // Admin routes bypass ALL auth/onboarding/age-gate redirects.
@@ -246,7 +244,6 @@ const AuthenticatedApp = ({ splashDone }) => {
   useEffect(() => {
     if (!splashDone) return;
     if (location.pathname === "/pin-gate") return; // already there
-    if (location.pathname === "/ad-maker") return; // ad maker is admin-only, no PIN needed
     if (isPublicPath || isAdminPath) return;
     const ageVerified = !!localStorage.getItem("unfiltr_age_verified");
     if (!ageVerified) return;
@@ -275,7 +272,7 @@ const AuthenticatedApp = ({ splashDone }) => {
         return;
       }
       // Onboarding done — only redirect if they're on a landing/root page, not mid-session
-      const activePaths = ["/chat", "/chat-enter", "/mood", "/journal", "/settings", "/vibe", "/feedback", "/Pricing", "/ad-maker"];
+      const activePaths = ["/chat", "/chat-enter", "/mood", "/journal", "/settings", "/vibe", "/feedback", "/Pricing"];
       const isActive = activePaths.some(p => location.pathname.startsWith(p));
       if (!isActive) {
         navigate("/returning-screen", { replace: true });
@@ -373,7 +370,6 @@ const AuthenticatedApp = ({ splashDone }) => {
         <Route path="/AdminAvatarProcessor"  element={<AdminRoute><AdminAvatarProcessor /></AdminRoute>} />
         <Route path="/AdminDashboard"        element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/FeedbackAdmin"         element={<AdminRoute><FeedbackAdmin /></AdminRoute>} />
-        <Route path="/ad-maker"              element={<AdMaker />} />
         <Route path="*"                      element={<PageNotFound />} />
       </Routes>
       {showTabs && <BottomTabs />}
