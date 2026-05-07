@@ -28,17 +28,7 @@ export default function JournalSplash() {
         zIndex: 9999,
       }}
     >
-      <button
-        onClick={() => navigate("/hub")}
-        style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "none", border: "none", cursor: "pointer",
-          color: "#888", fontSize: 14, padding: "12px 16px 4px",
-          fontWeight: 500
-        }}
-      >
-        ← Back
-      </button>
+
       <motion.div
         initial={{ scale: 0.4, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
