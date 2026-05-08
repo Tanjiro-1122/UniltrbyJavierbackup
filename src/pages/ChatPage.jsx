@@ -40,6 +40,7 @@ import CrisisBanner from "@/components/chat/CrisisBanner";
 import { useStreak } from "@/components/useStreak";
 import MissYouBanner from "@/components/chat/MissYouBanner";
 import { debugLog } from "@/components/DebugPanel";
+import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime } from "@/lib/recoveryDrafts";
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
@@ -220,11 +221,33 @@ export default function ChatPage() {
   const [vibe, setVibe]                 = useState("chill");
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
+  const [chatRecoveryDraft, setChatRecoveryDraft] = useState(null);
   const [loading, setLoading]           = useState(false);
   const [isSpeaking, setIsSpeaking]     = useState(false);
   const [isListening, setIsListening]   = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
+
+  // Paid-user draft recovery: protects unsent chat text if iOS kills the WebView.
+  useEffect(() => {
+    const draft = loadRecoveryDraft("chat");
+    if (draft?.text?.trim()) setChatRecoveryDraft(draft);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => saveRecoveryDraft("chat", { text: input, area: "chat" }), 700);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  useEffect(() => {
+    const flush = () => saveRecoveryDraft("chat", { text: input, area: "chat" });
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, [input]);
 
   // Listen for companion changes from the customize panel
   useEffect(() => {
@@ -1149,6 +1172,8 @@ export default function ChatPage() {
     setQuoteReply(null);
     setMessages(m => [...m, userMsg]);
     setInput("");
+    clearRecoveryDraft("chat");
+    setChatRecoveryDraft(null);
     setLoading(true);
 
     // Safety timeout — if anything hangs, force-clear loading after 30s
@@ -1907,6 +1932,19 @@ export default function ChatPage() {
           {quoteReply && (
             <div style={{ flexShrink: 0, padding: "0 12px" }}>
               <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
+            </div>
+          )}
+
+          {chatRecoveryDraft?.text?.trim() && !input.trim() && (
+            <div style={{ flexShrink: 0, padding: "0 12px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(168,85,247,0.14)", border: "1px solid rgba(168,85,247,0.28)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 700 }}>Restore unsent message?</p>
+                  <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 11 }}>Saved {formatDraftTime(chatRecoveryDraft.savedAt)}</p>
+                </div>
+                <button onClick={() => { setInput(chatRecoveryDraft.text || ""); setChatRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "white", background: "#7c3aed", fontSize: 12, fontWeight: 700 }}>Restore</button>
+                <button onClick={() => { clearRecoveryDraft("chat"); setChatRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.08)", fontSize: 12, fontWeight: 700 }}>Discard</button>
+              </div>
             </div>
           )}
 

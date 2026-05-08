@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Mic, MicOff, Save, Sparkles, Loader2, Image, Smile, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import StickerPicker from "./StickerPicker";
+import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime } from "@/lib/recoveryDrafts";
 
 const MOODS = [
   { id: "happy", emoji: "😄", label: "Happy" },
@@ -27,6 +28,7 @@ const PROMPTS = [
 
 export default function JournalWriter({ onSave, onBack }) {
   const [content, setContent] = useState("");
+  const [recoveryDraft, setRecoveryDraft] = useState(null);
   const [mood, setMood] = useState(null);
   const [listening, setListening] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,26 @@ export default function JournalWriter({ onSave, onBack }) {
   useEffect(() => {
     setTimeout(() => textareaRef.current?.focus(), 300);
   }, []);
+
+  useEffect(() => {
+    const draft = loadRecoveryDraft("journal_writer");
+    if (draft?.content?.trim()) setRecoveryDraft(draft);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => saveRecoveryDraft("journal_writer", { content, mood, images, stickers, area: "journal" }), 900);
+    return () => clearTimeout(timer);
+  }, [content, mood, images, stickers]);
+
+  useEffect(() => {
+    const flush = () => saveRecoveryDraft("journal_writer", { content, mood, images, stickers, area: "journal" });
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, [content, mood, images, stickers]);
 
   const toggleVoice = () => {
     if (listening) {
@@ -122,6 +144,8 @@ export default function JournalWriter({ onSave, onBack }) {
       created_date: new Date().toISOString(),
     };
 
+    clearRecoveryDraft("journal_writer");
+    setRecoveryDraft(null);
     onSave(entry);
     setSaving(false);
   };
@@ -217,6 +241,17 @@ export default function JournalWriter({ onSave, onBack }) {
           <Sparkles size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
           {prompt}
         </p>
+        {recoveryDraft?.content?.trim() && !content.trim() && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.25)", marginBottom: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 700 }}>Restore unsaved journal draft?</p>
+              <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Saved {formatDraftTime(recoveryDraft.savedAt)}</p>
+            </div>
+            <button onClick={() => { setContent(recoveryDraft.content || ""); setMood(recoveryDraft.mood || null); setImages(recoveryDraft.images || []); setStickers(recoveryDraft.stickers || []); setRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "white", background: "#7c3aed", fontSize: 12, fontWeight: 700 }}>Restore</button>
+            <button onClick={() => { clearRecoveryDraft("journal_writer"); setRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.08)", fontSize: 12, fontWeight: 700 }}>Discard</button>
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
           value={content}

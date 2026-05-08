@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Save, CheckCircle, Image, Smile, X, Mic, MicOff, Settings } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 import { getSharedDailyUsage, incrementSharedDailyUsage } from "@/components/useMessageLimit";
+import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime } from "@/lib/recoveryDrafts";
 
 // ── Tier helpers ─────────────────────────────────────────────────────────────
 function getTier() {
@@ -192,6 +193,7 @@ function PlacedSticker({ sticker, onRemove, constraintsRef }) {
 export default function JournalEntry() {
   const navigate = useNavigate();
   const [entry, setEntry] = useState("");
+  const [journalRecoveryDraft, setJournalRecoveryDraft] = useState(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [today, setToday] = useState("");
@@ -206,6 +208,26 @@ export default function JournalEntry() {
   const journalRef = useRef(null);
   const fileInputRef = useRef(null);
   const stickerIdRef = useRef(0);
+
+  useEffect(() => {
+    const draft = loadRecoveryDraft("journal_entry");
+    if (draft?.content?.trim()) setJournalRecoveryDraft(draft);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => saveRecoveryDraft("journal_entry", { content: entry, mood: currentMood, images: uploadedImages, stickers: placedStickers, area: "journal" }), 900);
+    return () => clearTimeout(timer);
+  }, [entry, currentMood, uploadedImages, placedStickers]);
+
+  useEffect(() => {
+    const flush = () => saveRecoveryDraft("journal_entry", { content: entry, mood: currentMood, images: uploadedImages, stickers: placedStickers, area: "journal" });
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, [entry, currentMood, uploadedImages, placedStickers]);
 
   useEffect(() => {
     const now = new Date();
@@ -303,6 +325,8 @@ export default function JournalEntry() {
         }
       } catch {}
     }
+    clearRecoveryDraft("journal_entry");
+    setJournalRecoveryDraft(null);
     setSaving(false);
     setSaved(true);
     setTimeout(() => { setSaved(false); navigate("/journal/list"); }, 1500);
@@ -387,6 +411,17 @@ export default function JournalEntry() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {journalRecoveryDraft?.content?.trim() && !entry.trim() && (
+            <div className="mx-5 mt-3 mb-1 rounded-xl border border-purple-400/25 bg-purple-500/10 p-3 flex items-center gap-2 shrink-0">
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-xs font-bold m-0">Restore unsaved journal draft?</p>
+                <p className="text-white/40 text-[11px] m-0">Saved {formatDraftTime(journalRecoveryDraft.savedAt)}</p>
+              </div>
+              <button onClick={() => { setEntry(journalRecoveryDraft.content || ""); setCurrentMood(journalRecoveryDraft.mood || currentMood); setUploadedImages(journalRecoveryDraft.images || []); setPlacedStickers(journalRecoveryDraft.stickers || []); setJournalRecoveryDraft(null); }} className="px-3 py-1.5 rounded-full bg-purple-600 text-white text-xs font-bold">Restore</button>
+              <button onClick={() => { clearRecoveryDraft("journal_entry"); setJournalRecoveryDraft(null); }} className="px-3 py-1.5 rounded-full bg-white/10 text-white/50 text-xs font-bold">Discard</button>
             </div>
           )}
 
