@@ -129,6 +129,10 @@ function buildProfileResponse(profile, companionData) {
     apple_user_id:       profile.apple_user_id || null,
     email:               profile.email || null,
     message_count:       profile.message_count || 0,
+    profile_snapshot:    profile.profile_snapshot || null,
+    snapshot_updated_at: profile.snapshot_updated_at || null,
+    chat_appearance:     profile.chat_appearance || null,
+    daily_usage:         profile.daily_usage || null,
     companion:           companionData,
   };
 }

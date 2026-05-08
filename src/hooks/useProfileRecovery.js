@@ -8,6 +8,7 @@
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { refreshEntitlements } from "@/lib/entitlements";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
   useEffect(() => {
@@ -60,7 +61,8 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
         const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
         if (!profile || cancelled) return;
 
-        // Keep local entitlement flags aligned with the real DB profile.
+        // Restore saved local snapshot first, then enforce entitlement flags from DB.
+        if (profile.profile_snapshot) applyProfileSnapshot(profile.profile_snapshot);
         refreshEntitlements(profile);
 
         // Persist useful fields as local backups

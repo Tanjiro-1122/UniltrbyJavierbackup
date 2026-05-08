@@ -17,6 +17,8 @@ import { useEffect, useState } from "react";
 import { ensureBridgeInstalled } from "@/lib/nativeBridge";
 import { runConfigChecks } from "@/lib/configCheck";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
+import { useProfileSnapshotAutosave } from "@/components/hooks/useProfileSnapshotAutosave";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 import { motion, AnimatePresence } from "framer-motion";
 
 import HomePage               from "./pages/HomePage";
@@ -195,6 +197,10 @@ async function rehydrateProfileFromServer(reason = 'auth_resume') {
     const profile = data?.profile || data?.data || data;
     if (!profile) return null;
 
+    if (profile.profile_snapshot) {
+      applyProfileSnapshot(profile.profile_snapshot);
+    }
+
     if (profile.id) localStorage.setItem('userProfileId', profile.id);
     if (profile.apple_user_id) {
       localStorage.setItem('unfiltr_apple_user_id', profile.apple_user_id);
@@ -203,6 +209,7 @@ async function rehydrateProfileFromServer(reason = 'auth_resume') {
       localStorage.setItem('unfiltr_user_id', userId);
     }
     if (profile.display_name) localStorage.setItem('unfiltr_display_name', profile.display_name);
+    if (profile.message_count != null) localStorage.setItem('unfiltr_message_count', String(profile.message_count || 0));
     if (profile.companion_id) localStorage.setItem('unfiltr_selected_companion_id', profile.companion_id);
     if (profile.companion_name || profile.companion_nickname) localStorage.setItem('unfiltr_companion_nickname', profile.companion_name || profile.companion_nickname);
 
@@ -310,6 +317,7 @@ function useNativeBridge() {
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
   useProfileRehydrateOnAuth();
+  useProfileSnapshotAutosave(splashDone);
   useNativeBridge();
   useStorageCleanup();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
