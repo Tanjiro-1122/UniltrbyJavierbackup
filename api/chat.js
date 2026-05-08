@@ -252,32 +252,67 @@ export default async function handler(req, res) {
     // could forge these to unlock paid features at no cost.
     const { isPremium, isPro, isAnnual, isUltimateFriend, profile } = await getProfileTier(profileId);
 
-    // ── Server-side daily message limit ──────────────────────────────────────
+    // ── Server-side rolling 24-hour message limit ────────────────────────────
+    // Must match the client-side unfiltr_daily_usage behavior. Do NOT reset at
+    // midnight; otherwise a free user can use 10 messages at 11:50 PM and get
+    // 10 more at 12:00 AM.
     const tier = isUltimateFriend ? "ultimate_friend" : isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
     const dailyLimit = DAILY_MSG_LIMITS[tier] ?? DAILY_MSG_LIMITS.free;
     let prevCount = 0;
-    let todayKey = new Date().toISOString().slice(0, 10);
+    const nowMs = Date.now();
+    const rolling24hMs = 24 * 60 * 60 * 1000;
     if (dailyLimit < UNLIMITED_MESSAGES && profile) {
-      const storedDate = profile.daily_msg_date;
-      prevCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
+      let events = [];
+      try {
+        const raw = Array.isArray(profile.daily_msg_events)
+          ? profile.daily_msg_events
+          : (typeof profile.daily_msg_events === "string" ? JSON.parse(profile.daily_msg_events) : []);
+        events = (Array.isArray(raw) ? raw : [])
+          .map(Number)
+          .filter(ts => Number.isFinite(ts) && nowMs - ts < rolling24hMs)
+          .sort((a, b) => a - b);
+      } catch (_) { events = []; }
+
+      // Conservative migration from legacy calendar-day fields: if the legacy
+      // count exists, treat it as used inside the current rolling window so a
+      // deploy cannot accidentally reset users early.
+      if (!events.length && profile.daily_msg_count > 0) {
+        const legacyCount = Math.max(0, Math.min(Number(profile.daily_msg_count || 0), dailyLimit));
+        events = Array.from({ length: legacyCount }, () => nowMs);
+      }
+
+      prevCount = events.length;
       if (prevCount >= dailyLimit) {
+        const resetAt = events[0] ? new Date(events[0] + rolling24hMs).toISOString() : null;
         return res.status(429).json({
-          error: "Daily message limit reached. Upgrade for more messages.",
+          error: "24-hour message limit reached. Upgrade for more messages.",
           limitReached: true,
           tier,
           limit: dailyLimit,
+          resetAt,
         });
       }
-      // Increment the counter BEFORE calling OpenAI so concurrent requests are less
-      // likely to both slip through the limit check on the same stale count.
-      // Non-fatal — if this write fails the message still proceeds (degrades to old behaviour).
+
+      // Increment BEFORE calling OpenAI so concurrent requests are less likely
+      // to slip through on the same stale count.
       try {
+        const nextEvents = [...events, nowMs];
         await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
           method: "PUT",
           body: JSON.stringify({
-            daily_msg_count: prevCount + 1,
-            daily_msg_date:  todayKey,
-            message_count:   (profile.message_count || 0) + 1,
+            daily_msg_events: nextEvents,
+            daily_msg_count:  nextEvents.length,
+            daily_msg_date:   new Date(nowMs).toISOString(),
+            daily_usage: {
+              version: 2,
+              windowMs: rolling24hMs,
+              events: nextEvents,
+              count: nextEvents.length,
+              firstUsedAt: nextEvents[0] || null,
+              resetAt: nextEvents[0] ? new Date(nextEvents[0] + rolling24hMs).toISOString() : null,
+              updatedAt: new Date(nowMs).toISOString(),
+            },
+            message_count:    (profile.message_count || 0) + 1,
           }),
         });
         invalidateCachedProfile(profileId);

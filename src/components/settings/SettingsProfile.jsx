@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
-import { isFamilyUnlimited } from "@/lib/entitlements";
+import { isFamilyUnlimited, getPlanLabel } from "@/lib/entitlements";
 
 function NicknameField() {
   const [nick, setNick] = useState(localStorage.getItem("unfiltr_companion_nickname") || "");
@@ -83,7 +83,7 @@ export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
     const raw = profile?.message_count;
     const n = raw !== undefined && raw !== null
       ? Number(raw)
-      : Number(localStorage.getItem("unfiltr_msg_total") || 0);
+      : Number(localStorage.getItem("unfiltr_message_count") || localStorage.getItem("unfiltr_msg_total") || 0);
     return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
   })();
 
@@ -105,10 +105,10 @@ export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
 
   const planLabel = (() => {
     if (profile?.family_plan || profile?.family_unlimited || isFamilyUnlimited()) return "Family";
-    if (profile?.ultimate_friend) return "Ultimate";
-    if (profile?.annual_plan) return "Annual";
-    if (profile?.pro_plan) return "Pro";
-    if (profile?.is_premium || profile?.premium) return "Premium";
+    if (profile?.ultimate_friend || localStorage.getItem("unfiltr_ultimate_friend") === "true") return "Ultimate";
+    if (profile?.annual_plan || localStorage.getItem("unfiltr_is_annual") === "true") return "Annual";
+    if (profile?.pro_plan || localStorage.getItem("unfiltr_is_pro") === "true") return "Pro";
+    if (profile?.is_premium || profile?.premium || localStorage.getItem("unfiltr_is_premium") === "true") return getPlanLabel();
     return "Free";
   })();
 

@@ -201,7 +201,8 @@ async function rehydrateProfileFromServer(reason = 'auth_resume') {
       applyProfileSnapshot(profile.profile_snapshot);
     }
 
-    if (profile.id) localStorage.setItem('userProfileId', profile.id);
+    const resolvedProfileId = profile.profileId || profile.id;
+    if (resolvedProfileId) localStorage.setItem('userProfileId', resolvedProfileId);
     if (profile.apple_user_id) {
       localStorage.setItem('unfiltr_apple_user_id', profile.apple_user_id);
       localStorage.setItem('unfiltr_user_id', profile.apple_user_id);
@@ -209,6 +210,7 @@ async function rehydrateProfileFromServer(reason = 'auth_resume') {
       localStorage.setItem('unfiltr_user_id', userId);
     }
     if (profile.display_name) localStorage.setItem('unfiltr_display_name', profile.display_name);
+    if (profile.created_date || profile.created_at) localStorage.setItem('unfiltr_joined_date', profile.created_date || profile.created_at);
     if (profile.message_count != null) localStorage.setItem('unfiltr_message_count', String(profile.message_count || 0));
     if (profile.companion_id) localStorage.setItem('unfiltr_selected_companion_id', profile.companion_id);
     if (profile.companion_name || profile.companion_nickname) localStorage.setItem('unfiltr_companion_nickname', profile.companion_name || profile.companion_nickname);

@@ -20,6 +20,7 @@ import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, clearDeviceDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 // ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
 const VOICE_OPTIONS = {
@@ -390,6 +391,96 @@ export default function Settings() {
       body: JSON.stringify({ action: "update", profileId, appleUserId, updateData }),
     }).catch(() => {});
   };
+
+  const applyProfileToSettings = React.useCallback((profile) => {
+    if (!profile) return;
+    if (profile.profile_snapshot) applyProfileSnapshot(profile.profile_snapshot);
+
+    const resolvedProfileId = profile.profileId || profile.id || localStorage.getItem("userProfileId");
+    const createdDate = profile.created_date || profile.created_at || localStorage.getItem("unfiltr_joined_date") || null;
+
+    if (resolvedProfileId) localStorage.setItem("userProfileId", resolvedProfileId);
+    if (profile.apple_user_id) {
+      localStorage.setItem("unfiltr_apple_user_id", profile.apple_user_id);
+      localStorage.setItem("unfiltr_user_id", profile.apple_user_id);
+    }
+    if (profile.email) localStorage.setItem("unfiltr_user_email", profile.email);
+    if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    if (createdDate) localStorage.setItem("unfiltr_joined_date", createdDate);
+    if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+
+    const isUltimate = !!profile.ultimate_friend;
+    const isAnnual = !!(profile.annual_plan || isUltimate || profile.family_unlimited || profile.family_plan);
+    const isPro = !!profile.pro_plan;
+    const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual || isUltimate);
+    localStorage.setItem("unfiltr_is_premium", String(isPremium));
+    localStorage.setItem("unfiltr_is_annual", String(isAnnual));
+    localStorage.setItem("unfiltr_is_pro", String(isPro));
+    localStorage.setItem("unfiltr_ultimate_friend", String(isUltimate));
+    if (profile.family_unlimited || profile.family_plan) {
+      localStorage.setItem("unfiltr_family_unlimited", "true");
+      localStorage.setItem("unfiltr_family_unlock", "true");
+      localStorage.setItem("unfiltr_unlimited", "true");
+    }
+
+    if (profile.companion_nickname) localStorage.setItem("unfiltr_companion_nickname", profile.companion_nickname);
+    if (profile.companion_id) localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+    if (profile.chat_appearance) localStorage.setItem("unfiltr_chat_appearance", typeof profile.chat_appearance === "string" ? profile.chat_appearance : JSON.stringify(profile.chat_appearance));
+    if (profile.daily_usage) localStorage.setItem("unfiltr_daily_usage", typeof profile.daily_usage === "string" ? profile.daily_usage : JSON.stringify(profile.daily_usage));
+
+    setUserProfile(prev => ({
+      ...(prev || {}),
+      ...profile,
+      id: resolvedProfileId,
+      profileId: resolvedProfileId,
+      created_date: createdDate,
+      created_at: createdDate,
+      message_count: profile.message_count ?? Number(localStorage.getItem("unfiltr_message_count") || 0),
+      is_premium: isPremium,
+      annual_plan: isAnnual,
+      pro_plan: isPro,
+      ultimate_friend: isUltimate,
+      family_unlimited: !!(profile.family_unlimited || profile.family_plan),
+    }));
+    window.dispatchEvent(new Event("unfiltr_auth_updated"));
+  }, []);
+
+  const refreshSettingsProfile = React.useCallback(async (reason = "settings_open") => {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "";
+    const googleUserId = localStorage.getItem("unfiltr_google_user_id") || "";
+    const email = localStorage.getItem("unfiltr_user_email") || localStorage.getItem("unfiltr_apple_email") || "";
+    if (!appleUserId && !googleUserId && !email) return;
+
+    try {
+      const res = await fetch("/api/syncProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sync", appleUserId: appleUserId || googleUserId, googleUserId, email, reason }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      const profile = json?.data || json?.profile || json;
+      applyProfileToSettings(profile);
+    } catch (e) {
+      console.warn("[Settings] profile refresh failed:", e?.message || e);
+    }
+  }, [applyProfileToSettings]);
+
+  useEffect(() => {
+    refreshSettingsProfile("settings_mount");
+    const onFocus = () => refreshSettingsProfile("window_focus");
+    const onVisible = () => { if (!document.hidden) refreshSettingsProfile("visibility_resume"); };
+    const onRestore = () => refreshSettingsProfile("restore_event");
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("unfiltr_restore_profile", onRestore);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("unfiltr_restore_profile", onRestore);
+    };
+  }, [refreshSettingsProfile]);
+
 
   const handleFamilyCodeSubmit = async () => {
     const profileId   = localStorage.getItem("userProfileId");
