@@ -46,6 +46,10 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
     }
     localStorage.setItem("userProfileId", profile.profileId);
     if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+    if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+    if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+    if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+    if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
     // Restore companion nickname from DB profile — takes priority over stale localStorage
     // (profile.companion_nickname is now returned by buildProfileResponse in syncProfile)

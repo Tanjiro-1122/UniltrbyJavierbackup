@@ -70,7 +70,7 @@ export function buildProfileSnapshot() {
     },
     usage: {
       dailyUsage,
-      messageCount: Number(localStorage.getItem('unfiltr_message_count') || 0) || 0,
+      messageCount: Math.max(Number(localStorage.getItem('unfiltr_message_count') || 0) || 0, Number(localStorage.getItem('unfiltr_msg_total') || 0) || 0),
       bonusMessages: Number(localStorage.getItem('unfiltr_bonus_messages') || 0) || 0,
       photoUsage: safeJsonParse(localStorage.getItem('unfiltr_photo_usage'), null),
       journalUsage: safeJsonParse(localStorage.getItem('unfiltr_journal_usage'), null),
@@ -103,6 +103,9 @@ export function buildProfileSnapshot() {
     } : {
       userFacts: compact(safeJsonParse(localStorage.getItem('unfiltr_user_facts'), null), 20000),
       memorySummary: compact(localStorage.getItem('unfiltr_memory_summary') || '', 12000),
+      sessionMemory: compact(safeJsonParse(localStorage.getItem('unfiltr_session_memory'), []), 20000),
+      emotionalTimeline: compact(safeJsonParse(localStorage.getItem('unfiltr_emotional_timeline'), []), 20000),
+      memoryUpdatedAt: localStorage.getItem('unfiltr_memory_updated_at') || '',
     },
   };
 }
@@ -163,6 +166,9 @@ export function applyProfileSnapshot(snapshot) {
   if (app.chatAppearance) localStorage.setItem('unfiltr_chat_appearance', JSON.stringify(app.chatAppearance));
   if (mem.userFacts) localStorage.setItem('unfiltr_user_facts', JSON.stringify(mem.userFacts));
   if (mem.memorySummary) localStorage.setItem('unfiltr_memory_summary', mem.memorySummary);
+  if (mem.sessionMemory) localStorage.setItem('unfiltr_session_memory', JSON.stringify(mem.sessionMemory));
+  if (mem.emotionalTimeline) localStorage.setItem('unfiltr_emotional_timeline', JSON.stringify(mem.emotionalTimeline));
+  if (mem.memoryUpdatedAt) localStorage.setItem('unfiltr_memory_updated_at', mem.memoryUpdatedAt);
 
   window.dispatchEvent(new Event('unfiltr_auth_updated'));
   window.dispatchEvent(new Event('unfiltr_appearance_changed'));
@@ -193,6 +199,11 @@ export async function saveProfileSnapshot(reason = 'autosave', { force = false }
       message_count: snapshot.usage.messageCount,
       profile_snapshot: snapshot,
       snapshot_updated_at: snapshot.saved_at,
+      memory_summary: snapshot.memory?.memorySummary || undefined,
+      user_facts: snapshot.memory?.userFacts || undefined,
+      session_memory: snapshot.memory?.sessionMemory || undefined,
+      emotional_timeline: snapshot.memory?.emotionalTimeline || undefined,
+      memory_updated_at: snapshot.memory?.memoryUpdatedAt || snapshot.saved_at,
       snapshot_reason: reason,
     };
     Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);

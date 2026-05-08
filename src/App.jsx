@@ -212,6 +212,10 @@ async function rehydrateProfileFromServer(reason = 'auth_resume') {
     if (profile.display_name) localStorage.setItem('unfiltr_display_name', profile.display_name);
     if (profile.created_date || profile.created_at) localStorage.setItem('unfiltr_joined_date', profile.created_date || profile.created_at);
     if (profile.message_count != null) localStorage.setItem('unfiltr_message_count', String(profile.message_count || 0));
+    if (profile.memory_summary) localStorage.setItem('unfiltr_memory_summary', profile.memory_summary);
+    if (profile.user_facts) localStorage.setItem('unfiltr_user_facts', JSON.stringify(profile.user_facts));
+    if (profile.session_memory) localStorage.setItem('unfiltr_session_memory', JSON.stringify(profile.session_memory));
+    if (profile.emotional_timeline) localStorage.setItem('unfiltr_emotional_timeline', JSON.stringify(profile.emotional_timeline));
     if (profile.companion_id) localStorage.setItem('unfiltr_selected_companion_id', profile.companion_id);
     if (profile.companion_name || profile.companion_nickname) localStorage.setItem('unfiltr_companion_nickname', profile.companion_name || profile.companion_nickname);
 

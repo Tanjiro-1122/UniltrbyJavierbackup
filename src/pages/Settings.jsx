@@ -408,6 +408,10 @@ export default function Settings() {
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
     if (createdDate) localStorage.setItem("unfiltr_joined_date", createdDate);
     if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+    if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+    if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+    if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+    if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
 
     const isUltimate = !!profile.ultimate_friend;
     const isAnnual = !!(profile.annual_plan || isUltimate || profile.family_unlimited || profile.family_plan);

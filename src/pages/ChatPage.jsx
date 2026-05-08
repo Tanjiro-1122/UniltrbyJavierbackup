@@ -47,6 +47,19 @@ const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"]
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
+function cacheMemoryLocally(profile = {}) {
+  if (profile.message_count != null) {
+    localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+    localStorage.setItem("unfiltr_msg_total", String(profile.message_count || 0));
+  }
+  if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+  if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+  if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+  if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
+  if (profile.memory_updated_at) localStorage.setItem("unfiltr_memory_updated_at", profile.memory_updated_at);
+}
+
+
 /**
  * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
  * Routing through same-origin avoids WKWebView CORS issues with api.base44.com
@@ -425,6 +438,7 @@ export default function ChatPage() {
       } else {
         try {
           const profile = await base44.entities.UserProfile.get(pid);
+          cacheMemoryLocally(profile || {});
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const annual  = !!(profile?.annual_plan);
@@ -446,7 +460,17 @@ export default function ChatPage() {
           // Seed memory state from the profile loaded at init so handleSend
           // can use the already-cached values without an extra DB round-trip.
           if (profile?.memory_summary) setMemorySummary(profile.memory_summary);
-          if (profile?.user_facts)     setUserFacts(profile.user_facts);
+          else {
+            const cachedSummary = localStorage.getItem("unfiltr_memory_summary") || "";
+            if (cachedSummary) setMemorySummary(cachedSummary);
+          }
+          if (profile?.user_facts) setUserFacts(profile.user_facts);
+          else {
+            try {
+              const cachedFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}");
+              if (cachedFacts && Object.keys(cachedFacts).length) setUserFacts(cachedFacts);
+            } catch {}
+          }
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
@@ -1338,8 +1362,13 @@ export default function ChatPage() {
         }
       }
 
-      const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
+      const existingTotal = Math.max(
+        parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) || 0,
+        parseInt(localStorage.getItem("unfiltr_message_count") || "0", 10) || 0
+      );
+      const localCount = existingTotal + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
+      localStorage.setItem("unfiltr_message_count", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
 
@@ -1379,9 +1408,11 @@ export default function ChatPage() {
             if (sumData?.ok && !sumData?.skipped) {
               try {
                 const p = await base44.entities.UserProfile.get(profileId2);
+                cacheMemoryLocally(p || {});
                 if (p?.session_memory) setSessionMemory(p.session_memory);
                 if (p?.user_facts)     setUserFacts(p.user_facts);
                 if (p?.memory_summary) setMemorySummary(p.memory_summary);
+                window.dispatchEvent(new Event("unfiltr_memory_updated"));
               } catch (profileErr) {
                 console.warn("[Memory] Profile update fetch failed:", profileErr?.message);
               }
