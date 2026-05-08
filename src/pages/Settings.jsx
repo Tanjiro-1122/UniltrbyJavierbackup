@@ -44,6 +44,15 @@ const VOICE_OPTIONS = {
 };
 const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
 
+const safeJsonParse = (value, fallback = {}) => {
+  try {
+    if (!value || typeof value !== "string") return fallback;
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
   return (
@@ -120,7 +129,10 @@ export default function Settings() {
   const location  = useLocation();
   const [screen, setScreen] = useState(location?.state?.screen || null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
   const [userProfile, setUserProfile]         = useState(null);
-  const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
+  const [companion, setCompanion]             = useState(() => {
+    const parsed = safeJsonParse(localStorage.getItem("unfiltr_companion"), null);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed]         = useState(false);
   const [showSuspendModal, setShowSuspendModal]       = useState(false);
@@ -288,11 +300,11 @@ export default function Settings() {
   const hasActivePin = hasPin();
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
-  const [currentBg, setCurrentBg] = useState(() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } });
+  const [currentBg, setCurrentBg] = useState(() => safeJsonParse(localStorage.getItem("unfiltr_env"), {}));
 
   useEffect(() => {
     const todayStr = new Date().toDateString();
-    const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
+    const sd = safeJsonParse(localStorage.getItem("unfiltr_streak"), { date: "", count: 0 });
     const isActiveStreak = sd.date === todayStr || sd.date === new Date(Date.now() - 86400000).toDateString();
     setStreak(isActiveStreak ? sd.count : 0);
     // Also store longest for display
@@ -1209,7 +1221,7 @@ export default function Settings() {
               const streakColor = streak >= 30 ? "#f59e0b" : streak >= 7 ? "#a855f7" : "#f97316";
               const streakLabel = streak >= 100 ? "🚀 Legend" : streak >= 30 ? "🏆 On Fire" : streak >= 7 ? "⚡ Weekly" : streak >= 3 ? "🔥 Going!" : "Start your streak";
               const today = new Date();
-              const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{}');
+              const sd = safeJsonParse(localStorage.getItem("unfiltr_streak"), {});
               const lastDate = sd.date ? new Date(sd.date) : null;
               const days = ["S","M","T","W","T","F","S"];
               const dayDots = Array.from({length:7}, (_,i) => {
