@@ -136,7 +136,7 @@ async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
     source: reason,
     apple_user_id: profile.apple_user_id || null,
     created_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     payload: {
       profile: {
         id: profile.id,
@@ -151,7 +151,9 @@ async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
       },
     },
   };
-  const existing = Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [];
+  const nowMs = Date.now();
+  const existing = (Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [])
+    .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
   const next = [backup, ...existing].slice(0, RECOVERY_BACKUP_LIMIT);
   try {
     const r = await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {

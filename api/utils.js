@@ -444,7 +444,9 @@ async function handleRecoveryList(req, res) {
   if (!userId) return res.status(400).json({ error: "Missing userId" });
   const profile = await b44Get("UserProfile", userId);
   if (!profile) return res.status(404).json({ error: "User not found" });
-  const backups = Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [];
+  const nowMs = Date.now();
+  const backups = (Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [])
+    .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
   return res.status(200).json({ ok: true, backups: backups.map(b => ({
     id: b.id,
     type: b.type,
@@ -466,6 +468,9 @@ async function handleRecoveryRestore(req, res) {
   const backups = Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [];
   const backup = backups.find(b => b.id === backupId);
   if (!backup) return res.status(404).json({ error: "Backup not found" });
+  if (backup.expires_at && new Date(backup.expires_at).getTime() <= Date.now()) {
+    return res.status(410).json({ error: "This recovery backup has expired and can no longer be restored" });
+  }
 
   let restored = 0;
   if (backup.type === "chat_record") {

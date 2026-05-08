@@ -64,10 +64,12 @@ async function appendRecoveryBackup({ profile, appleUserId, type, label, payload
       source,
       apple_user_id: resolvedProfile.apple_user_id || appleUserId || null,
       created_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       payload,
     };
-    const existing = Array.isArray(resolvedProfile.recovery_backups) ? resolvedProfile.recovery_backups : [];
+    const nowMs = Date.now();
+    const existing = (Array.isArray(resolvedProfile.recovery_backups) ? resolvedProfile.recovery_backups : [])
+      .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
     const next = [backup, ...existing].slice(0, RECOVERY_BACKUP_LIMIT);
     const r = await fetch(`${B44_ENTITIES}/UserProfile/${resolvedProfile.id}`, {
       method: "PUT",
