@@ -47,6 +47,45 @@ const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"]
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
+
+async function recoverBackendProfileForChat(reason = "chat_memory_recovery") {
+  const existingProfileId = localStorage.getItem("userProfileId");
+  const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "";
+  const googleUserId = localStorage.getItem("unfiltr_google_user_id") || "";
+  const email = localStorage.getItem("unfiltr_user_email") || localStorage.getItem("unfiltr_apple_email") || "";
+  if (existingProfileId) return existingProfileId;
+  if (!appleUserId && !googleUserId && !email) return null;
+
+  try {
+    const res = await fetch("/api/syncProfile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync", appleUserId: appleUserId || googleUserId, googleUserId, email, reason }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const profile = json?.data || json?.profile || json;
+    const resolvedProfileId = profile?.profileId || profile?.id || null;
+    if (resolvedProfileId) localStorage.setItem("userProfileId", resolvedProfileId);
+    if (profile?.apple_user_id) {
+      localStorage.setItem("unfiltr_apple_user_id", profile.apple_user_id);
+      localStorage.setItem("unfiltr_user_id", profile.apple_user_id);
+    }
+    if (profile?.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    if (profile?.companion_id) {
+      localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+      localStorage.setItem("companionId", profile.companion_id);
+    }
+    cacheMemoryLocally(profile || {});
+    window.dispatchEvent(new Event("unfiltr_memory_updated"));
+    window.dispatchEvent(new Event("unfiltr_auth_updated"));
+    return resolvedProfileId;
+  } catch (e) {
+    console.warn("[ChatPage] backend profile recovery failed:", e?.message || e);
+    return null;
+  }
+}
+
 function cacheMemoryLocally(profile = {}) {
   if (profile.message_count != null) {
     localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
@@ -432,9 +471,13 @@ export default function ChatPage() {
       setEnvironment(parsedEnv);
       if (v) setVibe(v);
 
-      const pid = localStorage.getItem("userProfileId");
+      let pid = localStorage.getItem("userProfileId");
       if (!pid) {
-        debugLog("[ChatPage] ⚠️ userProfileId not set — skipping profile fetch (memory/subscription won't load)");
+        debugLog("[ChatPage] userProfileId missing — attempting backend memory recovery via stable sign-in ID");
+        pid = await recoverBackendProfileForChat("chat_init_missing_profile_id");
+      }
+      if (!pid) {
+        debugLog("[ChatPage] ⚠️ No backend profile could be recovered yet — chat will continue with local-only memory until sign-in completes");
       } else {
         try {
           const profile = await base44.entities.UserProfile.get(pid);
@@ -838,12 +881,22 @@ export default function ChatPage() {
 
       if (pid) {
         base44.entities.UserProfile.get(pid).then(profile => {
-          setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary) }]);
+          cacheMemoryLocally(profile || {});
+          setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
         }).catch(() => {
-          setMessages([{ role: "assistant", content: buildMessage(null) }]);
+          setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]);
         });
       } else {
-        setMessages([{ role: "assistant", content: buildMessage(null) }]);
+        recoverBackendProfileForChat("chat_greeting_missing_profile_id").then(recoveredPid => {
+          if (!recoveredPid) {
+            setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]);
+            return;
+          }
+          base44.entities.UserProfile.get(recoveredPid).then(profile => {
+            cacheMemoryLocally(profile || {});
+            setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
+          }).catch(() => setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]));
+        });
       }
       return;
     }
@@ -1243,7 +1296,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
-          profileId:        localStorage.getItem("userProfileId") || null,
+          profileId:        localStorage.getItem("userProfileId") || await recoverBackendProfileForChat("before_chat_send") || null,
           sessionMemory:    sessionMemory,
           memorySummary:    localMemSummary || "",
           userFacts:        cachedUserFacts,
