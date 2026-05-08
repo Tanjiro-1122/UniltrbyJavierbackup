@@ -12,10 +12,25 @@ function safeJsonParse(raw, fallback = null) {
 
 function readDailyUsage() {
   const raw = safeJsonParse(localStorage.getItem('unfiltr_daily_usage'), null);
-  if (raw && typeof raw === 'object') return raw;
+  if (raw && typeof raw === 'object') {
+    const now = Date.now();
+    if (Array.isArray(raw.events)) {
+      const events = raw.events.map(Number).filter(ts => Number.isFinite(ts) && now - ts < 24 * 60 * 60 * 1000);
+      return {
+        ...raw,
+        events,
+        count: events.length,
+        resetAt: events[0] ? new Date(events[0] + 24 * 60 * 60 * 1000).toISOString() : null,
+      };
+    }
+    return raw;
+  }
   return {
-    date: new Date().toISOString().slice(0, 10),
+    version: 2,
+    windowMs: 24 * 60 * 60 * 1000,
+    events: [],
     count: Number(localStorage.getItem('unfiltr_message_count_today') || 0) || 0,
+    resetAt: null,
   };
 }
 
@@ -81,7 +96,11 @@ export function buildProfileSnapshot() {
     appearance: {
       chatAppearance: compact(chatAppearance, 10000),
     },
-    memory: {
+    memory: tier === 'free' ? {
+      // Free users only get basic local recovery; rich memory remains a paid experience.
+      userFacts: null,
+      memorySummary: '',
+    } : {
       userFacts: compact(safeJsonParse(localStorage.getItem('unfiltr_user_facts'), null), 20000),
       memorySummary: compact(localStorage.getItem('unfiltr_memory_summary') || '', 12000),
     },
