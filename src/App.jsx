@@ -172,6 +172,81 @@ function SafeAreaFix() {
   return null;
 }
 
+
+async function rehydrateProfileFromServer(reason = 'auth_resume') {
+  const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
+  const googleUserId = localStorage.getItem('unfiltr_google_user_id');
+  const userId = appleUserId || googleUserId;
+  if (!userId) return null;
+
+  try {
+    const resp = await fetch('/api/syncProfile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sync',
+        appleUserId: userId,
+        googleUserId,
+        reason,
+      }),
+    });
+    if (!resp.ok) throw new Error(`syncProfile ${resp.status}`);
+    const data = await resp.json();
+    const profile = data?.profile || data?.data || data;
+    if (!profile) return null;
+
+    if (profile.id) localStorage.setItem('userProfileId', profile.id);
+    if (profile.apple_user_id) {
+      localStorage.setItem('unfiltr_apple_user_id', profile.apple_user_id);
+      localStorage.setItem('unfiltr_user_id', profile.apple_user_id);
+    } else if (userId) {
+      localStorage.setItem('unfiltr_user_id', userId);
+    }
+    if (profile.display_name) localStorage.setItem('unfiltr_display_name', profile.display_name);
+    if (profile.companion_id) localStorage.setItem('unfiltr_selected_companion_id', profile.companion_id);
+    if (profile.companion_name || profile.companion_nickname) localStorage.setItem('unfiltr_companion_nickname', profile.companion_name || profile.companion_nickname);
+
+    const onboardingDone = profile.onboarding_complete || profile.consent_accepted || profile.display_name || profile.companion_id;
+    if (onboardingDone) {
+      localStorage.setItem('unfiltr_onboarding_complete', 'true');
+      localStorage.setItem('unfiltr_consent_accepted', 'true');
+    }
+
+    if (profile.is_premium || profile.annual_plan || profile.pro_plan || profile.ultimate_friend || profile.family_unlimited) {
+      localStorage.setItem('unfiltr_is_premium', 'true');
+      localStorage.setItem('unfiltr_is_annual', String(!!profile.annual_plan || !!profile.ultimate_friend));
+      localStorage.setItem('unfiltr_is_pro', String(!!profile.pro_plan));
+      localStorage.setItem('unfiltr_ultimate_friend', String(!!profile.ultimate_friend));
+      if (profile.family_unlimited) localStorage.setItem('unfiltr_family_unlimited', 'true');
+    }
+
+    window.dispatchEvent(new Event('unfiltr_auth_updated'));
+    return profile;
+  } catch (e) {
+    console.warn('[App] Profile rehydrate failed:', e.message);
+    return null;
+  }
+}
+
+function useProfileRehydrateOnAuth() {
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const profile = await rehydrateProfileFromServer('app_mount');
+      if (!cancelled && profile?.id) {
+        console.log('[App] ✅ Profile rehydrated:', profile.id);
+      }
+    };
+    run();
+    const handler = () => rehydrateProfileFromServer('profile_restore_requested');
+    window.addEventListener('unfiltr_profile_restore_requested', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('unfiltr_profile_restore_requested', handler);
+    };
+  }, []);
+}
+
 // ─── Global Native Bridge ────────────────────────────────────────────────────
 // Must be in App.jsx so it's always alive before any page component mounts.
 // HomeScreen/ReturningScreen/IAP components chain onto window.__nativeBus.
@@ -234,6 +309,7 @@ function useNativeBridge() {
 
 const AuthenticatedApp = ({ splashDone }) => {
   useProfileRecovery();
+  useProfileRehydrateOnAuth();
   useNativeBridge();
   useStorageCleanup();
   const { isAuthenticated, isLoadingAuth, authError } = useAuth();
@@ -281,6 +357,17 @@ const AuthenticatedApp = ({ splashDone }) => {
 
     if (authError?.type === "logged_out") {
       if (!onboardingDone) {
+        const hasStoredIdentity = !!(localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_google_user_id') || localStorage.getItem('unfiltr_user_id'));
+        if (hasStoredIdentity) {
+          rehydrateProfileFromServer('logged_out_route_guard').then((profile) => {
+            if (profile?.id && localStorage.getItem('unfiltr_onboarding_complete') === 'true') {
+              navigate('/hub', { replace: true });
+            } else {
+              navigate('/home-screen', { replace: true });
+            }
+          });
+          return;
+        }
         navigate("/home-screen", { replace: true });
         return;
       }

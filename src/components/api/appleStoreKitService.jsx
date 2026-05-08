@@ -1,14 +1,40 @@
+import { useState, useCallback } from 'react';
 import { debugLog } from '@/components/DebugPanel';
 import { isNativeApp, sendNative, ensureBridgeInstalled } from '@/lib/nativeBridge';
 
 const MOCK_PRODUCTS = [
   { productId: 'com.huertas.unfiltr.pro.monthly', title: 'Monthly Premium', price: '$9.99', period: 'month' },
-  { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$59.99', period: 'year' },
+  { productId: 'com.huertas.unfiltr.pro.annual',  title: 'Annual Premium',  price: '$99.99', period: 'year' },
   { productId: 'com.huertas.unfiltr.tier.pro',    title: 'Pro Tier',        price: '$14.99', period: 'month' },
 ];
 
-// Ensure the shared bridge dispatcher is installed when this module loads
+// Ensure the shared bridge dispatcher is installed when this module loads.
 ensureBridgeInstalled();
+
+
+function getStoredPremiumSnapshot(productId = '') {
+  const isAnnualProduct = productId.includes('annual');
+  const isProProduct = productId.includes('tier.pro');
+  const isPremium = localStorage.getItem('unfiltr_is_premium') === 'true';
+  const isAnnual = localStorage.getItem('unfiltr_is_annual') === 'true' || isAnnualProduct;
+  const isPro = localStorage.getItem('unfiltr_is_pro') === 'true' || isProProduct;
+  const isUltimate = localStorage.getItem('unfiltr_ultimate_friend') === 'true' || isAnnualProduct;
+  return { isPremium, isAnnual, isPro, isUltimate };
+}
+
+function applyPlanFlags({ isAnnual = false, isPro = false, isUltimate = false } = {}) {
+  localStorage.setItem('unfiltr_is_premium', 'true');
+  localStorage.setItem('unfiltr_is_annual', String(!!isAnnual));
+  localStorage.setItem('unfiltr_is_pro', String(!!isPro));
+  localStorage.setItem('unfiltr_ultimate_friend', String(!!isUltimate));
+  window.dispatchEvent(new Event('unfiltr_auth_updated'));
+  window.dispatchEvent(new Event('unfiltr_premium_updated'));
+}
+
+function isUserCancelledError(e) {
+  const msg = String(e?.message || e?.error || '').toLowerCase();
+  return msg.includes('cancel') || msg.includes('user cancelled') || msg.includes('purchase_cancelled') || msg.includes('payment cancelled');
+}
 
 function sendToNative(type, payload = {}) {
   debugLog(`📡 sendToNative: ${type} | bridge: ${isNativeApp() ? '✅ ready' : '❌ NOT FOUND'}`);
@@ -67,6 +93,8 @@ export class AppleStoreKitService {
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
       const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      // Send both names during the transition: older wrapper builds read userId,
+      // newer ones also accept appleUserId. Both must point to the same RevenueCat app_user_id.
       const customerInfo = await sendToNative('PURCHASE', { packageId, productId, userId: appleUserId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
@@ -74,21 +102,28 @@ export class AppleStoreKitService {
       const hasPremium = entitlementKeys.length > 0;
 
       if (hasPremium) {
-        localStorage.setItem('unfiltr_is_premium', 'true');
+        const isAnnual = productId?.includes('annual');
+        const isPro    = productId?.includes('tier.pro');
+        applyPlanFlags({ isAnnual, isPro, isUltimate: isAnnual });
         debugLog('✅ Premium granted! localStorage updated.');
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
-          const isAnnual  = productId?.includes('annual');
-          const isPro     = productId?.includes('tier.pro');
           if (profileId || userId) {
-            await fetch('/api/verifyPurchase', {
+            const resp = await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios', productId }),
             });
-            localStorage.setItem('unfiltr_is_annual', String(isAnnual));
-            localStorage.setItem('unfiltr_is_pro',    String(isPro));
+            // Use server-confirmed plan flags if available, then re-notify listeners
+            if (resp.ok) {
+              const respData = await resp.json();
+              const plan = respData?.data?.plan;
+              if (plan) {
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                applyPlanFlags({ isAnnual: isServerAnnual, isPro: plan === 'pro', isUltimate: plan === 'ultimate_friend' });
+              }
+            }
             debugLog('✅ UserProfile updated in database');
           }
         } catch(e) {
@@ -96,10 +131,19 @@ export class AppleStoreKitService {
         }
         return { isSuccess: true, customerInfo };
       }
-      debugLog('❌ Purchase completed but no entitlement found');
-      return { isSuccess: false, error: 'Entitlement not found after purchase' };
+      // In TestFlight, StoreKit can return from a sheet without an active entitlement when
+      // the user backs out, picks Manage, or does not finish side-button confirmation.
+      // That is not a real app error, and showing "Entitlement not found" scares users.
+      const stored = getStoredPremiumSnapshot(productId);
+      if (stored.isPremium) {
+        debugLog('ℹ️ No entitlement returned, but local premium already exists — treating as already subscribed.');
+        applyPlanFlags(stored);
+        return { isSuccess: true, alreadySubscribed: true, customerInfo };
+      }
+      debugLog('ℹ️ Purchase flow ended without an active entitlement — treating as cancelled/not completed.');
+      return { isSuccess: false, isCancelled: true };
     } catch(e) {
-      if (e.message?.toLowerCase().includes('cancel')) {
+      if (isUserCancelledError(e)) {
         debugLog('ℹ️ User cancelled purchase');
         return { isSuccess: false, isCancelled: true };
       }
@@ -116,22 +160,38 @@ export class AppleStoreKitService {
       const customerInfo = await sendToNative('RESTORE', { userId: appleUserId, appleUserId });
       const hasPremium = Object.keys(customerInfo?.entitlements?.active || {}).length > 0;
       if (hasPremium) {
-        localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Restore successful — premium granted');
+        const activeSubs = Object.values(customerInfo?.entitlements?.active || {});
+        const restoredProductId = activeSubs[0]?.productIdentifier || '';
+        applyPlanFlags({
+          isAnnual: restoredProductId.includes('annual'),
+          isPro: restoredProductId.includes('tier.pro'),
+          isUltimate: restoredProductId.includes('annual'),
+        });
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
           if (profileId || userId) {
-            await fetch('/api/verifyPurchase', {
+            const resp = await fetch('/api/verifyPurchase', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios' }),
+              body: JSON.stringify({ profileId: profileId || userId, userId, platform: 'ios', action: 'restore' }),
             });
+            // Use server-confirmed plan flags to update annual/pro localStorage keys
+            if (resp.ok) {
+              const respData = await resp.json();
+              const plan = respData?.data?.plan;
+              if (plan) {
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                applyPlanFlags({ isAnnual: isServerAnnual, isPro: plan === 'pro', isUltimate: plan === 'ultimate_friend' });
+              }
+            }
             debugLog('✅ UserProfile restore updated in database');
           }
         } catch(e) {
           debugLog(`⚠️ DB restore update failed (non-fatal): ${e.message}`);
         }
+        window.dispatchEvent(new Event('unfiltr_auth_updated'));
         return { isSuccess: true };
       }
       debugLog('⚠️ Restore: no active subscription found');
@@ -151,3 +211,71 @@ export class AppleStoreKitService {
     return result;
   }
 }
+
+
+// ─── React hook wrapper for Pricing.jsx ──────────────────────────────────────
+// Provides { purchasing, error, statusMessage, purchase, restore, loadProducts }
+
+
+export function useAppleSubscriptions() {
+  const [purchasing,     setPurchasing]     = useState(false);
+  const [error,          setError]          = useState(null);
+  const [statusMessage,  setStatusMessage]  = useState('');
+
+  const loadProducts = useCallback(async () => {
+    try {
+      await AppleStoreKitService.getProducts();
+    } catch (e) {
+      // non-fatal
+    }
+  }, []);
+
+  const purchase = useCallback(async (productId) => {
+    setPurchasing(true);
+    setError(null);
+    setStatusMessage('Processing…');
+    try {
+      const result = await AppleStoreKitService.purchase(productId);
+      if (result?.isSuccess) {
+        setStatusMessage('Purchase successful!');
+      } else if (result?.isCancelled) {
+        setStatusMessage('');
+      } else {
+        setError(result?.error || 'Purchase failed');
+        setStatusMessage('');
+      }
+      return result;
+    } catch (e) {
+      setError(e.message);
+      setStatusMessage('');
+      return { isSuccess: false, error: e.message };
+    } finally {
+      setPurchasing(false);
+    }
+  }, []);
+
+  const restore = useCallback(async () => {
+    setPurchasing(true);
+    setError(null);
+    setStatusMessage('Restoring purchases…');
+    try {
+      const result = await AppleStoreKitService.restorePurchases();
+      if (result?.isSuccess) {
+        setStatusMessage('Restored successfully!');
+      } else {
+        setError(result?.message || result?.error || 'No subscription found');
+        setStatusMessage('');
+      }
+      return result;
+    } catch (e) {
+      setError(e.message);
+      setStatusMessage('');
+      return { isSuccess: false, error: e.message };
+    } finally {
+      setPurchasing(false);
+    }
+  }, []);
+
+  return { purchasing, error, statusMessage, purchase, restore, loadProducts };
+}
+
