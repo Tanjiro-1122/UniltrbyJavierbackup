@@ -63,12 +63,14 @@ export class AppleStoreKitService {
     }
     try {
       const packageId = productId.includes('annual')   ? '$rc_annual'
-                      : productId.includes('tier.pro') ? '$rc_monthly'
+                      : productId.includes('tier.pro') ? 'pro_tier'
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
       const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, appleUserId });
+      // Send both names during the transition: older wrapper builds read userId,
+      // newer ones also accept appleUserId. Both must point to the same RevenueCat app_user_id.
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, userId: appleUserId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
@@ -76,7 +78,7 @@ export class AppleStoreKitService {
 
       if (hasPremium) {
         const isAnnual = productId?.includes('annual');
-        const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
+        const isPro    = productId?.includes('tier.pro');
         // Set all three flags immediately — before any async DB call
         localStorage.setItem('unfiltr_is_premium', 'true');
         localStorage.setItem('unfiltr_is_annual',  String(isAnnual));
@@ -100,7 +102,9 @@ export class AppleStoreKitService {
               const respData = await resp.json();
               const plan = respData?.data?.plan;
               if (plan) {
-                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                localStorage.setItem('unfiltr_is_annual', String(isServerAnnual));
+                localStorage.setItem('unfiltr_ultimate_friend', String(plan === 'ultimate_friend'));
                 localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
                 window.dispatchEvent(new Event('unfiltr_auth_updated'));
               }
@@ -128,7 +132,8 @@ export class AppleStoreKitService {
     debugLog('🔄 restorePurchases() called');
     if (!this.isNative()) return { isSuccess: false, message: 'Web mode' };
     try {
-      const customerInfo = await sendToNative('RESTORE');
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      const customerInfo = await sendToNative('RESTORE', { userId: appleUserId, appleUserId });
       const hasPremium = Object.keys(customerInfo?.entitlements?.active || {}).length > 0;
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');
@@ -147,7 +152,9 @@ export class AppleStoreKitService {
               const respData = await resp.json();
               const plan = respData?.data?.plan;
               if (plan) {
-                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                localStorage.setItem('unfiltr_is_annual', String(isServerAnnual));
+                localStorage.setItem('unfiltr_ultimate_friend', String(plan === 'ultimate_friend'));
                 localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
               }
             }

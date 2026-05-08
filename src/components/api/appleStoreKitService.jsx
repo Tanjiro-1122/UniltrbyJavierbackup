@@ -66,7 +66,8 @@ export class AppleStoreKitService {
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId });
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, userId: appleUserId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
@@ -111,7 +112,8 @@ export class AppleStoreKitService {
     debugLog('🔄 restorePurchases() called');
     if (!this.isNative()) return { isSuccess: false, message: 'Web mode' };
     try {
-      const customerInfo = await sendToNative('RESTORE');
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      const customerInfo = await sendToNative('RESTORE', { userId: appleUserId, appleUserId });
       const hasPremium = Object.keys(customerInfo?.entitlements?.active || {}).length > 0;
       if (hasPremium) {
         localStorage.setItem('unfiltr_is_premium', 'true');

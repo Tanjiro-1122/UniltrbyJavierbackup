@@ -117,7 +117,9 @@ export function sendNative(type, payload = {}, responseTypes, timeoutMs = 30000)
   };
 
   const waitTypes = responseTypes || RESPONSE_MAP[type] || [];
-  const timeout = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? null : timeoutMs;
+  // Purchase and Apple Sign-In can take longer because they show native Apple sheets,
+  // but they still need cleanup so stale handlers cannot resolve future purchases.
+  const timeout = (type === 'PURCHASE' || type === 'SIGN_IN_WITH_APPLE') ? 5 * 60 * 1000 : timeoutMs;
   const waiter = waitForNative(waitTypes, timeout);
 
   const sent = postToNative({ type, ...payload });
