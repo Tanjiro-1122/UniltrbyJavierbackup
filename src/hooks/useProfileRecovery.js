@@ -7,6 +7,7 @@
  */
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { refreshEntitlements } from "@/lib/entitlements";
 
 export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
   useEffect(() => {
@@ -58,6 +59,9 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
 
         const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
         if (!profile || cancelled) return;
+
+        // Keep local entitlement flags aligned with the real DB profile.
+        refreshEntitlements(profile);
 
         // Persist useful fields as local backups
         if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);

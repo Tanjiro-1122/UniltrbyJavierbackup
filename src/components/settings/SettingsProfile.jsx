@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import DisplayNameEditor from "@/components/settings/DisplayNameEditor";
-import { isFamilyUnlimited, getTier } from "@/lib/entitlements";
+import { isFamilyUnlimited } from "@/lib/entitlements";
 
 function NicknameField() {
   const [nick, setNick] = useState(localStorage.getItem("unfiltr_companion_nickname") || "");
@@ -77,14 +77,20 @@ function NicknameField() {
 }
 
 export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
-  // Messages — DB first, fall back to localStorage counter
-  const msgCount = profile?.message_count
-    || parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10)
-    || 0;
+  // Stats should come from the loaded DB profile first. LocalStorage is only a fallback
+  // for users whose profile has not finished loading yet.
+  const msgCount = (() => {
+    const raw = profile?.message_count;
+    const n = raw !== undefined && raw !== null
+      ? Number(raw)
+      : Number(localStorage.getItem("unfiltr_msg_total") || 0);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+  })();
 
-  // Member Since — DB first, fall back to localStorage keys
   const memberSince = (() => {
     const raw = profile?.created_date
+      || profile?.created_at
+      || profile?.joined_date
       || localStorage.getItem("unfiltr_joined_date")
       || localStorage.getItem("unfiltr_first_launch");
     if (!raw) return "—";
@@ -97,12 +103,13 @@ export default function SettingsProfile({ profile, onUpdate, onSignOut }) {
     }
   })();
 
-  // Plan label — use entitlements helper so it matches the header badge
   const planLabel = (() => {
-    if (isFamilyUnlimited()) return "👨‍👩‍👧 Family";
-    const t = getTier();
-    const labels = { free: "Free", plus: "Premium", pro: "Pro", annual: "Annual", family: "Family" };
-    return labels[t] || "Free";
+    if (profile?.family_plan || profile?.family_unlimited || isFamilyUnlimited()) return "Family";
+    if (profile?.ultimate_friend) return "Ultimate";
+    if (profile?.annual_plan) return "Annual";
+    if (profile?.pro_plan) return "Pro";
+    if (profile?.is_premium || profile?.premium) return "Premium";
+    return "Free";
   })();
 
   return (
