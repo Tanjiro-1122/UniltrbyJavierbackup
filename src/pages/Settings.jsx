@@ -20,7 +20,6 @@ import SettingsAdmin from "@/components/settings/SettingsAdmin";
 import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
-import ChatAppearanceSettings from "@/components/settings/ChatAppearance";
 
 // ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
 const VOICE_OPTIONS = {
@@ -786,12 +785,6 @@ export default function Settings() {
       </SubScreen>
     ),
 
-    appearance: (
-      <SubScreen title="Chat Appearance" onBack={() => setScreen(null)}>
-        <ChatAppearanceSettings />
-      </SubScreen>
-    ),
-
     memory: (
       <SubScreen title="Memory" onBack={() => setScreen(null)}>
         <MemoryEditor
@@ -1273,7 +1266,6 @@ export default function Settings() {
             <Section>
               <Row icon={<Brain size={15} color="white" />} iconBg="#1a2e4a" label="My Memory" value={isPremium ? "Edit what I know about you" : "Premium feature"} onPress={() => setScreen("memory")} />
               <Row icon={<Eye size={15} color="white" />} iconBg="#1a3a2e" label="Privacy & Data" value={privateSession ? "Private Mode 🔕" : undefined} onPress={() => setScreen("privacy")} />
-              <Row icon={<span style={{fontSize:14}}>💬</span>} iconBg="#1a0535" label="Chat Appearance" value="Bubbles & Font" onPress={() => setScreen("appearance")} />
               <Row icon={<Heart size={15} color="white" />} iconBg="#6d1a40" label="Share & Refer" onPress={() => setScreen("share")} />
               <Row icon={<Info size={15} color="white" />} iconBg="#1a2a6d" label="How to Use Unfiltr" onPress={() => setScreen("howto")} />
               <Row icon={<Lock size={15} color="white" />} iconBg="#1a2a6d" label="App Lock / PIN" value={hasActivePin ? "On 🔒" : "Off"} onPress={() => setScreen("pin")} />
@@ -1310,8 +1302,7 @@ export default function Settings() {
             <Section>
               <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
               <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
-              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
-              <Row icon={<span style={{fontSize:14}}>💬</span>} iconBg="#1a0535" label="Chat Appearance" value="Bubbles & Font" onPress={() => setScreen("appearance")} last />
+              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} last />
             </Section>
           </>
         )}
