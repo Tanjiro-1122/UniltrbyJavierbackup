@@ -353,6 +353,128 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
           </div>
         </div>
       )}
+
+      <RecoveryVaultPanel
+        user={user}
+        adminToken={adminToken}
+        showToast={showToast}
+        requestConfirm={requestConfirm}
+        onRestored={onAction}
+      />
+    </div>
+  );
+}
+
+// ── Recovery Vault Panel ──────────────────────────────────────────────────────
+function RecoveryVaultPanel({ user, adminToken, showToast, requestConfirm, onRestored }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [backups, setBackups] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  const loadBackups = async () => {
+    setLoading(true); setMsg("");
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken, action: "recoveryList", userId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      setBackups(data.backups || []);
+    } catch (e) {
+      setMsg("❌ " + e.message);
+    }
+    setLoading(false);
+  };
+
+  const restoreBackup = (backup) => {
+    requestConfirm({
+      title: "Restore Backup?",
+      message: `Restore ${backup.label || backup.type} for ${user.display_name || "this user"}? This will put the saved chat/memory back into their backend account.`,
+      confirmLabel: "Restore",
+      confirmVariant: "default",
+      countdown: 2,
+      onConfirm: async () => {
+        setLoading(true); setMsg("");
+        try {
+          const res = await fetch("/api/utils", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminToken, action: "recoveryRestore", userId: user.id, backupId: backup.id }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "Failed");
+          setMsg(`✅ Restored ${data.restored || 0} item(s).`);
+          showToast(`✅ Recovery restored for ${user.display_name || "user"}`);
+          await loadBackups();
+          onRestored?.();
+        } catch (e) {
+          setMsg("❌ " + e.message);
+        }
+        setLoading(false);
+      },
+    });
+  };
+
+  const count = Array.isArray(backups) ? backups.length : (Array.isArray(user.recovery_backups) ? user.recovery_backups.length : 0);
+
+  return (
+    <div style={{ ...CARD_STYLE, marginTop:12 }}>
+      <button
+        onClick={() => { const next = !open; setOpen(next); if (next && backups === null) loadBackups(); }}
+        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", background:"none", border:"none", cursor:"pointer", padding:0 }}
+      >
+        <div style={{ fontSize:13, fontWeight:800, color:"#f59e0b", display:"flex", alignItems:"center", gap:6 }}>
+          🛟 Recovery Vault {count ? `(${count})` : ""}
+        </div>
+        {open ? <ChevronUp size={14} color="#f59e0b"/> : <ChevronDown size={14} color="rgba(245,158,11,0.6)"/>}
+      </button>
+
+      {open && (
+        <div style={{ marginTop:12 }}>
+          <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, lineHeight:1.45, margin:"0 0 10px" }}>
+            Private admin fail-safe for accidental chat or AI memory deletion. True account-deletion requests should still be respected.
+          </p>
+          <button
+            onClick={loadBackups}
+            disabled={loading}
+            style={{ padding:"7px 10px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:"rgba(245,158,11,0.1)", color:"#fbbf24", fontWeight:700, fontSize:12, cursor: loading ? "default" : "pointer", marginBottom:10 }}
+          >
+            {loading ? "Loading…" : "Refresh Vault"}
+          </button>
+          {msg && <div style={{ fontSize:12, color: msg.startsWith("✅") ? "#34d399" : "#f87171", marginBottom:10 }}>{msg}</div>}
+          {loading && !backups && <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Loading backups…</div>}
+          {Array.isArray(backups) && backups.length === 0 && (
+            <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, padding:"10px 0" }}>No recovery backups yet.</div>
+          )}
+          {Array.isArray(backups) && backups.length > 0 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {backups.map(b => (
+                <div key={b.id} style={{ background:"rgba(245,158,11,0.06)", border:"1px solid rgba(245,158,11,0.14)", borderRadius:12, padding:"10px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"flex-start" }}>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ color:"#fff", fontWeight:800, fontSize:12 }}>{b.label || b.type}</div>
+                      <div style={{ color:"rgba(255,255,255,0.42)", fontSize:11, marginTop:3 }}>
+                        {b.type} · {b.item_count || 0} item(s) · {fmtDateTime(b.created_at)}
+                      </div>
+                      {b.expires_at && <div style={{ color:"rgba(255,255,255,0.28)", fontSize:10, marginTop:2 }}>Vault expires: {fmtDate(b.expires_at)}</div>}
+                    </div>
+                    <button
+                      onClick={() => restoreBackup(b)}
+                      disabled={loading}
+                      style={{ padding:"7px 10px", borderRadius:10, border:"none", background:GRAD_AMBER, color:"#fff", fontWeight:800, fontSize:11, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1, whiteSpace:"nowrap" }}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
