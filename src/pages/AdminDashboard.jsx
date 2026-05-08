@@ -435,7 +435,7 @@ function RecoveryVaultPanel({ user, adminToken, showToast, requestConfirm, onRes
       {open && (
         <div style={{ marginTop:12 }}>
           <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, lineHeight:1.45, margin:"0 0 10px" }}>
-            Private admin fail-safe for accidental chat or AI memory deletion. True account-deletion requests should still be respected.
+            Private admin fail-safe for paid accounts only. Used for accidental chat or AI memory deletion. True account-deletion requests should still be respected.
           </p>
           <button
             onClick={loadBackups}

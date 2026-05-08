@@ -45,6 +45,10 @@ function newBackupId(prefix = "backup") {
   return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
+function isPaidRecoveryEligible(profile = {}) {
+  return !!(profile.is_premium || profile.premium || profile.pro_plan || profile.annual_plan || profile.ultimate_friend || profile.family_unlimited || profile.family_plan);
+}
+
 async function findProfileByAppleId(appleUserId, headers = b44Headers()) {
   if (!appleUserId) return null;
   const r = await fetch(`${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`, { headers });
@@ -57,6 +61,7 @@ async function appendRecoveryBackup({ profile, appleUserId, type, label, payload
   try {
     const resolvedProfile = profile || await findProfileByAppleId(appleUserId, headers);
     if (!resolvedProfile?.id) return { ok: false, reason: "profile_not_found" };
+    if (!isPaidRecoveryEligible(resolvedProfile)) return { ok: false, reason: "free_account_not_eligible" };
     const backup = {
       id: newBackupId(type),
       type,

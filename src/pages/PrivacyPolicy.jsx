@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
           <div>
             <h2 className="text-xl font-semibold text-white mb-3">5. Deleted Data Recovery Window</h2>
             <p>
-              If you delete chat history or clear AI memory, Unfiltr may keep a limited recovery backup for up to 30 days so support can help restore data deleted by mistake. After 30 days, recovery backups may be permanently deleted and cannot be restored. This recovery window does not override a valid account deletion request, which is handled separately.
+              For paid accounts, if you delete chat history or clear AI memory, Unfiltr may keep a limited recovery backup for up to 30 days so support can help restore data deleted by mistake. Free accounts are not eligible for recovery backups. After 30 days, recovery backups may be permanently deleted and cannot be restored. This recovery window does not override a valid account deletion request, which is handled separately.
             </p>
           </div>
 

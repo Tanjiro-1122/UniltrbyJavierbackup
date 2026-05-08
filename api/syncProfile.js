@@ -115,6 +115,9 @@ async function getCompanion(companionId) {
 }
 
 const RECOVERY_BACKUP_LIMIT = 30;
+function isPaidRecoveryEligible(profile = {}) {
+  return !!(profile.is_premium || profile.premium || profile.pro_plan || profile.annual_plan || profile.ultimate_friend || profile.family_unlimited || profile.family_plan);
+}
 function recoveryBackupId(prefix = "backup") {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 }
@@ -129,6 +132,7 @@ function isMemoryClearUpdate(updateData = {}) {
 }
 async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
   if (!profile?.id) return false;
+  if (!isPaidRecoveryEligible(profile)) return false;
   const backup = {
     id: recoveryBackupId("memory_clear"),
     type: "memory_profile",

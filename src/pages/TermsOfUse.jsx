@@ -73,7 +73,7 @@ export default function TermsOfUse() {
 
           <div>
             <h2 className="text-lg font-semibold text-white mb-2">10. Data Recovery</h2>
-            <p className="text-sm">For accidental deletion of chat history or AI memory, Unfiltr may offer a limited support recovery window of up to 30 days. Recovery is not guaranteed and depends on backup availability. After 30 days, deleted recovery data may be permanently removed.</p>
+            <p className="text-sm">For paid accounts, Unfiltr may offer a limited support recovery window of up to 30 days for accidental deletion of chat history or AI memory. Free accounts are not eligible for recovery backups. Recovery is not guaranteed and depends on backup availability. After 30 days, deleted recovery data may be permanently removed.</p>
           </div>
 
           <div>
