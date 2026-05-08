@@ -139,6 +139,7 @@ export default function Settings() {
   const [suspendSuccess, setSuspendSuccess]           = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
+  const [showClearDataModal, setShowClearDataModal] = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
   const [pausing, setPausing]                 = useState(false);
   const [pauseSuccess, setPauseSuccess]       = useState(false);
