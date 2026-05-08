@@ -6,14 +6,16 @@ import {
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import ChatCustomizePanel from "./ChatCustomizePanel";
+import ChatAppearancePanel from "./ChatAppearancePanel";
 
 /* ─────────────────────────────────────────
    Disney/Pixar-style quick action items
    Each has a big expressive emoji + label + soft glow color
 ───────────────────────────────────────── */
 const BASE_ACTIONS = [
-  { id: "customize", label: "Customize", emoji: "🎨",  glow: "#f472b6", desc: "Voice, avatar, vibe" },
-  { id: "history",   label: "History",   emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
+  { id: "customize",  label: "Customize",  emoji: "🎨",  glow: "#f472b6", desc: "Voice, avatar, vibe" },
+  { id: "appearance", label: "Appearance", emoji: "✨",  glow: "#a855f7", desc: "Bubbles & font" },
+  { id: "history",    label: "History",    emoji: "📖",  glow: "#6366f1", desc: "Past chats" },
   { id: "newchat",   label: "New Chat",  emoji: "🌟",  glow: "#f59e0b", desc: "Fresh start" },
   { id: "topics",    label: "Topics",    emoji: "💫",  glow: "#8b5cf6", desc: "What to talk" },
   { id: "mood",      label: "Mood",      emoji: "🌈",  glow: "#ec4899", desc: "Track feelings" },
@@ -36,6 +38,7 @@ export default function ChatHeader({
 }) {
   const [saving, setSaving]               = useState(false);
   const [showCustomize, setShowCustomize]   = useState(false);
+  const [showAppearance, setShowAppearance] = useState(false);
   const [showOptions, setShowOptions]       = useState(false);
 
   /* ── Save to journal ── */
@@ -107,6 +110,7 @@ export default function ChatHeader({
     setShowOptions(false);
     switch (id) {
       case "customize":  return setShowCustomize(true);
+      case "appearance": return setShowAppearance(true);
       case "history":  return navigate("/chat-history");
       case "newchat":  return handleNewChat();
       case "topics":   return onShowTopics();
@@ -324,6 +328,9 @@ export default function ChatHeader({
       )}
 
       {/* ── APPEARANCE PANEL ── */}
+      {showAppearance && (
+        <ChatAppearancePanel onClose={() => setShowAppearance(false)} />
+      )}
 
       {/* ── CUSTOMIZE PANEL ── */}
       {showCustomize && (

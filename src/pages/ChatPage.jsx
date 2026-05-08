@@ -337,6 +337,9 @@ export default function ChatPage() {
   const fileInputRef           = useRef(null);
   // Tracks the last time we wrote to DB ChatHistory (used to throttle saves to ≥15 s apart)
   const lastChatHistorySaveRef = useRef(0);
+  // AbortController for in-flight chat fetch — aborted on unmount to prevent
+  // state updates on an unmounted component.
+  const chatAbortRef           = useRef(null);
 
   const [pendingImage, setPendingImage]               = useState(null);
   const [showPhotoDisclaimer, setShowPhotoDisclaimer] = useState(false);
@@ -914,6 +917,8 @@ export default function ChatPage() {
   /* ─── CLEANUP: stop audio on unmount + save session snapshot ─── */
   useEffect(() => {
     return () => {
+      // Abort any in-flight chat request to prevent state updates after unmount
+      chatAbortRef.current?.abort();
       stopCurrentAudio();
       // Skip all saves in private session mode
       if (localStorage.getItem("unfiltr_private_session") === "true") {
@@ -1189,9 +1194,12 @@ export default function ChatPage() {
         try { cachedUserFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}"); } catch { cachedUserFacts = {}; }
       }
 
+      const chatAbort = new AbortController();
+      chatAbortRef.current = chatAbort;
       const chatRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: chatAbort.signal,
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
           profileId:        localStorage.getItem("userProfileId") || null,
@@ -1373,6 +1381,12 @@ export default function ChatPage() {
         trySummarize();
       }
     } catch (error) {
+      // Swallow aborts — user navigated away intentionally; no error UI needed.
+      if (error?.name === "AbortError") {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+        return;
+      }
       // Fix 4 – Network error recovery: always preserve lastFailedText for retry.
       // Distinguish a network drop (TypeError: Failed to fetch) from an API error
       // so we can show a friendlier hint without spamming the native bridge.
