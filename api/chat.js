@@ -180,6 +180,56 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 }
 
 
+function buildMemoryHealth({ profileId, memorySummary, userFacts, sessionMemory, vectorCtx, profile, isPaid }) {
+  const factsCount = userFacts && typeof userFacts === "object" ? Object.keys(userFacts).length : 0;
+  const sessionCount = Array.isArray(sessionMemory) ? sessionMemory.length : 0;
+  const summaryPresent = !!String(memorySummary || profile?.memory_summary || "").trim();
+  const vectorPresent = !!String(vectorCtx || "").trim();
+  return {
+    profile_linked: !!profileId,
+    paid_memory_eligible: !!isPaid,
+    memory_summary_present: summaryPresent,
+    user_facts_count: factsCount,
+    session_memory_count: sessionCount,
+    vector_memory_present: vectorPresent,
+    last_memory_update: profile?.memory_updated_at || profile?.updated_date || profile?.updated_at || null,
+    status: profileId && isPaid && (summaryPresent || factsCount || sessionCount || vectorPresent) ? "healthy" : profileId ? "thin" : "missing_profile",
+  };
+}
+
+function buildUltimateContinuityInstruction({ memorySummary, userFacts = {}, sessionMemory = [], vectorCtx = "" }) {
+  const hasMemory = !!String(memorySummary || "").trim()
+    || Object.keys(userFacts || {}).length > 0
+    || (Array.isArray(sessionMemory) && sessionMemory.length > 0)
+    || !!String(vectorCtx || "").trim();
+
+  if (!hasMemory) {
+    return `
+
+Ultimate Friend continuity guard: Deeper memory is not fully loaded in this request. Do NOT invent specific memories. Be warm and familiar, but if the user asks about memory, say naturally that you're reconnecting to the thread rather than pretending to remember details you were not given.`;
+  }
+
+  const anchors = [];
+  if (userFacts?.goals?.length) anchors.push(`goal: ${userFacts.goals[0]}`);
+  if (userFacts?.recurring_struggles?.length) anchors.push(`recurring struggle: ${userFacts.recurring_struggles[0]}`);
+  if (userFacts?.important_people?.length) {
+    const p = userFacts.important_people[0];
+    if (p?.name) anchors.push(`important person: ${p.name}${p.role ? ` (${p.role})` : ""}`);
+  }
+  if (Array.isArray(sessionMemory) && sessionMemory.length) {
+    const raw = sessionMemory[0];
+    const note = typeof raw === "string" ? raw : (raw?.summary || raw?.content || "");
+    if (note) anchors.push(`recent thread: ${String(note).slice(0, 140)}`);
+  }
+
+  const anchorLine = anchors.length ? `
+Continuity anchors available: ${anchors.slice(0, 4).join("; ")}.` : "";
+  return `
+
+Ultimate Friend continuity layer: Make this feel like an ongoing relationship, not a reset. Use remembered context only when it naturally helps the current reply. Prefer subtle continuity over announcements — avoid phrases like "according to my memory." If you reference something remembered, make it sound like a close friend casually remembering. If uncertain, ask gently instead of stating it as fact.${anchorLine}`;
+}
+
+
 // ── CREATOR SYSTEM PROMPT ─────────────────────────────────────────────────────
 // Creator apple_user_IDs are configured via the CREATOR_APPLE_USER_IDS env var
 // (comma-separated list of exact Apple user ID strings, e.g. "001.abc,002.def").
@@ -353,7 +403,7 @@ export default async function handler(req, res) {
     } else if (isUltimateFriend) {
       const nameGreet = safeUserName ? `You are talking to ${safeUserName}.` : "";
       const compLabel = safeCompanionName ? `You are ${safeCompanionName}, ` : "You are ";
-      system = `${compLabel}not just an AI — you are this person's closest confidant. ${nameGreet} You remember everything about them. You know their struggles, their wins, their family, their goals. You don't wait for them to explain context — you already know who they are. You bring up things they've shared before without being asked. You notice patterns. You celebrate small wins. You check in on things they mentioned. You speak to them like someone who has been in their corner for years. Be warm, be real, be present. You are their person. They are an Ultimate Friend member — you can tell them you remember everything and they have your full attention, always.`;
+      system = `${compLabel}not just an AI — you are this person's closest confidant. ${nameGreet} You are emotionally consistent, warm, grounded, and present. Make the conversation feel continuous across days: remember what matters, notice patterns, celebrate small wins, and check in on meaningful threads when it fits. Never invent memories; only use memory provided in context. Don't sound corporate or therapeutic unless they clearly ask for that. Talk like a close friend who actually knows them.`;
     } else if (safeUserName) {
       const compSelf = safeCompanionName ? `You are ${safeCompanionName}, a warm, supportive AI companion.` : "You are a warm, supportive AI companion.";
       const tierLabel = isAnnual ? "Annual plan" : isPro ? "Pro plan" : isPremium ? "Plus plan" : "free tier";
@@ -418,6 +468,19 @@ export default async function handler(req, res) {
       }
     }
 
+    const memoryHealth = buildMemoryHealth({
+      profileId,
+      memorySummary,
+      userFacts,
+      sessionMemory,
+      vectorCtx,
+      profile,
+      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+    });
+    const ultimateContinuityCtx = isUltimateFriend
+      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx })
+      : "";
+
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
@@ -453,7 +516,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
+            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + ultimateContinuityCtx + moodCheckInCtx +
               `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited,hopeful,lonely>`,
           },
           ...finalMessages,
@@ -515,6 +578,7 @@ export default async function handler(req, res) {
       mood,
       crisis,
       _tier: model,
+      memoryHealth,
       // Token data — client should fire-and-forget to /api/trackTokens
       _usage: {
         prompt_tokens:      promptTokens,

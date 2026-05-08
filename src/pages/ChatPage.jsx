@@ -40,7 +40,7 @@ import CrisisBanner from "@/components/chat/CrisisBanner";
 import { useStreak } from "@/components/useStreak";
 import MissYouBanner from "@/components/chat/MissYouBanner";
 import { debugLog } from "@/components/DebugPanel";
-import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime } from "@/lib/recoveryDrafts";
+import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime, loadPendingOutgoingMessage, savePendingOutgoingMessage, clearPendingOutgoingMessage } from "@/lib/recoveryDrafts";
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
@@ -373,6 +373,12 @@ export default function ChatPage() {
   const [showCompanionCard, setShowCompanionCard] = useState(false);
   const [quoteReply, setQuoteReply] = useState(null);
   const [lastFailedText, setLastFailedText] = useState(null);
+
+  useEffect(() => {
+    const pending = loadPendingOutgoingMessage("chat");
+    if (pending?.text?.trim()) setLastFailedText(pending.text);
+  }, []);
+
   const [showBreathing, setShowBreathing] = useState(false);
   const [showSleepStory, setShowSleepStory] = useState(false);
   const [showTimeCapsule, setShowTimeCapsule] = useState(false);
@@ -1247,6 +1253,7 @@ export default function ChatPage() {
       ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview, quoteReply: quoteReply || undefined }
       : { role: "user", content: text, quoteReply: quoteReply || undefined };
     setQuoteReply(null);
+    savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat" });
     setMessages(m => [...m, userMsg]);
     setInput("");
     clearRecoveryDraft("chat");
@@ -1256,7 +1263,8 @@ export default function ChatPage() {
     // Safety timeout — if anything hangs, force-clear loading after 30s
     const safetyTimer = setTimeout(() => {
       setLoading(false);
-      setLastFailedText(text);
+      savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat", reason: "timeout" });
+      setLastFailedText(userMsg.content || text);
       setMessages(m => {
         if (m[m.length - 1]?.role === "user") return [...m, { role: "assistant", content: "__ERROR__" }];
         return m;
@@ -1315,6 +1323,14 @@ export default function ChatPage() {
       const res = { data: chatData };
 
       const replyText = chatData?.reply || "...";
+      if (chatData?.memoryHealth) {
+        try {
+          localStorage.setItem("unfiltr_memory_health", JSON.stringify({ ...chatData.memoryHealth, checked_at: new Date().toISOString() }));
+          if (chatData.memoryHealth.status && chatData.memoryHealth.status !== "healthy") {
+            debugLog(`[MemoryHealth] ${chatData.memoryHealth.status} — profile=${chatData.memoryHealth.profile_linked ? "yes" : "no"}, summary=${chatData.memoryHealth.memory_summary_present ? "yes" : "no"}, sessions=${chatData.memoryHealth.session_memory_count || 0}`);
+          }
+        } catch {}
+      }
 
       // ── Fire-and-forget token tracking ───────────────────────────────────
       if (res.data?._usage) {
@@ -1332,6 +1348,8 @@ export default function ChatPage() {
           }).catch(() => {}); // silent fail — never blocks chat
         }
       }
+      clearPendingOutgoingMessage("chat");
+      setLastFailedText(null);
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
       // 💾 Save messages to DB via server proxy (fire-and-forget — never blocks chat)
@@ -1489,7 +1507,8 @@ export default function ChatPage() {
       if (process.env.NODE_ENV !== "production") {
         console.error("Chat send failed:", error?.message || error);
       }
-      setLastFailedText(text);
+      savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat", reason: isNetworkDrop ? "network" : "error" });
+      setLastFailedText(userMsg.content || text);
       setMessages(m => {
         // Only append __ERROR__ if the last message is the user's (no partial reply yet)
         const last = m[m.length - 1];
@@ -2019,7 +2038,20 @@ export default function ChatPage() {
             </div>
           )}
 
-          {chatRecoveryDraft?.text?.trim() && !input.trim() && (
+          {lastFailedText?.trim() && !loading && !input.trim() && (
+            <div style={{ flexShrink: 0, padding: "0 12px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(248,113,113,0.28)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 700 }}>Message didn’t send</p>
+                  <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lastFailedText}</p>
+                </div>
+                <button onClick={() => handleSend(lastFailedText)} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "white", background: "#dc2626", fontSize: 12, fontWeight: 700 }}>Retry</button>
+                <button onClick={() => { clearPendingOutgoingMessage("chat"); setLastFailedText(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.08)", fontSize: 12, fontWeight: 700 }}>Dismiss</button>
+              </div>
+            </div>
+          )}
+
+          {chatRecoveryDraft?.text?.trim() && !input.trim() && !lastFailedText?.trim() && (
             <div style={{ flexShrink: 0, padding: "0 12px 8px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(168,85,247,0.14)", border: "1px solid rgba(168,85,247,0.28)" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>

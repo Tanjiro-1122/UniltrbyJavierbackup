@@ -62,3 +62,41 @@ export function formatDraftTime(savedAt) {
     return "recently";
   }
 }
+
+
+const PENDING_PREFIX = "unfiltr_pending_outgoing_";
+const MAX_PENDING_AGE_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+export function pendingOutgoingKey(area = "chat") {
+  return `${PENDING_PREFIX}${area}`;
+}
+
+export function savePendingOutgoingMessage(area = "chat", data = {}) {
+  if (!isDraftRecoveryEligible()) return;
+  try {
+    const text = data?.text || data?.content || "";
+    if (!String(text).trim()) return;
+    localStorage.setItem(pendingOutgoingKey(area), JSON.stringify({ ...data, savedAt: Date.now(), status: "pending" }));
+  } catch {}
+}
+
+export function loadPendingOutgoingMessage(area = "chat") {
+  if (!isDraftRecoveryEligible()) return null;
+  try {
+    const raw = localStorage.getItem(pendingOutgoingKey(area));
+    if (!raw) return null;
+    const pending = JSON.parse(raw);
+    if (!pending?.savedAt || Date.now() - pending.savedAt > MAX_PENDING_AGE_MS) {
+      clearPendingOutgoingMessage(area);
+      return null;
+    }
+    return pending;
+  } catch {
+    clearPendingOutgoingMessage(area);
+    return null;
+  }
+}
+
+export function clearPendingOutgoingMessage(area = "chat") {
+  try { localStorage.removeItem(pendingOutgoingKey(area)); } catch {}
+}
