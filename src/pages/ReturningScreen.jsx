@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
 

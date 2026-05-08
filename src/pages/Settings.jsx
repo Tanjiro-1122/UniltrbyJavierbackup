@@ -17,7 +17,7 @@ import SettingsProfile from "@/components/settings/SettingsProfile";
 import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
+import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, clearDeviceDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
 
@@ -1562,7 +1562,7 @@ export default function Settings() {
                 style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(255,255,255,0.08)", border:"none", color:"#fff", fontSize:15, cursor:"pointer" }}>
                 Cancel
               </button>
-              <button onClick={async () => { setShowClearDataModal(false); await clearDataAndReset(navigate); }}
+              <button onClick={async () => { setShowClearDataModal(false); await clearDeviceDataAndReset(navigate); }}
                 style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(251,146,60,0.8)", border:"none", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
                 Clear Data
               </button>

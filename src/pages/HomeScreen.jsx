@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { postToNative, isNativeApp } from "@/lib/nativeBridge";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 // Route ALL profile operations through /api/syncProfile (server-side, authenticated)
 async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC, identityToken }) {
@@ -27,6 +28,10 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
   const profile = result.data;
   const isNewUser = result.isNewUser === true;
 
+  if (profile?.profile_snapshot) {
+    applyProfileSnapshot(profile.profile_snapshot);
+  }
+
   if (profile?.profileId) {
     // Clear fresh-start guard now that the user has explicitly signed in
     localStorage.removeItem("unfiltr_fresh_start");
@@ -40,6 +45,7 @@ async function handleAppleSignIn({ appleUserId, email, fullName, isPremiumFromRC
       localStorage.setItem("unfiltr_user_email", email);
     }
     localStorage.setItem("userProfileId", profile.profileId);
+    if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
     if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
     // Restore companion nickname from DB profile — takes priority over stale localStorage
     // (profile.companion_nickname is now returned by buildProfileResponse in syncProfile)
@@ -157,6 +163,10 @@ async function handleGoogleSignIn({ googleUserId, email, displayName, isPremiumF
   const result = await res.json();
   const profile = result.data;
   const isNewUser = result.isNewUser === true;
+
+  if (profile?.profile_snapshot) {
+    applyProfileSnapshot(profile.profile_snapshot);
+  }
 
   if (profile?.profileId) {
     localStorage.removeItem("unfiltr_fresh_start");

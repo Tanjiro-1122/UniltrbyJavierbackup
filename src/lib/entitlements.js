@@ -181,6 +181,71 @@ const IDENTITY_KEYS = [
   "unfiltr_admin_unlocked",
 ];
 
+
+function clearLocalAppState({ preserveSignOutKeys = true } = {}) {
+  const shouldPreserve = (k) => preserveSignOutKeys && PRESERVE_ON_SIGNOUT.has(k);
+
+  IDENTITY_KEYS.forEach(k => { if (!shouldPreserve(k)) localStorage.removeItem(k); });
+
+  // Clear every app-owned key, not just the curated list. This catches newer keys
+  // like unfiltr_chat_appearance, unfiltr_daily_usage, unfiltr_user_facts, etc.
+  Object.keys(localStorage).forEach(k => {
+    if ((k.startsWith('unfiltr_') || k === 'userProfileId' || k === 'companionId' || k === 'base44_access_token' || k === 'token') && !shouldPreserve(k)) {
+      localStorage.removeItem(k);
+    }
+  });
+
+  try { sessionStorage.clear(); } catch (_) {}
+
+  if (typeof window !== "undefined") {
+    window.__currentChatDbId        = null;
+    window.__chatDayUpsertKey       = null;
+    window.__unfiltr_longest_streak = null;
+  }
+
+  localStorage.setItem("unfiltr_fresh_start", "true");
+  localStorage.setItem("unfiltr_signed_out",  "true");
+}
+
+async function notifyNativeClearData() {
+  const rnBridge = typeof window !== "undefined" &&
+    !!(window.ReactNativeWebView || window.webkit?.messageHandlers?.ReactNativeWebView);
+
+  if (!rnBridge) return false;
+
+  await new Promise(resolve => {
+    let timer;
+    const handler = (e) => {
+      try {
+        const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (d?.type === "CLEAR_DATA_COMPLETE") {
+          clearTimeout(timer);
+          window.removeEventListener("message", handler);
+          resolve();
+        }
+      } catch (_) {}
+    };
+    timer = setTimeout(() => {
+      window.removeEventListener("message", handler);
+      resolve();
+    }, 5000);
+    window.addEventListener("message", handler);
+    try {
+      const msg = JSON.stringify({ type: "CLEAR_DATA" });
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(msg);
+      } else {
+        window.webkit.messageHandlers.ReactNativeWebView.postMessage(msg);
+      }
+    } catch (_) {
+      clearTimeout(timer);
+      window.removeEventListener("message", handler);
+      resolve();
+    }
+  });
+  return true;
+}
+
 /**
  * Perform a complete "factory reset" of all local app state.
  *
@@ -197,29 +262,9 @@ const IDENTITY_KEYS = [
  *                                navigates to "/" after clearing.
  */
 export function performFullReset(navigate) {
-  // 1. Remove all known identity / feature keys
-  IDENTITY_KEYS.forEach(k => { if (!PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k); });
+  clearLocalAppState({ preserveSignOutKeys: true });
 
-  // 2. Remove any remaining unfiltr_ keys not in the explicit list (skip preserved identity keys)
-  Object.keys(localStorage).forEach(k => {
-    if (k.startsWith("unfiltr_") && !PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k);
-  });
-
-  // 3. Clear sessionStorage
-  try { sessionStorage.clear(); } catch (_) {}
-
-  // 4. Clear in-memory globals used by ChatPage
-  if (typeof window !== "undefined") {
-    window.__currentChatDbId      = null;
-    window.__chatDayUpsertKey     = null;
-    window.__unfiltr_longest_streak = null;
-  }
-
-  // 5. Set guards AFTER clearing so useProfileRecovery skips auto-restore
-  localStorage.setItem("unfiltr_fresh_start", "true");
-  localStorage.setItem("unfiltr_signed_out",  "true");
-
-  // 6. Notify native iOS wrapper to clear its persisted session (fire-and-forget)
+  // Fire-and-forget native clear for normal sign-out.
   try {
     const msg = JSON.stringify({ type: "CLEAR_DATA" });
     if (window.ReactNativeWebView) {
@@ -229,10 +274,7 @@ export function performFullReset(navigate) {
     }
   } catch (_) {}
 
-  // 7. Navigate to root
-  if (navigate) {
-    navigate("/", { replace: true });
-  }
+  if (navigate) navigate("/", { replace: true });
 }
 
 /**
@@ -246,66 +288,29 @@ export function performFullReset(navigate) {
  * @param {function} [navigate] - react-router navigate fn (used on web only).
  */
 export async function clearDataAndReset(navigate) {
-  // ── Synchronous local clear ───────────────────────────────────────────────
-  IDENTITY_KEYS.forEach(k => { if (!PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k); });
-  // Apply the same PRESERVE_ON_SIGNOUT guard as performFullReset so that keys
-  // like unfiltr_apple_user_id and userProfileId are retained across sign-out.
-  // Without this guard the user loses their profile anchor and chat history
-  // cannot be restored after they sign back in.
-  Object.keys(localStorage).forEach(k => {
-    if (k.startsWith("unfiltr_") && !PRESERVE_ON_SIGNOUT.has(k)) localStorage.removeItem(k);
-  });
-  try { sessionStorage.clear(); } catch (_) {}
-  if (typeof window !== "undefined") {
-    window.__currentChatDbId        = null;
-    window.__chatDayUpsertKey       = null;
-    window.__unfiltr_longest_streak = null;
-  }
-  localStorage.setItem("unfiltr_fresh_start", "true");
-  localStorage.setItem("unfiltr_signed_out",  "true");
+  // Normal sign-out: keep stable anchors so returning users can be restored easily.
+  clearLocalAppState({ preserveSignOutKeys: true });
 
-  // ── Bridge path: send CLEAR_DATA, await CLEAR_DATA_COMPLETE (5 s cap) ────
-  const rnBridge = typeof window !== "undefined" &&
-    !!(window.ReactNativeWebView || window.webkit?.messageHandlers?.ReactNativeWebView);
-
-  if (rnBridge) {
-    await new Promise(resolve => {
-      let timer;
-      const handler = (e) => {
-        try {
-          const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-          if (d?.type === "CLEAR_DATA_COMPLETE") {
-            clearTimeout(timer);
-            window.removeEventListener("message", handler);
-            resolve();
-          }
-        } catch (_) {}
-      };
-      timer = setTimeout(() => {
-        window.removeEventListener("message", handler);
-        resolve();
-      }, 5000);
-      window.addEventListener("message", handler);
-      try {
-        const msg = JSON.stringify({ type: "CLEAR_DATA" });
-        if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(msg);
-        } else {
-          window.webkit.messageHandlers.ReactNativeWebView.postMessage(msg);
-        }
-      } catch (_) {
-        clearTimeout(timer);
-        window.removeEventListener("message", handler);
-        resolve();
-      }
-    });
-    // Force a hard reload so the WebView re-initialises from "/" cleanly.
+  const usedBridge = await notifyNativeClearData();
+  if (usedBridge) {
     window.location.replace("/");
     return;
   }
 
-  // ── Web fallback ──────────────────────────────────────────────────────────
   if (navigate) navigate("/", { replace: true });
 }
 
+export async function clearDeviceDataAndReset(navigate) {
+  // True local factory reset: preserve NOTHING from this device.
+  // Backend profile remains intact and will be restored after Apple sign-in.
+  clearLocalAppState({ preserveSignOutKeys: false });
+  localStorage.setItem("unfiltr_device_was_cleared", "true");
 
+  const usedBridge = await notifyNativeClearData();
+  if (usedBridge) {
+    window.location.replace("/age-verification");
+    return;
+  }
+
+  if (navigate) navigate("/age-verification", { replace: true });
+}
