@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
-  Volume2, VolumeX, Settings, BookOpen, ChevronLeft,
-  RotateCcw, History, Sparkles, X
+  Volume2, VolumeX, Settings, ChevronLeft, X
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
