@@ -183,6 +183,8 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 function buildMemoryHealth({ profileId, memorySummary, userFacts, sessionMemory, vectorCtx, profile, isPaid }) {
   const factsCount = userFacts && typeof userFacts === "object" ? Object.keys(userFacts).length : 0;
   const sessionCount = Array.isArray(sessionMemory) ? sessionMemory.length : 0;
+  const structuredCount = Array.isArray(profile?.structured_memory) ? profile.structured_memory.length : 0;
+  const milestoneCount = Array.isArray(profile?.relationship_milestones) ? profile.relationship_milestones.length : 0;
   const summaryPresent = !!String(memorySummary || profile?.memory_summary || "").trim();
   const vectorPresent = !!String(vectorCtx || "").trim();
   return {
@@ -191,16 +193,21 @@ function buildMemoryHealth({ profileId, memorySummary, userFacts, sessionMemory,
     memory_summary_present: summaryPresent,
     user_facts_count: factsCount,
     session_memory_count: sessionCount,
+    structured_memory_count: structuredCount,
+    relationship_milestones_count: milestoneCount,
     vector_memory_present: vectorPresent,
     last_memory_update: profile?.memory_updated_at || profile?.updated_date || profile?.updated_at || null,
-    status: profileId && isPaid && (summaryPresent || factsCount || sessionCount || vectorPresent) ? "healthy" : profileId ? "thin" : "missing_profile",
+    status: profileId && isPaid && (summaryPresent || factsCount || sessionCount || structuredCount || vectorPresent) ? "healthy" : profileId ? "thin" : "missing_profile",
   };
 }
 
-function buildUltimateContinuityInstruction({ memorySummary, userFacts = {}, sessionMemory = [], vectorCtx = "" }) {
+function buildUltimateContinuityInstruction({ memorySummary, userFacts = {}, sessionMemory = [], vectorCtx = "", profile = {} }) {
+  const structured = Array.isArray(profile?.structured_memory) ? profile.structured_memory : [];
+  const milestones = Array.isArray(profile?.relationship_milestones) ? profile.relationship_milestones : [];
   const hasMemory = !!String(memorySummary || "").trim()
     || Object.keys(userFacts || {}).length > 0
     || (Array.isArray(sessionMemory) && sessionMemory.length > 0)
+    || structured.length > 0
     || !!String(vectorCtx || "").trim();
 
   if (!hasMemory) {
@@ -221,12 +228,21 @@ Ultimate Friend continuity guard: Deeper memory is not fully loaded in this requ
     const note = typeof raw === "string" ? raw : (raw?.summary || raw?.content || "");
     if (note) anchors.push(`recent thread: ${String(note).slice(0, 140)}`);
   }
+  if (structured.length) {
+    structured.slice(0, 3).forEach(mem => {
+      if (mem?.text) anchors.push(`${mem.category || "memory"}: ${String(mem.text).slice(0, 140)}`);
+    });
+  }
+  const milestoneLine = milestones.length
+    ? `
+Relationship milestones: ${milestones.slice(0, 3).map(m => m.label || m.key).filter(Boolean).join("; ")}. Use these only as emotional context, not as a list to recite.`
+    : "";
 
   const anchorLine = anchors.length ? `
-Continuity anchors available: ${anchors.slice(0, 4).join("; ")}.` : "";
+Continuity anchors available: ${anchors.slice(0, 6).join("; ")}.` : "";
   return `
 
-Ultimate Friend continuity layer: Make this feel like an ongoing relationship, not a reset. Use remembered context only when it naturally helps the current reply. Prefer subtle continuity over announcements — avoid phrases like "according to my memory." If you reference something remembered, make it sound like a close friend casually remembering. If uncertain, ask gently instead of stating it as fact.${anchorLine}`;
+Ultimate Friend continuity layer: Make this feel like an ongoing relationship, not a reset. Use remembered context only when it naturally helps the current reply. Prefer subtle continuity over announcements — avoid phrases like "according to my memory." If you reference something remembered, make it sound like a close friend casually remembering. If uncertain, ask gently instead of stating it as fact.${anchorLine}${milestoneLine}`;
 }
 
 
@@ -478,7 +494,7 @@ export default async function handler(req, res) {
       isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
     });
     const ultimateContinuityCtx = isUltimateFriend
-      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx })
+      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx, profile })
       : "";
 
     // Trim message history to tier context window

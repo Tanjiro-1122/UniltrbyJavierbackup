@@ -196,6 +196,8 @@ function buildProfileResponse(profile, companionData) {
     user_facts:          profile.user_facts || {},
     session_memory:      profile.session_memory || [],
     emotional_timeline:  profile.emotional_timeline || [],
+    structured_memory:   profile.structured_memory || [],
+    relationship_milestones: profile.relationship_milestones || [],
     memory_updated_at:   profile.memory_updated_at || profile.updated_date || profile.updated_at || null,
     profile_snapshot:    profile.profile_snapshot || null,
     snapshot_updated_at: profile.snapshot_updated_at || null,
@@ -277,6 +279,11 @@ export default async function handler(req, res) {
         return res.status(200).json({
           user_facts:     profile.user_facts     || {},
           memory_summary: profile.memory_summary || "",
+          session_memory: profile.session_memory || [],
+          emotional_timeline: profile.emotional_timeline || [],
+          structured_memory: profile.structured_memory || [],
+          relationship_milestones: profile.relationship_milestones || [],
+          memory_updated_at: profile.memory_updated_at || null,
           display_name:   profile.display_name   || "",
         });
       } catch (e) {

@@ -105,6 +105,8 @@ export function buildProfileSnapshot() {
       memorySummary: compact(localStorage.getItem('unfiltr_memory_summary') || '', 12000),
       sessionMemory: compact(safeJsonParse(localStorage.getItem('unfiltr_session_memory'), []), 20000),
       emotionalTimeline: compact(safeJsonParse(localStorage.getItem('unfiltr_emotional_timeline'), []), 20000),
+      structuredMemory: compact(safeJsonParse(localStorage.getItem('unfiltr_structured_memory'), []), 20000),
+      relationshipMilestones: compact(safeJsonParse(localStorage.getItem('unfiltr_relationship_milestones'), []), 12000),
       memoryUpdatedAt: localStorage.getItem('unfiltr_memory_updated_at') || '',
     },
   };
@@ -168,6 +170,8 @@ export function applyProfileSnapshot(snapshot) {
   if (mem.memorySummary) localStorage.setItem('unfiltr_memory_summary', mem.memorySummary);
   if (mem.sessionMemory) localStorage.setItem('unfiltr_session_memory', JSON.stringify(mem.sessionMemory));
   if (mem.emotionalTimeline) localStorage.setItem('unfiltr_emotional_timeline', JSON.stringify(mem.emotionalTimeline));
+  if (mem.structuredMemory) localStorage.setItem('unfiltr_structured_memory', JSON.stringify(mem.structuredMemory));
+  if (mem.relationshipMilestones) localStorage.setItem('unfiltr_relationship_milestones', JSON.stringify(mem.relationshipMilestones));
   if (mem.memoryUpdatedAt) localStorage.setItem('unfiltr_memory_updated_at', mem.memoryUpdatedAt);
 
   window.dispatchEvent(new Event('unfiltr_auth_updated'));
@@ -203,6 +207,8 @@ export async function saveProfileSnapshot(reason = 'autosave', { force = false }
       user_facts: snapshot.memory?.userFacts || undefined,
       session_memory: snapshot.memory?.sessionMemory || undefined,
       emotional_timeline: snapshot.memory?.emotionalTimeline || undefined,
+      structured_memory: snapshot.memory?.structuredMemory || undefined,
+      relationship_milestones: snapshot.memory?.relationshipMilestones || undefined,
       memory_updated_at: snapshot.memory?.memoryUpdatedAt || snapshot.saved_at,
       snapshot_reason: reason,
     };

@@ -57,6 +57,62 @@ function buildCrossSessionNarrative(sessions = []) {
     .join(" → ");
 }
 
+function normalizeMemoryItem(item = {}, fallback = {}) {
+  const text = String(item.text || item.memory || item.fact || "").trim();
+  if (!text) return null;
+  const category = String(item.category || fallback.category || "general").slice(0, 40);
+  const confidenceRaw = Number(item.confidence ?? fallback.confidence ?? 0.7);
+  const confidence = Number.isFinite(confidenceRaw) ? Math.max(0.1, Math.min(1, confidenceRaw)) : 0.7;
+  return {
+    id: `mem_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+    text: text.slice(0, 300),
+    category,
+    confidence,
+    source: String(item.source || fallback.source || "chat_summary").slice(0, 80),
+    created_at: new Date().toISOString(),
+    last_confirmed_at: null,
+  };
+}
+
+function mergeStructuredMemory(existing = [], extracted = [], sessionNote = "") {
+  const current = Array.isArray(existing) ? existing : [];
+  const incomingRaw = Array.isArray(extracted) ? extracted : [];
+  const incoming = incomingRaw
+    .map(item => normalizeMemoryItem(item, { source: sessionNote ? `Session note: ${sessionNote.slice(0, 80)}` : "chat_summary" }))
+    .filter(Boolean);
+  const byKey = new Map();
+  for (const item of current) {
+    const key = `${String(item.category || "general").toLowerCase()}::${String(item.text || "").toLowerCase().slice(0, 120)}`;
+    if (item.text) byKey.set(key, item);
+  }
+  for (const item of incoming) {
+    const key = `${item.category.toLowerCase()}::${item.text.toLowerCase().slice(0, 120)}`;
+    if (!byKey.has(key)) byKey.set(key, item);
+  }
+  return Array.from(byKey.values())
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 120);
+}
+
+function buildRelationshipMilestones(existing = [], { userMsgCount = 0, sessions = [], isPaid = false } = {}) {
+  const current = Array.isArray(existing) ? existing : [];
+  const seen = new Set(current.map(m => m?.key).filter(Boolean));
+  const next = [...current];
+  const add = (key, label, note) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    next.unshift({ key, label, note, reached_at: new Date().toISOString() });
+  };
+  const sessionCount = Array.isArray(sessions) ? sessions.length : 0;
+  if (userMsgCount >= 10) add("first_10_messages", "First 10 messages", "The user and companion have started building a real rhythm.");
+  if (userMsgCount >= 50) add("first_50_messages", "50 messages together", "The companion should treat this as an established relationship.");
+  if (userMsgCount >= 100) add("first_100_messages", "100 messages together", "This is now a meaningful ongoing bond.");
+  if (sessionCount >= 3) add("three_sessions", "3 remembered sessions", "The companion has enough history to gently notice patterns.");
+  if (sessionCount >= 7) add("seven_sessions", "7 remembered sessions", "The companion can reference the relationship as something consistent.");
+  if (isPaid) add("paid_memory_enabled", "Paid memory enabled", "Longer-term memory and continuity are available for this account.");
+  return next.slice(0, 40);
+}
+
 // ── Build full memory summary injected into AI system prompt ─────────────────
 function buildRichSummary(facts = {}, sessions = [], emotionalTimeline = []) {
   const parts = [];
@@ -168,6 +224,7 @@ JSON format:
   "hobbies": ["hobbies, interests, activities mentioned"],
   "humor_style": "how they joke or laugh, if evident, else null",
   "communication_style": "brief description of how they communicate, else null",
+  "structured_memories": [{"text": "one durable user memory worth remembering", "category": "identity|people|goals|preferences|struggles|values|health|work|general", "confidence": 0.1}],
   "session_summary": "1-2 sentence emotional summary of THIS session specifically",
   "emotion": "the single dominant emotion felt by the user this session: anxious, sad, happy, angry, lonely, overwhelmed, hopeful, grateful, neutral, excited, confused, relieved",
   "emotion_intensity": "1 to 5 — how strongly they felt it (1=mild, 5=very intense)",
@@ -221,6 +278,8 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
     const existingFacts     = profile?.user_facts || {};
     const existingSessions  = profile?.session_memory || [];
     const existingTimeline  = profile?.emotional_timeline || [];
+    const existingStructuredMemory = profile?.structured_memory || [];
+    const existingMilestones = profile?.relationship_milestones || [];
 
     // Merge facts
     const updatedFacts = mergeFacts(existingFacts, extracted);
@@ -237,6 +296,13 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
     const newSession = { date, summary: sessionNote };
     const updatedSessions = [newSession, ...existingSessions].slice(0, memoryDepth);
 
+    const structuredMemory = mergeStructuredMemory(existingStructuredMemory, extracted.structured_memories || [], sessionNote);
+    const relationshipMilestones = buildRelationshipMilestones(existingMilestones, {
+      userMsgCount,
+      sessions: updatedSessions,
+      isPaid: isPremium || isPro || isAnnual,
+    });
+
     // Build rich summary (now includes emotional timeline + narrative)
     const richSummary = buildRichSummary(updatedFacts, updatedSessions, updatedTimeline);
 
@@ -245,7 +311,10 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       user_facts:         updatedFacts,
       session_memory:     updatedSessions,
       emotional_timeline: updatedTimeline,
+      structured_memory:  structuredMemory,
+      relationship_milestones: relationshipMilestones,
       memory_summary:     richSummary,
+      memory_updated_at:  new Date().toISOString(),
       updated_date:       new Date().toISOString(),
     });
     // Evict stale cached profile after write
@@ -266,6 +335,8 @@ Only include array items that were actually mentioned. Use [] for empty arrays.`
       facts:   updatedFacts,
       emotion: extracted.emotion,
       emotion_topic: extracted.emotion_topic,
+      structured_memory_count: structuredMemory.length,
+      relationship_milestones_count: relationshipMilestones.length,
     });
   } catch (err) {
     safeLogError(err, { tag: "summarizeSession" });

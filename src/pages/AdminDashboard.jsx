@@ -95,6 +95,24 @@ function planColor(u) {
   return "#6b7280";
 }
 
+
+function isPaidUser(u = {}) {
+  return !!(u.is_premium || u.pro_plan || u.annual_plan || u.ultimate_friend || u.family_unlimited || u.family_plan);
+}
+
+function getMemoryHealthForUser(u = {}) {
+  const factsCount = u.user_facts && typeof u.user_facts === "object" ? Object.keys(u.user_facts).length : 0;
+  const sessionCount = Array.isArray(u.session_memory) ? u.session_memory.length : 0;
+  const timelineCount = Array.isArray(u.emotional_timeline) ? u.emotional_timeline.length : 0;
+  const structuredCount = Array.isArray(u.structured_memory) ? u.structured_memory.length : 0;
+  const milestoneCount = Array.isArray(u.relationship_milestones) ? u.relationship_milestones.length : 0;
+  const recoveryCount = Array.isArray(u.recovery_backups) ? u.recovery_backups.length : 0;
+  const summaryPresent = !!String(u.memory_summary || "").trim();
+  const paid = isPaidUser(u);
+  const status = paid && (summaryPresent || factsCount || sessionCount || structuredCount) ? "Healthy" : paid ? "Thin" : "Free/basic";
+  return { paid, status, factsCount, sessionCount, timelineCount, structuredCount, milestoneCount, recoveryCount, summaryPresent };
+}
+
 // ── User Detail Panel ─────────────────────────────────────────────────────────
 function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm, deleteUser }) {
   const [subForm, setSubForm] = useState({
@@ -520,8 +538,12 @@ function MemoryDetailPanel({ user, adminToken, showToast, requestConfirm, onClea
         {[
           ["Memory Summary",  user.memory_summary ? user.memory_summary.length + " chars" : "Not available"],
           ["Memory Updated",  fmtDateTime(user.memory_updated_at)],
-          ["Last Active",     fmtDateTime(user.last_active)],
-          ["Last Seen",       fmtDateTime(user.last_seen)],
+          ["Facts",           getMemoryHealthForUser(user).factsCount],
+          ["Sessions",        getMemoryHealthForUser(user).sessionCount],
+          ["Structured",      getMemoryHealthForUser(user).structuredCount],
+          ["Milestones",      getMemoryHealthForUser(user).milestoneCount],
+          ["Recovery Vault",  getMemoryHealthForUser(user).paid ? `${getMemoryHealthForUser(user).recoveryCount} backup(s)` : "Free/basic"],
+          ["Health",          getMemoryHealthForUser(user).status],
           ["Total Messages",  user.message_count],
           ["Tokens Total",    user.tokens_used_total || "—"],
         ].map(([k, v]) => (
@@ -531,6 +553,41 @@ function MemoryDetailPanel({ user, adminToken, showToast, requestConfirm, onClea
           </div>
         ))}
       </div>
+
+      <div style={{ background:"rgba(96,165,250,0.04)", border:"1px solid rgba(96,165,250,0.12)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+        <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Memory Health</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.72)", lineHeight:1.55 }}>
+          Profile linked: ✅ yes · Paid memory: {getMemoryHealthForUser(user).paid ? "✅ yes" : "❌ free/basic"} · Status: <b style={{ color:getMemoryHealthForUser(user).status === "Healthy" ? "#34d399" : "#fbbf24" }}>{getMemoryHealthForUser(user).status}</b>
+          <br />Sources: summary {getMemoryHealthForUser(user).summaryPresent ? "✅" : "❌"}, facts {getMemoryHealthForUser(user).factsCount}, sessions {getMemoryHealthForUser(user).sessionCount}, structured {getMemoryHealthForUser(user).structuredCount}, timeline {getMemoryHealthForUser(user).timelineCount}
+        </div>
+      </div>
+
+      {Array.isArray(user.relationship_milestones) && user.relationship_milestones.length > 0 && (
+        <div style={{ background:"rgba(249,115,22,0.04)", border:"1px solid rgba(249,115,22,0.14)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Relationship Milestones</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {user.relationship_milestones.slice(0, 5).map(m => (
+              <div key={m.key || m.label} style={{ fontSize:12, color:"rgba(255,255,255,0.75)", lineHeight:1.35 }}>
+                <b style={{ color:"#fdba74" }}>{m.label || m.key}</b> <span style={{ color:"rgba(255,255,255,0.35)" }}>· {fmtDate(m.reached_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Array.isArray(user.structured_memory) && user.structured_memory.length > 0 && (
+        <div style={{ background:"rgba(168,85,247,0.04)", border:"1px solid rgba(168,85,247,0.14)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Structured Memory</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7, maxHeight:130, overflowY:"auto" }}>
+            {user.structured_memory.slice(0, 8).map(mem => (
+              <div key={mem.id || mem.text} style={{ fontSize:12, color:"rgba(255,255,255,0.75)", lineHeight:1.35 }}>
+                <span style={{ color:"#c084fc", fontWeight:800 }}>{mem.category || "memory"}</span> · {mem.text}
+                <span style={{ color:"rgba(255,255,255,0.3)" }}> ({Math.round((mem.confidence || 0.7) * 100)}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Memory summary preview */}
       {user.memory_summary && (

@@ -95,6 +95,8 @@ function cacheMemoryLocally(profile = {}) {
   if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
   if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
   if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
+  if (profile.structured_memory) localStorage.setItem("unfiltr_structured_memory", JSON.stringify(profile.structured_memory));
+  if (profile.relationship_milestones) localStorage.setItem("unfiltr_relationship_milestones", JSON.stringify(profile.relationship_milestones));
   if (profile.memory_updated_at) localStorage.setItem("unfiltr_memory_updated_at", profile.memory_updated_at);
 }
 
