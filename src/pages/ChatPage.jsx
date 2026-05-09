@@ -89,6 +89,32 @@ function splitTextForSpeech(text = "", maxChunkLength = TTS_CHUNK_LIMIT) {
   return chunks;
 }
 
+function buildPresenceContextForChat() {
+  try {
+    const now = new Date();
+    const hour = now.getHours();
+    const timeOfDay = hour < 5 ? "late night" : hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 22 ? "evening" : "late night";
+    const lastRaw = localStorage.getItem("unfiltr_last_chat_at") || localStorage.getItem("unfiltr_last_seen_at") || "";
+    const lastMs = lastRaw ? new Date(lastRaw).getTime() : NaN;
+    const diffMs = Number.isFinite(lastMs) ? Math.max(0, now.getTime() - lastMs) : null;
+    const notificationStatus = typeof Notification !== "undefined" ? Notification.permission : "unsupported";
+    const privacyTimeAwareness = localStorage.getItem("unfiltr_privacy_time_awareness") === "false" ? false : true;
+
+    return {
+      localTimeLabel: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      localDateLabel: now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      timeOfDay,
+      hoursSinceLastChat: diffMs === null ? null : Math.floor(diffMs / 36e5),
+      daysSinceLastChat: diffMs === null ? null : Math.floor(diffMs / 864e5),
+      notificationStatus,
+      privacyTimeAwareness,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
@@ -1384,6 +1410,7 @@ export default function ChatPage() {
           companionName:        localStorage.getItem("unfiltr_companion_name") || "",
           companionNickname:    localStorage.getItem("unfiltr_companion_nickname") || "",
           ultimateFriend:       localStorage.getItem("unfiltr_ultimate_friend") === "true" || localStorage.getItem("unfiltr_is_annual") === "true",
+          presenceContext:      buildPresenceContextForChat(),
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
@@ -1417,6 +1444,7 @@ export default function ChatPage() {
         }
       }
       clearPendingOutgoingMessage("chat");
+      localStorage.setItem("unfiltr_last_chat_at", new Date().toISOString());
       setLastFailedText(null);
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 

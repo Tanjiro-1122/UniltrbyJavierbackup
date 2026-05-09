@@ -201,6 +201,49 @@ function buildMemoryHealth({ profileId, memorySummary, userFacts, sessionMemory,
   };
 }
 
+function buildPresenceAwarenessContext({ presenceContext = {}, isPaid = false, isUltimateFriend = false }) {
+  if (!isPaid || !presenceContext || typeof presenceContext !== "object") return "";
+
+  const clean = (value, max = 80) => typeof value === "string"
+    ? value.replace(/[\r\n<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max)
+    : "";
+
+  const localTimeLabel = clean(presenceContext.localTimeLabel, 40);
+  const localDateLabel = clean(presenceContext.localDateLabel, 60);
+  const timezone = clean(presenceContext.timezone, 50);
+  const timeOfDay = clean(presenceContext.timeOfDay, 30);
+  const daysSinceLastChat = Number.isFinite(Number(presenceContext.daysSinceLastChat))
+    ? Math.max(0, Math.min(365, Math.floor(Number(presenceContext.daysSinceLastChat))))
+    : null;
+  const hoursSinceLastChat = Number.isFinite(Number(presenceContext.hoursSinceLastChat))
+    ? Math.max(0, Math.min(24 * 365, Math.floor(Number(presenceContext.hoursSinceLastChat))))
+    : null;
+  const notificationStatusRaw = clean(presenceContext.notificationStatus, 30).toLowerCase();
+  const notificationStatus = ["granted", "denied", "default", "unsupported", "unknown"].includes(notificationStatusRaw)
+    ? notificationStatusRaw
+    : "unknown";
+  const privacyEnabled = presenceContext.privacyTimeAwareness === false ? false : true;
+
+  if (!privacyEnabled) return "";
+
+  const details = [];
+  if (localTimeLabel) details.push(`local time: ${localTimeLabel}`);
+  if (localDateLabel) details.push(`local date: ${localDateLabel}`);
+  if (timezone) details.push(`timezone: ${timezone}`);
+  if (timeOfDay) details.push(`time of day: ${timeOfDay}`);
+  if (daysSinceLastChat !== null) details.push(`days since last chat: ${daysSinceLastChat}`);
+  else if (hoursSinceLastChat !== null) details.push(`hours since last chat: ${hoursSinceLastChat}`);
+  details.push(`notifications: ${notificationStatus}`);
+
+  if (!details.length) return "";
+
+  const depth = isUltimateFriend
+    ? "You may use this as gentle relationship continuity, like a close friend noticing timing or absence."
+    : "Use this lightly and only when it feels natural.";
+
+  return `\n\nPaid-only presence awareness: ${details.join("; ")}. ${depth} Do not mention that you received metadata. Do not be creepy, scolding, or repetitive. If it is late, you may gently ask if they can't sleep. If they have been gone 3+ days, you may warmly notice the gap. If notifications are denied/default/unsupported and they mention wanting check-ins, explain naturally that you can only check in when notifications are enabled. Keep it subtle — at most one small reference in a reply, and only when it fits.`;
+}
+
 function buildUltimateContinuityInstruction({ memorySummary, userFacts = {}, sessionMemory = [], vectorCtx = "", profile = {} }) {
   const structured = Array.isArray(profile?.structured_memory) ? profile.structured_memory : [];
   const milestones = Array.isArray(profile?.relationship_milestones) ? profile.relationship_milestones : [];
@@ -301,6 +344,7 @@ export default async function handler(req, res) {
       companionName,
       companionNickname,
       ultimateFriend,
+      presenceContext,
     } = req.body;
 
     // Sanitize userName — strip control chars and limit length to prevent prompt injection
@@ -497,6 +541,12 @@ export default async function handler(req, res) {
       ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx, profile })
       : "";
 
+    const presenceCtx = buildPresenceAwarenessContext({
+      presenceContext,
+      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+      isUltimateFriend,
+    });
+
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
@@ -532,7 +582,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + ultimateContinuityCtx + moodCheckInCtx +
+            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + ultimateContinuityCtx + presenceCtx + moodCheckInCtx +
               `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited,hopeful,lonely>`,
           },
           ...finalMessages,
