@@ -44,6 +44,51 @@ import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTi
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
+const TTS_CHAR_LIMIT = 1500;
+const TTS_CHUNK_LIMIT = 650;
+
+function cleanTextForSpeech(text = "") {
+  return String(text)
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\*\_\~\#>`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitTextForSpeech(text = "", maxChunkLength = TTS_CHUNK_LIMIT) {
+  const cleaned = cleanTextForSpeech(text).slice(0, TTS_CHAR_LIMIT).trim();
+  if (!cleaned) return [];
+
+  const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
+  const chunks = [];
+  let current = "";
+
+  for (const rawSentence of sentences) {
+    const sentence = rawSentence.trim();
+    if (!sentence) continue;
+
+    if ((current + " " + sentence).trim().length <= maxChunkLength) {
+      current = (current + " " + sentence).trim();
+      continue;
+    }
+
+    if (current) chunks.push(current);
+
+    if (sentence.length <= maxChunkLength) {
+      current = sentence;
+    } else {
+      for (let i = 0; i < sentence.length; i += maxChunkLength) {
+        chunks.push(sentence.slice(i, i + maxChunkLength).trim());
+      }
+      current = "";
+    }
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
@@ -281,6 +326,19 @@ export default function ChatPage() {
   const [isListening, setIsListening]   = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
+
+  // Best-effort audio warmup for iOS WKWebView. A real tap is still required,
+  // but this keeps the shared AudioContext ready as soon as Chat is visible.
+  useEffect(() => {
+    resumeAudioContext().catch(() => {});
+    const warmAudio = () => resumeAudioContext().catch(() => {});
+    document.addEventListener("touchend", warmAudio, { capture: true, passive: true });
+    document.addEventListener("click", warmAudio, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("touchend", warmAudio, true);
+      document.removeEventListener("click", warmAudio, true);
+    };
+  }, []);
 
   // Paid-user draft recovery: protects unsent chat text if iOS kills the WebView.
   useEffect(() => {
@@ -1131,45 +1189,53 @@ export default function ChatPage() {
   const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "warm") => {
     if (!voiceEnabled) return;
     try {
+      const chunks = splitTextForSpeech(text);
+      if (!chunks.length) {
+        if (process.env.NODE_ENV !== "production") console.log("[TTS] Empty text, skipping");
+        setIsSpeaking(false); setAvatarState("idle"); return;
+      }
+
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const cleanText = text.replace(/[\*\_\~\#\>`]/g, "").slice(0, 400);
-      if (!cleanText.trim()) { if (process.env.NODE_ENV !== "production") console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
 
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
 
-      const ttsRes = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: cleanText,
-          companionId,
-          voiceGender,
-          voicePersonality,
-          profileId:   localStorage.getItem("userProfileId") || null,
-          appleUserId: localStorage.getItem("unfiltr_apple_user_id") || null,
-        }),
-      });
+      for (const chunk of chunks) {
+        if (!chunk?.trim()) continue;
 
-      if (!ttsRes.ok) {
-        let errBody = {};
-        try { errBody = await ttsRes.json(); } catch { console.warn("[TTS] Could not parse error response body"); }
-        console.warn("[TTS] API error:", ttsRes.status, errBody?.error || "");
-        setIsSpeaking(false); setAvatarState("idle"); return;
+        const ttsRes = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: chunk,
+            companionId,
+            voiceGender,
+            voicePersonality,
+            profileId:   localStorage.getItem("userProfileId") || null,
+            appleUserId: localStorage.getItem("unfiltr_apple_user_id") || null,
+          }),
+        });
+
+        if (!ttsRes.ok) {
+          let errBody = {};
+          try { errBody = await ttsRes.json(); } catch { console.warn("[TTS] Could not parse error response body"); }
+          console.warn("[TTS] API error:", ttsRes.status, errBody?.error || "");
+          break;
+        }
+
+        const ttsData = await ttsRes.json();
+        const base64 = ttsData?.data?.audio || ttsData?.audio; // support both { data: { audio } } and legacy { audio }
+        if (!base64) {
+          console.warn("[TTS] No audio in response");
+          break;
+        }
+
+        // Resume again right before playback (iOS may have re-suspended during the API call)
+        try { await resumeAudioContext(); } catch {}
+        await playAudioFromBase64(base64);
       }
 
-      const ttsData = await ttsRes.json();
-      const base64 = ttsData?.data?.audio || ttsData?.audio; // support both { data: { audio } } and legacy { audio }
-      if (!base64) {
-        console.warn("[TTS] No audio in response");
-        setIsSpeaking(false); setAvatarState("idle"); return;
-      }
-
-      // Resume again right before playback (iOS may have re-suspended during the API call)
-      try { await resumeAudioContext(); } catch {}
-
-      await playAudioFromBase64(base64);
       setIsSpeaking(false); setAvatarState("idle");
     } catch (e) {
       console.error("[TTS] speakText failed:", e?.message, e);
