@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function Toggle({ value, onChange, label, description }) {
+function Toggle({ value, onChange, label, description, disabled = false, badge = null }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -8,14 +8,19 @@ function Toggle({ value, onChange, label, description }) {
       borderBottom: "1px solid rgba(255,255,255,0.05)",
     }}>
       <div style={{ flex: 1, paddingRight: 16 }}>
-        <p style={{ color: "white", fontWeight: 600, fontSize: 14, margin: 0 }}>{label}</p>
-        {description && <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, margin: "3px 0 0" }}>{description}</p>}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <p style={{ color: disabled ? "rgba(255,255,255,0.45)" : "white", fontWeight: 600, fontSize: 14, margin: 0 }}>{label}</p>
+          {badge && <span style={{ color: "#f0abfc", fontSize: 10, fontWeight: 800, padding: "3px 7px", borderRadius: 999, background: "rgba(217,70,239,0.12)", border: "1px solid rgba(217,70,239,0.25)" }}>{badge}</span>}
+        </div>
+        {description && <p style={{ color: disabled ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.35)", fontSize: 12, margin: "3px 0 0" }}>{description}</p>}
       </div>
       <button
-        onClick={() => onChange(!value)}
+        onClick={() => !disabled && onChange(!value)}
+        disabled={disabled}
         style={{
-          width: 44, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
-          background: value ? "linear-gradient(135deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.1)",
+          width: 44, height: 26, borderRadius: 13, border: "none", cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.55 : 1,
+          background: value && !disabled ? "linear-gradient(135deg,#7c3aed,#db2777)" : "rgba(255,255,255,0.1)",
           position: "relative", flexShrink: 0, transition: "background 0.2s",
         }}
       >
@@ -32,6 +37,13 @@ function Toggle({ value, onChange, label, description }) {
 }
 
 export default function SettingsNotifications({ profile, onUpdate }) {
+  const isPaid = !!(
+    profile?.is_premium || profile?.premium || profile?.pro_plan || profile?.annual_plan || profile?.ultimate_friend ||
+    localStorage.getItem("unfiltr_is_premium") === "true" ||
+    localStorage.getItem("unfiltr_is_pro") === "true" ||
+    localStorage.getItem("unfiltr_is_annual") === "true" ||
+    localStorage.getItem("unfiltr_ultimate_friend") === "true"
+  );
   const [dailyCheckIn, setDailyCheckIn] = useState(
     localStorage.getItem("unfiltr_notif_daily_checkin") !== "false"
   );
@@ -44,6 +56,9 @@ export default function SettingsNotifications({ profile, onUpdate }) {
   const [reminderTime, setReminderTime] = useState(
     localStorage.getItem("unfiltr_notif_reminder_time") || "20:00"
   );
+  const [companionAwareness, setCompanionAwareness] = useState(
+    localStorage.getItem("unfiltr_privacy_time_awareness") !== "false"
+  );
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -51,11 +66,15 @@ export default function SettingsNotifications({ profile, onUpdate }) {
     localStorage.setItem("unfiltr_notif_time_capsule", String(timeCapsule));
     localStorage.setItem("unfiltr_notif_reminder", String(reminderEnabled));
     localStorage.setItem("unfiltr_notif_reminder_time", reminderTime);
+    localStorage.setItem("unfiltr_privacy_time_awareness", String(isPaid ? companionAwareness : false));
     onUpdate && onUpdate({
       notif_daily_checkin: dailyCheckIn,
       notif_time_capsule: timeCapsule,
       notif_reminder: reminderEnabled,
       notif_reminder_time: reminderTime,
+      profile_snapshot_patch: {
+        privacyTimeAwareness: isPaid ? companionAwareness : false,
+      },
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -88,6 +107,14 @@ export default function SettingsNotifications({ profile, onUpdate }) {
           onChange={v => setReminderEnabled(v)}
           label="Evening Reminder"
           description="Reminder to journal or check in with your companion"
+        />
+        <Toggle
+          value={isPaid && companionAwareness}
+          onChange={v => setCompanionAwareness(v)}
+          disabled={!isPaid}
+          badge="PAID"
+          label="Companion Awareness"
+          description={isPaid ? "Let your companion notice time of day, long absences, and notification status in chat." : "Available for Plus, Pro, and Annual users."}
         />
       </div>
 

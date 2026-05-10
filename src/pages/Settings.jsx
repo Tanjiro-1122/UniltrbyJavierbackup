@@ -1422,7 +1422,18 @@ export default function Settings() {
         {activeTab === "notifications" && (
           <SettingsNotifications
             profile={userProfile}
-            onUpdate={() => {}}
+            onUpdate={(updates = {}) => {
+              const profileId = localStorage.getItem("userProfileId");
+              const { profile_snapshot_patch, ...updateData } = updates || {};
+              if (profile_snapshot_patch && typeof profile_snapshot_patch === "object") {
+                const currentSnapshot = safeJsonParse(localStorage.getItem("unfiltr_profile_snapshot"), {});
+                const nextSnapshot = { ...currentSnapshot, ...profile_snapshot_patch, updatedAt: new Date().toISOString() };
+                localStorage.setItem("unfiltr_profile_snapshot", JSON.stringify(nextSnapshot));
+                updateData.profile_snapshot = nextSnapshot;
+              }
+              if (profileId) syncProfileUpdate(profileId, updateData);
+              setUserProfile(p => p ? { ...p, ...updateData } : p);
+            }}
           />
         )}
 

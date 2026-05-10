@@ -95,6 +95,7 @@ export function buildProfileSnapshot() {
     },
     appearance: {
       chatAppearance: compact(chatAppearance, 10000),
+      privacyTimeAwareness: localStorage.getItem('unfiltr_privacy_time_awareness') !== 'false',
     },
     memory: tier === 'free' ? {
       // Free users only get basic local recovery; rich memory remains a paid experience.
@@ -166,6 +167,7 @@ export function applyProfileSnapshot(snapshot) {
   }
 
   if (app.chatAppearance) localStorage.setItem('unfiltr_chat_appearance', JSON.stringify(app.chatAppearance));
+  if (app.privacyTimeAwareness != null) localStorage.setItem('unfiltr_privacy_time_awareness', String(app.privacyTimeAwareness !== false));
   if (mem.userFacts) localStorage.setItem('unfiltr_user_facts', JSON.stringify(mem.userFacts));
   if (mem.memorySummary) localStorage.setItem('unfiltr_memory_summary', mem.memorySummary);
   if (mem.sessionMemory) localStorage.setItem('unfiltr_session_memory', JSON.stringify(mem.sessionMemory));
