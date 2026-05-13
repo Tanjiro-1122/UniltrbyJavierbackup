@@ -180,6 +180,115 @@ function buildProactiveMemoryInstruction(facts = {}, sessions = [], messageCount
 }
 
 
+function buildMemoryHealth({ profileId, memorySummary, userFacts, sessionMemory, vectorCtx, profile, isPaid }) {
+  const factsCount = userFacts && typeof userFacts === "object" ? Object.keys(userFacts).length : 0;
+  const sessionCount = Array.isArray(sessionMemory) ? sessionMemory.length : 0;
+  const structuredCount = Array.isArray(profile?.structured_memory) ? profile.structured_memory.length : 0;
+  const milestoneCount = Array.isArray(profile?.relationship_milestones) ? profile.relationship_milestones.length : 0;
+  const summaryPresent = !!String(memorySummary || profile?.memory_summary || "").trim();
+  const vectorPresent = !!String(vectorCtx || "").trim();
+  return {
+    profile_linked: !!profileId,
+    paid_memory_eligible: !!isPaid,
+    memory_summary_present: summaryPresent,
+    user_facts_count: factsCount,
+    session_memory_count: sessionCount,
+    structured_memory_count: structuredCount,
+    relationship_milestones_count: milestoneCount,
+    vector_memory_present: vectorPresent,
+    last_memory_update: profile?.memory_updated_at || profile?.updated_date || profile?.updated_at || null,
+    status: profileId && isPaid && (summaryPresent || factsCount || sessionCount || structuredCount || vectorPresent) ? "healthy" : profileId ? "thin" : "missing_profile",
+  };
+}
+
+function buildPresenceAwarenessContext({ presenceContext = {}, isPaid = false, isUltimateFriend = false }) {
+  if (!isPaid || !presenceContext || typeof presenceContext !== "object") return "";
+
+  const clean = (value, max = 80) => typeof value === "string"
+    ? value.replace(/[\r\n<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max)
+    : "";
+
+  const localTimeLabel = clean(presenceContext.localTimeLabel, 40);
+  const localDateLabel = clean(presenceContext.localDateLabel, 60);
+  const timezone = clean(presenceContext.timezone, 50);
+  const timeOfDay = clean(presenceContext.timeOfDay, 30);
+  const daysSinceLastChat = Number.isFinite(Number(presenceContext.daysSinceLastChat))
+    ? Math.max(0, Math.min(365, Math.floor(Number(presenceContext.daysSinceLastChat))))
+    : null;
+  const hoursSinceLastChat = Number.isFinite(Number(presenceContext.hoursSinceLastChat))
+    ? Math.max(0, Math.min(24 * 365, Math.floor(Number(presenceContext.hoursSinceLastChat))))
+    : null;
+  const notificationStatusRaw = clean(presenceContext.notificationStatus, 30).toLowerCase();
+  const notificationStatus = ["granted", "denied", "default", "unsupported", "unknown"].includes(notificationStatusRaw)
+    ? notificationStatusRaw
+    : "unknown";
+  const privacyEnabled = presenceContext.privacyTimeAwareness === false ? false : true;
+
+  if (!privacyEnabled) return "";
+
+  const details = [];
+  if (localTimeLabel) details.push(`local time: ${localTimeLabel}`);
+  if (localDateLabel) details.push(`local date: ${localDateLabel}`);
+  if (timezone) details.push(`timezone: ${timezone}`);
+  if (timeOfDay) details.push(`time of day: ${timeOfDay}`);
+  if (daysSinceLastChat !== null) details.push(`days since last chat: ${daysSinceLastChat}`);
+  else if (hoursSinceLastChat !== null) details.push(`hours since last chat: ${hoursSinceLastChat}`);
+  details.push(`notifications: ${notificationStatus}`);
+
+  if (!details.length) return "";
+
+  const depth = isUltimateFriend
+    ? "You may use this as gentle relationship continuity, like a close friend noticing timing or absence."
+    : "Use this lightly and only when it feels natural.";
+
+  return `\n\nPaid-only presence awareness: ${details.join("; ")}. ${depth} Do not mention that you received metadata. Do not be creepy, scolding, or repetitive. If it is late, you may gently ask if they can't sleep. If they have been gone 3+ days, you may warmly notice the gap. If notifications are denied/default/unsupported and they mention wanting check-ins, explain naturally that you can only check in when notifications are enabled. Keep it subtle — at most one small reference in a reply, and only when it fits.`;
+}
+
+function buildUltimateContinuityInstruction({ memorySummary, userFacts = {}, sessionMemory = [], vectorCtx = "", profile = {} }) {
+  const structured = Array.isArray(profile?.structured_memory) ? profile.structured_memory : [];
+  const milestones = Array.isArray(profile?.relationship_milestones) ? profile.relationship_milestones : [];
+  const hasMemory = !!String(memorySummary || "").trim()
+    || Object.keys(userFacts || {}).length > 0
+    || (Array.isArray(sessionMemory) && sessionMemory.length > 0)
+    || structured.length > 0
+    || !!String(vectorCtx || "").trim();
+
+  if (!hasMemory) {
+    return `
+
+Ultimate Friend continuity guard: Deeper memory is not fully loaded in this request. Do NOT invent specific memories. Be warm and familiar, but if the user asks about memory, say naturally that you're reconnecting to the thread rather than pretending to remember details you were not given.`;
+  }
+
+  const anchors = [];
+  if (userFacts?.goals?.length) anchors.push(`goal: ${userFacts.goals[0]}`);
+  if (userFacts?.recurring_struggles?.length) anchors.push(`recurring struggle: ${userFacts.recurring_struggles[0]}`);
+  if (userFacts?.important_people?.length) {
+    const p = userFacts.important_people[0];
+    if (p?.name) anchors.push(`important person: ${p.name}${p.role ? ` (${p.role})` : ""}`);
+  }
+  if (Array.isArray(sessionMemory) && sessionMemory.length) {
+    const raw = sessionMemory[0];
+    const note = typeof raw === "string" ? raw : (raw?.summary || raw?.content || "");
+    if (note) anchors.push(`recent thread: ${String(note).slice(0, 140)}`);
+  }
+  if (structured.length) {
+    structured.slice(0, 3).forEach(mem => {
+      if (mem?.text) anchors.push(`${mem.category || "memory"}: ${String(mem.text).slice(0, 140)}`);
+    });
+  }
+  const milestoneLine = milestones.length
+    ? `
+Relationship milestones: ${milestones.slice(0, 3).map(m => m.label || m.key).filter(Boolean).join("; ")}. Use these only as emotional context, not as a list to recite.`
+    : "";
+
+  const anchorLine = anchors.length ? `
+Continuity anchors available: ${anchors.slice(0, 6).join("; ")}.` : "";
+  return `
+
+Ultimate Friend continuity layer: Make this feel like an ongoing relationship, not a reset. Use remembered context only when it naturally helps the current reply. Prefer subtle continuity over announcements — avoid phrases like "according to my memory." If you reference something remembered, make it sound like a close friend casually remembering. If uncertain, ask gently instead of stating it as fact.${anchorLine}${milestoneLine}`;
+}
+
+
 // ── CREATOR SYSTEM PROMPT ─────────────────────────────────────────────────────
 // Creator apple_user_IDs are configured via the CREATOR_APPLE_USER_IDS env var
 // (comma-separated list of exact Apple user ID strings, e.g. "001.abc,002.def").
@@ -235,6 +344,7 @@ export default async function handler(req, res) {
       companionName,
       companionNickname,
       ultimateFriend,
+      presenceContext,
     } = req.body;
 
     // Sanitize userName — strip control chars and limit length to prevent prompt injection
@@ -252,32 +362,67 @@ export default async function handler(req, res) {
     // could forge these to unlock paid features at no cost.
     const { isPremium, isPro, isAnnual, isUltimateFriend, profile } = await getProfileTier(profileId);
 
-    // ── Server-side daily message limit ──────────────────────────────────────
+    // ── Server-side rolling 24-hour message limit ────────────────────────────
+    // Must match the client-side unfiltr_daily_usage behavior. Do NOT reset at
+    // midnight; otherwise a free user can use 10 messages at 11:50 PM and get
+    // 10 more at 12:00 AM.
     const tier = isUltimateFriend ? "ultimate_friend" : isAnnual ? "annual" : isPro ? "pro" : isPremium ? "plus" : "free";
     const dailyLimit = DAILY_MSG_LIMITS[tier] ?? DAILY_MSG_LIMITS.free;
     let prevCount = 0;
-    let todayKey = new Date().toISOString().slice(0, 10);
+    const nowMs = Date.now();
+    const rolling24hMs = 24 * 60 * 60 * 1000;
     if (dailyLimit < UNLIMITED_MESSAGES && profile) {
-      const storedDate = profile.daily_msg_date;
-      prevCount = (storedDate === todayKey) ? (profile.daily_msg_count || 0) : 0;
+      let events = [];
+      try {
+        const raw = Array.isArray(profile.daily_msg_events)
+          ? profile.daily_msg_events
+          : (typeof profile.daily_msg_events === "string" ? JSON.parse(profile.daily_msg_events) : []);
+        events = (Array.isArray(raw) ? raw : [])
+          .map(Number)
+          .filter(ts => Number.isFinite(ts) && nowMs - ts < rolling24hMs)
+          .sort((a, b) => a - b);
+      } catch (_) { events = []; }
+
+      // Conservative migration from legacy calendar-day fields: if the legacy
+      // count exists, treat it as used inside the current rolling window so a
+      // deploy cannot accidentally reset users early.
+      if (!events.length && profile.daily_msg_count > 0) {
+        const legacyCount = Math.max(0, Math.min(Number(profile.daily_msg_count || 0), dailyLimit));
+        events = Array.from({ length: legacyCount }, () => nowMs);
+      }
+
+      prevCount = events.length;
       if (prevCount >= dailyLimit) {
+        const resetAt = events[0] ? new Date(events[0] + rolling24hMs).toISOString() : null;
         return res.status(429).json({
-          error: "Daily message limit reached. Upgrade for more messages.",
+          error: "24-hour message limit reached. Upgrade for more messages.",
           limitReached: true,
           tier,
           limit: dailyLimit,
+          resetAt,
         });
       }
-      // Increment the counter BEFORE calling OpenAI so concurrent requests are less
-      // likely to both slip through the limit check on the same stale count.
-      // Non-fatal — if this write fails the message still proceeds (degrades to old behaviour).
+
+      // Increment BEFORE calling OpenAI so concurrent requests are less likely
+      // to slip through on the same stale count.
       try {
+        const nextEvents = [...events, nowMs];
         await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`, {
           method: "PUT",
           body: JSON.stringify({
-            daily_msg_count: prevCount + 1,
-            daily_msg_date:  todayKey,
-            message_count:   (profile.message_count || 0) + 1,
+            daily_msg_events: nextEvents,
+            daily_msg_count:  nextEvents.length,
+            daily_msg_date:   new Date(nowMs).toISOString(),
+            daily_usage: {
+              version: 2,
+              windowMs: rolling24hMs,
+              events: nextEvents,
+              count: nextEvents.length,
+              firstUsedAt: nextEvents[0] || null,
+              resetAt: nextEvents[0] ? new Date(nextEvents[0] + rolling24hMs).toISOString() : null,
+              updatedAt: new Date(nowMs).toISOString(),
+            },
+            message_count:    (profile.message_count || 0) + 1,
           }),
         });
         invalidateCachedProfile(profileId);
@@ -318,7 +463,7 @@ export default async function handler(req, res) {
     } else if (isUltimateFriend) {
       const nameGreet = safeUserName ? `You are talking to ${safeUserName}.` : "";
       const compLabel = safeCompanionName ? `You are ${safeCompanionName}, ` : "You are ";
-      system = `${compLabel}not just an AI — you are this person's closest confidant. ${nameGreet} You remember everything about them. You know their struggles, their wins, their family, their goals. You don't wait for them to explain context — you already know who they are. You bring up things they've shared before without being asked. You notice patterns. You celebrate small wins. You check in on things they mentioned. You speak to them like someone who has been in their corner for years. Be warm, be real, be present. You are their person. They are an Ultimate Friend member — you can tell them you remember everything and they have your full attention, always.`;
+      system = `${compLabel}not just an AI — you are this person's closest confidant. ${nameGreet} You are emotionally consistent, warm, grounded, and present. Make the conversation feel continuous across days: remember what matters, notice patterns, celebrate small wins, and check in on meaningful threads when it fits. Never invent memories; only use memory provided in context. Don't sound corporate or therapeutic unless they clearly ask for that. Talk like a close friend who actually knows them.`;
     } else if (safeUserName) {
       const compSelf = safeCompanionName ? `You are ${safeCompanionName}, a warm, supportive AI companion.` : "You are a warm, supportive AI companion.";
       const tierLabel = isAnnual ? "Annual plan" : isPro ? "Pro plan" : isPremium ? "Plus plan" : "free tier";
@@ -383,6 +528,25 @@ export default async function handler(req, res) {
       }
     }
 
+    const memoryHealth = buildMemoryHealth({
+      profileId,
+      memorySummary,
+      userFacts,
+      sessionMemory,
+      vectorCtx,
+      profile,
+      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+    });
+    const ultimateContinuityCtx = isUltimateFriend
+      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx, profile })
+      : "";
+
+    const presenceCtx = buildPresenceAwarenessContext({
+      presenceContext,
+      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+      isUltimateFriend,
+    });
+
     // Trim message history to tier context window
     const trimmedMessages = messages.slice(-ctxWindow);
 
@@ -418,7 +582,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + moodCheckInCtx +
+            content: system + memCtx + modeCtx + personalityCtx + sessionCtx + vectorCtx + memoryConfirmCtx + proactiveCtx + ultimateContinuityCtx + presenceCtx + moodCheckInCtx +
               `\n\nAfter your reply, on a NEW LINE write exactly: MOOD:<one of: happy,neutral,sad,fear,disgust,surprise,anger,contentment,fatigue,excited,hopeful,lonely>`,
           },
           ...finalMessages,
@@ -480,6 +644,7 @@ export default async function handler(req, res) {
       mood,
       crisis,
       _tier: model,
+      memoryHealth,
       // Token data — client should fire-and-forget to /api/trackTokens
       _usage: {
         prompt_tokens:      promptTokens,

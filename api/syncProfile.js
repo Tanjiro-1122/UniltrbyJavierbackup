@@ -114,6 +114,65 @@ async function getCompanion(companionId) {
   } catch { return null; }
 }
 
+const RECOVERY_BACKUP_LIMIT = 30;
+function isPaidRecoveryEligible(profile = {}) {
+  return !!(profile.is_premium || profile.premium || profile.pro_plan || profile.annual_plan || profile.ultimate_friend || profile.family_unlimited || profile.family_plan);
+}
+function recoveryBackupId(prefix = "backup") {
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+}
+function isMemoryClearUpdate(updateData = {}) {
+  const hasMemoryKeys = ["memory_summary", "user_facts", "session_memory", "emotional_timeline", "memory_vectors"].some(k => Object.prototype.hasOwnProperty.call(updateData, k));
+  if (!hasMemoryKeys) return false;
+  const summaryCleared = updateData.memory_summary === "" || updateData.memory_summary === null;
+  const factsCleared = updateData.user_facts && typeof updateData.user_facts === "object" && Object.keys(updateData.user_facts).length === 0;
+  const sessionsCleared = Array.isArray(updateData.session_memory) && updateData.session_memory.length === 0;
+  const timelineCleared = Array.isArray(updateData.emotional_timeline) && updateData.emotional_timeline.length === 0;
+  return summaryCleared || factsCleared || sessionsCleared || timelineCleared;
+}
+async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
+  if (!profile?.id) return false;
+  if (!isPaidRecoveryEligible(profile)) return false;
+  const backup = {
+    id: recoveryBackupId("memory_clear"),
+    type: "memory_profile",
+    label: "AI memory before user cleared it",
+    source: reason,
+    apple_user_id: profile.apple_user_id || null,
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    payload: {
+      profile: {
+        id: profile.id,
+        apple_user_id: profile.apple_user_id || null,
+        display_name: profile.display_name || null,
+        memory_summary: profile.memory_summary || "",
+        user_facts: profile.user_facts || {},
+        session_memory: profile.session_memory || [],
+        emotional_timeline: profile.emotional_timeline || [],
+        memory_vectors: profile.memory_vectors || [],
+        memory_updated_at: profile.memory_updated_at || profile.updated_date || profile.updated_at || null,
+      },
+    },
+  };
+  const nowMs = Date.now();
+  const existing = (Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [])
+    .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
+  const next = [backup, ...existing].slice(0, RECOVERY_BACKUP_LIMIT);
+  try {
+    const r = await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
+      method: "PUT",
+      headers: b44Headers(),
+      body: JSON.stringify({ recovery_backups: next, last_recovery_backup_at: backup.created_at }),
+    });
+    if (!r.ok) console.warn(`[syncProfile] memory recovery backup failed HTTP ${r.status}`);
+    return r.ok;
+  } catch (e) {
+    console.warn("[syncProfile] memory recovery backup failed:", e.message);
+    return false;
+  }
+}
+
 function buildProfileResponse(profile, companionData) {
   return {
     profileId:           profile.id,
@@ -122,6 +181,10 @@ function buildProfileResponse(profile, companionData) {
     pro_plan:            profile.pro_plan    || false,
     ultimate_friend:     profile.ultimate_friend || false,
     display_name:        profile.display_name || null,
+    created_date:        profile.created_date || profile.created_at || null,
+    created_at:          profile.created_at || profile.created_date || null,
+    family_unlimited:    profile.family_unlimited || profile.family_plan || false,
+    family_plan:         profile.family_plan || profile.family_unlimited || false,
     companion_nickname:  profile.companion_nickname || (companionData?.nickname) || null,
     onboarding_complete: profile.onboarding_complete || false,
     companion_id:        profile.companion_id || null,
@@ -129,6 +192,17 @@ function buildProfileResponse(profile, companionData) {
     apple_user_id:       profile.apple_user_id || null,
     email:               profile.email || null,
     message_count:       profile.message_count || 0,
+    memory_summary:      profile.memory_summary || "",
+    user_facts:          profile.user_facts || {},
+    session_memory:      profile.session_memory || [],
+    emotional_timeline:  profile.emotional_timeline || [],
+    structured_memory:   profile.structured_memory || [],
+    relationship_milestones: profile.relationship_milestones || [],
+    memory_updated_at:   profile.memory_updated_at || profile.updated_date || profile.updated_at || null,
+    profile_snapshot:    profile.profile_snapshot || null,
+    snapshot_updated_at: profile.snapshot_updated_at || null,
+    chat_appearance:     profile.chat_appearance || null,
+    daily_usage:         profile.daily_usage || null,
     companion:           companionData,
   };
 }
@@ -205,6 +279,11 @@ export default async function handler(req, res) {
         return res.status(200).json({
           user_facts:     profile.user_facts     || {},
           memory_summary: profile.memory_summary || "",
+          session_memory: profile.session_memory || [],
+          emotional_timeline: profile.emotional_timeline || [],
+          structured_memory: profile.structured_memory || [],
+          relationship_milestones: profile.relationship_milestones || [],
+          memory_updated_at: profile.memory_updated_at || null,
           display_name:   profile.display_name   || "",
         });
       } catch (e) {
@@ -230,6 +309,9 @@ export default async function handler(req, res) {
       if (profile.apple_user_id && profile.apple_user_id !== appleUserId) {
         console.warn(`[syncProfile] update rejected: appleUserId mismatch for profile ${profileId}`);
         return res.status(403).json({ error: "Forbidden" });
+      }
+      if (isMemoryClearUpdate(updateData || {})) {
+        await appendMemoryRecoveryBackup(profile, "syncProfile_memory_clear");
       }
       const updated = await updateProfile(profileId, updateData || {});
       return res.status(200).json({ ok: true, data: updated });

@@ -78,6 +78,23 @@ async function b44Update(entity, id, data) {
   return res.ok;
 }
 
+async function b44Create(entity, data) {
+  const token = b44Token();
+  const res = await fetch(`${B44_ENTITIES}/${entity}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Create ${entity} failed ${res.status}: ${text.slice(0, 120)}`);
+  }
+  return res.json();
+}
+
 // Send a single Expo push notification
 async function sendExpoPush(token, title, body, data = {}) {
   if (!token || !token.startsWith("ExponentPushToken")) return { ok: false, error: "invalid token" };
@@ -421,6 +438,85 @@ async function handleUpdateCompanion(req, res) {
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
+async function handleRecoveryList(req, res) {
+  if (!isAuthorizedRequest(req)) return res.status(401).json({ error: "Unauthorized" });
+  const { userId } = req.body || {};
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
+  const profile = await b44Get("UserProfile", userId);
+  if (!profile) return res.status(404).json({ error: "User not found" });
+  const nowMs = Date.now();
+  const backups = (Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [])
+    .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
+  return res.status(200).json({ ok: true, backups: backups.map(b => ({
+    id: b.id,
+    type: b.type,
+    label: b.label,
+    source: b.source,
+    created_at: b.created_at,
+    expires_at: b.expires_at,
+    apple_user_id: b.apple_user_id,
+    item_count: b.payload?.records?.length || (b.payload?.record ? 1 : b.payload?.profile ? 1 : 0),
+  })) });
+}
+
+async function handleRecoveryRestore(req, res) {
+  if (!isAuthorizedRequest(req)) return res.status(401).json({ error: "Unauthorized" });
+  const { userId, backupId } = req.body || {};
+  if (!userId || !backupId) return res.status(400).json({ error: "Missing userId or backupId" });
+  const profile = await b44Get("UserProfile", userId);
+  if (!profile) return res.status(404).json({ error: "User not found" });
+  const backups = Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [];
+  const backup = backups.find(b => b.id === backupId);
+  if (!backup) return res.status(404).json({ error: "Backup not found" });
+  if (backup.expires_at && new Date(backup.expires_at).getTime() <= Date.now()) {
+    return res.status(410).json({ error: "This recovery backup has expired and can no longer be restored" });
+  }
+
+  let restored = 0;
+  if (backup.type === "chat_record") {
+    const record = backup.payload?.record;
+    if (!record) return res.status(400).json({ error: "Backup has no chat record" });
+    const { id, created_date, updated_date, ...copy } = record;
+    await b44Create("ChatHistory", { ...copy, restored_from_backup: backup.id, restored_at: new Date().toISOString() });
+    restored = 1;
+  } else if (backup.type === "chat_history_bulk") {
+    const records = Array.isArray(backup.payload?.records) ? backup.payload.records : [];
+    for (const record of records) {
+      const { id, created_date, updated_date, ...copy } = record;
+      await b44Create("ChatHistory", { ...copy, restored_from_backup: backup.id, restored_at: new Date().toISOString() });
+      restored++;
+    }
+  } else if (backup.type === "memory_profile") {
+    const saved = backup.payload?.profile;
+    if (!saved) return res.status(400).json({ error: "Backup has no memory profile" });
+    const ok = await b44Update("UserProfile", userId, {
+      memory_summary: saved.memory_summary || "",
+      user_facts: saved.user_facts || {},
+      session_memory: saved.session_memory || [],
+      emotional_timeline: saved.emotional_timeline || [],
+      memory_vectors: saved.memory_vectors || [],
+      memory_updated_at: new Date().toISOString(),
+      restored_memory_from_backup: backup.id,
+      restored_memory_at: new Date().toISOString(),
+    });
+    if (!ok) throw new Error("Memory restore failed");
+    restored = 1;
+  } else {
+    return res.status(400).json({ error: `Unsupported backup type: ${backup.type}` });
+  }
+
+  const audit = {
+    id: `restore_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+    backup_id: backup.id,
+    backup_type: backup.type,
+    restored_at: new Date().toISOString(),
+    restored_count: restored,
+  };
+  const restoreAudit = Array.isArray(profile.recovery_restore_audit) ? profile.recovery_restore_audit : [];
+  await b44Update("UserProfile", userId, { recovery_restore_audit: [audit, ...restoreAudit].slice(0, 30) });
+  return res.status(200).json({ ok: true, restored, backupType: backup.type });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -437,6 +533,8 @@ export default async function handler(req, res) {
     if (action === "updateCompanion")      return await handleUpdateCompanion(req, res);
     if (action === "journalFeedback")      return await handleJournalFeedback(req, res);
     if (action === "saveJournalEntry")     return await handleSaveJournalEntry(req, res);
+    if (action === "recoveryList")         return await handleRecoveryList(req, res);
+    if (action === "recoveryRestore")      return await handleRecoveryRestore(req, res);
     if (action === "verifySpecialCode")    return await handleVerifySpecialCode(req, res);
     return res.status(400).json({ error: "Unknown action" });
   } catch (err) {

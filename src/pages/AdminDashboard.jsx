@@ -95,6 +95,24 @@ function planColor(u) {
   return "#6b7280";
 }
 
+
+function isPaidUser(u = {}) {
+  return !!(u.is_premium || u.pro_plan || u.annual_plan || u.ultimate_friend || u.family_unlimited || u.family_plan);
+}
+
+function getMemoryHealthForUser(u = {}) {
+  const factsCount = u.user_facts && typeof u.user_facts === "object" ? Object.keys(u.user_facts).length : 0;
+  const sessionCount = Array.isArray(u.session_memory) ? u.session_memory.length : 0;
+  const timelineCount = Array.isArray(u.emotional_timeline) ? u.emotional_timeline.length : 0;
+  const structuredCount = Array.isArray(u.structured_memory) ? u.structured_memory.length : 0;
+  const milestoneCount = Array.isArray(u.relationship_milestones) ? u.relationship_milestones.length : 0;
+  const recoveryCount = Array.isArray(u.recovery_backups) ? u.recovery_backups.length : 0;
+  const summaryPresent = !!String(u.memory_summary || "").trim();
+  const paid = isPaidUser(u);
+  const status = paid && (summaryPresent || factsCount || sessionCount || structuredCount) ? "Healthy" : paid ? "Thin" : "Free/basic";
+  return { paid, status, factsCount, sessionCount, timelineCount, structuredCount, milestoneCount, recoveryCount, summaryPresent };
+}
+
 // ── User Detail Panel ─────────────────────────────────────────────────────────
 function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm, deleteUser }) {
   const [subForm, setSubForm] = useState({
@@ -353,6 +371,128 @@ function UserDetailPanel({ user, adminToken, onAction, showToast, requestConfirm
           </div>
         </div>
       )}
+
+      <RecoveryVaultPanel
+        user={user}
+        adminToken={adminToken}
+        showToast={showToast}
+        requestConfirm={requestConfirm}
+        onRestored={onAction}
+      />
+    </div>
+  );
+}
+
+// ── Recovery Vault Panel ──────────────────────────────────────────────────────
+function RecoveryVaultPanel({ user, adminToken, showToast, requestConfirm, onRestored }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [backups, setBackups] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  const loadBackups = async () => {
+    setLoading(true); setMsg("");
+    try {
+      const res = await fetch("/api/utils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken, action: "recoveryList", userId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed");
+      setBackups(data.backups || []);
+    } catch (e) {
+      setMsg("❌ " + e.message);
+    }
+    setLoading(false);
+  };
+
+  const restoreBackup = (backup) => {
+    requestConfirm({
+      title: "Restore Backup?",
+      message: `Restore ${backup.label || backup.type} for ${user.display_name || "this user"}? This will put the saved chat/memory back into their backend account.`,
+      confirmLabel: "Restore",
+      confirmVariant: "default",
+      countdown: 2,
+      onConfirm: async () => {
+        setLoading(true); setMsg("");
+        try {
+          const res = await fetch("/api/utils", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ adminToken, action: "recoveryRestore", userId: user.id, backupId: backup.id }),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || "Failed");
+          setMsg(`✅ Restored ${data.restored || 0} item(s).`);
+          showToast(`✅ Recovery restored for ${user.display_name || "user"}`);
+          await loadBackups();
+          onRestored?.();
+        } catch (e) {
+          setMsg("❌ " + e.message);
+        }
+        setLoading(false);
+      },
+    });
+  };
+
+  const count = Array.isArray(backups) ? backups.length : (Array.isArray(user.recovery_backups) ? user.recovery_backups.length : 0);
+
+  return (
+    <div style={{ ...CARD_STYLE, marginTop:12 }}>
+      <button
+        onClick={() => { const next = !open; setOpen(next); if (next && backups === null) loadBackups(); }}
+        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", background:"none", border:"none", cursor:"pointer", padding:0 }}
+      >
+        <div style={{ fontSize:13, fontWeight:800, color:"#f59e0b", display:"flex", alignItems:"center", gap:6 }}>
+          🛟 Recovery Vault {count ? `(${count})` : ""}
+        </div>
+        {open ? <ChevronUp size={14} color="#f59e0b"/> : <ChevronDown size={14} color="rgba(245,158,11,0.6)"/>}
+      </button>
+
+      {open && (
+        <div style={{ marginTop:12 }}>
+          <p style={{ color:"rgba(255,255,255,0.45)", fontSize:12, lineHeight:1.45, margin:"0 0 10px" }}>
+            Private admin fail-safe for paid accounts only. Used for accidental chat or AI memory deletion. True account-deletion requests should still be respected.
+          </p>
+          <button
+            onClick={loadBackups}
+            disabled={loading}
+            style={{ padding:"7px 10px", borderRadius:10, border:"1px solid rgba(245,158,11,0.3)", background:"rgba(245,158,11,0.1)", color:"#fbbf24", fontWeight:700, fontSize:12, cursor: loading ? "default" : "pointer", marginBottom:10 }}
+          >
+            {loading ? "Loading…" : "Refresh Vault"}
+          </button>
+          {msg && <div style={{ fontSize:12, color: msg.startsWith("✅") ? "#34d399" : "#f87171", marginBottom:10 }}>{msg}</div>}
+          {loading && !backups && <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Loading backups…</div>}
+          {Array.isArray(backups) && backups.length === 0 && (
+            <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, padding:"10px 0" }}>No recovery backups yet.</div>
+          )}
+          {Array.isArray(backups) && backups.length > 0 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {backups.map(b => (
+                <div key={b.id} style={{ background:"rgba(245,158,11,0.06)", border:"1px solid rgba(245,158,11,0.14)", borderRadius:12, padding:"10px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", gap:10, alignItems:"flex-start" }}>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ color:"#fff", fontWeight:800, fontSize:12 }}>{b.label || b.type}</div>
+                      <div style={{ color:"rgba(255,255,255,0.42)", fontSize:11, marginTop:3 }}>
+                        {b.type} · {b.item_count || 0} item(s) · {fmtDateTime(b.created_at)}
+                      </div>
+                      {b.expires_at && <div style={{ color:"rgba(255,255,255,0.28)", fontSize:10, marginTop:2 }}>Vault expires: {fmtDate(b.expires_at)}</div>}
+                    </div>
+                    <button
+                      onClick={() => restoreBackup(b)}
+                      disabled={loading}
+                      style={{ padding:"7px 10px", borderRadius:10, border:"none", background:GRAD_AMBER, color:"#fff", fontWeight:800, fontSize:11, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1, whiteSpace:"nowrap" }}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -398,8 +538,12 @@ function MemoryDetailPanel({ user, adminToken, showToast, requestConfirm, onClea
         {[
           ["Memory Summary",  user.memory_summary ? user.memory_summary.length + " chars" : "Not available"],
           ["Memory Updated",  fmtDateTime(user.memory_updated_at)],
-          ["Last Active",     fmtDateTime(user.last_active)],
-          ["Last Seen",       fmtDateTime(user.last_seen)],
+          ["Facts",           getMemoryHealthForUser(user).factsCount],
+          ["Sessions",        getMemoryHealthForUser(user).sessionCount],
+          ["Structured",      getMemoryHealthForUser(user).structuredCount],
+          ["Milestones",      getMemoryHealthForUser(user).milestoneCount],
+          ["Recovery Vault",  getMemoryHealthForUser(user).paid ? `${getMemoryHealthForUser(user).recoveryCount} backup(s)` : "Free/basic"],
+          ["Health",          getMemoryHealthForUser(user).status],
           ["Total Messages",  user.message_count],
           ["Tokens Total",    user.tokens_used_total || "—"],
         ].map(([k, v]) => (
@@ -409,6 +553,41 @@ function MemoryDetailPanel({ user, adminToken, showToast, requestConfirm, onClea
           </div>
         ))}
       </div>
+
+      <div style={{ background:"rgba(96,165,250,0.04)", border:"1px solid rgba(96,165,250,0.12)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+        <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Memory Health</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.72)", lineHeight:1.55 }}>
+          Profile linked: ✅ yes · Paid memory: {getMemoryHealthForUser(user).paid ? "✅ yes" : "❌ free/basic"} · Status: <b style={{ color:getMemoryHealthForUser(user).status === "Healthy" ? "#34d399" : "#fbbf24" }}>{getMemoryHealthForUser(user).status}</b>
+          <br />Sources: summary {getMemoryHealthForUser(user).summaryPresent ? "✅" : "❌"}, facts {getMemoryHealthForUser(user).factsCount}, sessions {getMemoryHealthForUser(user).sessionCount}, structured {getMemoryHealthForUser(user).structuredCount}, timeline {getMemoryHealthForUser(user).timelineCount}
+        </div>
+      </div>
+
+      {Array.isArray(user.relationship_milestones) && user.relationship_milestones.length > 0 && (
+        <div style={{ background:"rgba(249,115,22,0.04)", border:"1px solid rgba(249,115,22,0.14)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Relationship Milestones</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {user.relationship_milestones.slice(0, 5).map(m => (
+              <div key={m.key || m.label} style={{ fontSize:12, color:"rgba(255,255,255,0.75)", lineHeight:1.35 }}>
+                <b style={{ color:"#fdba74" }}>{m.label || m.key}</b> <span style={{ color:"rgba(255,255,255,0.35)" }}>· {fmtDate(m.reached_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Array.isArray(user.structured_memory) && user.structured_memory.length > 0 && (
+        <div style={{ background:"rgba(168,85,247,0.04)", border:"1px solid rgba(168,85,247,0.14)", borderRadius:10, padding:"10px 12px", marginBottom:12 }}>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>Structured Memory</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7, maxHeight:130, overflowY:"auto" }}>
+            {user.structured_memory.slice(0, 8).map(mem => (
+              <div key={mem.id || mem.text} style={{ fontSize:12, color:"rgba(255,255,255,0.75)", lineHeight:1.35 }}>
+                <span style={{ color:"#c084fc", fontWeight:800 }}>{mem.category || "memory"}</span> · {mem.text}
+                <span style={{ color:"rgba(255,255,255,0.3)" }}> ({Math.round((mem.confidence || 0.7) * 100)}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Memory summary preview */}
       {user.memory_summary && (

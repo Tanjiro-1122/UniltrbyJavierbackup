@@ -35,6 +35,64 @@ import crypto from "crypto";
 // Retention caps per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
 
+const RECOVERY_BACKUP_LIMIT = 30;
+
+function normalizeRecords(data) {
+  return Array.isArray(data) ? data : (data?.items || data?.records || []);
+}
+
+function newBackupId(prefix = "backup") {
+  return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function isPaidRecoveryEligible(profile = {}) {
+  return !!(profile.is_premium || profile.premium || profile.pro_plan || profile.annual_plan || profile.ultimate_friend || profile.family_unlimited || profile.family_plan);
+}
+
+async function findProfileByAppleId(appleUserId, headers = b44Headers()) {
+  if (!appleUserId) return null;
+  const r = await fetch(`${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`, { headers });
+  if (!r.ok) return null;
+  const data = await r.json();
+  return normalizeRecords(data)[0] || null;
+}
+
+async function appendRecoveryBackup({ profile, appleUserId, type, label, payload, source = "user_action", headers = b44Headers() }) {
+  try {
+    const resolvedProfile = profile || await findProfileByAppleId(appleUserId, headers);
+    if (!resolvedProfile?.id) return { ok: false, reason: "profile_not_found" };
+    if (!isPaidRecoveryEligible(resolvedProfile)) return { ok: false, reason: "free_account_not_eligible" };
+    const backup = {
+      id: newBackupId(type),
+      type,
+      label,
+      source,
+      apple_user_id: resolvedProfile.apple_user_id || appleUserId || null,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      payload,
+    };
+    const nowMs = Date.now();
+    const existing = (Array.isArray(resolvedProfile.recovery_backups) ? resolvedProfile.recovery_backups : [])
+      .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
+    const next = [backup, ...existing].slice(0, RECOVERY_BACKUP_LIMIT);
+    const r = await fetch(`${B44_ENTITIES}/UserProfile/${resolvedProfile.id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ recovery_backups: next, last_recovery_backup_at: backup.created_at }),
+    });
+    if (!r.ok) {
+      const bodyText = await r.text().catch(() => "");
+      console.warn(`[recovery] backup write failed HTTP ${r.status}: ${bodyText.slice(0, 160)}`);
+      return { ok: false, reason: `write_failed_${r.status}` };
+    }
+    return { ok: true, backupId: backup.id, profileId: resolvedProfile.id };
+  } catch (e) {
+    console.warn("[recovery] backup append failed:", e.message);
+    return { ok: false, reason: e.message };
+  }
+}
+
 // CORS — only allow the production frontend, localhost dev servers, and Vercel preview deployments
 const ALLOWED_ORIGINS = new Set([
   "https://unfiltrbyjavier2.vercel.app",
@@ -339,6 +397,16 @@ async function handleDeleteChatHistory(req, res, body) {
       console.warn(`[base44/deleteChatHistory] Ownership mismatch — requested by ${apple_user_id}, record owned by ${record.apple_user_id}`);
       return res.status(403).json({ error: "Forbidden" });
     }
+    const backupResult = await appendRecoveryBackup({
+      appleUserId: apple_user_id,
+      type: "chat_record",
+      label: `Deleted chat from ${record.saved_at || record.created_date || "unknown date"}`,
+      payload: { record },
+      headers,
+    });
+    if (!backupResult.ok) {
+      console.warn(`[base44/deleteChatHistory] Continuing delete without recovery backup: ${backupResult.reason}`);
+    }
     const r = await fetch(`${B44_ENTITIES}/ChatHistory/${record_id}`, {
       method: "DELETE",
       headers,
@@ -458,6 +526,19 @@ async function handleClearAllChatHistory(req, res, body) {
     }
     const data = await r.json();
     const all = Array.isArray(data) ? data : (data.items || data.records || []);
+    if (all.length) {
+      const backupResult = await appendRecoveryBackup({
+        profile: profileRecords[0],
+        appleUserId: apple_user_id,
+        type: "chat_history_bulk",
+        label: `Cleared ${all.length} chat histor${all.length === 1 ? "y" : "ies"}`,
+        payload: { records: all },
+        headers,
+      });
+      if (!backupResult.ok) {
+        console.warn(`[base44/clearAllChatHistory] Continuing clear without recovery backup: ${backupResult.reason}`);
+      }
+    }
     await Promise.all(
       all.map(s =>
         fetch(`${B44_ENTITIES}/ChatHistory/${s.id}`, { method: "DELETE", headers }).catch(() => {})

@@ -62,21 +62,28 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold text-white mb-3">5. In-App Purchases</h2>
+            <h2 className="text-xl font-semibold text-white mb-3">5. Deleted Data Recovery Window</h2>
+            <p>
+              For paid accounts, if you delete chat history or clear AI memory, Unfiltr may keep a limited recovery backup for up to 30 days so support can help restore data deleted by mistake. Free accounts are not eligible for recovery backups. After 30 days, recovery backups may be permanently deleted and cannot be restored. This recovery window does not override a valid account deletion request, which is handled separately.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-3">6. In-App Purchases</h2>
             <p>
               In-app purchase transactions are processed by Apple. Apple handles payment information directly. We receive only confirmation of your subscription status and do not store payment details.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold text-white mb-3">6. Account Deletion</h2>
+            <h2 className="text-xl font-semibold text-white mb-3">7. Account Deletion</h2>
             <p>
               You can delete your account and all associated data at any time through the Settings page. This action is permanent and cannot be undone.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">7. Children's Privacy</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">8. Children's Privacy</h2>
             <p className="text-sm">
               Unfiltr is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us at{" "}
               <a href="mailto:support@sportswagerhelper.com" className="text-purple-400 underline">support@sportswagerhelper.com</a>{" "}and we will delete it promptly.
@@ -84,21 +91,21 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">8. Data Retention</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">9. Data Retention</h2>
             <p className="text-sm">
               We retain your data for as long as your account is active. Chat messages are stored to maintain conversation context. When you delete your account, all associated data (profile, messages, companion data) is permanently deleted within 24 hours.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">9. Changes to This Policy</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">10. Changes to This Policy</h2>
             <p className="text-sm">
               We may update this privacy policy from time to time. We will notify you of any material changes via the app or email.
             </p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">10. Contact Us</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">11. Contact Us</h2>
             <p className="text-sm">
               If you have questions about this privacy policy, please contact us at{" "}
               <a href="mailto:support@sportswagerhelper.com" className="text-purple-400 underline">support@sportswagerhelper.com</a>
@@ -106,7 +113,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <p className="text-white/40 text-xs pt-4">
-            Last updated: March 15, 2026
+            Last updated: May 8, 2026
           </p>
         </div>
       </div>

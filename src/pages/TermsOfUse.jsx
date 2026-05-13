@@ -72,18 +72,23 @@ export default function TermsOfUse() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">10. Changes to Terms</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">10. Data Recovery</h2>
+            <p className="text-sm">For paid accounts, Unfiltr may offer a limited support recovery window of up to 30 days for accidental deletion of chat history or AI memory. Free accounts are not eligible for recovery backups. Recovery is not guaranteed and depends on backup availability. After 30 days, deleted recovery data may be permanently removed.</p>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-2">11. Changes to Terms</h2>
             <p className="text-sm">We may update these terms from time to time. Continued use of the App after changes constitutes acceptance of the revised terms.</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-white mb-2">11. Contact</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">12. Contact</h2>
             <p className="text-sm">Questions about these terms? Contact us at{" "}
               <a href="mailto:support@sportswagerhelper.com" className="text-purple-400 underline">support@sportswagerhelper.com</a>
             </p>
           </div>
 
-          <p className="text-white/40 text-xs pt-4">Last updated: March 15, 2026</p>
+          <p className="text-white/40 text-xs pt-4">Last updated: May 8, 2026</p>
         </div>
       </div>
     </AppShell>

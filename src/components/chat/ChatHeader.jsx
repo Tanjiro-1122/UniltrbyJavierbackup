@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
-  Volume2, VolumeX, Settings, BookOpen, ChevronLeft,
-  RotateCcw, History, Sparkles, X
+  Volume2, VolumeX, Settings, ChevronLeft, X
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -111,7 +110,7 @@ export default function ChatHeader({
     switch (id) {
       case "customize":  return setShowCustomize(true);
       case "appearance": return setShowAppearance(true);
-      case "history":  return navigate("/chat-history");
+      case "history":    return navigate("/chat-history");
       case "newchat":  return handleNewChat();
       case "topics":   return onShowTopics();
       case "mood":     return onShowMoodInsights();

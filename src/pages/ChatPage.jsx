@@ -40,11 +40,137 @@ import CrisisBanner from "@/components/chat/CrisisBanner";
 import { useStreak } from "@/components/useStreak";
 import MissYouBanner from "@/components/chat/MissYouBanner";
 import { debugLog } from "@/components/DebugPanel";
+import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime, loadPendingOutgoingMessage, savePendingOutgoingMessage, clearPendingOutgoingMessage } from "@/lib/recoveryDrafts";
 
 const REACTIONS = ["✨", "💜", "⭐", "🌙", "💫", "🎀", "🔥", "💙"];
 
+const TTS_CHAR_LIMIT = 1500;
+const TTS_CHUNK_LIMIT = 650;
+
+function cleanTextForSpeech(text = "") {
+  return String(text)
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\*\_\~\#>`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitTextForSpeech(text = "", maxChunkLength = TTS_CHUNK_LIMIT) {
+  const cleaned = cleanTextForSpeech(text).slice(0, TTS_CHAR_LIMIT).trim();
+  if (!cleaned) return [];
+
+  const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
+  const chunks = [];
+  let current = "";
+
+  for (const rawSentence of sentences) {
+    const sentence = rawSentence.trim();
+    if (!sentence) continue;
+
+    if ((current + " " + sentence).trim().length <= maxChunkLength) {
+      current = (current + " " + sentence).trim();
+      continue;
+    }
+
+    if (current) chunks.push(current);
+
+    if (sentence.length <= maxChunkLength) {
+      current = sentence;
+    } else {
+      for (let i = 0; i < sentence.length; i += maxChunkLength) {
+        chunks.push(sentence.slice(i, i + maxChunkLength).trim());
+      }
+      current = "";
+    }
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function buildPresenceContextForChat() {
+  try {
+    const now = new Date();
+    const hour = now.getHours();
+    const timeOfDay = hour < 5 ? "late night" : hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 22 ? "evening" : "late night";
+    const lastRaw = localStorage.getItem("unfiltr_last_chat_at") || localStorage.getItem("unfiltr_last_seen_at") || "";
+    const lastMs = lastRaw ? new Date(lastRaw).getTime() : NaN;
+    const diffMs = Number.isFinite(lastMs) ? Math.max(0, now.getTime() - lastMs) : null;
+    const notificationStatus = typeof Notification !== "undefined" ? Notification.permission : "unsupported";
+    const privacyTimeAwareness = localStorage.getItem("unfiltr_privacy_time_awareness") === "false" ? false : true;
+
+    return {
+      localTimeLabel: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      localDateLabel: now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      timeOfDay,
+      hoursSinceLastChat: diffMs === null ? null : Math.floor(diffMs / 36e5),
+      daysSinceLastChat: diffMs === null ? null : Math.floor(diffMs / 864e5),
+      notificationStatus,
+      privacyTimeAwareness,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Retention limits mirroring ChatHistory.jsx — keep last N conversations per tier
 const CHAT_RETENTION_LIMITS = { free: 2, plus: 20, pro: 100, annual: 9999, family: 9999 };
+
+
+async function recoverBackendProfileForChat(reason = "chat_memory_recovery") {
+  const existingProfileId = localStorage.getItem("userProfileId");
+  const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "";
+  const googleUserId = localStorage.getItem("unfiltr_google_user_id") || "";
+  const email = localStorage.getItem("unfiltr_user_email") || localStorage.getItem("unfiltr_apple_email") || "";
+  if (existingProfileId) return existingProfileId;
+  if (!appleUserId && !googleUserId && !email) return null;
+
+  try {
+    const res = await fetch("/api/syncProfile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync", appleUserId: appleUserId || googleUserId, googleUserId, email, reason }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const profile = json?.data || json?.profile || json;
+    const resolvedProfileId = profile?.profileId || profile?.id || null;
+    if (resolvedProfileId) localStorage.setItem("userProfileId", resolvedProfileId);
+    if (profile?.apple_user_id) {
+      localStorage.setItem("unfiltr_apple_user_id", profile.apple_user_id);
+      localStorage.setItem("unfiltr_user_id", profile.apple_user_id);
+    }
+    if (profile?.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    if (profile?.companion_id) {
+      localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+      localStorage.setItem("companionId", profile.companion_id);
+    }
+    cacheMemoryLocally(profile || {});
+    window.dispatchEvent(new Event("unfiltr_memory_updated"));
+    window.dispatchEvent(new Event("unfiltr_auth_updated"));
+    return resolvedProfileId;
+  } catch (e) {
+    console.warn("[ChatPage] backend profile recovery failed:", e?.message || e);
+    return null;
+  }
+}
+
+function cacheMemoryLocally(profile = {}) {
+  if (profile.message_count != null) {
+    localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+    localStorage.setItem("unfiltr_msg_total", String(profile.message_count || 0));
+  }
+  if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+  if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+  if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+  if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
+  if (profile.structured_memory) localStorage.setItem("unfiltr_structured_memory", JSON.stringify(profile.structured_memory));
+  if (profile.relationship_milestones) localStorage.setItem("unfiltr_relationship_milestones", JSON.stringify(profile.relationship_milestones));
+  if (profile.memory_updated_at) localStorage.setItem("unfiltr_memory_updated_at", profile.memory_updated_at);
+}
+
 
 /**
  * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
@@ -220,11 +346,46 @@ export default function ChatPage() {
   const [vibe, setVibe]                 = useState("chill");
   const [messages, setMessages]         = useState([]);
   const [input, setInput]               = useState("");
+  const [chatRecoveryDraft, setChatRecoveryDraft] = useState(null);
   const [loading, setLoading]           = useState(false);
   const [isSpeaking, setIsSpeaking]     = useState(false);
   const [isListening, setIsListening]   = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [companionMood, setCompanionMood] = useState("neutral");
+
+  // Best-effort audio warmup for iOS WKWebView. A real tap is still required,
+  // but this keeps the shared AudioContext ready as soon as Chat is visible.
+  useEffect(() => {
+    resumeAudioContext().catch(() => {});
+    const warmAudio = () => resumeAudioContext().catch(() => {});
+    document.addEventListener("touchend", warmAudio, { capture: true, passive: true });
+    document.addEventListener("click", warmAudio, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("touchend", warmAudio, true);
+      document.removeEventListener("click", warmAudio, true);
+    };
+  }, []);
+
+  // Paid-user draft recovery: protects unsent chat text if iOS kills the WebView.
+  useEffect(() => {
+    const draft = loadRecoveryDraft("chat");
+    if (draft?.text?.trim()) setChatRecoveryDraft(draft);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => saveRecoveryDraft("chat", { text: input, area: "chat" }), 700);
+    return () => clearTimeout(timer);
+  }, [input]);
+
+  useEffect(() => {
+    const flush = () => saveRecoveryDraft("chat", { text: input, area: "chat" });
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flush);
+    };
+  }, [input]);
 
   // Listen for companion changes from the customize panel
   useEffect(() => {
@@ -298,6 +459,12 @@ export default function ChatPage() {
   const [showCompanionCard, setShowCompanionCard] = useState(false);
   const [quoteReply, setQuoteReply] = useState(null);
   const [lastFailedText, setLastFailedText] = useState(null);
+
+  useEffect(() => {
+    const pending = loadPendingOutgoingMessage("chat");
+    if (pending?.text?.trim()) setLastFailedText(pending.text);
+  }, []);
+
   const [showBreathing, setShowBreathing] = useState(false);
   const [showSleepStory, setShowSleepStory] = useState(false);
   const [showTimeCapsule, setShowTimeCapsule] = useState(false);
@@ -399,12 +566,17 @@ export default function ChatPage() {
       setEnvironment(parsedEnv);
       if (v) setVibe(v);
 
-      const pid = localStorage.getItem("userProfileId");
+      let pid = localStorage.getItem("userProfileId");
       if (!pid) {
-        debugLog("[ChatPage] ⚠️ userProfileId not set — skipping profile fetch (memory/subscription won't load)");
+        debugLog("[ChatPage] userProfileId missing — attempting backend memory recovery via stable sign-in ID");
+        pid = await recoverBackendProfileForChat("chat_init_missing_profile_id");
+      }
+      if (!pid) {
+        debugLog("[ChatPage] ⚠️ No backend profile could be recovered yet — chat will continue with local-only memory until sign-in completes");
       } else {
         try {
           const profile = await base44.entities.UserProfile.get(pid);
+          cacheMemoryLocally(profile || {});
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
           const annual  = !!(profile?.annual_plan);
@@ -426,7 +598,17 @@ export default function ChatPage() {
           // Seed memory state from the profile loaded at init so handleSend
           // can use the already-cached values without an extra DB round-trip.
           if (profile?.memory_summary) setMemorySummary(profile.memory_summary);
-          if (profile?.user_facts)     setUserFacts(profile.user_facts);
+          else {
+            const cachedSummary = localStorage.getItem("unfiltr_memory_summary") || "";
+            if (cachedSummary) setMemorySummary(cachedSummary);
+          }
+          if (profile?.user_facts) setUserFacts(profile.user_facts);
+          else {
+            try {
+              const cachedFacts = JSON.parse(localStorage.getItem("unfiltr_user_facts") || "{}");
+              if (cachedFacts && Object.keys(cachedFacts).length) setUserFacts(cachedFacts);
+            } catch {}
+          }
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
@@ -794,12 +976,22 @@ export default function ChatPage() {
 
       if (pid) {
         base44.entities.UserProfile.get(pid).then(profile => {
-          setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary) }]);
+          cacheMemoryLocally(profile || {});
+          setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
         }).catch(() => {
-          setMessages([{ role: "assistant", content: buildMessage(null) }]);
+          setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]);
         });
       } else {
-        setMessages([{ role: "assistant", content: buildMessage(null) }]);
+        recoverBackendProfileForChat("chat_greeting_missing_profile_id").then(recoveredPid => {
+          if (!recoveredPid) {
+            setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]);
+            return;
+          }
+          base44.entities.UserProfile.get(recoveredPid).then(profile => {
+            cacheMemoryLocally(profile || {});
+            setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
+          }).catch(() => setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]));
+        });
       }
       return;
     }
@@ -1028,45 +1220,53 @@ export default function ChatPage() {
   const speakText = async (text, companionId, voiceGender = "female", voicePersonality = "warm") => {
     if (!voiceEnabled) return;
     try {
+      const chunks = splitTextForSpeech(text);
+      if (!chunks.length) {
+        if (process.env.NODE_ENV !== "production") console.log("[TTS] Empty text, skipping");
+        setIsSpeaking(false); setAvatarState("idle"); return;
+      }
+
       setIsSpeaking(true);
       triggerAnim("talk", 99999);
-      const cleanText = text.replace(/[\*\_\~\#\>`]/g, "").slice(0, 400);
-      if (!cleanText.trim()) { if (process.env.NODE_ENV !== "production") console.log("[TTS] Empty text, skipping"); setIsSpeaking(false); setAvatarState("idle"); return; }
 
       // Always try to resume AudioContext before TTS — critical on iOS
       try { await resumeAudioContext(); } catch (e) { console.warn("[TTS] Resume failed:", e?.message); }
 
-      const ttsRes = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: cleanText,
-          companionId,
-          voiceGender,
-          voicePersonality,
-          profileId:   localStorage.getItem("userProfileId") || null,
-          appleUserId: localStorage.getItem("unfiltr_apple_user_id") || null,
-        }),
-      });
+      for (const chunk of chunks) {
+        if (!chunk?.trim()) continue;
 
-      if (!ttsRes.ok) {
-        let errBody = {};
-        try { errBody = await ttsRes.json(); } catch { console.warn("[TTS] Could not parse error response body"); }
-        console.warn("[TTS] API error:", ttsRes.status, errBody?.error || "");
-        setIsSpeaking(false); setAvatarState("idle"); return;
+        const ttsRes = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: chunk,
+            companionId,
+            voiceGender,
+            voicePersonality,
+            profileId:   localStorage.getItem("userProfileId") || null,
+            appleUserId: localStorage.getItem("unfiltr_apple_user_id") || null,
+          }),
+        });
+
+        if (!ttsRes.ok) {
+          let errBody = {};
+          try { errBody = await ttsRes.json(); } catch { console.warn("[TTS] Could not parse error response body"); }
+          console.warn("[TTS] API error:", ttsRes.status, errBody?.error || "");
+          break;
+        }
+
+        const ttsData = await ttsRes.json();
+        const base64 = ttsData?.data?.audio || ttsData?.audio; // support both { data: { audio } } and legacy { audio }
+        if (!base64) {
+          console.warn("[TTS] No audio in response");
+          break;
+        }
+
+        // Resume again right before playback (iOS may have re-suspended during the API call)
+        try { await resumeAudioContext(); } catch {}
+        await playAudioFromBase64(base64);
       }
 
-      const ttsData = await ttsRes.json();
-      const base64 = ttsData?.data?.audio || ttsData?.audio; // support both { data: { audio } } and legacy { audio }
-      if (!base64) {
-        console.warn("[TTS] No audio in response");
-        setIsSpeaking(false); setAvatarState("idle"); return;
-      }
-
-      // Resume again right before playback (iOS may have re-suspended during the API call)
-      try { await resumeAudioContext(); } catch {}
-
-      await playAudioFromBase64(base64);
       setIsSpeaking(false); setAvatarState("idle");
     } catch (e) {
       console.error("[TTS] speakText failed:", e?.message, e);
@@ -1152,14 +1352,18 @@ export default function ChatPage() {
       ? { role: "user", content: text || "📷 What do you think?", imagePreview: pendingImage.preview, quoteReply: quoteReply || undefined }
       : { role: "user", content: text, quoteReply: quoteReply || undefined };
     setQuoteReply(null);
+    savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat" });
     setMessages(m => [...m, userMsg]);
     setInput("");
+    clearRecoveryDraft("chat");
+    setChatRecoveryDraft(null);
     setLoading(true);
 
     // Safety timeout — if anything hangs, force-clear loading after 30s
     const safetyTimer = setTimeout(() => {
       setLoading(false);
-      setLastFailedText(text);
+      savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat", reason: "timeout" });
+      setLastFailedText(userMsg.content || text);
       setMessages(m => {
         if (m[m.length - 1]?.role === "user") return [...m, { role: "assistant", content: "__ERROR__" }];
         return m;
@@ -1202,7 +1406,7 @@ export default function ChatPage() {
         signal: chatAbort.signal,
         body: JSON.stringify({
           messages: history.map(m => ({ role: m.role, content: m.content })),
-          profileId:        localStorage.getItem("userProfileId") || null,
+          profileId:        localStorage.getItem("userProfileId") || await recoverBackendProfileForChat("before_chat_send") || null,
           sessionMemory:    sessionMemory,
           memorySummary:    localMemSummary || "",
           userFacts:        cachedUserFacts,
@@ -1214,6 +1418,7 @@ export default function ChatPage() {
           companionName:        localStorage.getItem("unfiltr_companion_name") || "",
           companionNickname:    localStorage.getItem("unfiltr_companion_nickname") || "",
           ultimateFriend:       localStorage.getItem("unfiltr_ultimate_friend") === "true" || localStorage.getItem("unfiltr_is_annual") === "true",
+          presenceContext:      buildPresenceContextForChat(),
         }),
       });
       if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.status}`);
@@ -1221,6 +1426,14 @@ export default function ChatPage() {
       const res = { data: chatData };
 
       const replyText = chatData?.reply || "...";
+      if (chatData?.memoryHealth) {
+        try {
+          localStorage.setItem("unfiltr_memory_health", JSON.stringify({ ...chatData.memoryHealth, checked_at: new Date().toISOString() }));
+          if (chatData.memoryHealth.status && chatData.memoryHealth.status !== "healthy") {
+            debugLog(`[MemoryHealth] ${chatData.memoryHealth.status} — profile=${chatData.memoryHealth.profile_linked ? "yes" : "no"}, summary=${chatData.memoryHealth.memory_summary_present ? "yes" : "no"}, sessions=${chatData.memoryHealth.session_memory_count || 0}`);
+          }
+        } catch {}
+      }
 
       // ── Fire-and-forget token tracking ───────────────────────────────────
       if (res.data?._usage) {
@@ -1238,6 +1451,9 @@ export default function ChatPage() {
           }).catch(() => {}); // silent fail — never blocks chat
         }
       }
+      clearPendingOutgoingMessage("chat");
+      localStorage.setItem("unfiltr_last_chat_at", new Date().toISOString());
+      setLastFailedText(null);
       setMessages(m => [...m, { role: "assistant", content: replyText }]);
 
       // 💾 Save messages to DB via server proxy (fire-and-forget — never blocks chat)
@@ -1321,8 +1537,13 @@ export default function ChatPage() {
         }
       }
 
-      const localCount = parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) + 1;
+      const existingTotal = Math.max(
+        parseInt(localStorage.getItem("unfiltr_msg_total") || "0", 10) || 0,
+        parseInt(localStorage.getItem("unfiltr_message_count") || "0", 10) || 0
+      );
+      const localCount = existingTotal + 1;
       localStorage.setItem("unfiltr_msg_total", String(localCount));
+      localStorage.setItem("unfiltr_message_count", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
       if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
 
@@ -1362,9 +1583,11 @@ export default function ChatPage() {
             if (sumData?.ok && !sumData?.skipped) {
               try {
                 const p = await base44.entities.UserProfile.get(profileId2);
+                cacheMemoryLocally(p || {});
                 if (p?.session_memory) setSessionMemory(p.session_memory);
                 if (p?.user_facts)     setUserFacts(p.user_facts);
                 if (p?.memory_summary) setMemorySummary(p.memory_summary);
+                window.dispatchEvent(new Event("unfiltr_memory_updated"));
               } catch (profileErr) {
                 console.warn("[Memory] Profile update fetch failed:", profileErr?.message);
               }
@@ -1394,7 +1617,8 @@ export default function ChatPage() {
       if (process.env.NODE_ENV !== "production") {
         console.error("Chat send failed:", error?.message || error);
       }
-      setLastFailedText(text);
+      savePendingOutgoingMessage("chat", { text: userMsg.content || text, area: "chat", reason: isNetworkDrop ? "network" : "error" });
+      setLastFailedText(userMsg.content || text);
       setMessages(m => {
         // Only append __ERROR__ if the last message is the user's (no partial reply yet)
         const last = m[m.length - 1];
@@ -1921,6 +2145,32 @@ export default function ChatPage() {
           {quoteReply && (
             <div style={{ flexShrink: 0, padding: "0 12px" }}>
               <QuoteReply quote={quoteReply} onClear={() => setQuoteReply(null)} />
+            </div>
+          )}
+
+          {lastFailedText?.trim() && !loading && !input.trim() && (
+            <div style={{ flexShrink: 0, padding: "0 12px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(248,113,113,0.28)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 700 }}>Message didn’t send</p>
+                  <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lastFailedText}</p>
+                </div>
+                <button onClick={() => handleSend(lastFailedText)} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "white", background: "#dc2626", fontSize: 12, fontWeight: 700 }}>Retry</button>
+                <button onClick={() => { clearPendingOutgoingMessage("chat"); setLastFailedText(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.08)", fontSize: 12, fontWeight: 700 }}>Dismiss</button>
+              </div>
+            </div>
+          )}
+
+          {chatRecoveryDraft?.text?.trim() && !input.trim() && !lastFailedText?.trim() && (
+            <div style={{ flexShrink: 0, padding: "0 12px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 14, background: "rgba(168,85,247,0.14)", border: "1px solid rgba(168,85,247,0.28)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 700 }}>Restore unsent message?</p>
+                  <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.45)", fontSize: 11 }}>Saved {formatDraftTime(chatRecoveryDraft.savedAt)}</p>
+                </div>
+                <button onClick={() => { setInput(chatRecoveryDraft.text || ""); setChatRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "white", background: "#7c3aed", fontSize: 12, fontWeight: 700 }}>Restore</button>
+                <button onClick={() => { clearRecoveryDraft("chat"); setChatRecoveryDraft(null); }} style={{ border: "none", borderRadius: 999, padding: "7px 10px", color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.08)", fontSize: 12, fontWeight: 700 }}>Discard</button>
+              </div>
             </div>
           )}
 

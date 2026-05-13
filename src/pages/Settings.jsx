@@ -17,10 +17,10 @@ import SettingsProfile from "@/components/settings/SettingsProfile";
 import SettingsCompanion from "@/components/settings/SettingsCompanion";
 import SettingsNotifications from "@/components/settings/SettingsNotifications";
 import SettingsAdmin from "@/components/settings/SettingsAdmin";
-import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
+import { getTier, getPlanLabel, PLAN_LABELS, clearDataAndReset, clearDeviceDataAndReset, isFamilyUnlimited } from "@/lib/entitlements";
 import useProfileRecovery from "@/hooks/useProfileRecovery";
 import { checkPin, storePin, clearPin, hasPin } from "@/lib/pinHash";
-import ChatAppearanceSettings from "@/components/settings/ChatAppearance";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 // ── Voice configuration (shared with SettingsVoice.jsx) ─────────────────────
 const VOICE_OPTIONS = {
@@ -43,6 +43,15 @@ const VOICE_OPTIONS = {
   ],
 };
 const DEFAULT_VOICE_STYLE = { female: "warm", male: "american", neutral: "balanced" };
+
+const safeJsonParse = (value, fallback = {}) => {
+  try {
+    if (!value || typeof value !== "string") return fallback;
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
 
 // ── Sub-screen wrapper ──────────────────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
@@ -120,7 +129,10 @@ export default function Settings() {
   const location  = useLocation();
   const [screen, setScreen] = useState(location?.state?.screen || null); // null = home, or "profile"|"companion"|"background"|"share"|"howto"|"account"
   const [userProfile, setUserProfile]         = useState(null);
-  const [companion, setCompanion]             = useState(() => { try { const s = localStorage.getItem("unfiltr_companion"); return s ? JSON.parse(s) : null; } catch { return null; } });
+  const [companion, setCompanion]             = useState(() => {
+    const parsed = safeJsonParse(localStorage.getItem("unfiltr_companion"), null);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmed, setDeleteConfirmed]         = useState(false);
   const [showSuspendModal, setShowSuspendModal]       = useState(false);
@@ -128,6 +140,7 @@ export default function Settings() {
   const [suspendSuccess, setSuspendSuccess]           = useState(false);
   const [deleting, setDeleting]               = useState(false);
   const [showPauseModal, setShowPauseModal]   = useState(false);
+  const [showClearDataModal, setShowClearDataModal] = useState(false);
   const [pauseDuration, setPauseDuration]     = useState("1week");
   const [pausing, setPausing]                 = useState(false);
   const [pauseSuccess, setPauseSuccess]       = useState(false);
@@ -288,11 +301,11 @@ export default function Settings() {
   const hasActivePin = hasPin();
 
   const isPremium = !!(userProfile?.is_premium || userProfile?.premium || localStorage.getItem("unfiltr_is_premium") === "true");
-  const [currentBg, setCurrentBg] = useState(() => { try { return JSON.parse(localStorage.getItem("unfiltr_env") || "{}"); } catch { return {}; } });
+  const [currentBg, setCurrentBg] = useState(() => safeJsonParse(localStorage.getItem("unfiltr_env"), {}));
 
   useEffect(() => {
     const todayStr = new Date().toDateString();
-    const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{"date":"","count":0}');
+    const sd = safeJsonParse(localStorage.getItem("unfiltr_streak"), { date: "", count: 0 });
     const isActiveStreak = sd.date === todayStr || sd.date === new Date(Date.now() - 86400000).toDateString();
     setStreak(isActiveStreak ? sd.count : 0);
     // Also store longest for display
@@ -378,6 +391,100 @@ export default function Settings() {
       body: JSON.stringify({ action: "update", profileId, appleUserId, updateData }),
     }).catch(() => {});
   };
+
+  const applyProfileToSettings = React.useCallback((profile) => {
+    if (!profile) return;
+    if (profile.profile_snapshot) applyProfileSnapshot(profile.profile_snapshot);
+
+    const resolvedProfileId = profile.profileId || profile.id || localStorage.getItem("userProfileId");
+    const createdDate = profile.created_date || profile.created_at || localStorage.getItem("unfiltr_joined_date") || null;
+
+    if (resolvedProfileId) localStorage.setItem("userProfileId", resolvedProfileId);
+    if (profile.apple_user_id) {
+      localStorage.setItem("unfiltr_apple_user_id", profile.apple_user_id);
+      localStorage.setItem("unfiltr_user_id", profile.apple_user_id);
+    }
+    if (profile.email) localStorage.setItem("unfiltr_user_email", profile.email);
+    if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+    if (createdDate) localStorage.setItem("unfiltr_joined_date", createdDate);
+    if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+    if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+    if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+    if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+    if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
+
+    const isUltimate = !!profile.ultimate_friend;
+    const isAnnual = !!(profile.annual_plan || isUltimate || profile.family_unlimited || profile.family_plan);
+    const isPro = !!profile.pro_plan;
+    const isPremium = !!(profile.is_premium || profile.premium || isPro || isAnnual || isUltimate);
+    localStorage.setItem("unfiltr_is_premium", String(isPremium));
+    localStorage.setItem("unfiltr_is_annual", String(isAnnual));
+    localStorage.setItem("unfiltr_is_pro", String(isPro));
+    localStorage.setItem("unfiltr_ultimate_friend", String(isUltimate));
+    if (profile.family_unlimited || profile.family_plan) {
+      localStorage.setItem("unfiltr_family_unlimited", "true");
+      localStorage.setItem("unfiltr_family_unlock", "true");
+      localStorage.setItem("unfiltr_unlimited", "true");
+    }
+
+    if (profile.companion_nickname) localStorage.setItem("unfiltr_companion_nickname", profile.companion_nickname);
+    if (profile.companion_id) localStorage.setItem("unfiltr_companion_id", profile.companion_id);
+    if (profile.chat_appearance) localStorage.setItem("unfiltr_chat_appearance", typeof profile.chat_appearance === "string" ? profile.chat_appearance : JSON.stringify(profile.chat_appearance));
+    if (profile.daily_usage) localStorage.setItem("unfiltr_daily_usage", typeof profile.daily_usage === "string" ? profile.daily_usage : JSON.stringify(profile.daily_usage));
+
+    setUserProfile(prev => ({
+      ...(prev || {}),
+      ...profile,
+      id: resolvedProfileId,
+      profileId: resolvedProfileId,
+      created_date: createdDate,
+      created_at: createdDate,
+      message_count: profile.message_count ?? Number(localStorage.getItem("unfiltr_message_count") || 0),
+      is_premium: isPremium,
+      annual_plan: isAnnual,
+      pro_plan: isPro,
+      ultimate_friend: isUltimate,
+      family_unlimited: !!(profile.family_unlimited || profile.family_plan),
+    }));
+    window.dispatchEvent(new Event("unfiltr_auth_updated"));
+  }, []);
+
+  const refreshSettingsProfile = React.useCallback(async (reason = "settings_open") => {
+    const appleUserId = localStorage.getItem("unfiltr_apple_user_id") || localStorage.getItem("unfiltr_user_id") || "";
+    const googleUserId = localStorage.getItem("unfiltr_google_user_id") || "";
+    const email = localStorage.getItem("unfiltr_user_email") || localStorage.getItem("unfiltr_apple_email") || "";
+    if (!appleUserId && !googleUserId && !email) return;
+
+    try {
+      const res = await fetch("/api/syncProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sync", appleUserId: appleUserId || googleUserId, googleUserId, email, reason }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      const profile = json?.data || json?.profile || json;
+      applyProfileToSettings(profile);
+    } catch (e) {
+      console.warn("[Settings] profile refresh failed:", e?.message || e);
+    }
+  }, [applyProfileToSettings]);
+
+  useEffect(() => {
+    refreshSettingsProfile("settings_mount");
+    const onFocus = () => refreshSettingsProfile("window_focus");
+    const onVisible = () => { if (!document.hidden) refreshSettingsProfile("visibility_resume"); };
+    const onRestore = () => refreshSettingsProfile("restore_event");
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("unfiltr_restore_profile", onRestore);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("unfiltr_restore_profile", onRestore);
+    };
+  }, [refreshSettingsProfile]);
+
 
   const handleFamilyCodeSubmit = async () => {
     const profileId   = localStorage.getItem("userProfileId");
@@ -771,12 +878,6 @@ export default function Settings() {
           })}
         </div>
 
-      </SubScreen>
-    ),
-
-    appearance: (
-      <SubScreen title="Chat Appearance" onBack={() => setScreen(null)}>
-        <ChatAppearanceSettings />
       </SubScreen>
     ),
 
@@ -1209,7 +1310,7 @@ export default function Settings() {
               const streakColor = streak >= 30 ? "#f59e0b" : streak >= 7 ? "#a855f7" : "#f97316";
               const streakLabel = streak >= 100 ? "🚀 Legend" : streak >= 30 ? "🏆 On Fire" : streak >= 7 ? "⚡ Weekly" : streak >= 3 ? "🔥 Going!" : "Start your streak";
               const today = new Date();
-              const sd = JSON.parse(localStorage.getItem("unfiltr_streak") || '{}');
+              const sd = safeJsonParse(localStorage.getItem("unfiltr_streak"), {});
               const lastDate = sd.date ? new Date(sd.date) : null;
               const days = ["S","M","T","W","T","F","S"];
               const dayDots = Array.from({length:7}, (_,i) => {
@@ -1297,8 +1398,7 @@ export default function Settings() {
             <Section>
               <Row icon={<SlidersHorizontal size={15} color="white" />} iconBg="#1a3a6d" label="Personality" onPress={() => setScreen("personality")} />
               <Row icon={<Sparkles size={15} color="white" />} iconBg="#3b0e6b" label="Relationship Mode" value={{"friend":"Friend","coach":"Coach","companion":"Companion"}[relationshipMode] || "Friend"} onPress={() => setScreen("mode")} />
-              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} />
-              <Row icon={<span style={{fontSize:14}}>💬</span>} iconBg="#1a0535" label="Chat Appearance" value="Bubbles & Font" onPress={() => setScreen("appearance")} last />
+              <Row icon={<Palette size={15} color="white" />} iconBg="#4a3200" label="Background" value={currentBg?.label || ""} onPress={() => setScreen("background")} last />
             </Section>
           </>
         )}
@@ -1322,7 +1422,18 @@ export default function Settings() {
         {activeTab === "notifications" && (
           <SettingsNotifications
             profile={userProfile}
-            onUpdate={() => {}}
+            onUpdate={(updates = {}) => {
+              const profileId = localStorage.getItem("userProfileId");
+              const { profile_snapshot_patch, ...updateData } = updates || {};
+              if (profile_snapshot_patch && typeof profile_snapshot_patch === "object") {
+                const currentSnapshot = safeJsonParse(localStorage.getItem("unfiltr_profile_snapshot"), {});
+                const nextSnapshot = { ...currentSnapshot, ...profile_snapshot_patch, updatedAt: new Date().toISOString() };
+                localStorage.setItem("unfiltr_profile_snapshot", JSON.stringify(nextSnapshot));
+                updateData.profile_snapshot = nextSnapshot;
+              }
+              if (profileId) syncProfileUpdate(profileId, updateData);
+              setUserProfile(p => p ? { ...p, ...updateData } : p);
+            }}
           />
         )}
 
@@ -1557,7 +1668,7 @@ export default function Settings() {
                 style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(255,255,255,0.08)", border:"none", color:"#fff", fontSize:15, cursor:"pointer" }}>
                 Cancel
               </button>
-              <button onClick={async () => { setShowClearDataModal(false); await clearDataAndReset(navigate); }}
+              <button onClick={async () => { setShowClearDataModal(false); await clearDeviceDataAndReset(navigate); }}
                 style={{ flex:1, padding:"12px 0", borderRadius:12, background:"rgba(251,146,60,0.8)", border:"none", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
                 Clear Data
               </button>

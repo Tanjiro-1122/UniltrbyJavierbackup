@@ -11,6 +11,31 @@ const MOCK_PRODUCTS = [
 // Ensure the shared bridge dispatcher is installed when this module loads.
 ensureBridgeInstalled();
 
+
+function getStoredPremiumSnapshot(productId = '') {
+  const isAnnualProduct = productId.includes('annual');
+  const isProProduct = productId.includes('tier.pro');
+  const isPremium = localStorage.getItem('unfiltr_is_premium') === 'true';
+  const isAnnual = localStorage.getItem('unfiltr_is_annual') === 'true' || isAnnualProduct;
+  const isPro = localStorage.getItem('unfiltr_is_pro') === 'true' || isProProduct;
+  const isUltimate = localStorage.getItem('unfiltr_ultimate_friend') === 'true' || isAnnualProduct;
+  return { isPremium, isAnnual, isPro, isUltimate };
+}
+
+function applyPlanFlags({ isAnnual = false, isPro = false, isUltimate = false } = {}) {
+  localStorage.setItem('unfiltr_is_premium', 'true');
+  localStorage.setItem('unfiltr_is_annual', String(!!isAnnual));
+  localStorage.setItem('unfiltr_is_pro', String(!!isPro));
+  localStorage.setItem('unfiltr_ultimate_friend', String(!!isUltimate));
+  window.dispatchEvent(new Event('unfiltr_auth_updated'));
+  window.dispatchEvent(new Event('unfiltr_premium_updated'));
+}
+
+function isUserCancelledError(e) {
+  const msg = String(e?.message || e?.error || '').toLowerCase();
+  return msg.includes('cancel') || msg.includes('user cancelled') || msg.includes('purchase_cancelled') || msg.includes('payment cancelled');
+}
+
 function sendToNative(type, payload = {}) {
   debugLog(`📡 sendToNative: ${type} | bridge: ${isNativeApp() ? '✅ ready' : '❌ NOT FOUND'}`);
   return sendNative(type, payload).then(data => {
@@ -63,12 +88,14 @@ export class AppleStoreKitService {
     }
     try {
       const packageId = productId.includes('annual')   ? '$rc_annual'
-                      : productId.includes('tier.pro') ? '$rc_monthly'
+                      : productId.includes('tier.pro') ? 'pro_tier'
                       : '$rc_monthly';
       debugLog(`📦 Resolved packageId: ${packageId}`);
 
       const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
-      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, appleUserId });
+      // Send both names during the transition: older wrapper builds read userId,
+      // newer ones also accept appleUserId. Both must point to the same RevenueCat app_user_id.
+      const customerInfo = await sendToNative('PURCHASE', { packageId, productId, userId: appleUserId, appleUserId });
       const activeEntitlements = customerInfo?.entitlements?.active || {};
       const entitlementKeys = Object.keys(activeEntitlements);
       debugLog(`🔑 Active entitlements: ${entitlementKeys.join(', ') || 'NONE'}`);
@@ -76,15 +103,8 @@ export class AppleStoreKitService {
 
       if (hasPremium) {
         const isAnnual = productId?.includes('annual');
-        const isPro    = productId?.includes('.pro') || productId?.includes('_pro');
-        // Set all three flags immediately — before any async DB call
-        localStorage.setItem('unfiltr_is_premium', 'true');
-        localStorage.setItem('unfiltr_is_annual',  String(isAnnual));
-        localStorage.setItem('unfiltr_is_pro',     String(isPro));
-        // Ultimate Friend = the annual plan — set flag immediately so Hub/Chat recognize it
-        if (isAnnual) localStorage.setItem('unfiltr_ultimate_friend', 'true');
-        // Immediate UI update with product-derived flags
-        window.dispatchEvent(new Event('unfiltr_auth_updated'));
+        const isPro    = productId?.includes('tier.pro');
+        applyPlanFlags({ isAnnual, isPro, isUltimate: isAnnual });
         debugLog('✅ Premium granted! localStorage updated.');
         try {
           const profileId = localStorage.getItem('userProfileId');
@@ -100,9 +120,8 @@ export class AppleStoreKitService {
               const respData = await resp.json();
               const plan = respData?.data?.plan;
               if (plan) {
-                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
-                localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
-                window.dispatchEvent(new Event('unfiltr_auth_updated'));
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                applyPlanFlags({ isAnnual: isServerAnnual, isPro: plan === 'pro', isUltimate: plan === 'ultimate_friend' });
               }
             }
             debugLog('✅ UserProfile updated in database');
@@ -112,10 +131,19 @@ export class AppleStoreKitService {
         }
         return { isSuccess: true, customerInfo };
       }
-      debugLog('❌ Purchase completed but no entitlement found');
-      return { isSuccess: false, error: 'Entitlement not found after purchase' };
+      // In TestFlight, StoreKit can return from a sheet without an active entitlement when
+      // the user backs out, picks Manage, or does not finish side-button confirmation.
+      // That is not a real app error, and showing "Entitlement not found" scares users.
+      const stored = getStoredPremiumSnapshot(productId);
+      if (stored.isPremium) {
+        debugLog('ℹ️ No entitlement returned, but local premium already exists — treating as already subscribed.');
+        applyPlanFlags(stored);
+        return { isSuccess: true, alreadySubscribed: true, customerInfo };
+      }
+      debugLog('ℹ️ Purchase flow ended without an active entitlement — treating as cancelled/not completed.');
+      return { isSuccess: false, isCancelled: true };
     } catch(e) {
-      if (e.message?.toLowerCase().includes('cancel')) {
+      if (isUserCancelledError(e)) {
         debugLog('ℹ️ User cancelled purchase');
         return { isSuccess: false, isCancelled: true };
       }
@@ -128,11 +156,18 @@ export class AppleStoreKitService {
     debugLog('🔄 restorePurchases() called');
     if (!this.isNative()) return { isSuccess: false, message: 'Web mode' };
     try {
-      const customerInfo = await sendToNative('RESTORE');
+      const appleUserId = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id') || undefined;
+      const customerInfo = await sendToNative('RESTORE', { userId: appleUserId, appleUserId });
       const hasPremium = Object.keys(customerInfo?.entitlements?.active || {}).length > 0;
       if (hasPremium) {
-        localStorage.setItem('unfiltr_is_premium', 'true');
         debugLog('✅ Restore successful — premium granted');
+        const activeSubs = Object.values(customerInfo?.entitlements?.active || {});
+        const restoredProductId = activeSubs[0]?.productIdentifier || '';
+        applyPlanFlags({
+          isAnnual: restoredProductId.includes('annual'),
+          isPro: restoredProductId.includes('tier.pro'),
+          isUltimate: restoredProductId.includes('annual'),
+        });
         try {
           const profileId = localStorage.getItem('userProfileId');
           const userId    = localStorage.getItem('unfiltr_user_id');
@@ -147,8 +182,8 @@ export class AppleStoreKitService {
               const respData = await resp.json();
               const plan = respData?.data?.plan;
               if (plan) {
-                localStorage.setItem('unfiltr_is_annual', String(plan === 'annual'));
-                localStorage.setItem('unfiltr_is_pro',    String(plan === 'pro'));
+                const isServerAnnual = plan === 'annual' || plan === 'ultimate_friend';
+                applyPlanFlags({ isAnnual: isServerAnnual, isPro: plan === 'pro', isUltimate: plan === 'ultimate_friend' });
               }
             }
             debugLog('✅ UserProfile restore updated in database');

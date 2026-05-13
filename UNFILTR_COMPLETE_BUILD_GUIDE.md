@@ -78,7 +78,7 @@ Unfiltr is three separate layers that work together:
   VITE_BASE44_APP_ID              = 69b22f8b58e45d23cafd78d2
   VITE_BASE44_APP_BASE_URL        = https://unfiltrbyjavier.base44.app
   VITE_BASE44_FUNCTIONS_VERSION   = prod
-  REVENUECAT_SECRET_KEY           = sk_vbJBTyJIbFmJCgZJhqdKybEVekzxl
+  REVENUECAT_SECRET_KEY           = <set in Vercel env — never commit this>
   ```
 
 ### 🍎 App Store Connect — appstoreconnect.apple.com

@@ -66,12 +66,21 @@ function mapUser(p) {
     is_premium: !!(p.is_premium),
     pro_plan: !!(p.pro_plan),
     annual_plan: !!(p.annual_plan),
+    ultimate_friend: !!(p.ultimate_friend),
+    family_unlimited: !!(p.family_unlimited || p.family_plan),
+    family_plan: !!(p.family_plan || p.family_unlimited),
     trial_active: !!(p.trial_active),
     subscription_expires: p.subscription_expires || null,
     account_paused: !!(p.account_paused),
     account_delete_requested: !!(p.account_delete_requested),
     memory_summary: p.memory_summary || null,
     memory_updated_at: p.memory_updated_at || null,
+    user_facts: p.user_facts || null,
+    session_memory: p.session_memory || [],
+    emotional_timeline: p.emotional_timeline || [],
+    structured_memory: p.structured_memory || [],
+    relationship_milestones: p.relationship_milestones || [],
+    recovery_backups: p.recovery_backups || [],
   };
 }
 
@@ -322,6 +331,11 @@ export default async function handler(req, res) {
       const clearData = {
         memory_summary:   null,
         memory_vectors:   [],
+        user_facts:       {},
+        session_memory:   [],
+        emotional_timeline: [],
+        structured_memory: [],
+        relationship_milestones: [],
         memory_updated_at: null,
       };
       await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {

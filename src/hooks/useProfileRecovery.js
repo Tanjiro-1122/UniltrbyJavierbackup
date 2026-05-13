@@ -7,6 +7,8 @@
  */
 import { useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { refreshEntitlements } from "@/lib/entitlements";
+import { applyProfileSnapshot } from "@/lib/profileSnapshot";
 
 export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
   useEffect(() => {
@@ -44,7 +46,10 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
               if (rd.data?.profileId) {
                 profileId = rd.data.profileId;
                 localStorage.setItem("userProfileId", profileId);
-                localStorage.setItem("unfiltr_user_id", profileId);
+                // Keep stable Apple/Google ID separate from backend profile UUID.
+                // unfiltr_user_id is used as an identity lookup key elsewhere; polluting
+                // it with profileId can cause partial memory recovery on later opens.
+                if (rd.data?.apple_user_id) localStorage.setItem("unfiltr_user_id", rd.data.apple_user_id);
                 localStorage.setItem("unfiltr_auth_token", profileId);
                 console.log("[useProfileRecovery] Recovered profileId:", profileId);
               }
@@ -59,10 +64,22 @@ export default function useProfileRecovery({ onProfile, onPersonality } = {}) {
         const profile = await base44.entities.UserProfile.get(profileId).catch(() => null);
         if (!profile || cancelled) return;
 
+        // Restore saved local snapshot first, then enforce entitlement flags from DB.
+        if (profile.profile_snapshot) applyProfileSnapshot(profile.profile_snapshot);
+        refreshEntitlements(profile);
+
         // Persist useful fields as local backups
         if (profile.display_name) localStorage.setItem("unfiltr_display_name", profile.display_name);
+        if (profile.message_count != null) localStorage.setItem("unfiltr_message_count", String(profile.message_count || 0));
+        if (profile.memory_summary) localStorage.setItem("unfiltr_memory_summary", profile.memory_summary);
+        if (profile.user_facts) localStorage.setItem("unfiltr_user_facts", JSON.stringify(profile.user_facts));
+        if (profile.session_memory) localStorage.setItem("unfiltr_session_memory", JSON.stringify(profile.session_memory));
+        if (profile.emotional_timeline) localStorage.setItem("unfiltr_emotional_timeline", JSON.stringify(profile.emotional_timeline));
         if (profile.id) {
-          if (!localStorage.getItem("unfiltr_user_id"))    localStorage.setItem("unfiltr_user_id", profile.id);
+          localStorage.setItem("userProfileId", profile.id);
+          if (profile.apple_user_id && !localStorage.getItem("unfiltr_user_id")) {
+            localStorage.setItem("unfiltr_user_id", profile.apple_user_id);
+          }
           if (!localStorage.getItem("unfiltr_auth_token")) localStorage.setItem("unfiltr_auth_token", profile.id);
         }
         if (profile.companion_id && profile.companion_id !== "pending") {

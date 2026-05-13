@@ -57,8 +57,8 @@ const ICONS = {
   tibetanriver:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/515daf4b9_generated_image.png",
   tibetanhealing:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/97ed86f52_generated_image.png",
   tibetanpeace:   "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/f47c5b0f9_generated_image.png",
-  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/949b0dc9a_rain5.mp3",
-  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/4a3361c60_creek_b.mp3",
+  earlymorning:   null,
+  aquarium:       null,
 };
 
 const AUDIO_URLS = {
@@ -75,8 +75,8 @@ const AUDIO_URLS = {
   tibetanriver:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/25d21e64a_tibetan_bowls_river.mp3",
   tibetanhealing: "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/92fe6cb4f_tibetan_bowl_healing.mp3",
   tibetanpeace:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/c20f51587_tibetan_bowl_peace.mp3",
-  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/226d0b352_early_morning.mp3",
-  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/b8be7b568_aquarium.mp3",
+  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/949b0dc9a_rain5.mp3",
+  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/4a3361c60_creek_b.mp3",
 };
 
 const SOUNDS_CLASSIC = [
@@ -86,8 +86,8 @@ const SOUNDS_CLASSIC = [
   { id: "brown",   label: "Brown Noise",  desc: "Deep & grounding",           icon: ICONS.brown,   synth: true },
   { id: "pink",    label: "Pink Noise",   desc: "Best for sleep & anxiety",   icon: ICONS.pink,    synth: true },
   { id: "silence",      label: "Silence",        desc: "Breath guide only",          icon: ICONS.silence,      synth: true },
-  { id: "earlymorning", label: "Early Morning",  desc: "Birdsong & soft dawn light",  icon: ICONS.earlymorning },
-  { id: "aquarium",     label: "Aquarium",       desc: "Gentle bubbles & water life", icon: ICONS.aquarium },
+  { id: "earlymorning", label: "Early Morning",  desc: "Birdsong & soft dawn light",  icon: ICONS.earlymorning, emoji: "🌅" },
+  { id: "aquarium",     label: "Aquarium",       desc: "Gentle bubbles & water life", icon: ICONS.aquarium, emoji: "🐠" },
 ];
 
 const SOUNDS_WORLD = [
@@ -324,11 +324,11 @@ export default function MeditatePage() {
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:15, margin:"0 0 6px" }}>{mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} · {sound.emoji} {sound.label} · {breathwork.label}</p>
           <p style={{ color:"rgba(168,85,247,0.8)", fontSize:13, margin:"0 0 32px" }}>Your companion will check in when you chat 💜</p>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <motion.button whileTap={{ scale:0.97 }} onClick={() => navigate("/hub")}
+            <motion.button whileTap={{ scale:0.97 }} onClick={() => { setTimer(0); setPhase("setup"); }}
               style={{ padding:"15px", background:"linear-gradient(135deg,#7c3aed,#db2777)", border:"none", borderRadius:14, color:"white", fontWeight:700, fontSize:15, cursor:"pointer" }}>
               Choose Something Else ✦
             </motion.button>
-            <button onClick={() => navigate(-1)}
+            <button onClick={() => navigate("/hub")}
               style={{ padding:"13px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"rgba(255,255,255,0.5)", fontWeight:600, fontSize:14, cursor:"pointer" }}>
               ← Go Back
             </button>

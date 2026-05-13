@@ -294,6 +294,10 @@ export default function Pricing() {
 
   const handleSubscribe = async () => {
     const result = await purchase(selectedPlan.productId);
+    if (result?.isCancelled || result?.cancelled) {
+      console.log('[Pricing] Purchase cancelled or not completed');
+      return;
+    }
     if (result?.success || result?.isSuccess) {
       const profileId = localStorage.getItem('userProfileId');
       const userId    = localStorage.getItem('unfiltr_apple_user_id') || localStorage.getItem('unfiltr_user_id');
@@ -307,7 +311,7 @@ export default function Pricing() {
       // Save premium to DB — use profileId (record ID) if available, otherwise call API
       if (profileId) {
         try {
-          await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, updateData: { is_premium: true, annual_plan: selectedPlan.isAnnual, pro_plan: selectedPlan.isPro || false } }) });
+          await fetch('/api/syncProfile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update', profileId, appleUserId: userId, updateData: { is_premium: true, annual_plan: selectedPlan.isAnnual, pro_plan: selectedPlan.isPro || false, ultimate_friend: !!selectedPlan.isUltimate } }) });
           console.log('[Pricing] ✅ Premium saved to DB via profileId');
         } catch(e) { console.warn('[Pricing] DB update non-fatal:', e); }
       } else if (userId) {
@@ -333,9 +337,9 @@ export default function Pricing() {
     try {
       const result = await restore();
       if (result?.success || result?.isSuccess) {
-        // useAppleSubscriptions.restorePurchases() already updated is_premium + is_annual/is_pro
-        // via /api/verifyPurchase. Navigate immediately — localStorage is already correct.
-        navigate("/hub");
+        // useAppleSubscriptions.restorePurchases() already updated premium flags.
+        // Give the UI one beat to show success, then return to Hub.
+        setTimeout(() => navigate("/hub"), 600);
       }
     } catch (e) {
       // Handled by useAppleSubscriptions error state; log for debug
