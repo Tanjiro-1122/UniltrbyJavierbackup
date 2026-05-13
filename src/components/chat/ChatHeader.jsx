@@ -327,8 +327,6 @@ export default function ChatHeader({
       )}
 
       {/* ── APPEARANCE PANEL ── */}
-
-      {/* ── APPEARANCE PANEL ── */}
       {showAppearance && (
         <ChatAppearancePanel onClose={() => setShowAppearance(false)} />
       )}
