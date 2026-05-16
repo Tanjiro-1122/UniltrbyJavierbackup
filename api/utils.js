@@ -259,7 +259,7 @@ async function handleSendDailyNotifs(req, res) {
   const results = { sent: 0, skipped: 0, errors: 0 };
 
   // Early exit — no push tokens at all, skip everything including OpenAI
-  const actionableProfiles = profiles.filter(p => p.push_token && p.notif_enabled);
+  const actionableProfiles = profiles.filter(p => p.push_token && p.push_enabled !== false && p.daily_checkins_enabled !== false);
   if (!actionableProfiles.length) {
     console.log("[dailyNotifs] No actionable profiles, skipping.");
     return res.status(200).json({ ok: true, results, skipped_reason: "no_push_tokens" });
@@ -357,7 +357,12 @@ async function handleUpdateNotifPrefs(req, res) {
     if (!profile?.id) return res.status(404).json({ error: "Profile not found" });
 
     const updates = {};
-    if (notif_enabled !== undefined)      updates.notif_enabled       = notif_enabled;
+    if (notif_enabled !== undefined) {
+      // Compatibility path for old clients that still send notif_enabled.
+      // Persist only the live UserProfile notification fields.
+      updates.push_enabled        = notif_enabled;
+      updates.daily_checkins_enabled = notif_enabled;
+    }
     if (notif_morning_time !== undefined) updates.notif_morning_time  = notif_morning_time;
     if (notif_night_time !== undefined)   updates.notif_night_time    = notif_night_time;
     if (notif_tz_offset !== undefined)    updates.notif_tz_offset     = notif_tz_offset;

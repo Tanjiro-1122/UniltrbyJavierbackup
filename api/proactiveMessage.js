@@ -20,6 +20,7 @@ import { B44_ENTITIES, b44Fetch } from "./_b44.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const TODAY = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,6 +51,31 @@ async function updateProfile(id, fields) {
   } catch (e) {
     console.warn("[proactiveMessage] updateProfile failed:", id, e.message);
   }
+}
+
+async function sendExpoPush(token, title, body, data = {}) {
+  if (!token || !String(token).startsWith("ExponentPushToken")) {
+    return { ok: false, error: "invalid_token" };
+  }
+  try {
+    const response = await fetch(EXPO_PUSH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ to: token, title, body, data, sound: "default" }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, payload };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "push_failed" };
+  }
+}
+
+function shouldSendPush(profile) {
+  return Boolean(
+    profile?.push_token &&
+    profile.push_enabled !== false &&
+    profile.daily_checkins_enabled !== false
+  );
 }
 
 // ── Message generation ────────────────────────────────────────────────────────
@@ -122,6 +148,7 @@ export default async function handler(req, res) {
     console.log(`[proactiveMessage] Found ${profiles.length} active profiles`);
 
     let processed = 0;
+    let pushed    = 0;
     let skipped   = 0;
     let errors    = 0;
 
@@ -158,12 +185,22 @@ export default async function handler(req, res) {
         });
 
         if (message) {
+          const pushResult = shouldSendPush(profile)
+            ? await sendExpoPush(
+                profile.push_token,
+                `${profile.companion_name || "Your companion"} is checking in`,
+                message,
+                { screen: "chat", type: "daily_checkin", date: TODAY }
+              )
+            : null;
+
           await updateProfile(profile.id, {
             proactive_message: message,
             proactive_message_date: TODAY,
             proactive_message_seen: false,
             last_checkin_date: TODAY,
           });
+          if (pushResult?.ok) pushed++;
           processed++;
         }
 
@@ -177,12 +214,13 @@ export default async function handler(req, res) {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[proactiveMessage] Done — processed:${processed} skipped:${skipped} errors:${errors} (${duration}ms)`);
+    console.log(`[proactiveMessage] Done — processed:${processed} pushed:${pushed} skipped:${skipped} errors:${errors} (${duration}ms)`);
 
     return res.status(200).json({
       ok: true,
       date: TODAY,
       processed,
+      pushed,
       skipped,
       errors,
       duration_ms: duration,

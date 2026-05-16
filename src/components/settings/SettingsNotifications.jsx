@@ -45,7 +45,7 @@ export default function SettingsNotifications({ profile, onUpdate }) {
     localStorage.getItem("unfiltr_ultimate_friend") === "true"
   );
   const [dailyCheckIn, setDailyCheckIn] = useState(
-    localStorage.getItem("unfiltr_notif_daily_checkin") !== "false"
+    profile?.daily_checkins_enabled ?? profile?.push_enabled ?? (localStorage.getItem("unfiltr_notif_daily_checkin") !== "false")
   );
   const [timeCapsule, setTimeCapsule] = useState(
     localStorage.getItem("unfiltr_notif_time_capsule") !== "false"
@@ -68,13 +68,8 @@ export default function SettingsNotifications({ profile, onUpdate }) {
     localStorage.setItem("unfiltr_notif_reminder_time", reminderTime);
     localStorage.setItem("unfiltr_privacy_time_awareness", String(isPaid ? companionAwareness : false));
     onUpdate && onUpdate({
-      notif_daily_checkin: dailyCheckIn,
-      notif_time_capsule: timeCapsule,
-      notif_reminder: reminderEnabled,
-      notif_reminder_time: reminderTime,
-      profile_snapshot_patch: {
-        privacyTimeAwareness: isPaid ? companionAwareness : false,
-      },
+      push_enabled: !!(dailyCheckIn || timeCapsule || reminderEnabled),
+      daily_checkins_enabled: !!dailyCheckIn,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
