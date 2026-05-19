@@ -10,7 +10,7 @@ const WORLDS = [
     desc: "Warm lamp, rain on the window, city glow",
     accentColor: "#ffb347",
     glow: "rgba(255,140,40,0.55)",
-    bgImage: "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/133f41f0f_generated_image.png",
+    bgImage: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/133f41f0f_generated_image.png",
     bgFallback: "linear-gradient(160deg,#3d1f0a,#1a0a02)",
   },
   {
