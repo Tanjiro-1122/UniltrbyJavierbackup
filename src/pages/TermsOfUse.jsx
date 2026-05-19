@@ -84,7 +84,7 @@ export default function TermsOfUse() {
           <div>
             <h2 className="text-lg font-semibold text-white mb-2">12. Contact</h2>
             <p className="text-sm">Questions about these terms? Contact us at{" "}
-              <a href="mailto:support@sportswagerhelper.com" className="text-purple-400 underline">support@sportswagerhelper.com</a>
+              <a href="mailto:huertasfam1@icloud.com" className="text-purple-400 underline">huertasfam1@icloud.com</a>
             </p>
           </div>
 
