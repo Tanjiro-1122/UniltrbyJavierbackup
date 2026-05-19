@@ -37,7 +37,7 @@ import BackgroundSelect       from "./pages/BackgroundSelect";
 import PrivacyPolicy          from "./pages/PrivacyPolicy";
 import TermsOfUse             from "./pages/TermsOfUse";
 import DeleteAccount         from "./pages/DeleteAccount";
-import AdminAvatarProcessor   from "./pages/AdminAvatarProcessor";
+const AdminAvatarProcessor = React.lazy(() => import("./pages/AdminAvatarProcessor"));
 import AdminDashboard         from "./pages/AdminDashboard";
 import FeedbackAdmin          from "./pages/admin/FeedbackAdmin";
 import OnboardingBackground   from "./pages/onboarding/OnboardingBackground";
