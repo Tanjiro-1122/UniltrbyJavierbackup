@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { COMPANIONS } from "@/components/companionData";
 
-const WORLD_BG = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/19c79bde2_generated_image.png";
+const WORLD_BG = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/19c79bde2_generated_image.png";
 
 const QUOTES = [
   "Writing is the painting of the voice.",
