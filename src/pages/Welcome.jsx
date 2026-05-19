@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, X } from "lucide-react";
 import { APP_URL } from "@/lib/appConfig";
 
-const SPLASH_IMAGE = 'https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png';
+const SPLASH_IMAGE = 'https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png';
 
 // Tutorial slides — show what each onboarding step looks like
 const TUTORIAL_SLIDES = [
