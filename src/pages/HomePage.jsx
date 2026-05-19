@@ -108,7 +108,7 @@ export default function HomePage() {
           }}>
             <div style={{ position: "relative", zIndex: 1, width: 156, height: 156, borderRadius: "20%", overflow: "hidden" }}>
               <img
-                src="https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png"
+                src="https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png"
                 alt="Unfiltr By Javier"
                 style={{
                   width: "100%", height: "100%",
