@@ -67,7 +67,7 @@ export const COMPANIONS = [
     name: "River",
     emoji: "🌿",
     tagline: "Gentle & Flowing",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/d329e5eb5_river_happy_nobg.png",
+    avatar: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/590ce6b38_river_neutral.png",
     poses: {
       happy:        "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/e39cbea7a_river_happy.png",
       content:      "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/79aac1456_river_contentment.png",
@@ -152,7 +152,7 @@ export const COMPANIONS = [
     name: "Sage",
     emoji: "🍃",
     tagline: "Wise & Grounded",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/4e619dbd3_sage_happy_nobg.png",
+    avatar: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/6fe6ce5e7_sage_neutral.png",
     poses: {
       happy:        "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/bb1f66f2b_sage_happy.png",
       content:      "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/1c6ee1971_sage_contentment.png",
@@ -173,7 +173,7 @@ export const COMPANIONS = [
     name: "Zara",
     emoji: "✨",
     tagline: "Edgy & Authentic",
-    avatar: "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b22f8b58e45d23cafd78d2/2165704e8_zara_happy_nobg.png",
+    avatar: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/46ae5a4f0_zara_neutral.png",
     poses: {
       happy:        "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/07079103f_zara_happy.png",
       content:      "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/7d4dbb114_zara_contentment.png",
