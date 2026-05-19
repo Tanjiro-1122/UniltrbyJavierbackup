@@ -62,21 +62,21 @@ const ICONS = {
 };
 
 const AUDIO_URLS = {
-  rain:           "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/334bf1ba7_rain_v2.mp3",
-  fire:           "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/9b687983d_fire_v2.mp3",
-  ocean:          "https://media.base44.com/files/public/69b22f8b58e45d23cafd78d2/07f3c59f3_ocean_v2.mp3",
-  moonlit:        "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/d2a430923_moonlit_blossoms_chinese.mp3",
-  smoothsilk:     "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/8a5fc8ff8_smooth_as_silk_chinese.mp3",
-  japanese:       "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/6ce32ebd3_traditional_japanese.mp3",
-  nativeflute:    "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/13b30c6ec_calm_native_flute.mp3",
-  nativeflute2:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/b93871170_native_american_flute.mp3",
-  omspirit:       "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/60f2526db_ancient_spirit_om.mp3",
-  omdancing:      "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/1fb9009c9_ancient_dancing_om.mp3",
-  tibetanriver:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/25d21e64a_tibetan_bowls_river.mp3",
-  tibetanhealing: "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/92fe6cb4f_tibetan_bowl_healing.mp3",
-  tibetanpeace:   "https://base44.app/api/apps/69c83ef77b8d9fdcb0a754f5/files/mp/public/69c83ef77b8d9fdcb0a754f5/c20f51587_tibetan_bowl_peace.mp3",
-  earlymorning:   "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/949b0dc9a_rain5.mp3",
-  aquarium:       "https://media.base44.com/files/public/69c83ef77b8d9fdcb0a754f5/4a3361c60_creek_b.mp3",
+  rain:           "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/rain_v2.mp3",
+  fire:           "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/fire_v2.mp3",
+  ocean:          "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/ocean_v2.mp3",
+  moonlit:        "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/moonlit_blossoms_chinese.mp3",
+  smoothsilk:     "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/smooth_as_silk_chinese.mp3",
+  japanese:       "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/traditional_japanese.mp3",
+  nativeflute:    "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/calm_native_flute.mp3",
+  nativeflute2:   "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/native_american_flute.mp3",
+  omspirit:       "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/ancient_spirit_om.mp3",
+  omdancing:      "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/ancient_dancing_om.mp3",
+  tibetanriver:   "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/tibetan_bowls_river.mp3",
+  tibetanhealing: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/tibetan_bowl_healing.mp3",
+  tibetanpeace:   "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/tibetan_bowl_peace.mp3",
+  earlymorning:   "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/rain5.mp3",
+  aquarium:       "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/music/creek_b.mp3",
 };
 
 const SOUNDS_CLASSIC = [
