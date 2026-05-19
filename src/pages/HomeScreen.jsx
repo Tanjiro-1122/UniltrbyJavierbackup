@@ -222,7 +222,7 @@ async function handleGoogleSignIn({ googleUserId, email, displayName, isPremiumF
   return { profile, isNewUser };
 }
 
-const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
+const LOGO = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
 
 export default function HomeScreen() {
   const navigate = useNavigate();
