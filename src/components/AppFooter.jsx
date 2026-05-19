@@ -73,7 +73,7 @@ export default function AppFooter({ dark = false }) {
         >{restoreLabel}</button>
         <span className={`${dividerClass} text-xs`}>·</span>
         <a
-          href="mailto:support@sportswagerhelper.com?subject=Unfiltr%20Support%20Request"
+          href="mailto:huertasfam1@icloud.com?subject=Unfiltr%20Support%20Request"
           style={{ minHeight: 44, padding: "0 10px", display: "flex", alignItems: "center" }}
           className={`${textClass} transition-colors text-xs font-medium`}
         >Support</a>
