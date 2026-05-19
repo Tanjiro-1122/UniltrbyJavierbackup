@@ -9,7 +9,7 @@ import { getOnboardingStore } from "@/components/onboarding/useOnboardingStore";
 const EXPERIENCES = [
   {
     id: "chat",
-    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/bbe7e7fa7_generated_image.png",
+    emoji: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/bbe7e7fa7_generated_image.png",
     label: "Chat",
     sub: "Talk it out",
     desc: "Have a real conversation.\nYour companion listens, responds,\nand actually gets you.",
@@ -22,7 +22,7 @@ const EXPERIENCES = [
   },
   {
     id: "journal",
-    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/44915ae14_generated_image.png",
+    emoji: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/44915ae14_generated_image.png",
     label: "Journal",
     sub: "Write freely",
     desc: "Your private space.\nWrite down your thoughts,\nfeelings, and moments.",
@@ -35,7 +35,7 @@ const EXPERIENCES = [
   },
   {
     id: "meditate",
-    emoji: "https://media.base44.com/images/public/69c83ef77b8d9fdcb0a754f5/47037d196_generated_image.png",
+    emoji: "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/47037d196_generated_image.png",
     label: "Meditate",
     sub: "Find your calm",
     desc: "Breathe. Reset. Recharge.\nGuided sessions to bring\nyou back to yourself.",
