@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Lock, ChevronRight, X } from "lucide-react";
 import { checkPin, storePin, hasPin } from "@/lib/pinHash";
 
-const LOGO = "https://media.base44.com/images/public/69b22f8b58e45d23cafd78d2/d653bb16a_generated_image.png";
+const LOGO = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
 
 export default function PinGate() {
   const navigate = useNavigate();
