@@ -83,7 +83,7 @@ export default function SettingsCompanion({ profile, companion, onCompanionChang
                 transform: sel ? "scale(1.07)" : "scale(1)", transition: "all 0.15s",
                 display: "flex", alignItems: "flex-end", justifyContent: "center",
               }}>
-                <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "bottom center" }} />
+                <img src={c.avatar} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
                 {sel && (
                   <div style={{ position: "absolute", inset: 0, background: "rgba(168,85,247,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Check size={14} color="white" />
