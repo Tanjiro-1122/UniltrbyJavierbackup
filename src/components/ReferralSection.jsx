@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Copy, Check } from "lucide-react";
 import { APP_URL } from "@/lib/appConfig";
 
@@ -12,7 +11,7 @@ export default function ReferralSection({ profileId }) {
 
   useEffect(() => {
     if (!profileId) return;
-    base44.functions.invoke("generateReferralCode", { profileId }).then(res => {
+    fetch("/api/referral", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "generateReferralCode", profileId }) }).then(r => r.json()).then(res => {
       // ✅ Fixed: API returns referral_code (not code)
       const c = res.data?.referral_code || res.data?.code;
       if (c) {
