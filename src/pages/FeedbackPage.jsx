@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Star } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Feedback } from "@/api/db";
 import AppShell from "@/components/shell/AppShell";
 
 const CATEGORIES = ["Bug Report", "Feature Request", "General Feedback", "Something Broke"];
@@ -20,7 +20,7 @@ export default function FeedbackPage() {
     setSubmitting(true);
     try {
       const user = { id: localStorage.getItem("userProfileId") || "anonymous" };
-      await base44.entities.Feedback.create({
+      await Feedback.create({
         user_id: user?.id || "anonymous",
         display_name: user?.full_name || "Anonymous",
         category,

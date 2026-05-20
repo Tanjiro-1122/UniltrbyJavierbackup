@@ -44,7 +44,7 @@ export default function HubPage() {
     const today = new Date().toISOString().slice(0, 10);
     if (seen === today) return; // already dismissed today
     import("@/api/base44Client").then(({ base44 }) => {
-      base44.entities.UserProfile.get(profileId)
+      UserProfile.get(profileId)
         .then(profile => {
           if (profile?.proactive_message && profile?.proactive_message_date === today && !profile?.proactive_message_seen) {
             setProactiveMsg(profile.proactive_message);
@@ -61,7 +61,7 @@ export default function HubPage() {
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
       import("@/api/base44Client").then(({ base44 }) => {
-        base44.entities.UserProfile.update(profileId, { proactive_message_seen: true }).catch(() => {});
+        UserProfile.update(profileId, { proactive_message_seen: true }).catch(() => {});
       });
     }
   };

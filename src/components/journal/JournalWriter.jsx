@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Mic, MicOff, Save, Sparkles, Loader2, Image, Smile, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { JournalEntry } from "@/api/db";
 import StickerPicker from "./StickerPicker";
 import { loadRecoveryDraft, saveRecoveryDraft, clearRecoveryDraft, formatDraftTime } from "@/lib/recoveryDrafts";
 
