@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { UserProfile, Companion } from "@/api/db";
 import RatingPromptModal from "@/components/RatingPromptModal";
 import ShareCardModal from "@/components/ShareCardModal";
 import { useMessageLimit } from "@/components/useMessageLimit";
@@ -575,7 +576,7 @@ export default function ChatPage() {
         debugLog("[ChatPage] ⚠️ No backend profile could be recovered yet — chat will continue with local-only memory until sign-in completes");
       } else {
         try {
-          const profile = await base44.entities.UserProfile.get(pid);
+          const profile = await UserProfile.get(pid);
           cacheMemoryLocally(profile || {});
           if (profile?.display_name) localStorage.setItem("unfiltr_user_display_name", profile.display_name);
           if (profile?.bonus_messages) localStorage.setItem("unfiltr_bonus_messages", String(profile.bonus_messages));
@@ -612,7 +613,7 @@ export default function ChatPage() {
           if (profile?.companion_id) {
             setCompanionDbId(profile.companion_id);
             try {
-              const dbComp = await base44.entities.Companion.get(profile.companion_id);
+              const dbComp = await Companion.get(profile.companion_id);
               if (dbComp?.mood_mode) setCompanionMood(dbComp.mood_mode);
       // Cache personality in localStorage for fast access during chat
       if (dbComp?.personality_vibe)      localStorage.setItem("unfiltr_personality_vibe",      dbComp.personality_vibe);
@@ -975,7 +976,7 @@ export default function ChatPage() {
       };
 
       if (pid) {
-        base44.entities.UserProfile.get(pid).then(profile => {
+        UserProfile.get(pid).then(profile => {
           cacheMemoryLocally(profile || {});
           setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
         }).catch(() => {
@@ -987,7 +988,7 @@ export default function ChatPage() {
             setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]);
             return;
           }
-          base44.entities.UserProfile.get(recoveredPid).then(profile => {
+          UserProfile.get(recoveredPid).then(profile => {
             cacheMemoryLocally(profile || {});
             setMessages([{ role: "assistant", content: buildMessage(profile?.memory_summary || localStorage.getItem("unfiltr_memory_summary")) }]);
           }).catch(() => setMessages([{ role: "assistant", content: buildMessage(localStorage.getItem("unfiltr_memory_summary")) }]));
@@ -1515,7 +1516,7 @@ export default function ChatPage() {
       const validMoods = ["happy","neutral","sad","fear","disgust","surprise","anger","contentment","fatigue","excited","hopeful","lonely"];
       const newMood = validMoods.includes(res.data?.mood) ? res.data.mood : "neutral";
       setCompanionMood(newMood);
-      if (companionDbId && companionDbId !== "pending") base44.entities.Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
+      if (companionDbId && companionDbId !== "pending") Companion.update(companionDbId, { mood_mode: newMood }).catch(() => {});
 
       incrementCount();
       spawnParticles();
@@ -1545,7 +1546,7 @@ export default function ChatPage() {
       localStorage.setItem("unfiltr_msg_total", String(localCount));
       localStorage.setItem("unfiltr_message_count", String(localCount));
       const pid3 = localStorage.getItem("userProfileId");
-      if (pid3) base44.entities.UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
+      if (pid3) UserProfile.update(pid3, { message_count: localCount, last_active: new Date().toISOString() }).catch(() => {});
 
       // Voice — always read fresh from localStorage at call time so the user's
       // latest selection is used without any stale in-memory cache override.
@@ -1582,7 +1583,7 @@ export default function ChatPage() {
             const sumData = await sumRes.json();
             if (sumData?.ok && !sumData?.skipped) {
               try {
-                const p = await base44.entities.UserProfile.get(profileId2);
+                const p = await UserProfile.get(profileId2);
                 cacheMemoryLocally(p || {});
                 if (p?.session_memory) setSessionMemory(p.session_memory);
                 if (p?.user_facts)     setUserFacts(p.user_facts);
