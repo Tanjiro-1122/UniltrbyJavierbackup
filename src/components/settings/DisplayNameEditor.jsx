@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Check } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/db";
 
 export default function DisplayNameEditor({ userProfile, onSave }) {
   const [editing, setEditing] = useState(false);
@@ -23,7 +23,7 @@ export default function DisplayNameEditor({ userProfile, onSave }) {
     const profileId = localStorage.getItem("userProfileId");
     if (profileId) {
       try {
-        await base44.entities.UserProfile.update(profileId, { display_name: name.trim() });
+        await UserProfile.update(profileId, { display_name: name.trim() });
       } catch (e) {
         console.warn("Display name DB save failed (localStorage saved):", e);
       }
