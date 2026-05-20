@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/db";
 import { clearEntitlements } from "@/lib/entitlements";
 
 const AuthContext = createContext();
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }) => {
       return profileCache.current.data;
     }
     try {
-      const profile = await base44.entities.UserProfile.get(profileId);
+      const profile = await UserProfile.get(profileId);
       profileCache.current = { id: profileId, data: profile, timestamp: now };
       return profile;
     } catch (e) {
