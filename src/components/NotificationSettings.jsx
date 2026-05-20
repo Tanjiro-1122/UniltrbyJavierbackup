@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Bell, BellOff } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/db";
 
 export default function NotificationSettings({ profileId, initialEnabled }) {
   const [enabled, setEnabled] = useState(initialEnabled || false);
@@ -15,7 +15,7 @@ export default function NotificationSettings({ profileId, initialEnabled }) {
     setSaving(true);
     const newVal = !enabled;
     setEnabled(newVal);
-    await base44.entities.UserProfile.update(profileId, {
+    await UserProfile.update(profileId, {
       daily_checkins_enabled: newVal,
     });
     setSaving(false);
