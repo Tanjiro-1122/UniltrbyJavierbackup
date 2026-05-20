@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Moon, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/db";
 import { playAudioFromBase64, resumeAudioContext, stopCurrentAudio } from "@/components/utils/audioUnlock";
 
 const MAX_TTS_INPUT_CHARS = 4096;
