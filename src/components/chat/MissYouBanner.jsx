@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { base44 } from "@/api/base44Client";
+import { UserProfile } from "@/api/db";
 
 /**
  * MissYouBanner — shows a "companion misses you" banner when user returns
@@ -16,7 +16,7 @@ export default function MissYouBanner() {
       const profileId = localStorage.getItem("userProfileId");
       if (!profileId) return;
       try {
-        const profile = await base44.entities.UserProfile.get(profileId);
+        const profile = await UserProfile.get(profileId);
         if (!profile?.pending_notification) return;
         const notif = JSON.parse(profile.pending_notification);
         if (!notif?.title) return;
@@ -25,7 +25,7 @@ export default function MissYouBanner() {
         const age = Date.now() - new Date(notif.timestamp).getTime();
         if (age > 72 * 60 * 60 * 1000) {
           // Stale — clear silently
-          base44.entities.UserProfile.update(profileId, { pending_notification: null }).catch(() => {});
+          UserProfile.update(profileId, { pending_notification: null }).catch(() => {});
           return;
         }
 
@@ -33,7 +33,7 @@ export default function MissYouBanner() {
         setTimeout(() => setVisible(true), 1200);
 
         // Clear it immediately so it only shows once
-        base44.entities.UserProfile.update(profileId, { pending_notification: null }).catch(() => {});
+        UserProfile.update(profileId, { pending_notification: null }).catch(() => {});
       } catch {}
     };
     check();
