@@ -1556,7 +1556,7 @@ export default function ChatPage() {
       const totalMsgs = messages.filter(m => m.role === "user").length + 1;
       if (totalMsgs === 10) {
         const pid = localStorage.getItem("userProfileId");
-        if (pid) base44.functions.invoke("ratingPrompt", { profileId: pid }).then(r => { if (r.data?.should_prompt) setShowRatingPrompt(true); }).catch(() => {});
+        if (pid) fetch("/api/rating-prompt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profileId: pid }) }).then(r => r.json()).then(r => { if (r.data?.should_prompt || r.should_prompt) setShowRatingPrompt(true); }).catch(() => {});
       }
 
       const profileId2 = localStorage.getItem("userProfileId");
