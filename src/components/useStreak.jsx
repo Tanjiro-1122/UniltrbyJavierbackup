@@ -11,7 +11,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Streak } from "@/api/db";
 
 // Milestones that get a celebration modal
 const MILESTONES = [3, 7, 14, 30, 60, 100, 365];
