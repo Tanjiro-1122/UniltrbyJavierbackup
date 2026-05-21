@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { b44Fetch, B44_ENTITIES } from "./_b44.js";
 import { fetchRCSubscriber, mapSubscriberToFlags } from "./_rcMapping.js";
 
 /**
@@ -12,6 +11,60 @@ const ADMIN_PASS = process.env.ADMIN_PASS || "";
 
 const MS_PER_HOUR = 3600000;
 const MS_PER_DAY  = 86400000;
+
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+
+function ensureAdminDataSource() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("Admin data source is not configured. Missing Supabase server environment variables.");
+  }
+}
+
+function adminDataHeaders() {
+  ensureAdminDataSource();
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+}
+
+function buildRestUrl(entity, params = {}) {
+  ensureAdminDataSource();
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(entity)}`);
+  if (params.id) url.searchParams.set("id", `eq.${params.id}`);
+  if (params.order) url.searchParams.set("order", params.order);
+  url.searchParams.set("limit", String(Math.min(Number(params.limit || 500), 1000)));
+  return url;
+}
+
+async function adminRest(entity, params = {}, options = {}) {
+  const { method = "GET", body } = options;
+  const url = buildRestUrl(entity, params);
+  const res = await fetch(url.toString(), {
+    method,
+    headers: adminDataHeaders(),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Supabase ${method} ${entity} failed (${res.status}): ${detail || res.statusText}`);
+  }
+  if (res.status === 204) return [];
+  const data = await res.json().catch(() => []);
+  return Array.isArray(data) ? data : [];
+}
+
+function safeAdminError(err, fallback = "Admin data failed to load") {
+  const message = err?.message || String(err || fallback);
+  console.error(`[adminStats] ${fallback}:`, message);
+  if (/Invalid URL|Failed to parse URL|expected pattern|null\/|undefined\//i.test(message)) {
+    return "Admin data source is misconfigured. Please check the server data connection.";
+  }
+  return message;
+}
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = new Set([
@@ -86,23 +139,27 @@ function mapUser(p) {
 
 
 async function fetchEntity(entity, params = {}) {
-  const url = new URL(`${B44_ENTITIES}/${entity}`);
-  url.searchParams.set("limit", params.limit || 500);
-  if (params.skip) url.searchParams.set("skip", params.skip);
-  const data = await b44Fetch(url.toString());
-  return Array.isArray(data) ? data : (data.records || data.data || []);
+  return adminRest(entity, params);
+}
+
+async function fetchEntityById(entity, id) {
+  const rows = await adminRest(entity, { id, limit: 1 });
+  return rows[0] || null;
 }
 
 async function updateEntity(entity, id, data) {
-  return b44Fetch(`${B44_ENTITIES}/${entity}/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  const rows = await adminRest(entity, { id }, { method: "PATCH", body: data });
+  return rows[0] || null;
 }
 
 async function deleteEntity(entity, id) {
-  await b44Fetch(`${B44_ENTITIES}/${entity}/${id}`, { method: "DELETE" });
+  await adminRest(entity, { id }, { method: "DELETE" });
   return true;
+}
+
+async function createEntity(entity, data) {
+  const rows = await adminRest(entity, {}, { method: "POST", body: data });
+  return rows[0] || null;
 }
 
 export default async function handler(req, res) {
@@ -155,10 +212,10 @@ export default async function handler(req, res) {
   if (action === "userSearch") {
     try {
       if (userId) {
-        const profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`);
+        const profile = await fetchEntityById("UserProfile", userId);
         return res.status(200).json({ users: [mapUser(profile)] });
       }
-      const raw = await b44Fetch(`${B44_ENTITIES}/UserProfile?limit=1000`);
+      const raw = await fetchEntity("UserProfile", { limit: 1000 });
       const profiles = Array.isArray(raw) ? raw : (raw.records || raw.data || []);
       if (!query || query.trim() === "") {
         const sorted = [...profiles]
@@ -199,23 +256,17 @@ export default async function handler(req, res) {
       if (subscription?.subscription_expires) {
         updateData.subscription_expires = subscription.subscription_expires;
       }
-      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(updateData),
-      });
+      await updateEntity("UserProfile", userId, updateData);
       // Write audit log entry (non-fatal — log failure won't block the override)
       try {
-        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        await createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id: userId,
             action: "subscription_override",
             changes: JSON.stringify(updateData),
             reason: reason.trim(),
             timestamp: new Date().toISOString(),
-          }),
-        });
+          });
       } catch (logErr) {
         console.warn("[adminStats/subscriptionOverride] Audit log write failed (non-fatal):", logErr.message);
       }
@@ -249,23 +300,17 @@ export default async function handler(req, res) {
         subscription_expires: expires,
         subscription_override: true,
       };
-      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(updateData),
-      });
+      await updateEntity("UserProfile", userId, updateData);
       const label = durationHours ? `${durationHours}h` : `${durationDays || 7}d`;
       try {
-        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        await createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id: userId,
             action: `quick_grant_pro_${label}`,
             changes: JSON.stringify(updateData),
             reason: reason.trim(),
             timestamp: new Date().toISOString(),
-          }),
-        });
+          });
       } catch (logErr) {
         console.warn("[adminStats/quickGrant] Audit log write failed (non-fatal):", logErr.message);
       }
@@ -292,22 +337,16 @@ export default async function handler(req, res) {
         subscription_override: false,
         subscription_expires: null,
       };
-      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(updateData),
-      });
+      await updateEntity("UserProfile", userId, updateData);
       try {
-        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        await createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id: userId,
             action: "clear_override",
             changes: JSON.stringify(updateData),
             reason: reason.trim(),
             timestamp: new Date().toISOString(),
-          }),
-        });
+          });
       } catch (logErr) {
         console.warn("[adminStats/clearOverride] Audit log write failed (non-fatal):", logErr.message);
       }
@@ -338,22 +377,16 @@ export default async function handler(req, res) {
         relationship_milestones: [],
         memory_updated_at: null,
       };
-      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(clearData),
-      });
+      await updateEntity("UserProfile", userId, clearData);
       try {
-        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        await createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id:   userId,
             action:      "clear_memory",
             changes:     JSON.stringify(clearData),
             reason:      reason.trim(),
             timestamp:   new Date().toISOString(),
-          }),
-        });
+          });
       } catch (logErr) {
         console.warn("[adminStats/clearMemory] Audit log write failed (non-fatal):", logErr.message);
       }
@@ -388,24 +421,18 @@ export default async function handler(req, res) {
 
       const { flags, plan, expiresDate, isActive } = mapSubscriberToFlags(subscriberData);
 
-      await b44Fetch(`${B44_ENTITIES}/UserProfile/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify({ ...flags, updated_date: new Date().toISOString() }),
-      });
+      await updateEntity("UserProfile", userId, { ...flags, updated_date: new Date().toISOString() });
 
       // Write audit log entry (non-fatal)
       try {
-        await b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        await createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id:   userId,
             action:      "sync_revenuecat",
             changes:     JSON.stringify({ ...flags, plan, expiresDate }),
             reason:      reason.trim(),
             timestamp:   new Date().toISOString(),
-          }),
-        });
+          });
       } catch (logErr) {
         console.warn("[adminStats/syncRevenueCat] Audit log write failed (non-fatal):", logErr.message);
       }
@@ -434,22 +461,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Unknown bulkType" });
     }
     const results = await Promise.allSettled(
-      userIds.map(id => b44Fetch(`${B44_ENTITIES}/UserProfile/${id}`, { method: "PUT", body: JSON.stringify(updateData) }))
+      userIds.map(id => updateEntity("UserProfile", id, updateData))
     );
     const failed = results.filter(r => r.status === "rejected").length;
     try {
       await Promise.all(userIds.map(id =>
-        b44Fetch(`${B44_ENTITIES}/AdminAuditLog`, {
-          method: "POST",
-          body: JSON.stringify({
+        createEntity("AdminAuditLog", {
             entity_type: "UserProfile",
             entity_id: id,
             action: `bulk_${bulkType}`,
             changes: JSON.stringify(updateData),
             reason: reason.trim(),
             timestamp: new Date().toISOString(),
-          }),
-        })
+          })
       ));
     } catch (logErr) {
       console.warn("[adminStats/bulkAction] Audit log write failed (non-fatal):", logErr.message);
@@ -460,7 +484,7 @@ export default async function handler(req, res) {
   // ── auditLog ──────────────────────────────────────────────────────────────
   if (action === "auditLog") {
     try {
-      const raw = await b44Fetch(`${B44_ENTITIES}/AdminAuditLog?limit=100`).catch((e) => {
+      const raw = await fetchEntity("AdminAuditLog", { limit: 100 }).catch((e) => {
         console.warn("[adminStats/auditLog] AdminAuditLog fetch failed, returning empty list:", e.message);
         return [];
       });
@@ -552,8 +576,7 @@ export default async function handler(req, res) {
         })),
     });
   } catch (err) {
-    console.error("[adminStats] Error:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: safeAdminError(err, "Admin overview failed to load") });
   }
 }
 
