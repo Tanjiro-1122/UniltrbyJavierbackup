@@ -174,8 +174,8 @@ function cacheMemoryLocally(profile = {}) {
 
 /**
  * Upsert today's ChatHistory record via the consolidated Vercel proxy (/api/base44).
- * Routing through same-origin avoids WKWebView CORS issues with api.base44.com
- * and keeps the Base44 service token off the client bundle.
+ * The endpoint name is kept for frontend compatibility; the server route writes to Supabase.
+ * Same-origin routing keeps server credentials off the client bundle.
  *
  * Reads context from localStorage so it is safe to call from unmount / event handlers.
  *
