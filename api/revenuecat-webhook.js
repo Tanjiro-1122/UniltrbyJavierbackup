@@ -7,7 +7,7 @@
  * RevenueCat sends the Apple User ID as `app_user_id` after Purchases.logIn(appleUserId).
  *
  * Required environment variables:
- *   BASE44_SERVICE_TOKEN           — Base44 service-role token
+ *   SUPABASE_SERVICE_ROLE_KEY        — Supabase service-role key
  *   REVENUECAT_WEBHOOK_AUTH_HEADER — expected Authorization header value from RevenueCat
  */
 
