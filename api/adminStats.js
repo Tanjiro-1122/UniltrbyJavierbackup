@@ -176,24 +176,42 @@ function extractMissingSupabaseColumn(message) {
   return null;
 }
 
-async function updateEntity(entity, id, data) {
-  try {
-    const rows = await adminRest(entity, { id }, { method: "PATCH", body: data });
-    return rows[0] || null;
-  } catch (err) {
-    const missingColumn = extractMissingSupabaseColumn(err?.message);
-    if (missingColumn && Object.prototype.hasOwnProperty.call(data || {}, missingColumn)) {
-      const retryData = { ...data };
-      delete retryData[missingColumn];
-      if (Object.keys(retryData).length > 0) {
-        console.warn(`[adminStats] Supabase schema missing ${missingColumn}; retrying ${entity} update without that field. Apply supabase/unfiltr_schema.sql Phase 2 repair.`);
-        const rows = await adminRest(entity, { id }, { method: "PATCH", body: retryData });
-        const updated = rows[0] || null;
-        return updated ? { ...updated, _schema_warning: `Missing Supabase column ${missingColumn}; apply Phase 2 schema repair.` } : updated;
-      }
-    }
-    throw err;
+function normalizeUserProfilePatch(data = {}) {
+  const normalized = { ...data };
+  if (Object.prototype.hasOwnProperty.call(normalized, "annual_plan")) normalized.is_annual = !!normalized.annual_plan;
+  if (Object.prototype.hasOwnProperty.call(normalized, "pro_plan")) normalized.is_pro = !!normalized.pro_plan;
+  if (Object.prototype.hasOwnProperty.call(normalized, "family_plan")) normalized.is_family = !!normalized.family_plan;
+  if (Object.prototype.hasOwnProperty.call(normalized, "ultimate_friend")) normalized.is_family = !!normalized.ultimate_friend;
+  if (normalized.is_premium || normalized.premium || normalized.pro_plan || normalized.annual_plan || normalized.ultimate_friend || normalized.family_plan) {
+    normalized.tier = normalized.tier || "premium";
   }
+  return normalized;
+}
+
+async function updateEntity(entity, id, data) {
+  let patch = entity === "UserProfile" ? normalizeUserProfilePatch(data) : { ...data };
+  const removedColumns = [];
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      const rows = await adminRest(entity, { id }, { method: "PATCH", body: patch });
+      const updated = rows[0] || null;
+      return removedColumns.length && updated
+        ? { ...updated, _schema_warning: `Missing Supabase columns removed from PATCH: ${removedColumns.join(", ")}. Apply Phase 2 schema repair.` }
+        : updated;
+    } catch (err) {
+      const missingColumn = extractMissingSupabaseColumn(err?.message);
+      if (missingColumn && Object.prototype.hasOwnProperty.call(patch || {}, missingColumn)) {
+        delete patch[missingColumn];
+        removedColumns.push(missingColumn);
+        console.warn(`[adminStats] Supabase schema missing ${missingColumn}; retrying ${entity} update without that field. Apply supabase/unfiltr_schema.sql Phase 2 repair.`);
+        if (Object.keys(patch).length > 0) continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error(`Supabase PATCH ${resolveAdminTable(entity)} failed: too many schema-cache retries`);
 }
 
 async function deleteEntity(entity, id) {
