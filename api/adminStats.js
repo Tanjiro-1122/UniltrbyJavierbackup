@@ -203,9 +203,26 @@ async function upsertEntities(entity, records, onConflict = "id") {
   return Array.isArray(data) ? data : [];
 }
 
+async function insertEntities(entity, records) {
+  if (!Array.isArray(records) || records.length === 0) return [];
+  ensureAdminDataSource();
+  const table = resolveAdminTable(entity);
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}`);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: adminDataHeaders(),
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Supabase INSERT ${table} failed (${res.status}): ${detail || res.statusText}`);
+  }
+  const data = await res.json().catch(() => []);
+  return Array.isArray(data) ? data : [];
+}
+
 function compactUserProfileForBackfill(profile) {
   return {
-    id: profile.id,
     apple_user_id: profile.apple_user_id || null,
     email: profile.email || null,
     display_name: profile.display_name || "Anonymous",
@@ -265,9 +282,11 @@ export default async function handler(req, res) {
     try {
       const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles : [];
       if (!profiles.length) return res.status(400).json({ error: "profiles array required" });
-      const compacted = profiles.map(compactUserProfileForBackfill).filter(p => p.id);
-      const upserted = await upsertEntities("UserProfile", compacted, "id");
-      return res.status(200).json({ ok: true, received: profiles.length, upserted: upserted.length });
+      const compacted = profiles
+        .map(compactUserProfileForBackfill)
+        .filter(p => p.apple_user_id || p.email || p.display_name);
+      const inserted = await insertEntities("UserProfile", compacted);
+      return res.status(200).json({ ok: true, received: profiles.length, inserted: inserted.length });
     } catch (err) {
       console.error("[adminStats/backfillUserProfiles] Error:", err);
       return res.status(500).json({ error: safeAdminError(err, "Profile backfill failed") });
