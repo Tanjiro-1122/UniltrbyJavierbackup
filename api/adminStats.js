@@ -15,6 +15,15 @@ const MS_PER_DAY  = 86400000;
 const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
 
+const ADMIN_TABLES = {
+  UserProfile: "user_profiles",
+  AdminAuditLog: "admin_audit_logs",
+};
+
+function resolveAdminTable(entity) {
+  return ADMIN_TABLES[entity] || entity;
+}
+
 function ensureAdminDataSource() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     throw new Error("Admin data source is not configured. Missing Supabase server environment variables.");
@@ -33,7 +42,8 @@ function adminDataHeaders() {
 
 function buildRestUrl(entity, params = {}) {
   ensureAdminDataSource();
-  const url = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(entity)}`);
+  const table = resolveAdminTable(entity);
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}`);
   if (params.id) url.searchParams.set("id", `eq.${params.id}`);
   if (params.order) url.searchParams.set("order", params.order);
   url.searchParams.set("limit", String(Math.min(Number(params.limit || 500), 1000)));
@@ -50,7 +60,8 @@ async function adminRest(entity, params = {}, options = {}) {
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`Supabase ${method} ${entity} failed (${res.status}): ${detail || res.statusText}`);
+    const table = resolveAdminTable(entity);
+    throw new Error(`Supabase ${method} ${table} failed (${res.status}): ${detail || res.statusText}`);
   }
   if (res.status === 204) return [];
   const data = await res.json().catch(() => []);
