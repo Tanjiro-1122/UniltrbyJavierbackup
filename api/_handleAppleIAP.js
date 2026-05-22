@@ -5,7 +5,7 @@
  *
  * Required environment variables:
  *   REVENUECAT_SECRET_KEY — RevenueCat server-side secret key
- *   BASE44_SERVICE_TOKEN  — Base44 service-role token
+ *   SUPABASE_SERVICE_ROLE_KEY — Supabase service-role key
  */
 
 import { B44_ENTITIES, b44Fetch } from "./_b44.js";
