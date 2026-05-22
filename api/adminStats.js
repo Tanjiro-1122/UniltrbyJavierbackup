@@ -126,9 +126,9 @@ function mapUser(p) {
     display_name: p.display_name || "Anonymous",
     email: p.email || null,
     apple_user_id: p.apple_user_id || null,
-    created_date: p.created_date || null,
+    created_date: p.created_date || p.created_at || null,
     last_seen: p.last_seen || null,
-    last_active: p.last_active || null,
+    last_active: p.last_active || p.updated_at || null,
     onboarding_complete: !!(p.onboarding_complete),
     push_enabled: !!(p.push_enabled),
     push_token_present: !!(p.push_token || p.expo_push_token),
@@ -209,42 +209,18 @@ function compactUserProfileForBackfill(profile) {
     apple_user_id: profile.apple_user_id || null,
     email: profile.email || null,
     display_name: profile.display_name || "Anonymous",
-    companion_id: profile.companion_id || null,
-    background_id: profile.background_id || null,
-    onboarding_complete: !!profile.onboarding_complete,
-    onboarding_step: Number(profile.onboarding_step || 0),
+    tier: profile.tier || "free",
     is_premium: !!profile.is_premium,
     premium: !!(profile.premium || profile.is_premium),
     pro_plan: !!profile.pro_plan,
     annual_plan: !!profile.annual_plan,
     ultimate_friend: !!profile.ultimate_friend,
     family_unlimited: !!(profile.family_unlimited || profile.family_plan),
-    family_plan: !!(profile.family_plan || profile.family_unlimited),
-    trial_active: !!profile.trial_active,
-    subscription_expires: profile.subscription_expires || null,
     message_count: Number(profile.message_count || 0),
-    tokens_used_today: Number(profile.tokens_used_today || 0),
-    tokens_used_total: Number(profile.tokens_used_total || profile.total_tokens_used || 0),
-    bonus_messages: Number(profile.bonus_messages || 0),
-    push_enabled: !!profile.push_enabled,
-    push_token: profile.push_token || null,
-    daily_checkins_enabled: !!profile.daily_checkins_enabled,
     last_seen: profile.last_seen || null,
     last_active: profile.last_active || null,
-    memory_summary: profile.memory_summary || null,
-    user_facts: profile.user_facts || null,
-    session_memory: Array.isArray(profile.session_memory) ? profile.session_memory : [],
-    emotional_timeline: Array.isArray(profile.emotional_timeline) ? profile.emotional_timeline : [],
-    structured_memory: Array.isArray(profile.structured_memory) ? profile.structured_memory : [],
-    relationship_milestones: Array.isArray(profile.relationship_milestones) ? profile.relationship_milestones : [],
-    recovery_backups: Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [],
-    account_paused: !!profile.account_paused,
-    account_delete_requested: !!profile.account_delete_requested,
-    referral_code: profile.referral_code || null,
-    referral_count: Number(profile.referral_count || 0),
-    rating_prompted: !!profile.rating_prompted,
-    created_date: profile.created_date || null,
-    updated_date: profile.updated_date || null,
+    created_at: profile.created_at || profile.created_date || null,
+    updated_at: profile.updated_at || profile.updated_date || new Date().toISOString(),
   };
 }
 
@@ -318,7 +294,7 @@ export default async function handler(req, res) {
       const profiles = Array.isArray(raw) ? raw : (raw.records || raw.data || []);
       if (!query || query.trim() === "") {
         const sorted = [...profiles]
-          .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
+          .sort((a, b) => (b.created_date || b.created_at || "").localeCompare(a.created_date || a.created_at || ""))
           .slice(0, 30);
         return res.status(200).json({ users: sorted.map(mapUser) });
       }
@@ -625,7 +601,7 @@ export default async function handler(req, res) {
       totalMessages,
       totalJournalEntries: allJournals.length,
       crisisFlags:         0,
-      newThisWeek:         allProfiles.filter(p => (p.created_date || "") >= weekAgo).length,
+      newThisWeek:         allProfiles.filter(p => (p.created_date || p.created_at || "") >= weekAgo).length,
       activeThisWeek:      allProfiles.filter(p => (p.last_seen || p.last_active || "") >= weekAgo).length,
       companions:          0,
       feedbackCount:       allFeedback.length,
@@ -633,7 +609,7 @@ export default async function handler(req, res) {
       pausedAccounts:      allProfiles.filter(p => p.account_paused).length,
       deleteRequested:     allProfiles.filter(p => p.account_delete_requested).length,
       recentUsers: [...allProfiles]
-        .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
+        .sort((a, b) => (b.created_date || b.created_at || "").localeCompare(a.created_date || a.created_at || ""))
         .slice(0, 50)
         .map(p => ({
           id: p.id,
@@ -641,7 +617,7 @@ export default async function handler(req, res) {
           email: p.email || null,
           user_id: p.user_id || p.id?.slice(0, 12),
           apple_user_id: p.apple_user_id || null,
-          created_date: p.created_date,
+          created_date: p.created_date || p.created_at,
           last_seen: p.last_seen || null,
           is_premium: !!(p.is_premium || p.annual_plan || p.pro_plan || p.ultimate_friend),
           annual_plan: !!(p.annual_plan),
@@ -663,7 +639,7 @@ export default async function handler(req, res) {
           ultimate_friend: p.ultimate_friend,
         })),
       allFeedback: [...allFeedback]
-        .sort((a, b) => (b.created_date || "").localeCompare(a.created_date || ""))
+        .sort((a, b) => (b.created_date || b.created_at || "").localeCompare(a.created_date || a.created_at || ""))
         .map(f => ({
           id: f.id,
           category: f.category || "general",
