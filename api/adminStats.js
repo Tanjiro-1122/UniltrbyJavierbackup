@@ -17,6 +17,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABA
 
 const ADMIN_TABLES = {
   UserProfile: "user_profiles",
+  ChatHistory: "chat_history",
+  JournalEntry: "journal_entries",
+  MoodEntry: "mood_entries",
+  Streak: "streaks",
+  TimeCapsule: "time_capsules",
+  Feedback: "feedback",
+  Companion: "companion_memory",
+  Notification: "notifications",
   AdminAuditLog: "admin_audit_logs",
 };
 
@@ -173,6 +181,73 @@ async function createEntity(entity, data) {
   return rows[0] || null;
 }
 
+async function upsertEntities(entity, records, onConflict = "id") {
+  if (!Array.isArray(records) || records.length === 0) return [];
+  ensureAdminDataSource();
+  const table = resolveAdminTable(entity);
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}`);
+  url.searchParams.set("on_conflict", onConflict);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      ...adminDataHeaders(),
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Supabase UPSERT ${table} failed (${res.status}): ${detail || res.statusText}`);
+  }
+  const data = await res.json().catch(() => []);
+  return Array.isArray(data) ? data : [];
+}
+
+function compactUserProfileForBackfill(profile) {
+  return {
+    id: profile.id,
+    apple_user_id: profile.apple_user_id || null,
+    email: profile.email || null,
+    display_name: profile.display_name || "Anonymous",
+    companion_id: profile.companion_id || null,
+    background_id: profile.background_id || null,
+    onboarding_complete: !!profile.onboarding_complete,
+    onboarding_step: Number(profile.onboarding_step || 0),
+    is_premium: !!profile.is_premium,
+    premium: !!(profile.premium || profile.is_premium),
+    pro_plan: !!profile.pro_plan,
+    annual_plan: !!profile.annual_plan,
+    ultimate_friend: !!profile.ultimate_friend,
+    family_unlimited: !!(profile.family_unlimited || profile.family_plan),
+    family_plan: !!(profile.family_plan || profile.family_unlimited),
+    trial_active: !!profile.trial_active,
+    subscription_expires: profile.subscription_expires || null,
+    message_count: Number(profile.message_count || 0),
+    tokens_used_today: Number(profile.tokens_used_today || 0),
+    tokens_used_total: Number(profile.tokens_used_total || profile.total_tokens_used || 0),
+    bonus_messages: Number(profile.bonus_messages || 0),
+    push_enabled: !!profile.push_enabled,
+    push_token: profile.push_token || null,
+    daily_checkins_enabled: !!profile.daily_checkins_enabled,
+    last_seen: profile.last_seen || null,
+    last_active: profile.last_active || null,
+    memory_summary: profile.memory_summary || null,
+    user_facts: profile.user_facts || null,
+    session_memory: Array.isArray(profile.session_memory) ? profile.session_memory : [],
+    emotional_timeline: Array.isArray(profile.emotional_timeline) ? profile.emotional_timeline : [],
+    structured_memory: Array.isArray(profile.structured_memory) ? profile.structured_memory : [],
+    relationship_milestones: Array.isArray(profile.relationship_milestones) ? profile.relationship_milestones : [],
+    recovery_backups: Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [],
+    account_paused: !!profile.account_paused,
+    account_delete_requested: !!profile.account_delete_requested,
+    referral_code: profile.referral_code || null,
+    referral_count: Number(profile.referral_count || 0),
+    rating_prompted: !!profile.rating_prompted,
+    created_date: profile.created_date || null,
+    updated_date: profile.updated_date || null,
+  };
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -217,6 +292,14 @@ export default async function handler(req, res) {
     if (!userId) return res.status(400).json({ error: "userId required" });
     await deleteEntity("UserProfile", userId);
     return res.status(200).json({ ok: true });
+  }
+
+  if (action === "backfillUserProfiles") {
+    const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles : [];
+    if (!profiles.length) return res.status(400).json({ error: "profiles array required" });
+    const compacted = profiles.map(compactUserProfileForBackfill).filter(p => p.id);
+    const upserted = await upsertEntities("UserProfile", compacted, "id");
+    return res.status(200).json({ ok: true, received: profiles.length, upserted: upserted.length });
   }
 
   // ── userSearch ────────────────────────────────────────────────────────────
