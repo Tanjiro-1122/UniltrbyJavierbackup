@@ -15,7 +15,9 @@
     "test:admin-backfill-action": "node scripts/admin-backfill-action-smoke-test.mjs",
     "test:admin-backfill-lean-profile": "node scripts/admin-backfill-lean-profile-smoke-test.mjs",
     "test:admin-backfill-minimal-profile": "node scripts/admin-backfill-minimal-profile-smoke-test.mjs",
-    "test:admin-backfill-generated-uuid": "node scripts/admin-backfill-generated-uuid-smoke-test.mjs"
+    "test:admin-backfill-generated-uuid": "node scripts/admin-backfill-generated-uuid-smoke-test.mjs",
+    "test:supabase-parity": "node scripts/supabase-parity-smoke-test.mjs",
+    "test:admin-schema-fallback": "node scripts/admin-schema-fallback-smoke-test.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

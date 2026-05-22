@@ -166,9 +166,34 @@ async function fetchEntityById(entity, id) {
   return rows[0] || null;
 }
 
+
+function extractMissingSupabaseColumn(message) {
+  const raw = String(message || "");
+  const quoted = raw.match(/column ['"]?([a-zA-Z0-9_]+)['"]?/i);
+  if (quoted?.[1]) return quoted[1];
+  const jsonMessage = raw.match(/"message"\s*:\s*"[^"]*column ['"]?([a-zA-Z0-9_]+)['"]?/i);
+  if (jsonMessage?.[1]) return jsonMessage[1];
+  return null;
+}
+
 async function updateEntity(entity, id, data) {
-  const rows = await adminRest(entity, { id }, { method: "PATCH", body: data });
-  return rows[0] || null;
+  try {
+    const rows = await adminRest(entity, { id }, { method: "PATCH", body: data });
+    return rows[0] || null;
+  } catch (err) {
+    const missingColumn = extractMissingSupabaseColumn(err?.message);
+    if (missingColumn && Object.prototype.hasOwnProperty.call(data || {}, missingColumn)) {
+      const retryData = { ...data };
+      delete retryData[missingColumn];
+      if (Object.keys(retryData).length > 0) {
+        console.warn(`[adminStats] Supabase schema missing ${missingColumn}; retrying ${entity} update without that field. Apply supabase/unfiltr_schema.sql Phase 2 repair.`);
+        const rows = await adminRest(entity, { id }, { method: "PATCH", body: retryData });
+        const updated = rows[0] || null;
+        return updated ? { ...updated, _schema_warning: `Missing Supabase column ${missingColumn}; apply Phase 2 schema repair.` } : updated;
+      }
+    }
+    throw err;
+  }
 }
 
 async function deleteEntity(entity, id) {
