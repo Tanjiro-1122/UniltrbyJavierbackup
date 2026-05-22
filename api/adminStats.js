@@ -295,11 +295,16 @@ export default async function handler(req, res) {
   }
 
   if (action === "backfillUserProfiles") {
-    const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles : [];
-    if (!profiles.length) return res.status(400).json({ error: "profiles array required" });
-    const compacted = profiles.map(compactUserProfileForBackfill).filter(p => p.id);
-    const upserted = await upsertEntities("UserProfile", compacted, "id");
-    return res.status(200).json({ ok: true, received: profiles.length, upserted: upserted.length });
+    try {
+      const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles : [];
+      if (!profiles.length) return res.status(400).json({ error: "profiles array required" });
+      const compacted = profiles.map(compactUserProfileForBackfill).filter(p => p.id);
+      const upserted = await upsertEntities("UserProfile", compacted, "id");
+      return res.status(200).json({ ok: true, received: profiles.length, upserted: upserted.length });
+    } catch (err) {
+      console.error("[adminStats/backfillUserProfiles] Error:", err);
+      return res.status(500).json({ error: safeAdminError(err, "Profile backfill failed") });
+    }
   }
 
   // ── userSearch ────────────────────────────────────────────────────────────
