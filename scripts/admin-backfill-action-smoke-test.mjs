@@ -22,5 +22,5 @@ for (const [entity, table] of Object.entries({
 assert(src.includes("async function upsertEntities"), "admin API has safe Supabase upsert helper");
 assert(src.includes('action === "backfillUserProfiles"'), "admin API exposes admin-only profile backfill action");
 assert(src.includes("compactUserProfileForBackfill"), "profile backfill compacts legacy Base44 records");
-assert(src.includes('upsertEntities("UserProfile", compacted, "id")'), "profile backfill upserts by stable id");
+assert(src.includes('insertEntities("UserProfile", compacted)'), "profile backfill inserts rows using Supabase-generated UUIDs");
 console.log("✅ Admin backfill action smoke test passed.");
