@@ -10,5 +10,7 @@ const adapter = fs.readFileSync("api/_b44.js", "utf8");
 assert(adapter.includes("Supabase compatibility adapter"), "Base44 helper is now a Supabase adapter");
 assert(!adapter.includes("base44.app/api") && !adapter.includes("api.base44.com"), "adapter has no Base44 HTTP endpoint");
 assert(adapter.includes("ENTITY_TABLES") && adapter.includes("UserProfile: \"user_profiles\""), "adapter maps Base44 entity names to Supabase tables");
+assert(adapter.includes("ErrorLog: \"error_logs\""), "adapter maps ErrorLog to canonical Supabase error_logs table");
+assert(adapter.includes("PurchaseAudit: \"purchase_audits\""), "adapter maps PurchaseAudit to canonical Supabase purchase_audits table");
 assert(adapter.includes("method === \"PUT\" ? \"PATCH\""), "adapter converts legacy PUT updates to Supabase PATCH");
 console.log("✅ Base44 adapter smoke test passed.");

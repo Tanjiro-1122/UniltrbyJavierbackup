@@ -1,4 +1,6 @@
 // api/_b44.js — Supabase compatibility adapter
+// DEPRECATED Base44-shaped facade: kept only so historical imports continue
+// to work while all reads/writes go to Supabase tables.
 // Historical server routes still import Base44-shaped helpers. This adapter keeps
 // those routes working while routing entity reads/writes to Supabase only.
 
@@ -11,8 +13,8 @@ const ENTITY_TABLES = {
   ChatHistory: "chat_history",
   JournalEntry: "journal_entries",
   MoodEntry: "mood_entries",
-  ErrorLog: "unfiltr_error_logs",
-  PurchaseAudit: "swh_purchase_audit",
+  ErrorLog: "error_logs",
+  PurchaseAudit: "purchase_audits",
   Streak: "streaks",
   TimeCapsule: "time_capsules",
   Feedback: "feedback",

@@ -7,7 +7,7 @@ const allowed = new Set([
   "scripts/base44-runtime-drift-smoke-test.mjs",
   "scripts/base44-adapter-smoke-test.mjs",
 ]);
-const banned = [/base44\.app\/api/i, /https:\/\/api\.base44\.com/i, /@\/api\/entities/, /from\s+["']@base44\//i];
+const banned = [/base44\.app\/api/i, /https:\/\/api\.base44\.com/i, /@\/api\/entities/, /from\s+["']@base44\//i, /VITE_BASE44_/, /BASE44_SERVICE_TOKEN/, /BASE44_API_KEY/];
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
