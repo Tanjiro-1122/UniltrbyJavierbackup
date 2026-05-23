@@ -8,7 +8,7 @@
 
 import { APP_URL } from "@/lib/appConfig";
 
-const EXPECTED_BASE44_APP_ID = import.meta.env.VITE_BASE44_APP_ID || "69b332a392004d139d4ba495";
+const EXPECTED_UNFILTR_APP_ID = import.meta.env.VITE_UNFILTR_APP_ID || "unfiltr";
 const EXPECTED_ORIGIN       = APP_URL;
 const KNOWN_PRODUCT_IDS = [
   "com.huertas.unfiltr.pro.monthly",
@@ -24,9 +24,9 @@ function warn(msg) {
 
 export function runConfigChecks() {
   try {
-    // 1. Base44 App ID — verify the constant used in App.jsx / AuthContext
-    if (typeof EXPECTED_BASE44_APP_ID !== "string" || EXPECTED_BASE44_APP_ID.length < 10) {
-      warn("Base44 App ID looks invalid or missing.");
+    // 1. App ID — verify the runtime app identity is present
+    if (typeof EXPECTED_UNFILTR_APP_ID !== "string" || EXPECTED_UNFILTR_APP_ID.length < 3) {
+      warn("Unfiltr App ID looks invalid or missing.");
     }
 
     // 2. Origin — warn if running on an unexpected domain in production
