@@ -105,10 +105,18 @@ export default async function handler(req, res) {
         return res.json({ data: updated, action: "updated" });
       }
 
-      // Check existing count and enforce limit
-      const existing = await sbFilterQuery("chat_history", { apple_user_id }, "saved_at.desc", limit + 1);
+      // Check existing count and enforce limit.
+      // IMPORTANT: legacy Base44 imports are preservation records and must never
+      // count against tier retention or be deleted by routine chat saves.
+      const existingAll = await sbFilterQuery("chat_history", { apple_user_id }, "saved_at.desc", 500);
+      const isLegacyImportRow = (row = {}) => {
+        if (row.tier === "legacy_import") return true;
+        const msgs = Array.isArray(row.messages) ? row.messages : [];
+        return msgs.some((m) => m && typeof m === "object" && (m.legacy_base44_id || m.source === "base44_legacy_import_2026_05_25"));
+      };
+      const existing = existingAll.filter((row) => !isLegacyImportRow(row));
       if (existing.length >= limit) {
-        // Delete oldest to stay within limit
+        // Delete oldest non-legacy rows only; imported user history is immutable.
         const toDelete = existing.slice(limit - 1);
         for (const old of toDelete) {
           await fetch(`${process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL}/rest/v1/chat_history?id=eq.${old.id}`, {
