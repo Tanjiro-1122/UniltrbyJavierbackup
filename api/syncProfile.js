@@ -9,6 +9,139 @@ import { createRequestContext, checkRateLimit } from "./_helpers.js";
 const B44_BASE = B44_ENTITIES;
 const getKey = b44Token;
 
+
+// Incident fallback: accept snake_case payloads and guarantee valid Apple IDs never 404.
+// Uses the production Unfiltr Supabase project as a fallback if the legacy adapter path fails.
+const INCIDENT_SUPABASE_URL = (
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  "https://qphizjwoijvjoygihkle.supabase.co"
+).replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+const INCIDENT_SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const INCIDENT_PROFILE_TABLES = ["user_profile", "user_profiles"];
+
+function normalizeAppleUserIdFromBody(body = {}) {
+  return body.appleUserId || body.apple_user_id || body.apple_userId || body.appleID || body.apple_id || null;
+}
+
+function normalizeGoogleUserIdFromBody(body = {}) {
+  return body.googleUserId || body.google_user_id || body.google_userId || null;
+}
+
+function isValidProfileUserId(value) {
+  return typeof value === "string" && value.trim().length >= 6;
+}
+
+function incidentSupabaseHeaders(prefer = "return=representation") {
+  return {
+    apikey: INCIDENT_SUPABASE_KEY,
+    Authorization: `Bearer ${INCIDENT_SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    Prefer: prefer,
+  };
+}
+
+async function incidentSupabaseFetch(table, query = "", options = {}) {
+  if (!INCIDENT_SUPABASE_URL || !INCIDENT_SUPABASE_KEY) {
+    throw new Error("Supabase environment is not configured");
+  }
+  const url = `${INCIDENT_SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}${query}`;
+  const res = await fetch(url, {
+    method: options.method || "GET",
+    headers: incidentSupabaseHeaders(options.prefer),
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  return { ok: res.ok, status: res.status, data, text };
+}
+
+async function incidentLookupProfileByAppleId(appleUserId) {
+  for (const table of INCIDENT_PROFILE_TABLES) {
+    const found = await incidentSupabaseFetch(
+      table,
+      `?apple_user_id=eq.${encodeURIComponent(appleUserId)}&limit=1`
+    );
+    if (found.ok && Array.isArray(found.data) && found.data[0]) {
+      return { table, profile: found.data[0] };
+    }
+    // 404/42P01 means that table name does not exist; try the next compatible table.
+    if (!found.ok && ![404, 400].includes(found.status)) {
+      console.warn(`[syncProfile] Supabase lookup failed on ${table}: ${found.status} ${found.text?.slice?.(0, 200) || ""}`);
+    }
+  }
+  return null;
+}
+
+async function incidentCreateProfileByAppleId(appleUserId, body = {}) {
+  const identity = decodeAppleJwt(body.identityToken || "");
+  const now = new Date().toISOString();
+  const email = body.email || identity.email || null;
+  const displayName = body.displayName || body.fullName || body.display_name || email?.split?.("@")[0] || "Friend";
+  const baseProfile = {
+    apple_user_id: appleUserId,
+    email,
+    display_name: displayName,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const candidates = [
+    { table: "user_profile", body: { ...baseProfile } },
+    {
+      table: "user_profiles",
+      body: {
+        apple_user_id: appleUserId,
+        email,
+        display_name: displayName,
+        avatar_id: "aria",
+        personality: "empathetic",
+        onboarding_done: false,
+        tier: body.plan || "free",
+        is_premium: !!body.isPremium,
+        is_pro: body.plan === "pro",
+        is_annual: body.plan === "annual",
+        is_family: body.plan === "family",
+        msg_count_today: 0,
+        streak_count: 0,
+        preferences: {},
+        created_at: now,
+        updated_at: now,
+      },
+    },
+  ];
+
+  let lastError = null;
+  for (const candidate of candidates) {
+    const created = await incidentSupabaseFetch(candidate.table, "", {
+      method: "POST",
+      body: candidate.body,
+      prefer: "return=representation",
+    });
+    if (created.ok) {
+      const profile = Array.isArray(created.data) ? created.data[0] : created.data;
+      return { table: candidate.table, profile };
+    }
+    lastError = `${candidate.table}: ${created.status} ${created.text?.slice?.(0, 300) || ""}`;
+    // If duplicate race happened, lookup again and return the existing row.
+    if (String(created.text || "").includes("duplicate") || String(created.text || "").includes("23505")) {
+      const existing = await incidentLookupProfileByAppleId(appleUserId);
+      if (existing?.profile) return existing;
+    }
+  }
+  throw new Error(`Unable to create profile for apple_user_id: ${lastError}`);
+}
+
+async function incidentSyncAppleProfile(body = {}) {
+  const appleUserId = normalizeAppleUserIdFromBody(body);
+  if (!isValidProfileUserId(appleUserId)) return null;
+  const found = await incidentLookupProfileByAppleId(appleUserId);
+  if (found?.profile) return { ...found, created: false };
+  const created = await incidentCreateProfileByAppleId(appleUserId, body);
+  return { ...created, created: true };
+}
+
 // Decode Apple's identityToken JWT payload (base64 only — no signature verification).
 // SECURITY NOTE: The decoded payload is NOT cryptographically verified here.
 // Consequently it must NEVER be used to look up or link user accounts — an attacker
@@ -176,25 +309,25 @@ async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
 function buildProfileResponse(profile, companionData) {
   return {
     profileId:           profile.id,
-    is_premium:          profile.is_premium || profile.premium || false,
-    annual_plan:         profile.annual_plan || false,
-    pro_plan:            profile.pro_plan    || false,
+    is_premium:          profile.is_premium || profile.premium || profile.is_annual || profile.is_pro || profile.is_family || false,
+    annual_plan:         profile.annual_plan || profile.is_annual || false,
+    pro_plan:            profile.pro_plan || profile.is_pro || false,
     ultimate_friend:     profile.ultimate_friend || false,
     display_name:        profile.display_name || null,
     created_date:        profile.created_date || profile.created_at || null,
     created_at:          profile.created_at || profile.created_date || null,
-    family_unlimited:    profile.family_unlimited || profile.family_plan || false,
-    family_plan:         profile.family_plan || profile.family_unlimited || false,
+    family_unlimited:    profile.family_unlimited || profile.family_plan || profile.is_family || false,
+    family_plan:         profile.family_plan || profile.family_unlimited || profile.is_family || false,
     companion_nickname:  profile.companion_nickname || (companionData?.nickname) || null,
-    onboarding_complete: profile.onboarding_complete || false,
+    onboarding_complete: profile.onboarding_complete || profile.onboarding_done || false,
     companion_id:        profile.companion_id || null,
     preferred_mood:      profile.preferred_mood || null,
     apple_user_id:       profile.apple_user_id || null,
     email:               profile.email || null,
-    message_count:       profile.message_count || 0,
-    memory_summary:      profile.memory_summary || "",
+    message_count:       profile.message_count || profile.msg_count_today || 0,
+    memory_summary:      profile.memory_summary || profile.preferences?.legacy_base44_profile?.memory_summary || "",
     user_facts:          profile.user_facts || {},
-    session_memory:      profile.session_memory || [],
+    session_memory:      profile.session_memory || profile.preferences?.legacy_base44_profile?.session_memory || [],
     emotional_timeline:  profile.emotional_timeline || [],
     structured_memory:   profile.structured_memory || [],
     relationship_milestones: profile.relationship_milestones || [],
@@ -222,8 +355,12 @@ export default async function handler(req, res) {
 
   const {
     action = "sync",         // "sync" | "update" | "create"
-    appleUserId,
-    googleUserId,            // Android Google Sign-In — used as the canonical user ID
+    appleUserId: rawAppleUserId,
+    apple_user_id,
+    apple_userId,
+    googleUserId: rawGoogleUserId,            // Android Google Sign-In — used as the canonical user ID
+    google_user_id,
+    google_userId,
     email: clientEmail,
     fullName,
     isPremium,
@@ -235,6 +372,9 @@ export default async function handler(req, res) {
     identityToken,           // Apple JWT — always contains email, even on repeat logins
     pushToken,               // Expo push token from native bridge
   } = req.body || {};
+
+  const appleUserId = rawAppleUserId || apple_user_id || apple_userId || null;
+  const googleUserId = rawGoogleUserId || google_user_id || google_userId || null;
 
   // Extract email from Apple's identity token JWT — reliable on EVERY login
   // Apple only sends email in the client payload on first login, but it's
@@ -256,6 +396,22 @@ export default async function handler(req, res) {
   console.log(`[syncProfile] action=${action} userId=${_appleUserId?.slice(0,12)} platform=${platform||"ios"} profileId=${profileId}`);
 
   try {
+    if (action === "sync" && isValidProfileUserId(appleUserId)) {
+      try {
+        const incidentResult = await incidentSyncAppleProfile({ ...req.body, appleUserId });
+        if (incidentResult?.profile) {
+          const companionData = await getCompanion(incidentResult.profile.companion_id || incidentResult.profile.avatar_id || null);
+          return res.status(200).json({
+            ...buildProfileResponse(incidentResult.profile, companionData),
+            profile: incidentResult.profile,
+            created: !!incidentResult.created,
+            source_table: incidentResult.table,
+          });
+        }
+      } catch (incidentErr) {
+        console.warn(`[syncProfile] incident fallback failed, continuing legacy path: ${incidentErr.message}`);
+      }
+    }
     // ── ACTION: lookup — find a profile without creating it ───────────────────
     // Used by client-side recovery hooks to check if a profile exists for a
     // given identifier (appleUserId or deviceId) without risking creation of a
