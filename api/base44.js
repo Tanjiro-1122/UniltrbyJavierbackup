@@ -141,6 +141,31 @@ export default async function handler(req, res) {
     }
 
     // ── getChatHistory ───────────────────────────────────────────────────────
+    // ── getRecentMessages ─────────────────────────────────────────────────────
+    if (action === "getRecentMessages") {
+      if (!apple_user_id) return res.status(400).json({ error: "apple_user_id required" });
+      const { companion_id, limit = 20 } = payload;
+
+      const filter = { apple_user_id };
+      if (companion_id && companion_id !== "pending") filter.companion_id = companion_id;
+
+      const rows = await sbFilterQuery("chat_history", filter, "saved_at.desc", 5);
+      if (!rows.length) return res.json({ items: [] });
+
+      const allMessages = [];
+      for (const row of rows) {
+        if (row.source && String(row.source).includes("legacy")) continue;
+        const msgs = Array.isArray(row.messages) ? row.messages : [];
+        for (const m of msgs) {
+          if (m && m.role && m.content) allMessages.push(m);
+        }
+        if (allMessages.length >= limit) break;
+      }
+
+      const slice = allMessages.slice(-limit);
+      return res.json({ items: slice, count: slice.length });
+    }
+
     if (action === "getChatHistory") {
       if (!apple_user_id) return res.status(400).json({ error: "apple_user_id required" });
       const { limit = 20 } = payload;
