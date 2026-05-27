@@ -137,7 +137,37 @@ async function incidentSyncAppleProfile(body = {}) {
   const appleUserId = normalizeAppleUserIdFromBody(body);
   if (!isValidProfileUserId(appleUserId)) return null;
   const found = await incidentLookupProfileByAppleId(appleUserId);
-  if (found?.profile) return { ...found, created: false };
+  if (found?.profile) {
+    // Lazy-rehydrate: if the Supabase row has legacy Base44 premium data stored in
+    // preferences.legacy_base44_profile but the live columns are still false,
+    // patch the row now so the user regains their VIP status immediately.
+    const prof = found.profile;
+    const legacy = (prof.preferences && prof.preferences.legacy_base44_profile) ? prof.preferences.legacy_base44_profile : {};
+    const livePremium = !!(prof.is_premium || prof.premium || prof.is_annual || prof.is_pro || prof.is_family || prof.annual_plan || prof.pro_plan || prof.family_unlimited || prof.ultimate_friend);
+    const legacyPremium = !!(legacy.is_premium || legacy.premium || legacy.annual_plan || legacy.pro_plan || legacy.family_unlimited || legacy.ultimate_friend);
+    if (!livePremium && legacyPremium) {
+      console.log('[syncProfile] lazy-rehydrating premium from legacy_base44_profile for', appleUserId?.slice(0, 12));
+      const patch = {
+        is_premium:       !!(legacy.is_premium || legacy.premium || legacy.annual_plan || legacy.pro_plan),
+        annual_plan:      !!(legacy.annual_plan),
+        pro_plan:         !!(legacy.pro_plan),
+        family_unlimited: !!(legacy.family_unlimited),
+        ultimate_friend:  !!(legacy.ultimate_friend),
+        updated_at:       new Date().toISOString(),
+      };
+      try {
+        await incidentSupabaseFetch(
+          found.table,
+          `?id=eq.${encodeURIComponent(prof.id)}`,
+          { method: 'PATCH', body: patch, prefer: 'return=minimal' }
+        );
+        Object.assign(prof, patch);
+      } catch (e) {
+        console.warn('[syncProfile] lazy-rehydrate patch failed:', e.message);
+      }
+    }
+    return { ...found, created: false };
+  }
   const created = await incidentCreateProfileByAppleId(appleUserId, body);
   return { ...created, created: true };
 }
@@ -172,6 +202,14 @@ function _toRecords(data) {
 }
 
 async function findByAppleId(appleUserId) {
+  // Primary: Supabase (live DB)
+  try {
+    const result = await incidentLookupProfileByAppleId(appleUserId);
+    if (result?.profile) return result.profile;
+  } catch (e) {
+    console.warn(`[syncProfile] Supabase findByAppleId failed: ${e.message}`);
+  }
+  // Fallback: Base44 legacy (may no longer respond)
   try {
     const res = await fetch(
       `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
@@ -182,7 +220,7 @@ async function findByAppleId(appleUserId) {
     const records = _toRecords(data);
     return records.length > 0 ? records[0] : null;
   } catch (e) {
-    console.warn(`[syncProfile] findByAppleId failed: ${e.message}`);
+    console.warn(`[syncProfile] Base44 findByAppleId failed: ${e.message}`);
     return null;
   }
 }
@@ -205,12 +243,36 @@ async function findByEmail(email) {
 
 
 async function updateProfile(id, data) {
-  const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
-    method: "PUT",
-    headers: b44Headers(),
-    body: JSON.stringify(data),
-  });
-  return res.ok ? await res.json() : null;
+  // Primary: Supabase PATCH (live DB)
+  for (const table of INCIDENT_PROFILE_TABLES) {
+    try {
+      const result = await incidentSupabaseFetch(
+        table,
+        `?id=eq.${encodeURIComponent(id)}`,
+        { method: "PATCH", body: data, prefer: "return=representation" }
+      );
+      if (result.ok) {
+        const rows = Array.isArray(result.data) ? result.data : [];
+        if (rows[0]) return rows[0];
+      }
+      // Table not found — try next
+      if (result.status === 404 || result.status === 400) continue;
+    } catch (e) {
+      console.warn(`[syncProfile] Supabase updateProfile (${table}) failed: ${e.message}`);
+    }
+  }
+  // Fallback: Base44 legacy
+  try {
+    const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
+      method: "PUT",
+      headers: b44Headers(),
+      body: JSON.stringify(data),
+    });
+    return res.ok ? await res.json() : null;
+  } catch (e) {
+    console.warn(`[syncProfile] Base44 updateProfile failed: ${e.message}`);
+    return null;
+  }
 }
 
 async function createProfile(data) {
@@ -309,9 +371,9 @@ async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
 function buildProfileResponse(profile, companionData) {
   return {
     profileId:           profile.id,
-    is_premium:          profile.is_premium || profile.premium || profile.is_annual || profile.is_pro || profile.is_family || false,
-    annual_plan:         profile.annual_plan || profile.is_annual || false,
-    pro_plan:            profile.pro_plan || profile.is_pro || false,
+    is_premium:          profile.is_premium || profile.premium || profile.is_annual || profile.is_pro || profile.is_family || profile.preferences?.legacy_base44_profile?.is_premium || false,
+    annual_plan:         profile.annual_plan || profile.is_annual || profile.preferences?.legacy_base44_profile?.annual_plan || false,
+    pro_plan:            profile.pro_plan || profile.is_pro || profile.preferences?.legacy_base44_profile?.pro_plan || false,
     ultimate_friend:     profile.ultimate_friend || false,
     display_name:        profile.display_name || null,
     created_date:        profile.created_date || profile.created_at || null,
@@ -556,6 +618,19 @@ export default async function handler(req, res) {
         patch.is_premium = true;
         if (plan === "annual") patch.annual_plan = true;
         if (plan === "pro")    patch.pro_plan    = true;
+      }
+      // ── One-time legacy premium rehydration ──────────────────────────────
+      // If the live profile has no premium flag but old Base44 data was preserved
+      // in preferences.legacy_base44_profile, restore the flags now so they are
+      // permanently written back to the DB and the app shows VIP status again.
+      const _legacy = profile.preferences?.legacy_base44_profile;
+      if (_legacy && !profile.is_premium && !profile.premium && !profile.annual_plan && !profile.pro_plan) {
+        if (_legacy.is_premium || _legacy.premium || _legacy.annual_plan || _legacy.pro_plan) {
+          patch.is_premium  = !!(_legacy.is_premium  || _legacy.premium);
+          patch.annual_plan = !!(_legacy.annual_plan);
+          patch.pro_plan    = !!(_legacy.pro_plan);
+          console.log(`[syncProfile] Legacy premium rehydration for ${profile.id}: is_premium=${patch.is_premium} annual=${patch.annual_plan} pro=${patch.pro_plan}`);
+        }
       }
       if (email && !profile.email)        patch.email        = email;
       if (pushToken && pushToken.startsWith("ExponentPushToken")) {
