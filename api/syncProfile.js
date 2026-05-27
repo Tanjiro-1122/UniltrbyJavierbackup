@@ -1,407 +1,199 @@
-// api/syncProfile.js  
-// Single source of truth for all UserProfile DB operations
-// Called from HomeScreen (sign-in) and onboarding steps
+// api/syncProfile.js
+// Single source of truth for all UserProfile DB operations.
+// 100% Supabase — no Base44 references.
 
-import { B44_ENTITIES, b44Token, b44Headers } from "./_b44.js";
 import { createRequestContext, checkRateLimit } from "./_helpers.js";
 
-// Alias so the rest of the file is unchanged
-const B44_BASE = B44_ENTITIES;
-const getKey = b44Token;
-
-
-// Incident fallback: accept snake_case payloads and guarantee valid Apple IDs never 404.
-// Uses the production Unfiltr Supabase project as a fallback if the legacy adapter path fails.
-const INCIDENT_SUPABASE_URL = (
+// ── Supabase config ───────────────────────────────────────────────────────────
+const SB_URL = (
   process.env.SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
-  "https://qphizjwoijvjoygihkle.supabase.co"
+  ""
 ).replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
-const INCIDENT_SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-const INCIDENT_PROFILE_TABLES = ["user_profile", "user_profiles"];
 
-function normalizeAppleUserIdFromBody(body = {}) {
-  return body.appleUserId || body.apple_user_id || body.apple_userId || body.appleID || body.apple_id || null;
-}
+const SB_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  "";
 
-function normalizeGoogleUserIdFromBody(body = {}) {
-  return body.googleUserId || body.google_user_id || body.google_userId || null;
-}
+// The live table name in the Unfiltr Supabase project.
+// We try both spellings so the code works even if the table was created with either name.
+const PROFILE_TABLES = ["user_profiles", "user_profile"];
 
-function isValidProfileUserId(value) {
-  return typeof value === "string" && value.trim().length >= 6;
-}
-
-function incidentSupabaseHeaders(prefer = "return=representation") {
-  return {
-    apikey: INCIDENT_SUPABASE_KEY,
-    Authorization: `Bearer ${INCIDENT_SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-    Prefer: prefer,
-  };
-}
-
-async function incidentSupabaseFetch(table, query = "", options = {}) {
-  if (!INCIDENT_SUPABASE_URL || !INCIDENT_SUPABASE_KEY) {
-    throw new Error("Supabase environment is not configured");
-  }
-  const url = `${INCIDENT_SUPABASE_URL}/rest/v1/${encodeURIComponent(table)}${query}`;
+// ── Low-level Supabase fetch ──────────────────────────────────────────────────
+async function sbFetch(table, qs = "", options = {}) {
+  if (!SB_URL || !SB_KEY) throw new Error("Supabase env not configured");
+  const url = `${SB_URL}/rest/v1/${encodeURIComponent(table)}${qs}`;
   const res = await fetch(url, {
     method: options.method || "GET",
-    headers: incidentSupabaseHeaders(options.prefer),
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: options.prefer || "return=representation",
+    },
+    body: options.body != null ? JSON.stringify(options.body) : undefined,
   });
   const text = await res.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-  return { ok: res.ok, status: res.status, data, text };
+  return { ok: res.ok, status: res.status, data };
 }
 
-async function incidentLookupProfileByAppleId(appleUserId) {
-  for (const table of INCIDENT_PROFILE_TABLES) {
-    const found = await incidentSupabaseFetch(
-      table,
-      `?apple_user_id=eq.${encodeURIComponent(appleUserId)}&limit=1`
-    );
-    if (found.ok && Array.isArray(found.data) && found.data[0]) {
-      return { table, profile: found.data[0] };
-    }
-    // 404/42P01 means that table name does not exist; try the next compatible table.
-    if (!found.ok && ![404, 400].includes(found.status)) {
-      console.warn(`[syncProfile] Supabase lookup failed on ${table}: ${found.status} ${found.text?.slice?.(0, 200) || ""}`);
-    }
+// ── Profile lookups ───────────────────────────────────────────────────────────
+async function findByAppleId(appleUserId) {
+  for (const table of PROFILE_TABLES) {
+    const r = await sbFetch(table, `?apple_user_id=eq.${encodeURIComponent(appleUserId)}&limit=1`);
+    if (r.ok && Array.isArray(r.data) && r.data[0]) return { table, profile: r.data[0] };
+    if (!r.ok && r.status !== 404 && r.status !== 400)
+      console.warn(`[syncProfile] findByAppleId ${table}: ${r.status}`);
   }
   return null;
 }
 
-async function incidentCreateProfileByAppleId(appleUserId, body = {}) {
-  const identity = decodeAppleJwt(body.identityToken || "");
-  const now = new Date().toISOString();
-  const email = body.email || identity.email || null;
-  const displayName = body.displayName || body.fullName || body.display_name || email?.split?.("@")[0] || "Friend";
-  const baseProfile = {
-    apple_user_id: appleUserId,
-    email,
-    display_name: displayName,
-    created_at: now,
-    updated_at: now,
-  };
-
-  const candidates = [
-    { table: "user_profile", body: { ...baseProfile } },
-    {
-      table: "user_profiles",
-      body: {
-        apple_user_id: appleUserId,
-        email,
-        display_name: displayName,
-        avatar_id: "aria",
-        personality: "empathetic",
-        onboarding_done: false,
-        tier: body.plan || "free",
-        is_premium: !!body.isPremium,
-        is_pro: body.plan === "pro",
-        is_annual: body.plan === "annual",
-        is_family: body.plan === "family",
-        msg_count_today: 0,
-        streak_count: 0,
-        preferences: {},
-        created_at: now,
-        updated_at: now,
-      },
-    },
-  ];
-
-  let lastError = null;
-  for (const candidate of candidates) {
-    const created = await incidentSupabaseFetch(candidate.table, "", {
-      method: "POST",
-      body: candidate.body,
-      prefer: "return=representation",
-    });
-    if (created.ok) {
-      const profile = Array.isArray(created.data) ? created.data[0] : created.data;
-      return { table: candidate.table, profile };
-    }
-    lastError = `${candidate.table}: ${created.status} ${created.text?.slice?.(0, 300) || ""}`;
-    // If duplicate race happened, lookup again and return the existing row.
-    if (String(created.text || "").includes("duplicate") || String(created.text || "").includes("23505")) {
-      const existing = await incidentLookupProfileByAppleId(appleUserId);
-      if (existing?.profile) return existing;
-    }
+async function findById(id) {
+  for (const table of PROFILE_TABLES) {
+    const r = await sbFetch(table, `?id=eq.${encodeURIComponent(id)}&limit=1`);
+    if (r.ok && Array.isArray(r.data) && r.data[0]) return { table, profile: r.data[0] };
   }
-  throw new Error(`Unable to create profile for apple_user_id: ${lastError}`);
+  return null;
 }
 
-async function incidentSyncAppleProfile(body = {}) {
-  const appleUserId = normalizeAppleUserIdFromBody(body);
-  if (!isValidProfileUserId(appleUserId)) return null;
-  const found = await incidentLookupProfileByAppleId(appleUserId);
-  if (found?.profile) {
-    // Lazy-rehydrate: if the Supabase row has legacy Base44 premium data stored in
-    // preferences.legacy_base44_profile but the live columns are still false,
-    // patch the row now so the user regains their VIP status immediately.
-    const prof = found.profile;
-    const legacy = (prof.preferences && prof.preferences.legacy_base44_profile) ? prof.preferences.legacy_base44_profile : {};
-    const livePremium = !!(prof.is_premium || prof.premium || prof.is_annual || prof.is_pro || prof.is_family || prof.annual_plan || prof.pro_plan || prof.family_unlimited || prof.ultimate_friend);
-    const legacyPremium = !!(legacy.is_premium || legacy.premium || legacy.annual_plan || legacy.pro_plan || legacy.family_unlimited || legacy.ultimate_friend);
-    if (!livePremium && legacyPremium) {
-      console.log('[syncProfile] lazy-rehydrating premium from legacy_base44_profile for', appleUserId?.slice(0, 12));
-      const patch = {
-        is_premium:       !!(legacy.is_premium || legacy.premium || legacy.annual_plan || legacy.pro_plan),
-        annual_plan:      !!(legacy.annual_plan),
-        pro_plan:         !!(legacy.pro_plan),
-        family_unlimited: !!(legacy.family_unlimited),
-        ultimate_friend:  !!(legacy.ultimate_friend),
-        updated_at:       new Date().toISOString(),
-      };
-      try {
-        await incidentSupabaseFetch(
-          found.table,
-          `?id=eq.${encodeURIComponent(prof.id)}`,
-          { method: 'PATCH', body: patch, prefer: 'return=minimal' }
-        );
-        Object.assign(prof, patch);
-      } catch (e) {
-        console.warn('[syncProfile] lazy-rehydrate patch failed:', e.message);
-      }
-    }
-    return { ...found, created: false };
-  }
-  const created = await incidentCreateProfileByAppleId(appleUserId, body);
-  return { ...created, created: true };
-}
-
-// Decode Apple's identityToken JWT payload (base64 only — no signature verification).
-// SECURITY NOTE: The decoded payload is NOT cryptographically verified here.
-// Consequently it must NEVER be used to look up or link user accounts — an attacker
-// could craft a token with a victim's email to hijack their profile.
-// Use the payload only to backfill non-sensitive fields (e.g. email) on a profile
-// that has ALREADY been located by the trusted apple_user_id from the Apple SDK.
-function decodeAppleJwt(token) {
-  try {
-    if (!token) return {};
-    const parts = token.split('.');
-    if (parts.length < 2) return {};
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
-    const decoded = Buffer.from(padded, 'base64').toString('utf8');
-    return JSON.parse(decoded);
-  } catch { return {}; }
-}
-
-
-
-// Parse a Base44 list response — handles both plain array and wrapped formats:
-// { items: [...] }, { records: [...] }, or just [...]
-function _toRecords(data) {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.items))   return data.items;
-  if (data && Array.isArray(data.records)) return data.records;
-  return [];
-}
-
-async function findByAppleId(appleUserId) {
-  // Primary: Supabase (live DB)
-  try {
-    const result = await incidentLookupProfileByAppleId(appleUserId);
-    if (result?.profile) return result.profile;
-  } catch (e) {
-    console.warn(`[syncProfile] Supabase findByAppleId failed: ${e.message}`);
-  }
-  // Fallback: Base44 legacy (may no longer respond)
-  try {
-    const res = await fetch(
-      `${B44_BASE}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`,
-      { headers: b44Headers() }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const records = _toRecords(data);
-    return records.length > 0 ? records[0] : null;
-  } catch (e) {
-    console.warn(`[syncProfile] Base44 findByAppleId failed: ${e.message}`);
-    return null;
-  }
-}
-
-async function findByEmail(email) {
-  try {
-    const res = await fetch(
-      `${B44_BASE}/UserProfile?email=${encodeURIComponent(email)}&limit=1`,
-      { headers: b44Headers() }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const records = _toRecords(data);
-    return records.length > 0 ? records[0] : null;
-  } catch (e) {
-    console.warn(`[syncProfile] findByEmail failed: ${e.message}`);
-    return null;
-  }
-}
-
-
-async function updateProfile(id, data) {
-  // Primary: Supabase PATCH (live DB)
-  for (const table of INCIDENT_PROFILE_TABLES) {
-    try {
-      const result = await incidentSupabaseFetch(
-        table,
-        `?id=eq.${encodeURIComponent(id)}`,
-        { method: "PATCH", body: data, prefer: "return=representation" }
-      );
-      if (result.ok) {
-        const rows = Array.isArray(result.data) ? result.data : [];
-        if (rows[0]) return rows[0];
-      }
-      // Table not found — try next
-      if (result.status === 404 || result.status === 400) continue;
-    } catch (e) {
-      console.warn(`[syncProfile] Supabase updateProfile (${table}) failed: ${e.message}`);
-    }
-  }
-  // Fallback: Base44 legacy
-  try {
-    const res = await fetch(`${B44_BASE}/UserProfile/${id}`, {
-      method: "PUT",
-      headers: b44Headers(),
-      body: JSON.stringify(data),
-    });
-    return res.ok ? await res.json() : null;
-  } catch (e) {
-    console.warn(`[syncProfile] Base44 updateProfile failed: ${e.message}`);
-    return null;
-  }
-}
-
-async function createProfile(data) {
-  const res = await fetch(`${B44_BASE}/UserProfile`, {
-    method: "POST",
-    headers: b44Headers(),
-    body: JSON.stringify(data),
+// ── Profile writes ────────────────────────────────────────────────────────────
+async function updateProfile(id, table, data) {
+  const r = await sbFetch(table, `?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: { ...data, updated_at: new Date().toISOString() },
+    prefer: "return=representation",
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Create failed: ${res.status} ${err}`);
-  }
-  return await res.json();
+  if (r.ok) return Array.isArray(r.data) ? r.data[0] : r.data;
+  console.warn(`[syncProfile] updateProfile ${table} ${id}: ${r.status}`);
+  return null;
 }
 
+async function createProfile(table, data) {
+  const now = new Date().toISOString();
+  const r = await sbFetch(table, "", {
+    method: "POST",
+    body: { ...data, created_at: now, updated_at: now },
+    prefer: "return=representation",
+  });
+  if (r.ok) return Array.isArray(r.data) ? r.data[0] : r.data;
+  // Duplicate race — look up the existing row
+  if (String(r.data || "").includes("23505") || String(r.data || "").includes("duplicate")) {
+    const existing = await findByAppleId(data.apple_user_id);
+    if (existing?.profile) return existing.profile;
+  }
+  throw new Error(`createProfile ${table}: ${r.status} ${JSON.stringify(r.data)?.slice(0, 300)}`);
+}
+
+async function deleteProfile(id, table) {
+  const r = await sbFetch(table, `?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    prefer: "return=minimal",
+  });
+  return r.ok;
+}
+
+// ── Companion fetch (Supabase companions table) ───────────────────────────────
 async function getCompanion(companionId) {
   if (!companionId || companionId === "pending") return null;
   try {
-    const res = await fetch(`${B44_BASE}/Companion/${companionId}`, { headers: b44Headers() });
-    if (!res.ok) return null;
-    const comp = await res.json();
-    return {
-      avatar_id:           comp.avatar_id          || null,
-      name:                comp.name               || null,
-      nickname:            comp.nickname           || comp.name || null,
-      voice_gender:        comp.voice_gender       || null,
-      voice_personality:   comp.voice_personality  || null,
-      personality_vibe:    comp.personality_vibe   || null,
-      personality_style:   comp.personality_style  || null,
-      personality_humor:   comp.personality_humor  || null,
-      personality_empathy: comp.personality_empathy|| null,
-      personality_curiosity: comp.personality_curiosity || null,
-    };
-  } catch { return null; }
-}
-
-const RECOVERY_BACKUP_LIMIT = 30;
-function isPaidRecoveryEligible(profile = {}) {
-  return !!(profile.is_premium || profile.premium || profile.pro_plan || profile.annual_plan || profile.ultimate_friend || profile.family_unlimited || profile.family_plan);
-}
-function recoveryBackupId(prefix = "backup") {
-  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
-}
-function isMemoryClearUpdate(updateData = {}) {
-  const hasMemoryKeys = ["memory_summary", "user_facts", "session_memory", "emotional_timeline", "memory_vectors"].some(k => Object.prototype.hasOwnProperty.call(updateData, k));
-  if (!hasMemoryKeys) return false;
-  const summaryCleared = updateData.memory_summary === "" || updateData.memory_summary === null;
-  const factsCleared = updateData.user_facts && typeof updateData.user_facts === "object" && Object.keys(updateData.user_facts).length === 0;
-  const sessionsCleared = Array.isArray(updateData.session_memory) && updateData.session_memory.length === 0;
-  const timelineCleared = Array.isArray(updateData.emotional_timeline) && updateData.emotional_timeline.length === 0;
-  return summaryCleared || factsCleared || sessionsCleared || timelineCleared;
-}
-async function appendMemoryRecoveryBackup(profile, reason = "memory_clear") {
-  if (!profile?.id) return false;
-  if (!isPaidRecoveryEligible(profile)) return false;
-  const backup = {
-    id: recoveryBackupId("memory_clear"),
-    type: "memory_profile",
-    label: "AI memory before user cleared it",
-    source: reason,
-    apple_user_id: profile.apple_user_id || null,
-    created_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    payload: {
-      profile: {
-        id: profile.id,
-        apple_user_id: profile.apple_user_id || null,
-        display_name: profile.display_name || null,
-        memory_summary: profile.memory_summary || "",
-        user_facts: profile.user_facts || {},
-        session_memory: profile.session_memory || [],
-        emotional_timeline: profile.emotional_timeline || [],
-        memory_vectors: profile.memory_vectors || [],
-        memory_updated_at: profile.memory_updated_at || profile.updated_date || profile.updated_at || null,
-      },
-    },
-  };
-  const nowMs = Date.now();
-  const existing = (Array.isArray(profile.recovery_backups) ? profile.recovery_backups : [])
-    .filter(b => !b.expires_at || new Date(b.expires_at).getTime() > nowMs);
-  const next = [backup, ...existing].slice(0, RECOVERY_BACKUP_LIMIT);
-  try {
-    const r = await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
-      method: "PUT",
-      headers: b44Headers(),
-      body: JSON.stringify({ recovery_backups: next, last_recovery_backup_at: backup.created_at }),
-    });
-    if (!r.ok) console.warn(`[syncProfile] memory recovery backup failed HTTP ${r.status}`);
-    return r.ok;
+    const r = await sbFetch("companions", `?id=eq.${encodeURIComponent(companionId)}&limit=1`);
+    if (r.ok && Array.isArray(r.data) && r.data[0]) {
+      const c = r.data[0];
+      return {
+        avatar_id: c.avatar_id || c.id || null,
+        name: c.name || null,
+        nickname: c.nickname || c.name || null,
+        voice_gender: c.voice_gender || null,
+        voice_personality: c.voice_personality || null,
+        personality_vibe: c.personality_vibe || null,
+        personality_style: c.personality_style || null,
+        personality_humor: c.personality_humor || null,
+        personality_empathy: c.personality_empathy || null,
+        personality_curiosity: c.personality_curiosity || null,
+      };
+    }
   } catch (e) {
-    console.warn("[syncProfile] memory recovery backup failed:", e.message);
-    return false;
+    console.warn("[syncProfile] getCompanion:", e.message);
   }
+  return null;
 }
 
+// ── JWT decode (Apple identity token — NOT verified, used for email only) ─────
+function decodeAppleJwt(token) {
+  try {
+    if (!token) return {};
+    const parts = token.split(".");
+    if (parts.length < 2) return {};
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+  } catch { return {}; }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function isValidUserId(v) {
+  return typeof v === "string" && v.trim().length >= 6;
+}
+
+function isMemoryClearUpdate(d = {}) {
+  const keys = ["memory_summary", "user_facts", "session_memory", "emotional_timeline", "memory_vectors"];
+  if (!keys.some(k => Object.prototype.hasOwnProperty.call(d, k))) return false;
+  return (
+    d.memory_summary === "" || d.memory_summary === null ||
+    (d.user_facts && typeof d.user_facts === "object" && Object.keys(d.user_facts).length === 0) ||
+    (Array.isArray(d.session_memory) && d.session_memory.length === 0)
+  );
+}
+
+// ── buildProfileResponse — normalises any profile row shape ──────────────────
 function buildProfileResponse(profile, companionData) {
+  // Premium flags: read from live columns first, fall back to legacy Base44 data
+  // preserved in preferences.legacy_base44_profile during the migration.
+  const leg = (profile.preferences?.legacy_base44_profile) || {};
+  const isPremium  = !!(profile.is_premium  || profile.premium       || profile.is_annual  || profile.is_pro  || profile.is_family  || leg.is_premium  || leg.premium  || leg.annual_plan || leg.pro_plan);
+  const isAnnual   = !!(profile.annual_plan || profile.is_annual     || leg.annual_plan);
+  const isPro      = !!(profile.pro_plan    || profile.is_pro        || leg.pro_plan);
+  const isFamily   = !!(profile.family_unlimited || profile.family_plan || profile.is_family || leg.family_unlimited || leg.family_plan);
+  const isUltimate = !!(profile.ultimate_friend  || leg.ultimate_friend);
+
   return {
-    profileId:           profile.id,
-    is_premium:          profile.is_premium || profile.premium || profile.is_annual || profile.is_pro || profile.is_family || profile.preferences?.legacy_base44_profile?.is_premium || false,
-    annual_plan:         profile.annual_plan || profile.is_annual || profile.preferences?.legacy_base44_profile?.annual_plan || false,
-    pro_plan:            profile.pro_plan || profile.is_pro || profile.preferences?.legacy_base44_profile?.pro_plan || false,
-    ultimate_friend:     profile.ultimate_friend || false,
-    display_name:        profile.display_name || null,
-    created_date:        profile.created_date || profile.created_at || null,
-    created_at:          profile.created_at || profile.created_date || null,
-    family_unlimited:    profile.family_unlimited || profile.family_plan || profile.is_family || false,
-    family_plan:         profile.family_plan || profile.family_unlimited || profile.is_family || false,
-    companion_nickname:  profile.companion_nickname || (companionData?.nickname) || null,
-    onboarding_complete: profile.onboarding_complete || profile.onboarding_done || false,
-    companion_id:        profile.companion_id || null,
-    preferred_mood:      profile.preferred_mood || null,
-    apple_user_id:       profile.apple_user_id || null,
-    email:               profile.email || null,
-    message_count:       profile.message_count || profile.msg_count_today || 0,
-    memory_summary:      profile.memory_summary || profile.preferences?.legacy_base44_profile?.memory_summary || "",
-    user_facts:          profile.user_facts || {},
-    session_memory:      profile.session_memory || profile.preferences?.legacy_base44_profile?.session_memory || [],
-    emotional_timeline:  profile.emotional_timeline || [],
-    structured_memory:   profile.structured_memory || [],
+    profileId:            profile.id,
+    is_premium:           isPremium,
+    annual_plan:          isAnnual,
+    pro_plan:             isPro,
+    ultimate_friend:      isUltimate,
+    family_unlimited:     isFamily,
+    family_plan:          isFamily,
+    display_name:         profile.display_name || null,
+    created_date:         profile.created_date || profile.created_at || null,
+    created_at:           profile.created_at   || profile.created_date || null,
+    companion_nickname:   profile.companion_nickname || companionData?.nickname || null,
+    onboarding_complete:  profile.onboarding_complete || profile.onboarding_done || false,
+    companion_id:         profile.companion_id || null,
+    preferred_mood:       profile.preferred_mood || null,
+    apple_user_id:        profile.apple_user_id || null,
+    email:                profile.email || null,
+    message_count:        profile.message_count || profile.msg_count_today || 0,
+    memory_summary:       profile.memory_summary || leg.memory_summary || "",
+    user_facts:           profile.user_facts   || leg.user_facts || {},
+    session_memory:       profile.session_memory || leg.session_memory || [],
+    emotional_timeline:   profile.emotional_timeline   || [],
+    structured_memory:    profile.structured_memory    || [],
     relationship_milestones: profile.relationship_milestones || [],
-    memory_updated_at:   profile.memory_updated_at || profile.updated_date || profile.updated_at || null,
-    profile_snapshot:    profile.profile_snapshot || null,
-    snapshot_updated_at: profile.snapshot_updated_at || null,
-    chat_appearance:     profile.chat_appearance || null,
-    daily_usage:         profile.daily_usage || null,
-    companion:           companionData,
+    memory_updated_at:    profile.memory_updated_at || profile.updated_at || null,
+    profile_snapshot:     profile.profile_snapshot     || null,
+    snapshot_updated_at:  profile.snapshot_updated_at  || null,
+    chat_appearance:      profile.chat_appearance       || null,
+    daily_usage:          profile.daily_usage           || null,
+    companion:            companionData,
   };
 }
 
+// ── Main handler ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -416,280 +208,215 @@ export default async function handler(req, res) {
   }
 
   const {
-    action = "sync",         // "sync" | "update" | "create"
-    appleUserId: rawAppleUserId,
-    apple_user_id,
-    apple_userId,
-    googleUserId: rawGoogleUserId,            // Android Google Sign-In — used as the canonical user ID
-    google_user_id,
-    google_userId,
+    action = "sync",
+    appleUserId:   rawAppleUserId,
+    apple_user_id, apple_userId,
+    googleUserId:  rawGoogleUserId,
+    google_user_id, google_userId,
     email: clientEmail,
     fullName,
     isPremium,
     plan,
-    platform,                // "ios" | "android" — passed by Android wrapper
-    profileId,               // for direct update by ID
-    updateData,              // fields to update (for action="update")
-    displayName,             // for onboarding name step
-    identityToken,           // Apple JWT — always contains email, even on repeat logins
-    pushToken,               // Expo push token from native bridge
+    platform,
+    profileId,
+    updateData,
+    identityToken,
+    pushToken,
   } = req.body || {};
 
-  const appleUserId = rawAppleUserId || apple_user_id || apple_userId || null;
+  const appleUserId  = rawAppleUserId  || apple_user_id  || apple_userId  || null;
   const googleUserId = rawGoogleUserId || google_user_id || google_userId || null;
+  const canonicalId  = appleUserId || googleUserId || null;
 
-  // Extract email from Apple's identity token JWT — reliable on EVERY login
-  // Apple only sends email in the client payload on first login, but it's
-  // always present in the signed JWT token they issue every time.
+  // Email from Apple JWT (present on every login, unlike the client payload)
   const jwtPayload = decodeAppleJwt(identityToken);
   const email = jwtPayload.email || clientEmail || "";
 
-  // For Android users, googleUserId IS the canonical user ID.
-  // We store it in apple_user_id so all existing lookup/auth code works unchanged.
-  const canonicalUserId = appleUserId || googleUserId || null;
-  // Alias so all downstream code can use appleUserId regardless of platform
-  if (!appleUserId && googleUserId) {
-    // eslint-disable-next-line no-param-reassign
-    Object.assign(req.body, { appleUserId: googleUserId });
-  }
-  // Re-bind local variable for all downstream logic
-  const _appleUserId = canonicalUserId;
-
-  console.log(`[syncProfile] action=${action} userId=${_appleUserId?.slice(0,12)} platform=${platform||"ios"} profileId=${profileId}`);
+  console.log(`[syncProfile] action=${action} userId=${canonicalId?.slice(0, 12)} platform=${platform || "ios"}`);
 
   try {
-    if (action === "sync" && isValidProfileUserId(appleUserId)) {
-      try {
-        const incidentResult = await incidentSyncAppleProfile({ ...req.body, appleUserId });
-        if (incidentResult?.profile) {
-          const companionData = await getCompanion(incidentResult.profile.companion_id || incidentResult.profile.avatar_id || null);
-          return res.status(200).json({
-            ...buildProfileResponse(incidentResult.profile, companionData),
-            profile: incidentResult.profile,
-            created: !!incidentResult.created,
-            source_table: incidentResult.table,
-          });
-        }
-      } catch (incidentErr) {
-        console.warn(`[syncProfile] incident fallback failed, continuing legacy path: ${incidentErr.message}`);
-      }
-    }
-    // ── ACTION: lookup — find a profile without creating it ───────────────────
-    // Used by client-side recovery hooks to check if a profile exists for a
-    // given identifier (appleUserId or deviceId) without risking creation of a
-    // ghost profile for anonymous/device-only users.
+    // ── ACTION: lookup ────────────────────────────────────────────────────────
     if (action === "lookup") {
-      if (!appleUserId) return res.status(400).json({ error: "appleUserId required for lookup" });
+      if (!appleUserId) return res.status(400).json({ error: "appleUserId required" });
       const found = await findByAppleId(appleUserId);
       if (!found) return res.status(200).json({ found: false, data: null });
-      const companion = await getCompanion(found.companion_id);
-      console.log(`[syncProfile] lookup found profile ${found.id} for ${appleUserId?.slice(0,12)}`);
-      return res.status(200).json({ found: true, data: buildProfileResponse(found, companion) });
+      const companion = await getCompanion(found.profile.companion_id);
+      return res.status(200).json({ found: true, data: buildProfileResponse(found.profile, companion) });
     }
 
-    // ── ACTION: get — fetch a profile by ID (e.g. for MemoryEditor) ──────────
+    // ── ACTION: get (memory editor) ───────────────────────────────────────────
     if (action === "get") {
-      if (!profileId) return res.status(400).json({ error: "profileId required for get" });
-      try {
-        const r = await fetch(`${B44_BASE}/UserProfile/${profileId}`, { headers: b44Headers() });
-        if (!r.ok) return res.status(404).json({ error: "Profile not found" });
-        const profile = await r.json();
-        return res.status(200).json({
-          user_facts:     profile.user_facts     || {},
-          memory_summary: profile.memory_summary || "",
-          session_memory: profile.session_memory || [],
-          emotional_timeline: profile.emotional_timeline || [],
-          structured_memory: profile.structured_memory || [],
-          relationship_milestones: profile.relationship_milestones || [],
-          memory_updated_at: profile.memory_updated_at || null,
-          display_name:   profile.display_name   || "",
-        });
-      } catch (e) {
-        return res.status(500).json({ error: e.message });
-      }
+      if (!profileId) return res.status(400).json({ error: "profileId required" });
+      const found = await findById(profileId);
+      if (!found) return res.status(404).json({ error: "Profile not found" });
+      const p = found.profile;
+      return res.status(200).json({
+        user_facts:              p.user_facts              || {},
+        memory_summary:          p.memory_summary          || "",
+        session_memory:          p.session_memory          || [],
+        emotional_timeline:      p.emotional_timeline      || [],
+        structured_memory:       p.structured_memory       || [],
+        relationship_milestones: p.relationship_milestones || [],
+        memory_updated_at:       p.memory_updated_at       || null,
+        display_name:            p.display_name            || "",
+      });
     }
 
-    // ── ACTION: update — update a specific profile by ID ──────────────────────
+    // ── ACTION: update ────────────────────────────────────────────────────────
     if (action === "update") {
-      if (!profileId) return res.status(400).json({ error: "profileId required for update" });
-      // appleUserId is required to prove ownership — anonymous writes are not permitted.
-      // A caller that only knows the profileId cannot prove they own the record.
-      if (!appleUserId) {
-        console.warn(`[syncProfile] update rejected: appleUserId required for ownership verification`);
-        return res.status(400).json({ error: "appleUserId is required to verify ownership for update" });
-      }
-      let profile;
-      try {
-        const res2 = await fetch(`${B44_BASE}/UserProfile/${profileId}`, { headers: b44Headers() });
-        profile = res2.ok ? await res2.json() : null;
-      } catch { profile = null; }
-      if (!profile) return res.status(404).json({ error: "Profile not found" });
-      if (profile.apple_user_id && profile.apple_user_id !== appleUserId) {
-        console.warn(`[syncProfile] update rejected: appleUserId mismatch for profile ${profileId}`);
+      if (!profileId) return res.status(400).json({ error: "profileId required" });
+      if (!appleUserId) return res.status(400).json({ error: "appleUserId required for ownership check" });
+
+      const found = await findById(profileId);
+      if (!found) return res.status(404).json({ error: "Profile not found" });
+      if (found.profile.apple_user_id && found.profile.apple_user_id !== appleUserId) {
         return res.status(403).json({ error: "Forbidden" });
       }
-      if (isMemoryClearUpdate(updateData || {})) {
-        await appendMemoryRecoveryBackup(profile, "syncProfile_memory_clear");
-      }
-      const updated = await updateProfile(profileId, updateData || {});
+
+      const updated = await updateProfile(profileId, found.table, updateData || {});
       return res.status(200).json({ ok: true, data: updated });
     }
 
-    // ── ACTION: delete — permanently remove profile from DB ───────────────────
+    // ── ACTION: delete ────────────────────────────────────────────────────────
     if (action === "delete") {
-      if (!profileId && !appleUserId) return res.status(400).json({ error: "profileId or appleUserId required" });
-      // Require appleUserId for all delete requests so ownership can always be verified.
-      // A caller that only knows the profileId (a DB record ID) cannot prove they own it.
-      if (!appleUserId) {
-        console.warn(`[syncProfile] delete rejected: appleUserId required for ownership verification`);
-        return res.status(403).json({ error: "appleUserId required to verify ownership before deletion" });
-      }
-      let deleteId = profileId;
-      // If only appleUserId provided, look up the profile first
-      if (!deleteId && appleUserId) {
+      if (!appleUserId) return res.status(403).json({ error: "appleUserId required" });
+      let targetId = profileId;
+      if (!targetId) {
         const found = await findByAppleId(appleUserId);
-        if (found) deleteId = found.id;
+        if (found) targetId = found.profile.id;
       }
-      if (deleteId) {
-        // Ownership check — verify the caller owns this profile before deleting.
-        let targetProfile;
-        try {
-          const r = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, { headers: b44Headers() });
-          targetProfile = r.ok ? await r.json() : null;
-        } catch { targetProfile = null; }
-        if (!targetProfile) return res.status(404).json({ error: "Profile not found" });
-        // Reject deletion when:
-        // 1. The target profile has no apple_user_id set (can't verify ownership of anonymous profiles)
-        // 2. The target profile's apple_user_id doesn't match the caller
-        if (!targetProfile.apple_user_id || targetProfile.apple_user_id !== appleUserId) {
-          console.warn(`[syncProfile] delete rejected: appleUserId mismatch for profile ${deleteId}`);
+      if (targetId) {
+        const found = await findById(targetId);
+        if (!found) return res.status(404).json({ error: "Profile not found" });
+        if (!found.profile.apple_user_id || found.profile.apple_user_id !== appleUserId) {
           return res.status(403).json({ error: "Forbidden" });
         }
-        const delRes = await fetch(`${B44_BASE}/UserProfile/${deleteId}`, {
-          method: "DELETE",
-          headers: b44Headers(),
-        });
-        console.log(`[syncProfile] Deleted profile ${deleteId}: ${delRes.status}`);
+        await deleteProfile(targetId, found.table);
+        console.log(`[syncProfile] Deleted profile ${targetId}`);
       }
-      return res.status(200).json({ ok: true, deleted: deleteId || null });
+      return res.status(200).json({ ok: true, deleted: targetId || null });
     }
 
-    // ── ACTION: sync — find or create profile (Apple on iOS, Google on Android) ──
-    if (!_appleUserId) return res.status(400).json({ error: "appleUserId or googleUserId required" });
+    // ── ACTION: sync (main path — find or create) ─────────────────────────────
+    if (!canonicalId) return res.status(400).json({ error: "appleUserId or googleUserId required" });
 
-    // 1. Search by canonical user ID (stored in apple_user_id field for both platforms)
-    let profile = await findByAppleId(_appleUserId);
-
-    // NOTE: email-based fallback lookup has been intentionally removed.
-    // Using an unverified JWT email to locate accounts would allow an attacker
-    // to forge a token with a victim's email and take over their profile.
-    // findByEmail() must not be used as a profile-lookup step here.
-
-    // 2. Last resort: find by display_name for users migrating from old app (no apple_user_id stored)
-    // [SECURITY] findByDisplayName fallback removed — prevented account hijack via name match
-
+    let found = await findByAppleId(canonicalId);
     const now = new Date().toISOString();
 
-    if (profile) {
-      // ── If account was requested for deletion, wipe it and treat as new user ──
-      if (profile.account_delete_requested) {
-        console.log(`[syncProfile] Profile ${profile.id} was marked for deletion — wiping and treating as new`);
-        try {
-          const res = await fetch(`${B44_BASE}/UserProfile/${profile.id}`, {
-            method: "DELETE",
-            headers: b44Headers(),
-          });
-          console.log(`[syncProfile] Deleted stale profile: ${res.status}`);
-        } catch (e) {
-          console.warn(`[syncProfile] Could not delete stale profile: ${e.message}`);
-        }
-        profile = null; // fall through to new user creation below
-      }
+    if (found?.profile?.account_delete_requested) {
+      // Profile was marked for deletion — wipe and treat as new
+      await deleteProfile(found.profile.id, found.table);
+      console.log(`[syncProfile] Wiped deletion-requested profile ${found.profile.id}`);
+      found = null;
     }
 
-    if (profile) {
-      // ── RETURNING USER: update apple_user_id + last_seen ──────────────────
+    if (found) {
+      const profile = found.profile;
+
+      // ── Patch: update last_seen and any new fields ─────────────────────────
       const patch = {
-        apple_user_id: _appleUserId,
-        last_seen: now,
-        last_active: now,
+        apple_user_id: canonicalId,
+        last_seen:     now,
+        last_active:   now,
       };
+
+      // Caller explicitly passing isPremium (e.g. after purchase)
       if (isPremium) {
         patch.is_premium = true;
         if (plan === "annual") patch.annual_plan = true;
         if (plan === "pro")    patch.pro_plan    = true;
       }
-      // ── One-time legacy premium rehydration ──────────────────────────────
-      // If the live profile has no premium flag but old Base44 data was preserved
-      // in preferences.legacy_base44_profile, restore the flags now so they are
-      // permanently written back to the DB and the app shows VIP status again.
-      const _legacy = profile.preferences?.legacy_base44_profile;
-      if (_legacy && !profile.is_premium && !profile.premium && !profile.annual_plan && !profile.pro_plan) {
-        if (_legacy.is_premium || _legacy.premium || _legacy.annual_plan || _legacy.pro_plan) {
-          patch.is_premium  = !!(_legacy.is_premium  || _legacy.premium);
-          patch.annual_plan = !!(_legacy.annual_plan);
-          patch.pro_plan    = !!(_legacy.pro_plan);
-          console.log(`[syncProfile] Legacy premium rehydration for ${profile.id}: is_premium=${patch.is_premium} annual=${patch.annual_plan} pro=${patch.pro_plan}`);
-        }
+
+      // One-time legacy premium rehydration: if this user had VIP in the old system
+      // and it was preserved in preferences.legacy_base44_profile, restore it now.
+      const leg = profile.preferences?.legacy_base44_profile || {};
+      const liveHasPremium = !!(profile.is_premium || profile.premium || profile.annual_plan || profile.pro_plan || profile.family_unlimited || profile.ultimate_friend);
+      const legacyHasPremium = !!(leg.is_premium || leg.premium || leg.annual_plan || leg.pro_plan || leg.family_unlimited || leg.ultimate_friend);
+      if (!liveHasPremium && legacyHasPremium) {
+        patch.is_premium      = !!(leg.is_premium  || leg.premium || leg.annual_plan || leg.pro_plan);
+        patch.annual_plan     = !!(leg.annual_plan);
+        patch.pro_plan        = !!(leg.pro_plan);
+        patch.family_unlimited = !!(leg.family_unlimited);
+        patch.ultimate_friend  = !!(leg.ultimate_friend);
+        console.log(`[syncProfile] Rehydrating legacy premium for ${profile.id}`);
       }
-      if (email && !profile.email)        patch.email        = email;
-      if (pushToken && pushToken.startsWith("ExponentPushToken")) {
+
+      if (email && !profile.email)    patch.email        = email;
+      if (fullName && !profile.display_name) patch.display_name = fullName;
+      if (pushToken?.startsWith("ExponentPushToken")) {
         patch.push_token   = pushToken;
         patch.push_enabled = true;
       }
-      if (fullName && !profile.display_name) patch.display_name = fullName;
 
-      await updateProfile(profile.id, patch);
-      Object.assign(profile, patch); // reflect updates locally
+      const updated = await updateProfile(profile.id, found.table, patch);
+      const merged  = { ...profile, ...patch, ...(updated || {}) };
+      const companion = await getCompanion(merged.companion_id);
 
-      const companion = await getCompanion(profile.companion_id);
-      console.log(`[syncProfile] Returning user ${profile.id} updated`);
+      console.log(`[syncProfile] Returning user ${profile.id}`);
       return res.status(200).json({
         isNewUser: false,
-        data: buildProfileResponse(profile, companion),
+        ...buildProfileResponse(merged, companion),
+        profile: merged,
+        source_table: found.table,
       });
 
     } else {
-      // ── NEW USER: dedup guard — wait 300ms and re-check before creating ──
-      // This prevents race conditions where two simultaneous calls both see no profile
+      // ── New user: dedup guard ──────────────────────────────────────────────
       await new Promise(r => setTimeout(r, 300));
-      const recheck = await findByAppleId(_appleUserId);
+      const recheck = await findByAppleId(canonicalId);
       if (recheck) {
-        // Another call already created it — treat as returning user
-        const companion = await getCompanion(recheck.companion_id);
-        console.log(`[syncProfile] Dedup: profile created by concurrent call ${recheck.id}`);
+        const companion = await getCompanion(recheck.profile.companion_id);
         return res.status(200).json({
           isNewUser: false,
-          data: buildProfileResponse(recheck, companion),
+          ...buildProfileResponse(recheck.profile, companion),
+          profile: recheck.profile,
+          source_table: recheck.table,
         });
       }
-      // ── NEW USER: create minimal profile ─────────────────────────────────
-      const newProfile = await createProfile({
-        apple_user_id: _appleUserId,
-        email:              email    || "",
-      push_token:         (pushToken && pushToken.startsWith("ExponentPushToken")) ? pushToken : null,
-      push_enabled:       !!(pushToken && pushToken.startsWith("ExponentPushToken")),
-        display_name:       fullName && fullName.trim() ? fullName.trim() : "",
-        is_premium:         isPremium || false,
-        onboarding_complete: false,
-        companion_id:       "pending",
-        background_id:      "pending",
-        message_count:      0,
-        created_at:         now,
-        last_seen:          now,
-        last_active:        now,
-      });
 
-      console.log(`[syncProfile] New user created: ${newProfile.id}`);
+      // ── Create new profile ─────────────────────────────────────────────────
+      const table = PROFILE_TABLES[0]; // default to first available
+      let newProfile;
+      try {
+        newProfile = await createProfile(table, {
+          apple_user_id:       canonicalId,
+          email:               email || "",
+          display_name:        fullName?.trim() || "",
+          is_premium:          !!isPremium,
+          annual_plan:         plan === "annual",
+          pro_plan:            plan === "pro",
+          onboarding_complete: false,
+          companion_id:        "pending",
+          message_count:       0,
+          push_token:          pushToken?.startsWith("ExponentPushToken") ? pushToken : null,
+          push_enabled:        !!(pushToken?.startsWith("ExponentPushToken")),
+        });
+      } catch (e) {
+        // Final fallback: try second table name
+        newProfile = await createProfile(PROFILE_TABLES[1] || PROFILE_TABLES[0], {
+          apple_user_id: canonicalId,
+          email: email || "",
+          display_name: fullName?.trim() || "",
+          is_premium: !!isPremium,
+          onboarding_done: false,
+          tier: plan || "free",
+          msg_count_today: 0,
+          preferences: {},
+        });
+      }
+
+      const companion = await getCompanion(newProfile?.companion_id);
+      console.log(`[syncProfile] New user created ${newProfile?.id}`);
       return res.status(200).json({
         isNewUser: true,
-        data: buildProfileResponse(newProfile, null),
+        ...buildProfileResponse(newProfile || {}, companion),
+        profile: newProfile,
+        source_table: table,
       });
     }
 
   } catch (err) {
-    console.error("[syncProfile] error:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error("[syncProfile] Unhandled error:", err.message, err.stack?.slice(0, 500));
+    return res.status(500).json({ error: "Internal server error", detail: err.message });
   }
 }
-
