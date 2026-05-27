@@ -292,8 +292,9 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
                 background: "linear-gradient(180deg, #0c0418 0%, #0a0320 100%)",
                 border: "1px solid rgba(168,85,247,0.2)",
                 borderRadius: "24px 24px 0 0",
-                padding: "20px 20px 40px",
-                maxHeight: "85vh", overflowY: "auto",
+                padding: "20px 20px 0",
+                paddingBottom: "max(40px, env(safe-area-inset-bottom, 40px))",
+                maxHeight: "90vh", overflowY: "auto",
               }}
             >
               {/* Header */}
@@ -331,10 +332,11 @@ export default function MemoryEditor({ isPremium, onUpgrade, profileId }) {
                     </div>
                   ))}
                   <button onClick={onUpgrade} style={{
-                    marginTop: 16, width: "100%", padding: "14px",
+                    marginTop: 16, marginBottom: 24, width: "100%", padding: "16px 14px",
                     background: "linear-gradient(135deg, #7c3aed, #a855f7)",
                     border: "none", borderRadius: 14, color: "white",
                     fontWeight: 700, fontSize: 15, cursor: "pointer",
+                    display: "block",
                   }}>
                     Unlock Memory ✨
                   </button>

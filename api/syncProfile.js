@@ -178,8 +178,14 @@ function buildProfileResponse(profile, companionData) {
     apple_user_id:        profile.apple_user_id || null,
     email:                profile.email || null,
     message_count:        profile.message_count || profile.msg_count_today || 0,
-    memory_summary:       profile.memory_summary || leg.memory_summary || "",
-    user_facts:           profile.user_facts   || leg.user_facts || {},
+    memory_summary:       profile.memory_summary
+                            || (profile.preferences?.legacy_base44_profile?.memory_summary)
+                            || leg.memory_summary
+                            || "",
+    user_facts:           profile.user_facts
+                            || (profile.preferences?.legacy_base44_profile?.user_facts)
+                            || leg.user_facts
+                            || {},
     session_memory:       profile.session_memory || leg.session_memory || [],
     emotional_timeline:   profile.emotional_timeline   || [],
     structured_memory:    profile.structured_memory    || [],
