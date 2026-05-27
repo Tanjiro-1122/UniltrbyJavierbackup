@@ -144,17 +144,19 @@ export default async function handler(req, res) {
     // ── getRecentMessages ─────────────────────────────────────────────────────
     if (action === "getRecentMessages") {
       if (!apple_user_id) return res.status(400).json({ error: "apple_user_id required" });
-      const { companion_id, limit = 20 } = payload;
+      const { limit = 20 } = payload;
 
-      const filter = { apple_user_id };
-      if (companion_id && companion_id !== "pending") filter.companion_id = companion_id;
+      // chat_history has no companion_id column — filter only by apple_user_id
+      // Get the most recent NON-legacy rows first, then fall back to legacy if needed
+      const allRows = await sbFilterQuery("chat_history", { apple_user_id }, "saved_at.desc", 20);
+      if (!allRows.length) return res.json({ items: [] });
 
-      const rows = await sbFilterQuery("chat_history", filter, "saved_at.desc", 5);
-      if (!rows.length) return res.json({ items: [] });
+      // Separate live rows from legacy imports (tier="legacy_import")
+      const liveRows   = allRows.filter(r => r.tier !== "legacy_import");
+      const sourceRows = liveRows.length >= 1 ? liveRows : allRows;
 
       const allMessages = [];
-      for (const row of rows) {
-        if (row.source && String(row.source).includes("legacy")) continue;
+      for (const row of sourceRows) {
         const msgs = Array.isArray(row.messages) ? row.messages : [];
         for (const m of msgs) {
           if (m && m.role && m.content) allMessages.push(m);
@@ -162,6 +164,7 @@ export default async function handler(req, res) {
         if (allMessages.length >= limit) break;
       }
 
+      // Return in chronological order (oldest → newest), capped at limit
       const slice = allMessages.slice(-limit);
       return res.json({ items: slice, count: slice.length });
     }
