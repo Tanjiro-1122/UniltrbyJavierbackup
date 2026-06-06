@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { COMPANIONS } from "@/components/companionData";
 
-const LOGO = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
+const LOGO = "https://qphizjwoijvjoygihkle.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
 
 // Floating star particle
 function Star({ style }) {
