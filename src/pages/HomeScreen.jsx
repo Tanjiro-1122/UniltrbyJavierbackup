@@ -222,7 +222,7 @@ async function handleGoogleSignIn({ googleUserId, email, displayName, isPremiumF
   return { profile, isNewUser };
 }
 
-const LOGO = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
+const LOGO = "https://qphizjwoijvjoygihkle.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
 
 export default function HomeScreen() {
   const navigate = useNavigate();
