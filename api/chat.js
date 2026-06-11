@@ -529,7 +529,7 @@ const memCtx = resolvedMemorySummary
     })
     .filter(line => line !== "- ")
     .join("\n");
-
+    }
     // ── #3: Memory confirmation nudge ───────────────────────────────────
 const memoryConfirmCtx = buildMemoryConfirmationNudge(
   resolvedUserFacts,
