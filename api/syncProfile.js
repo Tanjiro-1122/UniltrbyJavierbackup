@@ -67,9 +67,19 @@ async function updateProfile(id, table, data) {
     body: { ...data, updated_at: new Date().toISOString() },
     prefer: "return=representation",
   });
-  if (r.ok) return Array.isArray(r.data) ? r.data[0] : r.data;
-  console.warn(`[syncProfile] updateProfile ${table} ${id}: ${r.status}`);
-  return null;
+
+  if (r.ok) {
+    return Array.isArray(r.data) ? r.data[0] : r.data;
+  }
+
+  console.error(
+    `[syncProfile] updateProfile failed table=${table} id=${id} status=${r.status}`,
+    r.data
+  );
+
+  throw new Error(
+    `updateProfile ${table}: ${r.status} ${JSON.stringify(r.data)?.slice(0, 500)}`
+  );
 }
 
 async function createProfile(table, data) {
