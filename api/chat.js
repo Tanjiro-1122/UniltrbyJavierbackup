@@ -333,10 +333,10 @@ export default async function handler(req, res) {
     const {
       messages,
       memorySummary,
-      sessionMemory,
+      sessionMemory: rawSessionMemory,
       profileId,
       personality,
-      userFacts,
+      userFacts: rawUserFacts,
       imageBase64,
       relationshipMode = "friend",
       userName,
@@ -361,29 +361,39 @@ export default async function handler(req, res) {
     // Never trust isPremium/isPro/isAnnual sent by the client — a free user
     // could forge these to unlock paid features at no cost.
     const { isPremium, isPro, isAnnual, isUltimateFriend, profile } = await getProfileTier(profileId);
-const legacyProfile = profile?.preferences?.legacy_base44_profile || {};
 
-const resolvedMemorySummary =
-  memorySummary ||
-  profile?.memory_summary ||
-  legacyProfile.memory_summary ||
-  "";
+    // ── Parse-safe memory normalization ────────────────────────────────────
+    // user_facts is stored as TEXT in Supabase and may arrive as a JSON string
+    // (from the client or the profile row). Never assume it is an object.
+    const parseObjectValue = (value) => {
+      if (!value) return {};
+      if (typeof value === "object" && !Array.isArray(value)) return value;
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch { return {}; }
+      }
+      return {};
+    };
+    const parseArrayValue = (value) => {
+      if (Array.isArray(value)) return value;
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
+      }
+      return [];
+    };
 
-const resolvedUserFacts =
-  userFacts && Object.keys(userFacts).length > 0
-    ? userFacts
-    : profile?.user_facts && Object.keys(profile.user_facts).length > 0
-      ? profile.user_facts
-      : legacyProfile.user_facts || {};
+    const clientUserFacts  = parseObjectValue(rawUserFacts);
+    const profileUserFacts = parseObjectValue(profile?.user_facts);
+    const userFacts = Object.keys(clientUserFacts).length > 0 ? clientUserFacts : profileUserFacts;
 
-const resolvedSessionMemory =
-  Array.isArray(sessionMemory) && sessionMemory.length > 0
-    ? sessionMemory
-    : Array.isArray(profile?.session_memory) && profile.session_memory.length > 0
-      ? profile.session_memory
-      : Array.isArray(legacyProfile.session_memory)
-        ? legacyProfile.session_memory
-        : [];
+    const clientSessionMemory  = parseArrayValue(rawSessionMemory);
+    const profileSessionMemory = parseArrayValue(profile?.session_memory);
+    const sessionMemory = clientSessionMemory.length > 0 ? clientSessionMemory : profileSessionMemory;
 
     // ── Server-side rolling 24-hour message limit ────────────────────────────
     // Must match the client-side unfiltr_daily_usage behavior. Do NOT reset at
@@ -494,17 +504,14 @@ const resolvedSessionMemory =
     } else {
       system = safeCompanionName ? `You are ${safeCompanionName}, a warm, supportive AI companion.` : "You are a warm, supportive AI companion.";
     }
-const factsCtx =
-  !resolvedMemorySummary && Object.keys(resolvedUserFacts).length > 0
-    ? buildRichSummaryFromFacts(resolvedUserFacts)
-    : "";
-
-const memCtx = resolvedMemorySummary
-  ? `\n\nWhat you remember about this user: ${resolvedMemorySummary}`
-  : factsCtx
-    ? `\n\nWhat you know about this user: ${factsCtx}`
-    : "";
-  
+    const factsCtx = !memorySummary && userFacts && Object.keys(userFacts).length > 0
+      ? buildRichSummaryFromFacts(userFacts)
+      : "";
+    const memCtx = memorySummary
+      ? `\n\nWhat you remember about this user: ${memorySummary}`
+      : factsCtx
+        ? `\n\nWhat you know about this user: ${factsCtx}`
+        : "";
     const personalityCtx = buildPersonalityParagraph(personality);
 
     // Relationship mode — shapes tone and dynamic
@@ -518,31 +525,24 @@ const memCtx = resolvedMemorySummary
 
     // Session memory context (paid tiers only)
     let sessionCtx = "";
-    if ((isPremium || isPro || isAnnual) && resolvedSessionMemory.length) {
-  const recent = resolvedSessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
-      sessionCtx =
-  "\n\nRecent session notes:\n" +
-  recent
-    .map(s => {
-      if (typeof s === "string") return `- ${s}`;
-      return `- ${s?.date ? `${s.date}: ` : ""}${s?.summary || s?.content || ""}`;
-    })
-    .filter(line => line !== "- ")
-    .join("\n");
+    if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
+      const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
+      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
     }
+
     // ── #3: Memory confirmation nudge ───────────────────────────────────
-const memoryConfirmCtx = buildMemoryConfirmationNudge(
-  resolvedUserFacts,
-  resolvedSessionMemory,
-  isPremium || isPro || isAnnual
-);
+    const memoryConfirmCtx = buildMemoryConfirmationNudge(
+      userFacts || {},
+      sessionMemory || [],
+      isPremium || isPro || isAnnual
+    );
 
     // ── #6: Proactive memory surfacing ──────────────────────────────────
-const proactiveCtx = buildProactiveMemoryInstruction(
-  resolvedUserFacts,
-  resolvedSessionMemory,
-  messages?.length || 0
-);
+    const proactiveCtx = buildProactiveMemoryInstruction(
+      userFacts || {},
+      sessionMemory || [],
+      messages?.length || 0
+    );
     // ── Vector memory retrieval (premium+ only) ─────────────────────────
     let vectorCtx = "";
     if (profileId && (isPremium || isPro || isAnnual) && messages?.length) {
@@ -561,24 +561,18 @@ const proactiveCtx = buildProactiveMemoryInstruction(
       }
     }
 
-  const memoryHealth = buildMemoryHealth({
-  profileId,
-  memorySummary: resolvedMemorySummary,
-  userFacts: resolvedUserFacts,
-  sessionMemory: resolvedSessionMemory,
-  vectorCtx,
-  profile,
-  isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
-});
-   const ultimateContinuityCtx = isUltimateFriend
-  ? buildUltimateContinuityInstruction({
-      memorySummary: resolvedMemorySummary,
-      userFacts: resolvedUserFacts,
-      sessionMemory: resolvedSessionMemory,
+    const memoryHealth = buildMemoryHealth({
+      profileId,
+      memorySummary,
+      userFacts,
+      sessionMemory,
       vectorCtx,
       profile,
-    })
-  : "";
+      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+    });
+    const ultimateContinuityCtx = isUltimateFriend
+      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx, profile })
+      : "";
 
     const presenceCtx = buildPresenceAwarenessContext({
       presenceContext,

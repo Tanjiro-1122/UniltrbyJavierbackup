@@ -337,7 +337,11 @@ export async function getProfileTier(profileId) {
     try {
       // Dynamic import avoids a circular dependency (_b44 ← _helpers).
       const { b44Fetch, B44_ENTITIES } = await import("./_b44.js");
-      profile = await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`);
+      const resp = await b44Fetch(`${B44_ENTITIES}/UserProfile/${profileId}`);
+      // b44Fetch returns a Response for GET — parse it before use.
+      profile = resp && typeof resp.json === "function"
+        ? await resp.json().catch(() => null)
+        : resp;
       if (profile) setCachedProfile(profileId, profile);
     } catch (e) {
       console.warn(`[getProfileTier] lookup failed for ${profileId}: ${e.message}`);
@@ -362,9 +366,13 @@ export async function getProfileTierByAppleId(appleUserId) {
 
   try {
     const { b44Fetch, B44_ENTITIES } = await import("./_b44.js");
-    const data = await b44Fetch(
+    const resp = await b44Fetch(
       `${B44_ENTITIES}/UserProfile?apple_user_id=${encodeURIComponent(appleUserId)}&limit=1`
     );
+    // b44Fetch returns a Response for GET — parse it before use.
+    const data = resp && typeof resp.json === "function"
+      ? await resp.json().catch(() => [])
+      : resp;
     const records = Array.isArray(data) ? data : (data?.items || data?.records || []);
     const profile = records.length > 0 ? records[0] : null;
     if (!profile) return { isPremium: false, isPro: false, isAnnual: false, profile: null, fetchFailed: false };
