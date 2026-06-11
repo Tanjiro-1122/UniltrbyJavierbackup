@@ -361,6 +361,29 @@ export default async function handler(req, res) {
     // Never trust isPremium/isPro/isAnnual sent by the client — a free user
     // could forge these to unlock paid features at no cost.
     const { isPremium, isPro, isAnnual, isUltimateFriend, profile } = await getProfileTier(profileId);
+const legacyProfile = profile?.preferences?.legacy_base44_profile || {};
+
+const resolvedMemorySummary =
+  memorySummary ||
+  profile?.memory_summary ||
+  legacyProfile.memory_summary ||
+  "";
+
+const resolvedUserFacts =
+  userFacts && Object.keys(userFacts).length > 0
+    ? userFacts
+    : profile?.user_facts && Object.keys(profile.user_facts).length > 0
+      ? profile.user_facts
+      : legacyProfile.user_facts || {};
+
+const resolvedSessionMemory =
+  Array.isArray(sessionMemory) && sessionMemory.length > 0
+    ? sessionMemory
+    : Array.isArray(profile?.session_memory) && profile.session_memory.length > 0
+      ? profile.session_memory
+      : Array.isArray(legacyProfile.session_memory)
+        ? legacyProfile.session_memory
+        : [];
 
     // ── Server-side rolling 24-hour message limit ────────────────────────────
     // Must match the client-side unfiltr_daily_usage behavior. Do NOT reset at
@@ -471,14 +494,17 @@ export default async function handler(req, res) {
     } else {
       system = safeCompanionName ? `You are ${safeCompanionName}, a warm, supportive AI companion.` : "You are a warm, supportive AI companion.";
     }
-    const factsCtx = !memorySummary && userFacts && Object.keys(userFacts).length > 0
-      ? buildRichSummaryFromFacts(userFacts)
-      : "";
-    const memCtx = memorySummary
-      ? `\n\nWhat you remember about this user: ${memorySummary}`
-      : factsCtx
-        ? `\n\nWhat you know about this user: ${factsCtx}`
-        : "";
+const factsCtx =
+  !resolvedMemorySummary && Object.keys(resolvedUserFacts).length > 0
+    ? buildRichSummaryFromFacts(resolvedUserFacts)
+    : "";
+
+const memCtx = resolvedMemorySummary
+  ? `\n\nWhat you remember about this user: ${resolvedMemorySummary}`
+  : factsCtx
+    ? `\n\nWhat you know about this user: ${factsCtx}`
+    : "";
+  
     const personalityCtx = buildPersonalityParagraph(personality);
 
     // Relationship mode — shapes tone and dynamic
@@ -492,24 +518,31 @@ export default async function handler(req, res) {
 
     // Session memory context (paid tiers only)
     let sessionCtx = "";
-    if ((isPremium || isPro || isAnnual) && sessionMemory?.length) {
-      const recent = sessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
-      sessionCtx = "\n\nRecent session notes:\n" + recent.map(s => `- ${s}`).join("\n");
-    }
+    if ((isPremium || isPro || isAnnual) && resolvedSessionMemory.length) {
+  const recent = resolvedSessionMemory.slice(0, isPro || isAnnual ? 5 : 3);
+      sessionCtx =
+  "\n\nRecent session notes:\n" +
+  recent
+    .map(s => {
+      if (typeof s === "string") return `- ${s}`;
+      return `- ${s?.date ? `${s.date}: ` : ""}${s?.summary || s?.content || ""}`;
+    })
+    .filter(line => line !== "- ")
+    .join("\n");
 
     // ── #3: Memory confirmation nudge ───────────────────────────────────
-    const memoryConfirmCtx = buildMemoryConfirmationNudge(
-      userFacts || {},
-      sessionMemory || [],
-      isPremium || isPro || isAnnual
-    );
+const memoryConfirmCtx = buildMemoryConfirmationNudge(
+  resolvedUserFacts,
+  resolvedSessionMemory,
+  isPremium || isPro || isAnnual
+);
 
     // ── #6: Proactive memory surfacing ──────────────────────────────────
-    const proactiveCtx = buildProactiveMemoryInstruction(
-      userFacts || {},
-      sessionMemory || [],
-      messages?.length || 0
-    );
+const proactiveCtx = buildProactiveMemoryInstruction(
+  resolvedUserFacts,
+  resolvedSessionMemory,
+  messages?.length || 0
+);
     // ── Vector memory retrieval (premium+ only) ─────────────────────────
     let vectorCtx = "";
     if (profileId && (isPremium || isPro || isAnnual) && messages?.length) {
@@ -528,18 +561,24 @@ export default async function handler(req, res) {
       }
     }
 
-    const memoryHealth = buildMemoryHealth({
-      profileId,
-      memorySummary,
-      userFacts,
-      sessionMemory,
+  const memoryHealth = buildMemoryHealth({
+  profileId,
+  memorySummary: resolvedMemorySummary,
+  userFacts: resolvedUserFacts,
+  sessionMemory: resolvedSessionMemory,
+  vectorCtx,
+  profile,
+  isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
+});
+   const ultimateContinuityCtx = isUltimateFriend
+  ? buildUltimateContinuityInstruction({
+      memorySummary: resolvedMemorySummary,
+      userFacts: resolvedUserFacts,
+      sessionMemory: resolvedSessionMemory,
       vectorCtx,
       profile,
-      isPaid: isPremium || isPro || isAnnual || isUltimateFriend,
-    });
-    const ultimateContinuityCtx = isUltimateFriend
-      ? buildUltimateContinuityInstruction({ memorySummary, userFacts, sessionMemory, vectorCtx, profile })
-      : "";
+    })
+  : "";
 
     const presenceCtx = buildPresenceAwarenessContext({
       presenceContext,
