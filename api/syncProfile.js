@@ -159,6 +159,31 @@ function isMemoryClearUpdate(d = {}) {
   );
 }
 
+// ── Parse-safe value normalisers ──────────────────────────────────────────────
+// user_facts / session_memory may arrive as jsonb (object/array) or as a JSON
+// string (legacy text column or older rows). Never assume the type.
+function parseObjectValue(value) {
+  if (!value) return {};
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch { return {}; }
+  }
+  return {};
+}
+function parseArrayValue(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+  return [];
+}
+
 // ── buildProfileResponse — normalises any profile row shape ──────────────────
 function buildProfileResponse(profile, companionData) {
   // Premium flags: read from live columns first, fall back to legacy Base44 data
@@ -192,11 +217,16 @@ function buildProfileResponse(profile, companionData) {
                             || (profile.preferences?.legacy_base44_profile?.memory_summary)
                             || leg.memory_summary
                             || "",
-    user_facts:           profile.user_facts
-                            || (profile.preferences?.legacy_base44_profile?.user_facts)
-                            || leg.user_facts
-                            || {},
-    session_memory:       profile.session_memory || leg.session_memory || [],
+    user_facts:           (() => {
+                            const v = parseObjectValue(profile.user_facts);
+                            if (Object.keys(v).length) return v;
+                            return parseObjectValue(profile.preferences?.legacy_base44_profile?.user_facts)
+                                || parseObjectValue(leg.user_facts);
+                          })(),
+    session_memory:       (() => {
+                            const v = parseArrayValue(profile.session_memory);
+                            return v.length ? v : parseArrayValue(leg.session_memory);
+                          })(),
     emotional_timeline:   profile.emotional_timeline   || [],
     structured_memory:    profile.structured_memory    || [],
     relationship_milestones: profile.relationship_milestones || [],
@@ -266,13 +296,19 @@ export default async function handler(req, res) {
       const found = await findById(profileId);
       if (!found) return res.status(404).json({ error: "Profile not found" });
       const p = found.profile;
+      const legacyFacts = parseObjectValue(p.preferences?.legacy_base44_profile?.user_facts);
+      const liveFacts   = parseObjectValue(p.user_facts);
       return res.status(200).json({
-        user_facts:              p.user_facts              || {},
-        memory_summary:          p.memory_summary          || "",
-        session_memory:          p.session_memory          || [],
-        emotional_timeline:      p.emotional_timeline      || [],
-        structured_memory:       p.structured_memory       || [],
-        relationship_milestones: p.relationship_milestones || [],
+        user_facts:              Object.keys(liveFacts).length ? liveFacts : legacyFacts,
+        memory_summary:          p.memory_summary
+                                   || p.preferences?.legacy_base44_profile?.memory_summary
+                                   || "",
+        session_memory:          parseArrayValue(p.session_memory).length
+                                   ? parseArrayValue(p.session_memory)
+                                   : parseArrayValue(p.preferences?.legacy_base44_profile?.session_memory),
+        emotional_timeline:      parseArrayValue(p.emotional_timeline),
+        structured_memory:       parseArrayValue(p.structured_memory),
+        relationship_milestones: parseArrayValue(p.relationship_milestones),
         memory_updated_at:       p.memory_updated_at       || null,
         display_name:            p.display_name            || "",
       });
@@ -289,7 +325,14 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const updated = await updateProfile(profileId, found.table, updateData || {});
+      const safeUpdate = { ...(updateData || {}) };
+      if (typeof safeUpdate.user_facts === "string") {
+        safeUpdate.user_facts = parseObjectValue(safeUpdate.user_facts);
+      }
+      if (typeof safeUpdate.session_memory === "string") {
+        safeUpdate.session_memory = parseArrayValue(safeUpdate.session_memory);
+      }
+      const updated = await updateProfile(profileId, found.table, safeUpdate);
       return res.status(200).json({ ok: true, data: updated });
     }
 
