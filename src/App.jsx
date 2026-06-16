@@ -427,7 +427,9 @@ const AuthenticatedApp = ({ splashDone }) => {
     }
   }, [splashDone, isLoadingAuth, isAuthenticated, authError?.type]);
 
-  if (!splashDone || isLoadingAuth) return null;
+  if (!splashDone || isLoadingAuth) return (
+    <div style={{ position: 'fixed', inset: 0, background: '#06020f' }} />
+  );
   if (authError?.type === "user_not_registered") return <UserNotRegisteredError />;
 
   return (
