@@ -86,7 +86,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-lg font-semibold text-white mb-2">8. Children's Privacy</h2>
             <p className="text-sm">
               Unfiltr is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us at{" "}
-              <a href="mailto:huertasfam1@icloud.com" className="text-purple-400 underline">huertasfam1@icloud.com</a>{" "}and we will delete it promptly.
+              <a href="mailto:javier.huertas@runekeeper.me" className="text-purple-400 underline">javier.huertas@runekeeper.me</a>{" "}and we will delete it promptly.
             </p>
           </div>
 
@@ -108,7 +108,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-lg font-semibold text-white mb-2">11. Contact Us</h2>
             <p className="text-sm">
               If you have questions about this privacy policy, please contact us at{" "}
-              <a href="mailto:huertasfam1@icloud.com" className="text-purple-400 underline">huertasfam1@icloud.com</a>
+              <a href="mailto:javier.huertas@runekeeper.me" className="text-purple-400 underline">javier.huertas@runekeeper.me</a>
             </p>
           </div>
 
