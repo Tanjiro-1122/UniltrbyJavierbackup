@@ -105,7 +105,7 @@ export default function Support() {
             Have questions or need assistance? We're here to help!
           </p>
           <a
-            href="mailto:huertasfam1@icloud.com?subject=Unfiltr%20Support%20Request"
+            href="mailto:javier.huertas@runekeeper.me?subject=Unfiltr%20Support%20Request"
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
               background: "rgba(168,85,247,0.12)",
@@ -116,7 +116,7 @@ export default function Support() {
             }}
           >
             <Mail size={18} color="#a855f7" />
-            huertasfam1@icloud.com
+            javier.huertas@runekeeper.me
           </a>
           <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, margin: "10px 0 0" }}>
             We typically respond within 24 hours
