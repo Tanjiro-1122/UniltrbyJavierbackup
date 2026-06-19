@@ -16,7 +16,7 @@ const KNOWN_PRODUCT_IDS = [
   "com.huertas.unfiltr.tier.pro",
 ];
 const EXPECTED_ENTITLEMENT_ID = "unfiltr by javier Pro";
-const SUPPORT_EMAIL = "huertasfam1@icloud.com";
+const SUPPORT_EMAIL = "javier.huertas@runekeeper.me";
 
 function warn(msg) {
   console.warn(`[ConfigCheck] ⚠️ ${msg}`);
