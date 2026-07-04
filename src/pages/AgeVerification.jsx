@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-const LOGO = "https://hvvrbpvsgjxiicigkwhu.supabase.co/storage/v1/object/public/companion-avatars/misc/d653bb16a_generated_image.png";
+const LOGO = "/logo.svg";
 
 const STARS = Array.from({ length: 30 }, (_, i) => ({
   id: i,
@@ -84,7 +84,7 @@ export default function AgeVerification() {
             filter: [
               "drop-shadow(0 0 18px rgba(168,85,247,0.5))",
               "drop-shadow(0 0 38px rgba(168,85,247,0.9))",
-              "drop-shadow(0 0 18px rgba(168,85,247,0.5))",
+              "drop-shadow(0 0 18px rgba(168,85,247,0.5))"
             ]
           }}
           transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
