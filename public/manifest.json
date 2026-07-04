@@ -9,9 +9,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "https:\/\/hvvrbpvsgjxiicigkwhu.supabase.co\/storage\/v1\/object\/public\/companion-avatars\/misc\/d653bb16a_generated_image.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
