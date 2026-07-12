@@ -6,7 +6,9 @@ const IOS_BUNDLE_IDENTIFIER = 'com.huertas.unfiltr'
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Unfiltr by Javier',
-  slug: 'unfiltr-by-javier',
+  // This existing EAS project ID is permanently associated with this slug.
+  // The user-facing app name remains "Unfiltr by Javier".
+  slug: 'base44-app',
   scheme: 'unfiltr',
   version: '0.0.1',
   orientation: 'portrait',
