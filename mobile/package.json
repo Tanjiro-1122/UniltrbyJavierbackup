@@ -1,0 +1,30 @@
+{
+  "name": "unfiltr-mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx expo-doctor"
+  },
+  "dependencies": {
+    "expo": "latest",
+    "expo-constants": "latest",
+    "expo-linking": "latest",
+    "expo-router": "latest",
+    "expo-splash-screen": "latest",
+    "expo-status-bar": "latest",
+    "react": "latest",
+    "react-native": "latest",
+    "react-native-safe-area-context": "latest",
+    "react-native-screens": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "typescript": "latest"
+  }
+}
