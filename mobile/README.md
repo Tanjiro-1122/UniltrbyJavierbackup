@@ -1,49 +1,64 @@
-# Unfiltr Expo mobile client
+# Unfiltr Mobile
 
-This directory is the isolated Expo/React Native client for the existing live Unfiltr app.
+This folder contains the isolated Expo/React Native client for the live Unfiltr app.
+The existing Vite application at the repository root remains the current Vercel web deployment.
 
-## Confirmed production identity
+## Current state
 
-- Expo/EAS project ID: `0b576781-9044-41d1-bd11-9db9883db20e`
-- iOS bundle identifier: `com.huertas.unfiltr`
-- Existing web production repository: `Tanjiro-1122/UniltrbyJavierbackup`
+The mobile workspace now includes:
 
-Do not create a new Expo project, change the iOS bundle identifier, or submit a production Android build until the exact live Android package name is confirmed.
+- Expo Router navigation
+- TypeScript strict mode
+- Existing EAS project linkage
+- Existing iOS bundle identifier (`com.huertas.unfiltr`)
+- Development, preview, and production EAS profiles
+- A native connectivity/configuration status screen
+- Environment validation that prevents authentication work from silently using missing settings
 
-## Bootstrap
+Android production identity is intentionally not configured until the exact live Play Store package name is verified.
 
-Run from the repository root on a development computer:
-
-```bash
-npx create-expo-app@latest mobile-bootstrap
-```
-
-Then copy the generated Expo Router application files into this `mobile/` directory without replacing:
-
-- `app.config.ts`
-- `eas.json`
-- this README
-
-Install and link EAS:
+## Run locally
 
 ```bash
 cd mobile
+cp .env.example .env
 npm install
-npx eas-cli@latest login
+npx expo install --fix
+npm run doctor
+npm start
+```
+
+Use a development build when native modules such as purchases, secure storage, notifications, or biometrics are introduced.
+
+## Validate Expo identity
+
+```bash
+cd mobile
 npx eas-cli@latest project:info
 ```
 
-`project:info` must resolve to project ID `0b576781-9044-41d1-bd11-9db9883db20e` before any build is started.
+Expected EAS project ID:
 
-## First implementation slice
+```text
+0b576781-9044-41d1-bd11-9db9883db20e
+```
 
-1. Expo Router shell and native splash screen.
-2. Existing user/profile bootstrap against the current backend.
-3. Native authentication/session storage.
-4. Read-only home screen and backend health indicator.
-5. Development build for a physical iPhone.
-6. Chat, journal, mood tracking, notifications, and purchases migrated one feature at a time.
+## Public environment values
 
-## Secret handling
+Only values prefixed with `EXPO_PUBLIC_` may be read by the mobile client. They are bundled into the app and must never contain server secrets.
 
-Only public client configuration may use `EXPO_PUBLIC_*` variables. Never place OpenAI keys, service-role keys, Apple secrets, Google Play credentials, RevenueCat secret keys, or Base44 server secrets in the mobile bundle.
+Required before authentication/profile integration:
+
+- `EXPO_PUBLIC_API_BASE_URL`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+
+The anon key is designed for public clients when Row Level Security is correctly configured. Never place a Supabase service-role key in this folder.
+
+## Next implementation milestone
+
+1. Confirm the public API and Supabase client values used by production.
+2. Add secure session persistence.
+3. Load the existing signed-in user profile.
+4. Add a protected native app shell.
+5. Rebuild Journal and Chat against the existing backend.
