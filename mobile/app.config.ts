@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '0.0.1',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
-  plugins: ['expo-router', 'expo-splash-screen'],
+  plugins: ['expo-router', 'expo-splash-screen', 'expo-apple-authentication', 'expo-secure-store'],
   experiments: {
     typedRoutes: true,
   },
@@ -19,6 +19,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config.ios,
     bundleIdentifier: IOS_BUNDLE_IDENTIFIER,
     supportsTablet: true,
+    usesAppleSignIn: true,
     infoPlist: {
       ...config.ios?.infoPlist,
       ITSAppUsesNonExemptEncryption: false,
