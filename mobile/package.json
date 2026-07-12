@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "expo": "latest",
+    "expo-apple-authentication": "latest",
     "expo-constants": "latest",
     "expo-linking": "latest",
     "expo-router": "latest",
+    "expo-secure-store": "latest",
     "expo-splash-screen": "latest",
     "expo-status-bar": "latest",
     "react": "latest",
