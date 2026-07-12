@@ -21,11 +21,15 @@
     "expo-secure-store": "latest",
     "expo-splash-screen": "latest",
     "expo-status-bar": "latest",
+    "expo-updates": "~57.0.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "latest",
+    "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "4.25.2"
+    "react-native-screens": "4.25.2",
+    "react-native-worklet": "^0.0.0",
+    "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
     "@types/react": "latest",

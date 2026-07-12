@@ -10,7 +10,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // The user-facing app name remains "Unfiltr by Javier".
   slug: 'base44-app',
   scheme: 'unfiltr',
-  version: '0.0.1',
+  version: '2.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
   plugins: ['expo-router', 'expo-splash-screen', 'expo-apple-authentication', 'expo-secure-store'],
