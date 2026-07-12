@@ -6,12 +6,14 @@ const IOS_BUNDLE_IDENTIFIER = 'com.huertas.unfiltr'
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Unfiltr by Javier',
-  slug: 'unfiltr-by-javier',
+  // This existing EAS project ID is permanently associated with this slug.
+  // The user-facing app name remains "Unfiltr by Javier".
+  slug: 'base44-app',
   scheme: 'unfiltr',
   version: '0.0.1',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
-  plugins: ['expo-router', 'expo-splash-screen'],
+  plugins: ['expo-router', 'expo-splash-screen', 'expo-apple-authentication', 'expo-secure-store'],
   experiments: {
     typedRoutes: true,
   },
@@ -19,6 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config.ios,
     bundleIdentifier: IOS_BUNDLE_IDENTIFIER,
     supportsTablet: true,
+    usesAppleSignIn: true,
     infoPlist: {
       ...config.ios?.infoPlist,
       ITSAppUsesNonExemptEncryption: false,
